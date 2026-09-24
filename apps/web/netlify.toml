@@ -1,6 +1,6 @@
 [build]
-  command = "cd ../../packages/backend && pnpm exec convex deploy --cmd 'pnpm --filter @stateofpixel/web build' --cmd-url-env-var-name VITE_CONVEX_URL"
-  publish = "dist/client"
+  command = "pnpm --filter @stateofpixel/backend exec convex deploy --cmd 'pnpm --filter @stateofpixel/web build' --cmd-url-env-var-name VITE_CONVEX_URL"
+  publish = "apps/web/dist/client"
 
 [dev]
   command = "pnpm dev"
