@@ -836,6 +836,8 @@ Package `stateofpixel`, closed source, published unminified with source maps. No
 
 Snapshot name from a folder upload is the path relative to `<dir>` without `.png`, like `components/Button/primary`.
 
+M1 ships `--build-name`, `--shard i/n`, `--nonce`, `--baseline-branch`, `--subset`, `--threshold`, `--strict` and `--dry-run`. `--shard auto`, `--baseline-commit`, `--ignore` and the config file come later. Git info comes from the GitHub Actions env and event payload (the PR head SHA, not the merge SHA) and from local git; `ancestors` is `git rev-list` of the commit, or of `HEAD` without the merge commit when the PR head is not in a shallow checkout. The API base URL is `STATEOFPIXEL_API_URL`, default `https://graceful-dogfish-423.convex.site/api/v1` until a custom domain exists.
+
 ### Config file
 
 `stateofpixel.config.json` in the repo root, all fields optional:

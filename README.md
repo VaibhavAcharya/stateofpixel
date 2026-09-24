@@ -41,6 +41,13 @@ node packages/cli/dist/index.mjs compare <dir> <baseline-dir>
 
 `compare` writes `stateofpixel-report/index.html`. Options: `--out <dir>`, `--threshold <0-1>` (default 0.1), `--include-aa`.
 
+```sh
+STATEOFPIXEL_API_URL=http://127.0.0.1:3211/api/v1 STATEOFPIXEL_TOKEN=sop_... \
+  node packages/cli/dist/index.mjs upload <dir>
+```
+
+`upload` uses the GitHub Actions OIDC token when `id-token: write` is granted, else `STATEOFPIXEL_TOKEN`. Without `STATEOFPIXEL_API_URL` it talks to production. Run `upload --help` for flags.
+
 ## Checks
 
 ```sh
