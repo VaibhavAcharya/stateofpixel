@@ -136,7 +136,7 @@ export default defineSchema({
     mergedPrNumber: v.optional(v.number()),
     nonce: v.string(),
     shardsTotal: v.optional(v.number()),
-    shardsDone: v.number(),
+    doneShardIndexes: v.array(v.number()),
     subset: v.boolean(),
     status: buildStatus,
     conclusion: v.optional(buildConclusion),
@@ -239,7 +239,9 @@ export default defineSchema({
     storageId: v.optional(v.id("_storage")),
     r2Key: v.optional(v.string()),
     lastReferencedAt: v.number(),
-  }).index("by_accountId_and_hash", ["accountId", "hash"]),
+  })
+    .index("by_accountId_and_hash", ["accountId", "hash"])
+    .index("by_storageId", ["storageId"]),
 
   usageDaily: defineTable({
     accountId: v.id("accounts"),

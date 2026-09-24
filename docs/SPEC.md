@@ -77,8 +77,8 @@ The server asks GitHub for the user's permission on the repo with the user's tok
 | Conclusion | When |
 |---|---|
 | `no_changes` | Every snapshot is `unchanged`, or only `removed` ones exist. |
-| `changes` | At least one `changed` or `added` snapshot is not reviewed yet, and none is rejected. |
-| `approved` | Every `changed` and `added` snapshot is approved. Also set automatically on auto-approve branches and on orphan builds. |
+| `changes` | At least one `changed` or `added` snapshot is not reviewed yet, or one is `failed`, and none is rejected. |
+| `approved` | Every `changed` and `added` snapshot is approved and none is `failed`. Also set automatically on auto-approve branches and on orphan builds. |
 | `rejected` | At least one snapshot is rejected. |
 
 The conclusion is recomputed after every review action and after approval carry-over.
@@ -491,7 +491,7 @@ Which signed-in users can see which account. `me.refreshAccounts` rewrites a use
 | mergedPrNumber | number, optional | For squash-merged main builds. |
 | nonce | string | |
 | shardsTotal | number, optional | Missing in finalize mode. |
-| shardsDone | number | |
+| doneShardIndexes | number[] | Shard indexes that called complete. A retried complete does not count twice. |
 | subset | boolean | True with `--subset`, disables `removed`. |
 | status | `"pending"`, `"finalized"`, `"expired"`, `"error"` | |
 | conclusion | `"no_changes"`, `"changes"`, `"approved"`, `"rejected"`, optional | |
@@ -612,7 +612,7 @@ Convex HTTP actions in `packages/backend/convex/http.ts`, served at `https://<de
 
 Two token kinds:
 
-- GitHub Actions OIDC token with audience `stateofpixel`. `convex/ciAuth.ts` verifies it with `jose` against `https://token.actions.githubusercontent.com/.well-known/jwks` (issuer `https://token.actions.githubusercontent.com`, RS256) and maps the `repository_id` claim to a project that is not archived. It is not a `customJwt` provider in `convex/auth.config.ts`, so a CI token is never a signed-in identity for app queries and mutations. The `sha` claim must match the build's commit, or be the synthetic merge commit of the PR the build claims. Not tested from a real GitHub Actions run yet.
+- GitHub Actions OIDC token with audience `stateofpixel`. `convex/ciAuth.ts` verifies it with `jose` against `https://token.actions.githubusercontent.com/.well-known/jwks` (issuer `https://token.actions.githubusercontent.com`, RS256) and maps the `repository_id` claim to a project that is not archived. It is not a `customJwt` provider in `convex/auth.config.ts`, so a CI token is never a signed-in identity for app queries and mutations. `POST /builds` checks that the `sha` claim matches `git.commit`, or that the `ref` claim is `refs/pull/{prNumber}/merge` for the PR the build claims (the `sha` claim is the synthetic merge commit on `pull_request` runs). Not tested from a real GitHub Actions run yet.
 - Project token (`sop_...`). The action hashes it and looks it up by `tokenHash`. Revoked tokens and tokens of archived projects are rejected. `lastUsedAt` is written at most once a minute.
 
 A missing or rejected token returns 401 with code `unauthorized`.
@@ -692,23 +692,26 @@ Sent after uploads and local diffs are done. For diff images the CLI first calls
 ```json
 {
   "uploads": [
-    { "hash": "sha256 hex", "storageId": "kg2...", "kind": "screenshot" },
-    { "hash": "sha256 hex", "storageId": "kg3...", "kind": "diff" }
+    { "hash": "sha256 hex", "storageId": "kg2...", "kind": "screenshot", "width": 1280, "height": 720 },
+    { "hash": "sha256 hex", "storageId": "kg3...", "kind": "diff", "width": 1280, "height": 720 }
   ],
   "results": [
-    { "name": "Header/Default [chromium 1280]", "status": "changed",
-      "diffHash": "sha256 hex", "diffRatio": 0.0084, "diffPixels": 7742 },
-    { "name": "Button [chromium 1280]", "status": "unchanged" }
+    { "name": "Header/Default [chromium 1280]", "hash": "sha256 hex", "status": "changed",
+      "diffHash": "sha256 hex", "diffRatio": 0.0084, "diffPixels": 7742,
+      "metadata": { "browser": "chromium" } },
+    { "name": "Button [chromium 1280]", "hash": "sha256 hex", "status": "unchanged" }
   ],
   "errors": []
 }
 ```
 
-The client sends `unchanged` for snapshots whose bytes differed but pixels did not.
+Response: `{ "rejectedUploads": ["sha256 hex"] }`, the hashes whose upload was missing or did not match.
+
+The client sends `unchanged` for snapshots whose bytes differed but pixels did not. The server decides `added` and hash-equal `unchanged` itself from the baseline; the client status only chooses between `changed` and `unchanged` when hashes differ, or reports `failed`. A snapshot whose image is not in the account after the uploads is `failed`. A non-empty `errors` array moves the build to `error`. Snapshots of an orphan build are inserted as approved with a `reviews` row of source `orphan`.
 
 Confirming uploads, per chunk of 1,000:
-1. Read `_storage` for each `storageId` with `ctx.db.system.get` ([docs](https://docs.convex.dev/file-storage/file-metadata)). Convex computed its `sha256` on upload.
-2. If it does not match the claimed hash, delete the file and mark the snapshot `failed`. Convex's sha256 encoding is not the same as our hex in every case (check base16 vs base64 before building), so compare after decoding both to bytes.
+1. Read `_storage` for each `storageId` with `ctx.db.system.get` ([docs](https://docs.convex.dev/file-storage/file-metadata)). Convex computed its `sha256` on upload. It is base64 on a local deployment even though the type comment says hex, so the server accepts both. A `storageId` that an image row already uses is never deleted or reused for another hash or account.
+2. If it does not match the claimed hash, delete the file and mark the snapshot `failed`.
 3. If an image with that hash already exists for the account (two shards uploaded the same PNG at once), delete the new file and point to the existing image.
 4. Otherwise insert the `images` row.
 
@@ -722,17 +725,17 @@ Finalize, in chunked mutations:
 
 ### 7.4 POST /builds/finalize
 
-For finalize mode. Body `{ "buildName": "default", "nonce": "..." }`. Finalizes with whatever shards arrived. With `--skip-if-empty` and no shards, it creates a build with conclusion `no_changes` so the check does not hang.
+For finalize mode. Body `{ "buildName": "default", "nonce": "..." }`. Finalizes with whatever shards arrived, and returns 404 `build_not_found` when no shard created the build. `--skip-if-empty` (create a `no_changes` build when no shard ran) comes with the M2 sharding item.
 
 ### 7.5 GET /builds/{id}
 
-Returns status, conclusion, counts and URL. The CLI uses it for `--wait` (M3).
+Returns status, conclusion, counts, URL and `shards: { done, total }`. The CLI uses it for `--wait` (M3).
 
 ### 7.6 Baseline selection
 
 In one internal query:
 1. For each SHA in `ancestors`, newest first, look up `by_projectId_and_buildName_and_commitSha` for this build name.
-2. Take the first build that is finalized, approved, and has `fullRows`.
+2. Take the first build that is finalized, has conclusion `approved` or `no_changes`, and has `fullRows`.
 3. If none matches (shallow checkout, or a branch older than the 90-day full-row window), an action asks the GitHub compare API whether the newest 5 full builds on the baseline branch are ancestors of the head commit, and takes the newest one that is.
 4. If still none, the build is an orphan. On a PR this shows a banner: "No baseline found for this branch. Rebase on main to compare."
 

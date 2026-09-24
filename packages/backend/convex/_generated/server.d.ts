@@ -34,6 +34,7 @@ type Env = {
   readonly GITHUB_APP_PRIVATE_KEY: string;
   readonly GITHUB_APP_SLUG: string;
   readonly GITHUB_WEBHOOK_SECRET: string;
+  readonly SITE_URL: string;
 };
 
 /**

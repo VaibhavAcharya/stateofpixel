@@ -7,5 +7,6 @@ export default defineApp({
     GITHUB_APP_SLUG: v.string(),
     GITHUB_APP_PRIVATE_KEY: v.string(),
     GITHUB_WEBHOOK_SECRET: v.string(),
+    SITE_URL: v.string(),
   },
 });

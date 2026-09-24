@@ -1,20 +1,57 @@
-import { httpAction } from "./_generated/server";
-import { authenticateCi } from "./ciAuth";
+import type { GenericValidator, Infer } from "convex/values";
+import { ConvexError } from "convex/values";
+import { validate } from "convex-helpers/validators";
+import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { type ActionCtx, httpAction } from "./_generated/server";
+import { authenticateCi, type CiAuth } from "./ciAuth";
+import { ciError, isCiErrorData } from "./lib/ciErrors";
+import {
+  type CreateBuildRequest,
+  completeShardRequest,
+  createBuildRequest,
+  finalizeRequest,
+  uploadUrlsRequest,
+} from "./lib/ciRequests";
 
-export const whoami = httpAction(async (ctx, request) => {
-  const auth = await authenticateCi(ctx, request);
-  if (auth === null) {
-    return errorResponse(
-      401,
-      "unauthorized",
-      "Use a GitHub Actions OIDC token with audience stateofpixel, or a project token.",
-    );
-  }
-  return Response.json({
-    project: auth.project.fullName,
-    method: auth.method,
+const CHUNK_SIZE = 1000;
+const MAX_METADATA_BYTES = 4096;
+const SHA256_HEX = /^[0-9a-f]{64}$/i;
+const SHARD_COMPLETE_PATH =
+  /^\/api\/v1\/builds\/([^/]+)\/shards\/(\d+)\/complete$/;
+const UPLOAD_URLS_PATH = /^\/api\/v1\/builds\/([^/]+)\/upload-urls$/;
+const BUILD_PATH = /^\/api\/v1\/builds\/([^/]+)$/;
+
+type CiHandler = (
+  ctx: ActionCtx,
+  request: Request,
+  auth: CiAuth,
+) => Promise<Response>;
+
+function ciRoute(handler: CiHandler) {
+  return httpAction(async (ctx, request) => {
+    const auth = await authenticateCi(ctx, request);
+    if (auth === null) {
+      return errorResponse(
+        401,
+        "unauthorized",
+        "Use a GitHub Actions OIDC token with audience stateofpixel, or a project token.",
+      );
+    }
+    try {
+      return await handler(ctx, request, auth);
+    } catch (error) {
+      if (error instanceof ConvexError && isCiErrorData(error.data)) {
+        return errorResponse(
+          error.data.status,
+          error.data.code,
+          error.data.message,
+        );
+      }
+      throw error;
+    }
   });
-});
+}
 
 export function errorResponse(
   status: number,
@@ -23,3 +60,317 @@ export function errorResponse(
 ): Response {
   return Response.json({ error: { code, message } }, { status });
 }
+
+async function readBody<V extends GenericValidator>(
+  request: Request,
+  validator: V,
+): Promise<Infer<V>> {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    throw ciError(400, "invalid_request", "Body must be JSON.");
+  }
+  try {
+    validate(validator, body, { throw: true });
+  } catch (error) {
+    throw ciError(
+      400,
+      "invalid_request",
+      error instanceof Error ? error.message : "Invalid body.",
+    );
+  }
+  return body as Infer<V>;
+}
+
+function checkHashes(hashes: string[]) {
+  const invalid = hashes.find((hash) => !SHA256_HEX.test(hash));
+  if (invalid !== undefined) {
+    throw ciError(
+      400,
+      "invalid_hash",
+      `"${invalid}" is not a SHA-256 hex digest.`,
+    );
+  }
+}
+
+function checkNames(names: string[]) {
+  const seen = new Set<string>();
+  for (const name of names) {
+    if (name === "") {
+      throw ciError(
+        400,
+        "invalid_snapshot_name",
+        "Snapshot names cannot be empty.",
+      );
+    }
+    if (seen.has(name)) {
+      throw ciError(
+        400,
+        "duplicate_snapshot_name",
+        `Snapshot "${name}" appears more than once.`,
+      );
+    }
+    seen.add(name);
+  }
+}
+
+function checkMetadata(items: { name: string; metadata?: unknown }[]) {
+  for (const item of items) {
+    if (
+      item.metadata !== undefined &&
+      JSON.stringify(item.metadata).length > MAX_METADATA_BYTES
+    ) {
+      throw ciError(
+        400,
+        "metadata_too_large",
+        `Metadata of "${item.name}" is over ${MAX_METADATA_BYTES} bytes.`,
+      );
+    }
+  }
+}
+
+function checkOidcCommit(auth: CiAuth, git: CreateBuildRequest["git"]) {
+  if (auth.method !== "oidc" || auth.claims.sha === git.commit) {
+    return;
+  }
+  const prRef =
+    typeof git.prNumber === "number"
+      ? `refs/pull/${git.prNumber}/merge`
+      : undefined;
+  if (auth.claims.ref !== prRef) {
+    throw ciError(
+      403,
+      "commit_mismatch",
+      "git.commit does not match the commit of this GitHub Actions run.",
+    );
+  }
+}
+
+function chunk<T>(items: T[]): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+    chunks.push(items.slice(i, i + CHUNK_SIZE));
+  }
+  return chunks;
+}
+
+export const whoami = ciRoute(async (_ctx, _request, auth) =>
+  Response.json({ project: auth.project.fullName, method: auth.method }),
+);
+
+export const createBuild = ciRoute(async (ctx, request, auth) => {
+  const body = await readBody(request, createBuildRequest);
+  checkNames(body.snapshots.map((snapshot) => snapshot.name));
+  checkHashes(body.snapshots.map((snapshot) => snapshot.hash));
+  checkMetadata(body.snapshots);
+  checkOidcCommit(auth, body.git);
+
+  const build = await ctx.runMutation(internal.builds.createOrJoin, {
+    projectId: auth.project.id,
+    buildName: body.buildName ?? "default",
+    nonce: body.nonce,
+    shardIndex: body.shard.index,
+    shardsTotal: body.shard.total,
+    subset: body.subset ?? false,
+    git: {
+      commit: body.git.commit,
+      commitMessage: (body.git.commitMessage ?? "").split("\n")[0] ?? "",
+      branch: body.git.branch,
+      baselineBranch: body.git.baselineBranch,
+      prNumber: body.git.prNumber ?? undefined,
+      mergeBase: body.git.mergeBase ?? undefined,
+      ancestors: body.git.ancestors,
+    },
+    ciProvider: body.ci?.provider,
+    ciRunUrl: body.ci?.runUrl,
+  });
+
+  const lookups = (
+    await Promise.all(
+      chunk(
+        body.snapshots.map(({ name, hash }) => ({
+          name,
+          hash: hash.toLowerCase(),
+        })),
+      ).map((snapshots) =>
+        ctx.runQuery(internal.builds.lookupSnapshots, {
+          accountId: build.accountId,
+          baselineBuildId: build.baselineBuildId,
+          snapshots,
+        }),
+      ),
+    )
+  ).flat();
+
+  const uploadUrls = await createUploadUrls(
+    ctx,
+    build.accountId,
+    lookups.filter((lookup) => !lookup.uploaded).map((lookup) => lookup.hash),
+  );
+
+  return Response.json({
+    buildId: build.buildId,
+    buildNumber: build.number,
+    url: build.url,
+    diff: build.diff,
+    baseline: build.baseline,
+    snapshots: lookups.map(({ hash, uploaded: _, ...snapshot }) => ({
+      ...snapshot,
+      ...(uploadUrls.has(hash) ? { uploadUrl: uploadUrls.get(hash) } : {}),
+    })),
+    warnings: [],
+  });
+});
+
+async function createUploadUrls(
+  ctx: ActionCtx,
+  accountId: Id<"accounts">,
+  hashes: string[],
+): Promise<Map<string, string>> {
+  const targets = await Promise.all(
+    chunk([...new Set(hashes)]).map((chunkHashes) =>
+      ctx.runMutation(internal.blobs.createUploadTargets, {
+        accountId,
+        hashes: chunkHashes,
+      }),
+    ),
+  );
+  return new Map(
+    targets.flat().map(({ hash, uploadUrl }) => [hash, uploadUrl]),
+  );
+}
+
+async function getBuildForCi(ctx: ActionCtx, auth: CiAuth, buildId: string) {
+  const build = await ctx.runQuery(internal.builds.forCi, {
+    projectId: auth.project.id,
+    buildId,
+  });
+  if (build === null) {
+    throw ciError(404, "build_not_found", "Build not found.");
+  }
+  return build;
+}
+
+async function completeShard(
+  ctx: ActionCtx,
+  request: Request,
+  auth: CiAuth,
+  buildIdParam: string,
+  shardIndex: number,
+) {
+  const build = await getBuildForCi(ctx, auth, buildIdParam);
+  const body = await readBody(request, completeShardRequest);
+  checkNames(body.results.map((result) => result.name));
+  checkHashes([
+    ...body.uploads.map((upload) => upload.hash),
+    ...body.results.map((result) => result.hash),
+    ...body.results.flatMap((result) =>
+      result.diffHash === undefined ? [] : [result.diffHash],
+    ),
+  ]);
+  checkMetadata(body.results);
+
+  const confirmed = (
+    await Promise.all(
+      chunk(body.uploads).map((uploads) =>
+        ctx.runMutation(internal.builds.confirmUploads, {
+          buildId: build.buildId,
+          accountId: build.accountId,
+          uploads,
+        }),
+      ),
+    )
+  ).flat();
+
+  for (const results of chunk(body.results)) {
+    await ctx.runMutation(internal.builds.insertSnapshots, {
+      buildId: build.buildId,
+      accountId: build.accountId,
+      shardIndex,
+      results,
+    });
+  }
+  await ctx.runMutation(internal.builds.completeShard, {
+    buildId: build.buildId,
+    shardIndex,
+    errors: body.errors ?? [],
+  });
+
+  return Response.json({
+    rejectedUploads: confirmed
+      .filter((upload) => !upload.confirmed)
+      .map((upload) => upload.hash),
+  });
+}
+
+async function createUploadUrlsForBuild(
+  ctx: ActionCtx,
+  request: Request,
+  auth: CiAuth,
+  buildIdParam: string,
+) {
+  const build = await getBuildForCi(ctx, auth, buildIdParam);
+  const body = await readBody(request, uploadUrlsRequest);
+  checkHashes(body.hashes);
+  const uploadUrls = await createUploadUrls(
+    ctx,
+    build.accountId,
+    body.hashes.map((hash) => hash.toLowerCase()),
+  );
+  return Response.json({
+    uploads: [...uploadUrls].map(([hash, uploadUrl]) => ({ hash, uploadUrl })),
+  });
+}
+
+export const buildAction = ciRoute(async (ctx, request, auth) => {
+  const { pathname } = new URL(request.url);
+  const shardMatch = SHARD_COMPLETE_PATH.exec(pathname);
+  if (shardMatch?.[1] !== undefined && shardMatch[2] !== undefined) {
+    return completeShard(
+      ctx,
+      request,
+      auth,
+      shardMatch[1],
+      Number(shardMatch[2]),
+    );
+  }
+  const uploadUrlsMatch = UPLOAD_URLS_PATH.exec(pathname);
+  if (uploadUrlsMatch?.[1] !== undefined) {
+    return createUploadUrlsForBuild(ctx, request, auth, uploadUrlsMatch[1]);
+  }
+  throw ciError(404, "not_found", `No route for POST ${pathname}.`);
+});
+
+export const finalizeBuild = ciRoute(async (ctx, request, auth) => {
+  const body = await readBody(request, finalizeRequest);
+  const buildId = await ctx.runQuery(internal.builds.buildIdByNonce, {
+    projectId: auth.project.id,
+    buildName: body.buildName ?? "default",
+    nonce: body.nonce,
+  });
+  if (buildId === null) {
+    throw ciError(404, "build_not_found", "No build with this nonce.");
+  }
+  await ctx.runMutation(internal.builds.requestFinalize, { buildId });
+  const build = await getBuildForCi(ctx, auth, buildId);
+  return Response.json({ buildId, buildNumber: build.number, url: build.url });
+});
+
+export const getBuild = ciRoute(async (ctx, request, auth) => {
+  const { pathname } = new URL(request.url);
+  const buildId = BUILD_PATH.exec(pathname)?.[1];
+  if (buildId === undefined) {
+    throw ciError(404, "not_found", `No route for GET ${pathname}.`);
+  }
+  const build = await getBuildForCi(ctx, auth, buildId);
+  return Response.json({
+    buildId: build.buildId,
+    buildNumber: build.number,
+    url: build.url,
+    status: build.status,
+    conclusion: build.conclusion,
+    counts: build.counts,
+    shards: { done: build.shardsDone, total: build.shardsTotal },
+  });
+});
