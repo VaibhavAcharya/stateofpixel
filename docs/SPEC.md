@@ -468,7 +468,7 @@ Which signed-in users can see which account. `me.refreshAccounts` rewrites a use
 |---|---|---|
 | projectId | Id<"projects"> | Index. |
 | name | string | |
-| tokenHash | string | SHA-256 hex of the token. Index. Token format `sop_` plus 32 random bytes base62. |
+| tokenHash | string | SHA-256 hex of the token. Index. Token format `sop_` plus 43 random base62 characters. |
 | createdBy | Id<"users"> | |
 | lastUsedAt | number, optional | |
 | revokedAt | number, optional | |
@@ -612,8 +612,14 @@ Convex HTTP actions in `packages/backend/convex/http.ts`, served at `https://<de
 
 Two token kinds:
 
-- GitHub Actions OIDC token with audience `stateofpixel`. Configured as a `customJwt` provider in `convex/auth.config.ts`: issuer `https://token.actions.githubusercontent.com`, its JWKS URL, RS256 ([docs](https://docs.convex.dev/auth/advanced/custom-jwt)). The HTTP action reads the claims with `ctx.auth.getUserIdentity()` and maps `repository_id` to a project. The `sha` claim must match the build's commit, or be the synthetic merge commit of the PR the build claims. Not tested end to end yet; the fallback is verifying the JWT with `jose` inside the action.
-- Project token (`sop_...`). The action hashes it and looks it up by `tokenHash`.
+- GitHub Actions OIDC token with audience `stateofpixel`. `convex/ciAuth.ts` verifies it with `jose` against `https://token.actions.githubusercontent.com/.well-known/jwks` (issuer `https://token.actions.githubusercontent.com`, RS256) and maps the `repository_id` claim to a project that is not archived. It is not a `customJwt` provider in `convex/auth.config.ts`, so a CI token is never a signed-in identity for app queries and mutations. The `sha` claim must match the build's commit, or be the synthetic merge commit of the PR the build claims. Not tested from a real GitHub Actions run yet.
+- Project token (`sop_...`). The action hashes it and looks it up by `tokenHash`. Revoked tokens and tokens of archived projects are rejected. `lastUsedAt` is written at most once a minute.
+
+A missing or rejected token returns 401 with code `unauthorized`.
+
+### 7.1.1 GET /whoami
+
+Returns `{ "project": "owner/name", "method": "oidc" | "token" }` for a valid token. The CLI can use it to check its setup.
 
 ### 7.2 POST /builds
 
@@ -743,11 +749,13 @@ Permission check pattern. Queries cannot call GitHub, so:
 2. If the row is missing or older than 5 minutes, the page calls the `refreshPermissions` action, which calls `GET /repos/{owner}/{repo}` with the user's token (the `permissions` field has `admin`, `maintain`, `push`, `pull`) and writes the row. The query re-runs by itself when the row changes.
 3. Until then the page shows a skeleton. Public repos skip the check for reading.
 
+Functions that need a permission throw a `ConvexError` with code `permission_unknown` when the row is missing or stale, `forbidden` when the level is too low, and `not_found` when the level is `none`. The page calls `permissions.refresh` on `permission_unknown` and retries.
+
 | Function | Kind | Permission | Purpose |
 |---|---|---|---|
 | `me.get` | query | signed in | User and the accounts they can see. |
 | `me.refreshAccounts` | action | signed in | `GET /user/installations` with the user token, links the user to accounts. Runs at sign-in and from "Refresh" on the Install page. |
-| `permissions.refresh` | action | signed in | See above. |
+| `permissions.refresh` | action | signed in | See above. Writes `none` when GitHub answers 404. `orgOwner` comes from the org membership role, or from the login for a user account. |
 | `builds.list` | query | read | Paginated with `.paginate()`, filters branch, status, build name. |
 | `builds.get` | query | read | Build and counts by number. |
 | `snapshots.list` | query | read | Paginated sidebar list by `by_buildId_and_diffStatus_and_name`. Includes image URLs from `blobs.getUrl`. |
@@ -756,7 +764,8 @@ Permission check pattern. Queries cannot call GitHub, so:
 | `baselines.list` | query | read | Paginated snapshots of the newest full approved build on the default branch. |
 | `baselines.history` | query | read | Changed rows for one name on the default branch. |
 | `projects.updateSettings` | mutation | admin | Partial update. |
-| `tokens.create` | mutation | admin | Returns the token once, stores the hash. |
+| `tokens.list` | query | admin | Tokens that are not revoked: name, created time, last used time. |
+| `tokens.create` | action | admin | Generates the token, stores the hash through an internal mutation, returns the token once. |
 | `tokens.revoke` | mutation | admin | |
 | `projects.delete` | mutation | admin | Marks deleted, schedules chunked deletion. |
 | `usage.get` | query | org owner | Usage page data. |

@@ -9,11 +9,17 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as ciApi from "../ciApi.js";
+import type * as ciAuth from "../ciAuth.js";
 import type * as githubWebhook from "../githubWebhook.js";
 import type * as http from "../http.js";
 import type * as installations from "../installations.js";
 import type * as lib_github from "../lib/github.js";
+import type * as lib_permissions from "../lib/permissions.js";
+import type * as lib_projectTokens from "../lib/projectTokens.js";
 import type * as me from "../me.js";
+import type * as permissions from "../permissions.js";
+import type * as tokens from "../tokens.js";
 import type * as users from "../users.js";
 
 import type {
@@ -24,11 +30,17 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  ciApi: typeof ciApi;
+  ciAuth: typeof ciAuth;
   githubWebhook: typeof githubWebhook;
   http: typeof http;
   installations: typeof installations;
   "lib/github": typeof lib_github;
+  "lib/permissions": typeof lib_permissions;
+  "lib/projectTokens": typeof lib_projectTokens;
   me: typeof me;
+  permissions: typeof permissions;
+  tokens: typeof tokens;
   users: typeof users;
 }>;
 

@@ -172,3 +172,46 @@ function hexToBytes(hex: string): Uint8Array<ArrayBuffer> | null {
   }
   return bytes;
 }
+
+export type GithubRepositoryPermissions = {
+  admin: boolean;
+  maintain?: boolean;
+  push: boolean;
+  pull: boolean;
+};
+
+export async function getRepositoryPermissions(
+  userToken: string,
+  owner: string,
+  name: string,
+): Promise<GithubRepositoryPermissions | null> {
+  try {
+    const repository = await githubRequest<{
+      permissions?: GithubRepositoryPermissions;
+    }>(userToken, `/repos/${owner}/${name}`);
+    return repository.permissions ?? null;
+  } catch (error) {
+    if (error instanceof GithubError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function isOrgOwner(
+  userToken: string,
+  org: string,
+): Promise<boolean> {
+  try {
+    const membership = await githubRequest<{ state: string; role: string }>(
+      userToken,
+      `/user/memberships/orgs/${org}`,
+    );
+    return membership.state === "active" && membership.role === "admin";
+  } catch (error) {
+    if (error instanceof GithubError && error.status !== 401) {
+      return false;
+    }
+    throw error;
+  }
+}

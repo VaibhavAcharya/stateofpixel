@@ -22,7 +22,7 @@ Progress tracker for [PLAN.md](./PLAN.md). Details for each item are in [SPEC.md
 
 - [x] Convex schema (SPEC section 6)
 - [x] GitHub App: sign-in with Convex Auth, install flow, webhooks
-- [ ] CI auth: GitHub Actions OIDC and project tokens
+- [x] CI auth: GitHub Actions OIDC and project tokens
 - [ ] `POST /builds`, shard complete, finalize (SPEC section 7)
 - [ ] Uploads to Convex File Storage through `blobs.ts`
 - [ ] Baseline selection
