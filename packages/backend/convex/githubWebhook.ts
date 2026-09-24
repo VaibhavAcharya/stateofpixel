@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { env, httpAction, internalMutation } from "./_generated/server";
+import { rerequestCheck } from "./checks";
 import { toRepositoryFields, verifyWebhookSignature } from "./lib/github";
 
 const INSTALLATION_ACTIONS_TO_SYNC = new Set([
@@ -46,6 +47,7 @@ export const handle = httpAction(async (ctx, request) => {
     action: typeof payload.action === "string" ? payload.action : null,
     installationId: readInstallationId(payload),
     repository: readRepository(payload),
+    checkRunExternalId: readCheckRunExternalId(payload),
   });
   return new Response(null, { status: 204 });
 });
@@ -66,6 +68,7 @@ export const receive = internalMutation({
       }),
       v.null(),
     ),
+    checkRunExternalId: v.optional(v.union(v.string(), v.null())),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -99,6 +102,12 @@ export const receive = internalMutation({
         installationId,
       });
     } else if (
+      args.event === "check_run" &&
+      args.action === "rerequested" &&
+      typeof args.checkRunExternalId === "string"
+    ) {
+      await rerequestCheck(ctx, installationId, args.checkRunExternalId);
+    } else if (
       args.event === "repository" &&
       REPOSITORY_ACTIONS_TO_UPDATE.has(args.action ?? "") &&
       args.repository !== null
@@ -110,6 +119,13 @@ export const receive = internalMutation({
     return null;
   },
 });
+
+function readCheckRunExternalId(payload: Record<string, unknown>) {
+  const checkRun = payload.check_run;
+  return isObject(checkRun) && typeof checkRun.external_id === "string"
+    ? checkRun.external_id
+    : null;
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;

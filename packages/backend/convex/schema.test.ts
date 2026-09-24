@@ -67,6 +67,8 @@ it("stores a build and its snapshots", async () => {
       fullRows: true,
       counts: emptyCounts,
       storageBlocked: false,
+      checkVersion: 0,
+      checkOutOfSync: false,
     });
     await ctx.db.insert("snapshots", {
       buildId,
@@ -112,6 +114,8 @@ it("rejects a snapshot with an unknown diff status", async () => {
         fullRows: true,
         counts: emptyCounts,
         storageBlocked: false,
+        checkVersion: 0,
+        checkOutOfSync: false,
       });
       await ctx.db.insert("snapshots", {
         buildId,

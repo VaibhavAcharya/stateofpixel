@@ -27,7 +27,7 @@ Progress tracker for [PLAN.md](./PLAN.md). Details for each item are in [SPEC.md
 - [x] Uploads to Convex File Storage through `blobs.ts`
 - [x] Baseline selection
 - [x] `stateofpixel upload <dir>`
-- [ ] GitHub check runs
+- [x] GitHub check runs
 - [ ] Pages: account home, project builds list, build review page
 - [ ] Review actions and keyboard shortcuts
 - [ ] Auto-approve on the default branch

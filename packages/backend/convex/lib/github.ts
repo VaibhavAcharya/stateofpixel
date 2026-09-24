@@ -239,3 +239,47 @@ export async function isAncestor(
     throw error;
   }
 }
+
+export type CheckRunFields = {
+  status: "in_progress" | "completed";
+  conclusion?:
+    | "success"
+    | "action_required"
+    | "failure"
+    | "timed_out"
+    | "neutral";
+  details_url: string;
+  output: { title: string; summary: string };
+};
+
+export async function createCheckRun(
+  installationToken: string,
+  owner: string,
+  name: string,
+  fields: CheckRunFields & {
+    name: string;
+    head_sha: string;
+    external_id: string;
+  },
+): Promise<number> {
+  const { id } = await githubRequest<{ id: number }>(
+    installationToken,
+    `/repos/${owner}/${name}/check-runs`,
+    { method: "POST", body: JSON.stringify(fields) },
+  );
+  return id;
+}
+
+export async function updateCheckRun(
+  installationToken: string,
+  owner: string,
+  name: string,
+  checkRunId: number,
+  fields: CheckRunFields,
+): Promise<void> {
+  await githubRequest(
+    installationToken,
+    `/repos/${owner}/${name}/check-runs/${checkRunId}`,
+    { method: "PATCH", body: JSON.stringify(fields) },
+  );
+}

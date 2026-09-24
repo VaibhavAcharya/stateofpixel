@@ -11,8 +11,10 @@
 import type * as auth from "../auth.js";
 import type * as blobs from "../blobs.js";
 import type * as builds from "../builds.js";
+import type * as checks from "../checks.js";
 import type * as ciApi from "../ciApi.js";
 import type * as ciAuth from "../ciAuth.js";
+import type * as crons from "../crons.js";
 import type * as githubWebhook from "../githubWebhook.js";
 import type * as http from "../http.js";
 import type * as installations from "../installations.js";
@@ -21,6 +23,7 @@ import type * as lib_ciRequests from "../lib/ciRequests.js";
 import type * as lib_github from "../lib/github.js";
 import type * as lib_permissions from "../lib/permissions.js";
 import type * as lib_projectTokens from "../lib/projectTokens.js";
+import type * as lib_urls from "../lib/urls.js";
 import type * as me from "../me.js";
 import type * as permissions from "../permissions.js";
 import type * as tokens from "../tokens.js";
@@ -36,8 +39,10 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   blobs: typeof blobs;
   builds: typeof builds;
+  checks: typeof checks;
   ciApi: typeof ciApi;
   ciAuth: typeof ciAuth;
+  crons: typeof crons;
   githubWebhook: typeof githubWebhook;
   http: typeof http;
   installations: typeof installations;
@@ -46,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   "lib/github": typeof lib_github;
   "lib/permissions": typeof lib_permissions;
   "lib/projectTokens": typeof lib_projectTokens;
+  "lib/urls": typeof lib_urls;
   me: typeof me;
   permissions: typeof permissions;
   tokens: typeof tokens;

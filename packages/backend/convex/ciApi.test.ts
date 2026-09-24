@@ -2,6 +2,7 @@
 import { convexTest } from "convex-test";
 import { exportPKCS8, generateKeyPair } from "jose";
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { hashProjectToken } from "./lib/projectTokens";
 import schema from "./schema";
@@ -13,6 +14,11 @@ type Test = ReturnType<typeof convexTest>;
 
 let compareStatus = "ahead";
 let compareCalls: string[] = [];
+let checkCalls: {
+  method: string;
+  path: string;
+  body: Record<string, unknown>;
+}[] = [];
 
 beforeAll(async () => {
   const { privateKey } = await generateKeyPair("RS256", { extractable: true });
@@ -25,8 +31,17 @@ beforeEach(() => {
   vi.useFakeTimers();
   compareStatus = "ahead";
   compareCalls = [];
-  vi.stubGlobal("fetch", async (input: string | URL) => {
+  checkCalls = [];
+  vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
     const { pathname } = new URL(input);
+    if (pathname.startsWith("/repos/acme/web-app/check-runs")) {
+      checkCalls.push({
+        method: init?.method ?? "GET",
+        path: pathname,
+        body: JSON.parse(String(init?.body)),
+      });
+      return Response.json({ id: 555 });
+    }
     if (pathname === "/app/installations/10/access_tokens") {
       return Response.json({ token: "ghs_installation" });
     }
@@ -493,4 +508,138 @@ it("does not expose builds of other projects", async () => {
   const { t } = await setup();
   const response = await api(t, "GET", "/builds/not-an-id");
   expect(response.status).toBe(404);
+});
+
+function lastCheck() {
+  const call = checkCalls[checkCalls.length - 1];
+  return {
+    method: call?.method,
+    path: call?.path,
+    status: call?.body.status,
+    conclusion: call?.body.conclusion,
+    title: (call?.body.output as { title: string } | undefined)?.title,
+  };
+}
+
+it("creates the GitHub check once and updates it as the build moves", async () => {
+  const { t } = await setup();
+  const images = [
+    { name: "Header", content: "header-v1" },
+    { name: "Footer", content: "footer-v1" },
+  ];
+  const first = await runBuild(t, { commit: "c1", images });
+  expect(checkCalls[0]).toMatchObject({
+    method: "POST",
+    path: "/repos/acme/web-app/check-runs",
+    body: {
+      name: "stateofpixel",
+      head_sha: "c1",
+      external_id: first.created.buildId,
+      status: "in_progress",
+      details_url: "https://stateofpixel.test/acme/web-app/builds/1",
+    },
+  });
+  expect(checkCalls.filter((call) => call.method === "POST")).toHaveLength(1);
+  expect(lastCheck()).toEqual({
+    method: "PATCH",
+    path: "/repos/acme/web-app/check-runs/555",
+    status: "completed",
+    conclusion: "success",
+    title: "Baseline created, 2 snapshots",
+  });
+
+  checkCalls = [];
+  await runBuild(t, {
+    commit: "c2",
+    ancestors: ["c1"],
+    prNumber: 7,
+    images: [
+      { name: "Header", content: "header-v2" },
+      { name: "Footer", content: "footer-v1" },
+    ],
+    changed: ["Header"],
+  });
+  expect(lastCheck()).toMatchObject({
+    conclusion: "action_required",
+    title: "1 change to review",
+  });
+  expect(checkCalls[checkCalls.length - 1]?.body.output).toMatchObject({
+    summary: expect.stringContaining(
+      "- changed: [Header](https://stateofpixel.test/acme/web-app/builds/2/snapshots/",
+    ),
+  });
+});
+
+it("retries a check that GitHub rejected", async () => {
+  const { t } = await setup();
+  vi.stubGlobal("fetch", async () => new Response("down", { status: 502 }));
+  const { created } = await runBuild(t, {
+    commit: "c1",
+    images: [{ name: "Header", content: "header-v1" }],
+  });
+  const outOfSync = await t.run((ctx) =>
+    ctx.db.get("builds", created.buildId as Id<"builds">),
+  );
+  expect(outOfSync).toMatchObject({ checkOutOfSync: true });
+  expect(outOfSync?.githubCheckRunId).toBeUndefined();
+
+  vi.stubGlobal("fetch", async (input: string | URL) => {
+    const { pathname } = new URL(input);
+    return pathname.endsWith("/access_tokens")
+      ? Response.json({ token: "ghs_installation" })
+      : Response.json({ id: 777 });
+  });
+  await t.mutation(internal.checks.retryOutOfSync, {});
+  await runDueJobs(t);
+  const synced = await t.run((ctx) =>
+    ctx.db.get("builds", created.buildId as Id<"builds">),
+  );
+  expect(synced).toMatchObject({
+    checkOutOfSync: false,
+    githubCheckRunId: 777,
+  });
+});
+
+it("re-sends the check when GitHub asks for it", async () => {
+  const { t } = await setup();
+  const { created } = await runBuild(t, {
+    commit: "c1",
+    images: [{ name: "Header", content: "header-v1" }],
+  });
+  checkCalls = [];
+  const body = JSON.stringify({
+    action: "rerequested",
+    installation: { id: 10 },
+    check_run: { external_id: created.buildId },
+  });
+  vi.stubEnv("GITHUB_WEBHOOK_SECRET", "secret");
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode("secret"),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = [
+    ...new Uint8Array(
+      await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body)),
+    ),
+  ]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  const response = await t.fetch("/github/webhook", {
+    method: "POST",
+    headers: {
+      "X-GitHub-Event": "check_run",
+      "X-GitHub-Delivery": "delivery-1",
+      "X-Hub-Signature-256": `sha256=${signature}`,
+    },
+    body,
+  });
+  expect(response.status).toBe(204);
+  await runDueJobs(t);
+  expect(lastCheck()).toMatchObject({
+    method: "PATCH",
+    conclusion: "success",
+  });
 });

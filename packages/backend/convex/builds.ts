@@ -2,15 +2,16 @@ import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
-  env,
   internalMutation,
   internalQuery,
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
 import { confirmUpload, findImage, getUrl } from "./blobs";
+import { touchCheck } from "./checks";
 import { ciError } from "./lib/ciErrors";
 import { snapshotResult, upload } from "./lib/ciRequests";
+import { buildUrl } from "./lib/urls";
 import { buildConclusion, buildCounts, buildStatus } from "./schema";
 
 const EXPIRY_MS = 60 * 60 * 1000;
@@ -203,6 +204,8 @@ async function createBuild(
     baselineBuildId: baseline?._id,
     counts: EMPTY_COUNTS,
     storageBlocked: false,
+    checkVersion: 0,
+    checkOutOfSync: true,
     ciProvider: args.ciProvider,
     ciRunUrl: args.ciRunUrl,
   });
@@ -212,6 +215,7 @@ async function createBuild(
     { buildId },
   );
   await ctx.db.patch("builds", buildId, { expiryJobId });
+  await touchCheck(ctx, buildId);
   const build = await ctx.db.get("builds", buildId);
   if (build === null) {
     throw new Error("Build insert failed");
@@ -340,10 +344,6 @@ function isBaselineCandidate(build: Doc<"builds">): boolean {
     (build.conclusion === "approved" || build.conclusion === "no_changes") &&
     build.fullRows
   );
-}
-
-function buildUrl(project: Doc<"projects">, number: number): string {
-  return `${env.SITE_URL}/${project.owner}/${project.name}/builds/${number}`;
 }
 
 export const lookupSnapshots = internalQuery({
@@ -666,6 +666,7 @@ export const completeShard = internalMutation({
     if (errors.length > 0) {
       await ctx.db.patch("builds", buildId, { status: "error" });
       await cancelExpiry(ctx, build);
+      await touchCheck(ctx, buildId);
       return null;
     }
     if (build.doneShardIndexes.includes(shardIndex)) {
@@ -673,6 +674,7 @@ export const completeShard = internalMutation({
     }
     const doneShardIndexes = [...build.doneShardIndexes, shardIndex];
     await ctx.db.patch("builds", buildId, { doneShardIndexes });
+    await touchCheck(ctx, buildId);
     if (
       build.shardsTotal !== undefined &&
       doneShardIndexes.length >= build.shardsTotal
@@ -741,6 +743,7 @@ export const finalize = internalMutation({
     });
     await cancelExpiry(ctx, build);
     await supersedeEarlierBuilds(ctx, build);
+    await touchCheck(ctx, buildId);
     return null;
   },
 });
@@ -796,6 +799,7 @@ export const expire = internalMutation({
     const build = await ctx.db.get("builds", buildId);
     if (build?.status === "pending") {
       await ctx.db.patch("builds", buildId, { status: "expired" });
+      await touchCheck(ctx, buildId);
     }
     return null;
   },

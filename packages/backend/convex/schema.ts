@@ -148,7 +148,9 @@ export default defineSchema({
     storageBlocked: v.boolean(),
     expiryJobId: v.optional(v.id("_scheduled_functions")),
     githubCheckRunId: v.optional(v.number()),
-    checkSyncedAt: v.optional(v.number()),
+    checkVersion: v.number(),
+    checkOutOfSync: v.boolean(),
+    checkSyncScheduledAt: v.optional(v.number()),
     ciProvider: v.optional(v.string()),
     ciRunUrl: v.optional(v.string()),
     finalizedAt: v.optional(v.number()),
@@ -169,7 +171,8 @@ export default defineSchema({
       "buildName",
       "prNumber",
     ])
-    .index("by_projectId_and_branch", ["projectId", "branch"]),
+    .index("by_projectId_and_branch", ["projectId", "branch"])
+    .index("by_checkOutOfSync", ["checkOutOfSync"]),
 
   snapshots: defineTable({
     buildId: v.id("builds"),

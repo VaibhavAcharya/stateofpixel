@@ -503,7 +503,9 @@ Which signed-in users can see which account. `me.refreshAccounts` rewrites a use
 | storageBlocked | boolean | Over limit after grace. |
 | expiryJobId | Id<"_scheduled_functions">, optional | The scheduled expiry, cancelled at finalize. |
 | githubCheckRunId | number, optional | |
-| checkSyncedAt | number, optional | When the GitHub check last matched the build state. The `syncChecks` cron retries builds where this is older than the last change. |
+| checkVersion | number | Incremented by every change that affects the check. |
+| checkOutOfSync | boolean | True until a sync of the current `checkVersion` lands on GitHub. Index `by_checkOutOfSync`, read by the `syncChecks` cron. |
+| checkSyncScheduledAt | number, optional | Set while a sync action is scheduled, so a build has one sync at a time. Treated as stuck after 5 minutes. |
 | ciProvider, ciRunUrl | string, optional | |
 | finalizedAt | number, optional | |
 
@@ -798,11 +800,11 @@ Webhooks go to the HTTP action `POST /github/webhook`. It reads the raw body, ve
 | `check_run` rerequested | Re-send the current check state. Does not re-run CI. |
 | `pull_request` closed | Set `prClosedAt` on that PR's builds, which starts their retention clock. |
 
-GitHub API calls (check runs, compare, PR lookup) run in actions with an installation token made from the app's private key. Octokit uses Web Crypto and probably runs in the default Convex runtime (unverified); if not, those actions move to a `"use node"` file. Scheduled actions run at most once and are not retried ([docs](https://docs.convex.dev/scheduling/scheduled-functions)), so the check update action records `checkSyncedAt` on the build, and a cron every 5 minutes retries builds whose check is out of date.
+GitHub API calls (check runs, compare, PR lookup) run in actions with an installation token made from the app's private key. Octokit uses Web Crypto and probably runs in the default Convex runtime (unverified); if not, those actions move to a `"use node"` file. Scheduled actions run at most once and are not retried ([docs](https://docs.convex.dev/scheduling/scheduled-functions)), so every state change bumps `checkVersion` and schedules `checks.sync` unless one is already scheduled. The sync creates the check run (`external_id` is the build id) or updates it, then clears `checkOutOfSync` only when the version it sent is still current; otherwise it runs again. A cron every 5 minutes retries builds that are still out of sync. The check name is `stateofpixel`, or `stateofpixel/<buildName>` for other build names, on the build's head commit.
 
 Check run content:
 - Title from the mapping table in section 3.
-- Summary: counts, a link to the build, and up to 10 changed snapshot names as links.
+- Summary: a counts table, a link to the build, and up to 10 changed or added snapshot names linking to `/builds/{number}/snapshots/{id}`.
 - No annotations in v1.
 
 ## 10. CLI
