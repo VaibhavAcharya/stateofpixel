@@ -227,7 +227,7 @@ Later: open-source the CLI and the server together.
 - Flaky renders make any visual tool look broken. The Docker and Playwright defaults matter as much as the server.
 - GitHub App permissions scare some orgs. Keep the permission list minimal and documented.
 - Convex egress is $0.12 to $0.13/GB, and review pages are mostly image downloads. Keep the storage module small so the move to R2 stays a contained change.
-- Convex File Storage URLs from `getUrl` are public and stay valid until the file is deleted ([docs](https://docs.convex.dev/file-storage/serve-files)). Anyone with a link to a private repo's screenshot can open it. The URLs are probably unguessable (unverified). R2 presigned URLs would fix this later.
+- Convex File Storage `getUrl` returns a signed URL (Convex guidelines in `packages/backend/convex/_generated/ai/guidelines.md`). Anyone holding it can open a private repo's screenshot, and how long it stays valid is not documented there (unverified).
 - Convex Auth is beta and has no TanStack Start SSR adapter. Signed-in pages render on the client for now.
 - TanStack Start docs still call it a Release Candidate.
 - The Convex free plan returns errors when over limits. Run production on Starter with a card on file from day one.

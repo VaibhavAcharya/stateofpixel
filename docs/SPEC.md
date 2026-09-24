@@ -403,7 +403,7 @@ Avatar menu with: account switcher, Docs, Sign out. No user settings page in v1.
 
 ## 6. Convex tables
 
-Defined in `packages/backend/convex/schema.ts`. Every document gets `_id` and `_creationTime` from Convex, so tables below leave them out. Field names are camelCase. `Id<"x">` is a Convex reference. Deletes do not cascade in Convex, so GC and project deletion delete children in chunks.
+Defined in `packages/backend/convex/schema.ts`. Index names list every indexed field (`by_a_and_b`), per the Convex guidelines in `packages/backend/convex/_generated/ai/guidelines.md`. Every document gets `_id` and `_creationTime` from Convex, so tables below leave them out. Field names are camelCase. `Id<"x">` is a Convex reference. Deletes do not cascade in Convex, so GC and project deletion delete children in chunks.
 
 Documents are capped at 1 MiB and arrays at 8,192 elements ([limits](https://docs.convex.dev/production/state/limits)). No table stores a per-build list of snapshots inside one document; snapshots are their own table.
 
@@ -443,7 +443,7 @@ The GitHub provider uses the GitHub App's own client ID and secret, so the user 
 |---|---|---|
 | accountId | Id<"accounts"> | Index. |
 | githubRepoId | number | Survives renames. Index. |
-| owner, name | string | For URLs. Index `by_owner_name`. Updated by the `repository` webhook. |
+| owner, name | string | For URLs. Index `by_owner_and_name`. Updated by the `repository` webhook. |
 | private | boolean | |
 | defaultBranch | string | |
 | autoApproveBranches | string[] | Glob patterns. |
@@ -499,12 +499,12 @@ The GitHub provider uses the GitHub App's own client ID and secret, so the user 
 | finalizedAt | number, optional | |
 
 Indexes:
-- `by_project_number` on `[projectId, number]`, for build pages.
-- `by_project_nonce` on `[projectId, buildName, nonce]`, for shards joining a build.
-- `by_project_commit` on `[projectId, buildName, commitSha]`, for baseline lookup.
-- `by_project_pr` on `[projectId, buildName, prNumber]`, for carry-over and superseding.
-- `by_project_branch` on `[projectId, branch]`, for the branch filter.
-- The builds list uses `by_project_number` in descending order.
+- `by_projectId_and_number` on `[projectId, number]`, for build pages.
+- `by_projectId_and_buildName_and_nonce` on `[projectId, buildName, nonce]`, for shards joining a build.
+- `by_projectId_and_buildName_and_commitSha` on `[projectId, buildName, commitSha]`, for baseline lookup.
+- `by_projectId_and_buildName_and_prNumber` on `[projectId, buildName, prNumber]`, for carry-over and superseding.
+- `by_projectId_and_branch` on `[projectId, branch]`, for the branch filter.
+- The builds list uses `by_projectId_and_number` in descending order.
 
 ### snapshots
 
@@ -524,9 +524,9 @@ Indexes:
 | metadata | object | `{browser, viewport, os, testFile, testLine, ...}`, max 4 KB. |
 
 Indexes:
-- `by_build_name` on `[buildId, name]`. Name is unique in a build; the create mutation checks it.
-- `by_build_status` on `[buildId, diffStatus, name]`, for the sidebar groups, sorted by name.
-- `by_image` on `[imageId]`, for GC reference checks and snapshot history.
+- `by_buildId_and_name` on `[buildId, name]`. Name is unique in a build; the create mutation checks it.
+- `by_buildId_and_diffStatus_and_name` on `[buildId, diffStatus, name]`, for the sidebar groups, sorted by name.
+- `by_imageId` on `[imageId]`, for GC reference checks and snapshot history.
 
 Row pruning (the daily cron):
 - PR builds: delete unchanged rows once the PR is closed.
@@ -546,7 +546,7 @@ Append-only audit of every review action. The current state lives on `snapshots.
 | sourceReviewId | Id<"reviews">, optional | For carry-over, the original approval. |
 | comment | string, optional | Max 500 chars. |
 
-For carry-over lookups there is also `by_pr_image` on a small `approvedImages` table: `{projectId, buildName, prNumber, imageId, reviewId}`, written on every approval. One index range answers "was this exact image approved on this PR".
+For carry-over lookups there is also `by_projectId_and_buildName_and_prNumber_and_imageId` on a small `approvedImages` table: `{projectId, buildName, prNumber, imageId, reviewId}`, written on every approval. One index range answers "was this exact image approved on this PR".
 
 ### images
 
@@ -562,7 +562,7 @@ For carry-over lookups there is also `by_pr_image` on a small `approvedImages` t
 | r2Key | string, optional | For later. |
 | lastReferencedAt | number | |
 
-Index `by_account_hash` on `[accountId, hash]`, unique by code. The same PNG in two accounts is stored twice.
+Index `by_accountId_and_hash` on `[accountId, hash]`, unique by code. The same PNG in two accounts is stored twice.
 
 An image row is created only after an upload is confirmed (see 7.3), so there is no "pending upload" state to clean up in this table.
 
@@ -572,7 +572,7 @@ An image row is created only after an upload is confirmed (see 7.3), so there is
 |---|---|---|
 | accountId | Id<"accounts"> | |
 | projectId | Id<"projects"> | |
-| day | string | `YYYY-MM-DD`, UTC. Index `by_project_day`. |
+| day | string | `YYYY-MM-DD`, UTC. Index `by_projectId_and_day`. |
 | baselineBytes, prBytes, diffBytes | number | Computed by the daily cron. |
 | builds, snapshots, uploadedImages | number | For our own dashboards, not billing. |
 
@@ -580,7 +580,7 @@ An image row is created only after an upload is confirmed (see 7.3), so there is
 
 | Field | Type | Notes |
 |---|---|---|
-| userId | Id<"users"> | Index `by_user_project`. |
+| userId | Id<"users"> | Index `by_userId_and_projectId`. |
 | projectId | Id<"projects"> | |
 | permission | `"none"`, `"read"`, `"write"`, `"admin"` | |
 | orgOwner | boolean | |
@@ -641,7 +641,7 @@ What the action does:
 
 1. Auth, then one mutation that creates or joins the build by nonce. On create it also schedules the expiry mutation with `ctx.scheduler.runAfter(60 min)` ([docs](https://docs.convex.dev/scheduling/scheduled-functions)). Scheduling inside the mutation is atomic with the insert.
 2. Baseline selection (section 7.6) in one query.
-3. Hash lookups in chunks of 1,000 names, several chunks in parallel. Each chunk is one internal query that reads the baseline snapshot by `by_build_name` and the image by `by_account_hash`. 1,000 names is 2,000 index ranges, under the 4,096 limit.
+3. Hash lookups in chunks of 1,000 names, several chunks in parallel. Each chunk is one internal query that reads the baseline snapshot by `by_buildId_and_name` and the image by `by_accountId_and_hash`. 1,000 names is 2,000 index ranges, under the 4,096 limit.
 4. One mutation per chunk of 1,000 that gets upload URLs from `blobs.createUploadTargets`, one per hash the account does not have yet (Convex `generateUploadUrl`, [docs](https://docs.convex.dev/file-storage/upload-files)).
 5. Baseline URLs from `blobs.getUrl` for changed names.
 
@@ -716,7 +716,7 @@ Returns status, conclusion, counts and URL. The CLI uses it for `--wait` (M3).
 ### 7.6 Baseline selection
 
 In one internal query:
-1. For each SHA in `ancestors`, newest first, look up `by_project_commit` for this build name.
+1. For each SHA in `ancestors`, newest first, look up `by_projectId_and_buildName_and_commitSha` for this build name.
 2. Take the first build that is finalized, approved, and has `fullRows`.
 3. If none matches (shallow checkout, or a branch older than the 90-day full-row window), an action asks the GitHub compare API whether the newest 5 full builds on the baseline branch are ancestors of the head commit, and takes the newest one that is.
 4. If still none, the build is an orphan. On a PR this shows a banner: "No baseline found for this branch. Rebase on main to compare."
@@ -741,7 +741,7 @@ Permission check pattern. Queries cannot call GitHub, so:
 | `permissions.refresh` | action | signed in | See above. |
 | `builds.list` | query | read | Paginated with `.paginate()`, filters branch, status, build name. |
 | `builds.get` | query | read | Build and counts by number. |
-| `snapshots.list` | query | read | Paginated sidebar list by `by_build_status`. Includes image URLs from `blobs.getUrl`. |
+| `snapshots.list` | query | read | Paginated sidebar list by `by_buildId_and_diffStatus_and_name`. Includes image URLs from `blobs.getUrl`. |
 | `snapshots.get` | query | read | One snapshot with metadata, review info and history. |
 | `reviews.apply` | mutation | write | `{ buildId, snapshotIds or "all", action, comment }`. "all" runs in chunks of 1,000 through scheduled mutations; the UI shows progress from `counts`. |
 | `baselines.list` | query | read | Paginated snapshots of the newest full approved build on the default branch. |
@@ -877,7 +877,7 @@ v1 stores every PNG in Convex File Storage. All storage code sits in `packages/b
 Nothing else in the backend touches `ctx.storage`. Moving to R2 means writing the R2 side of these four, then migrating images in batches and flipping `images.store` per row. A future R2 key layout: `a/{accountId}/img/{hash[0:2]}/{hash}.png`.
 
 Things to know about Convex File Storage URLs ([docs](https://docs.convex.dev/file-storage/serve-files)):
-- `getUrl` URLs are public and valid until the file is deleted. Anyone with the link can open the image, including images from private repos. The review UI never shows raw URLs, but they can leak through browser history or shared screenshots of devtools.
+- `getUrl` returns a signed URL, per the Convex guidelines in `packages/backend/convex/_generated/ai/guidelines.md`. Anyone holding the URL can open the image. How long a signed URL stays valid is not stated there (unverified), so treat it as long-lived and never store it; store the `Id<"_storage">` and call `getUrl` on read.
 - The open-source Convex backend sends `Cache-Control: private, max-age=2592000` on storage reads (unverified for hosted Convex). Browsers cache images for 30 days, shared CDNs do not. Images never change for a given file, so this is safe.
 - Every image view is Convex egress ($0.132/GB on Starter after 1 GB). The review page loads the viewer's images only, and the sidebar shows names, not thumbnails, to keep egress down.
 
@@ -891,7 +891,7 @@ In `packages/backend/convex/crons.ts` ([docs](https://docs.convex.dev/scheduling
 | `syncChecks` | every 5 min | Retries GitHub check updates that did not land. |
 | `pruneRows` | daily 03:00 UTC | Row pruning rules from the snapshots table. |
 | `deleteOldBuilds` | daily 03:30 UTC | Deletes builds of closed PRs older than `prRetentionDays`, and builds of branches with no activity for that long. |
-| `collectImages` | daily 04:00 UTC | Deletes images with no snapshot referencing them (checked through `by_image`) and not referenced for 24 hours, and their stored files. |
+| `collectImages` | daily 04:00 UTC | Deletes images with no snapshot referencing them (checked through `by_imageId`) and not referenced for 24 hours, and their stored files. |
 | `usage` | daily 05:00 UTC | Writes `usageDaily`, sets `accounts.storageBytes`, sets or clears `overLimitSince`. |
 | `cleanupEvents` | daily | Deletes `githubEvents` older than 7 days. |
 
