@@ -12,9 +12,14 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "convex": "^1.46.0"
+    "@auth/core": "^0.41.3",
+    "@convex-dev/auth": "^0.0.95",
+    "convex": "^1.46.0",
+    "jose": "^6.2.12"
   },
   "devDependencies": {
-    "convex-test": "^0.0.59"
+    "@edge-runtime/vm": "^5.0.0",
+    "convex-test": "^0.0.59",
+    "vite": "^8.3.0"
   }
 }

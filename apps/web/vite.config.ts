@@ -9,6 +9,11 @@ export default defineConfig(({ mode }) => {
   process.env.VITE_CONVEX_URL ??= backendEnv.CONVEX_URL;
 
   return {
-    plugins: [netlify(), tailwindcss(), tanstackStart(), viteReact()],
+    plugins: [
+      netlify({ dev: { edgeFunctions: { enabled: false } } }),
+      tailwindcss(),
+      tanstackStart(),
+      viteReact(),
+    ],
   };
 });

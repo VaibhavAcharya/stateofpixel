@@ -10,6 +10,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@auth/core": "^0.41.3",
+    "@convex-dev/auth": "^0.0.95",
     "@convex-dev/react-query": "^0.1.0",
     "@stateofpixel/backend": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",

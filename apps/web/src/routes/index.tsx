@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { SignIn } from "../components/SignIn";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -9,6 +10,7 @@ function Home() {
       <p className="mt-4 text-lg">
         Visual regression testing that runs in your CI.
       </p>
+      <SignIn />
     </main>
   );
 }
