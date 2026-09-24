@@ -17,6 +17,15 @@ pnpm dev
 
 `pnpm dev` runs `convex dev` and the web app on http://localhost:3000. The first `convex dev` asks you to log in and pick a Convex project, and writes `packages/backend/.env.local`. The web app reads `CONVEX_URL` from that file.
 
+## CLI
+
+```sh
+pnpm --filter stateofpixel build
+node packages/cli/dist/index.mjs compare <dir> <baseline-dir>
+```
+
+`compare` writes `stateofpixel-report/index.html`. Options: `--out <dir>`, `--threshold <0-1>` (default 0.1), `--include-aa`.
+
 ## Checks
 
 ```sh

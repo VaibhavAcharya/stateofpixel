@@ -17,9 +17,15 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "commander": "^15.0.0"
+    "commander": "^15.0.0",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0"
   },
   "devDependencies": {
+    "@types/pngjs": "^6.0.5",
     "tsdown": "^0.23.0"
+  },
+  "optionalDependencies": {
+    "odiff-bin": "^4.5.0"
   }
 }
