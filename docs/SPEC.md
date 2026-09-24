@@ -437,6 +437,15 @@ The GitHub provider uses the GitHub App's own client ID and secret, so the user 
 | billingCustomerId | string, optional | Payment provider id (M3). |
 | deletedAt | number, optional | |
 
+### accountMembers
+
+Which signed-in users can see which account. `me.refreshAccounts` rewrites a user's rows from `GET /user/installations` with the user's GitHub token, at sign-in and on the Install page.
+
+| Field | Type | Notes |
+|---|---|---|
+| userId | Id<"users"> | Index `by_userId`. |
+| accountId | Id<"accounts"> | Index `by_accountId_and_userId`. |
+
 ### projects
 
 | Field | Type | Notes |

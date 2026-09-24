@@ -85,6 +85,13 @@ export default defineSchema({
     .index("by_login", ["login"])
     .index("by_installationId", ["installationId"]),
 
+  accountMembers: defineTable({
+    userId: v.id("users"),
+    accountId: v.id("accounts"),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_accountId_and_userId", ["accountId", "userId"]),
+
   projects: defineTable({
     accountId: v.id("accounts"),
     githubRepoId: v.number(),

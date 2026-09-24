@@ -9,7 +9,11 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as githubWebhook from "../githubWebhook.js";
 import type * as http from "../http.js";
+import type * as installations from "../installations.js";
+import type * as lib_github from "../lib/github.js";
+import type * as me from "../me.js";
 import type * as users from "../users.js";
 
 import type {
@@ -20,7 +24,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  githubWebhook: typeof githubWebhook;
   http: typeof http;
+  installations: typeof installations;
+  "lib/github": typeof lib_github;
+  me: typeof me;
   users: typeof users;
 }>;
 
