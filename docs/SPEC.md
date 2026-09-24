@@ -736,7 +736,7 @@ Returns status, conclusion, counts, URL and `shards: { done, total }`. The CLI u
 In one internal query:
 1. For each SHA in `ancestors`, newest first, look up `by_projectId_and_buildName_and_commitSha` for this build name.
 2. Take the first build that is finalized, has conclusion `approved` or `no_changes`, and has `fullRows`.
-3. If none matches (shallow checkout, or a branch older than the 90-day full-row window), an action asks the GitHub compare API whether the newest 5 full builds on the baseline branch are ancestors of the head commit, and takes the newest one that is.
+3. If none matches (shallow checkout, or a branch older than the 90-day full-row window), the `POST /builds` action asks the GitHub compare API (`GET /repos/{owner}/{repo}/compare/{base}...{head}`, status `ahead` or `identical`) whether the newest 5 candidate builds on the baseline branch are ancestors of the head commit, and takes the newest one that is. It runs before the create mutation and only when the nonce has no build yet, so shards that join do not call GitHub.
 4. If still none, the build is an orphan. On a PR this shows a banner: "No baseline found for this branch. Rebase on main to compare."
 
 ### 7.7 Errors

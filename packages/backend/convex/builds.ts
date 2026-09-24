@@ -18,6 +18,8 @@ const MAX_ANCESTORS = 100;
 const BUILDS_PER_COMMIT = 10;
 const FINALIZE_PAGE_SIZE = 500;
 const MAX_SUPERSEDED_PER_FINALIZE = 100;
+const FALLBACK_CANDIDATES = 5;
+const FALLBACK_SCAN = 50;
 
 type Counts = Infer<typeof buildCounts>;
 
@@ -51,6 +53,7 @@ export const createOrJoin = internalMutation({
     }),
     ciProvider: v.optional(v.string()),
     ciRunUrl: v.optional(v.string()),
+    fallbackBaselineBuildId: v.optional(v.id("builds")),
   },
   returns: v.object({
     buildId: v.id("builds"),
@@ -160,14 +163,22 @@ async function createBuild(
     };
     ciProvider?: string;
     ciRunUrl?: string;
+    fallbackBaselineBuildId?: Id<"builds">;
   },
 ): Promise<Doc<"builds">> {
-  const baseline = await selectBaseline(
-    ctx,
-    project._id,
-    args.buildName,
-    args.git.ancestors,
-  );
+  const baseline =
+    (await selectBaseline(
+      ctx,
+      project._id,
+      args.buildName,
+      args.git.ancestors,
+    )) ??
+    (await getFallbackBaseline(
+      ctx,
+      project._id,
+      args.buildName,
+      args.fallbackBaselineBuildId,
+    ));
   const number = project.nextBuildNumber;
   await ctx.db.patch("projects", project._id, { nextBuildNumber: number + 1 });
 
@@ -232,6 +243,96 @@ async function selectBaseline(
   }
   return null;
 }
+
+async function getFallbackBaseline(
+  ctx: QueryCtx,
+  projectId: Id<"projects">,
+  buildName: string,
+  buildId: Id<"builds"> | undefined,
+): Promise<Doc<"builds"> | null> {
+  const build =
+    buildId === undefined ? null : await ctx.db.get("builds", buildId);
+  return build !== null &&
+    build.projectId === projectId &&
+    build.buildName === buildName &&
+    isBaselineCandidate(build)
+    ? build
+    : null;
+}
+
+export const fallbackBaselineCandidates = internalQuery({
+  args: {
+    projectId: v.id("projects"),
+    buildName: v.string(),
+    nonce: v.string(),
+    baselineBranch: v.string(),
+    ancestors: v.array(v.string()),
+  },
+  returns: v.array(
+    v.object({ buildId: v.id("builds"), commitSha: v.string() }),
+  ),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("builds")
+      .withIndex("by_projectId_and_buildName_and_nonce", (q) =>
+        q
+          .eq("projectId", args.projectId)
+          .eq("buildName", args.buildName)
+          .eq("nonce", args.nonce),
+      )
+      .unique();
+    if (
+      existing !== null ||
+      (await selectBaseline(
+        ctx,
+        args.projectId,
+        args.buildName,
+        args.ancestors,
+      )) !== null
+    ) {
+      return [];
+    }
+    const builds = await ctx.db
+      .query("builds")
+      .withIndex("by_projectId_and_branch", (q) =>
+        q.eq("projectId", args.projectId).eq("branch", args.baselineBranch),
+      )
+      .order("desc")
+      .take(FALLBACK_SCAN);
+    return builds
+      .filter(
+        (build) =>
+          build.buildName === args.buildName && isBaselineCandidate(build),
+      )
+      .slice(0, FALLBACK_CANDIDATES)
+      .map((build) => ({ buildId: build._id, commitSha: build.commitSha }));
+  },
+});
+
+export const githubRepository = internalQuery({
+  args: { projectId: v.id("projects") },
+  returns: v.union(
+    v.null(),
+    v.object({
+      installationId: v.number(),
+      owner: v.string(),
+      name: v.string(),
+    }),
+  ),
+  handler: async (ctx, { projectId }) => {
+    const project = await ctx.db.get("projects", projectId);
+    const account =
+      project === null ? null : await ctx.db.get("accounts", project.accountId);
+    if (project === null || account?.installationId === undefined) {
+      return null;
+    }
+    return {
+      installationId: account.installationId,
+      owner: project.owner,
+      name: project.name,
+    };
+  },
+});
 
 function isBaselineCandidate(build: Doc<"builds">): boolean {
   return (

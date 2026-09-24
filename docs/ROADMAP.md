@@ -25,7 +25,7 @@ Progress tracker for [PLAN.md](./PLAN.md). Details for each item are in [SPEC.md
 - [x] CI auth: GitHub Actions OIDC and project tokens
 - [x] `POST /builds`, shard complete, finalize (SPEC section 7)
 - [x] Uploads to Convex File Storage through `blobs.ts`
-- [ ] Baseline selection (ancestor lookup done, GitHub compare fallback left)
+- [x] Baseline selection
 - [ ] `stateofpixel upload <dir>`
 - [ ] GitHub check runs
 - [ ] Pages: account home, project builds list, build review page

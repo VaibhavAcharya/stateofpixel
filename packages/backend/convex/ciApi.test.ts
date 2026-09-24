@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
+import { exportPKCS8, generateKeyPair } from "jose";
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import type { Id } from "./_generated/dataModel";
 import { hashProjectToken } from "./lib/projectTokens";
@@ -10,15 +11,36 @@ const TOKEN = `sop_${"t".repeat(43)}`;
 
 type Test = ReturnType<typeof convexTest>;
 
-beforeAll(() => {
+let compareStatus = "ahead";
+let compareCalls: string[] = [];
+
+beforeAll(async () => {
+  const { privateKey } = await generateKeyPair("RS256", { extractable: true });
   vi.stubEnv("SITE_URL", "https://stateofpixel.test");
+  vi.stubEnv("GITHUB_APP_ID", "12345");
+  vi.stubEnv("GITHUB_APP_PRIVATE_KEY", await exportPKCS8(privateKey));
 });
 
 beforeEach(() => {
   vi.useFakeTimers();
+  compareStatus = "ahead";
+  compareCalls = [];
+  vi.stubGlobal("fetch", async (input: string | URL) => {
+    const { pathname } = new URL(input);
+    if (pathname === "/app/installations/10/access_tokens") {
+      return Response.json({ token: "ghs_installation" });
+    }
+    const compare = /^\/repos\/acme\/web-app\/compare\/(.+)$/.exec(pathname);
+    if (compare?.[1] !== undefined) {
+      compareCalls.push(compare[1]);
+      return Response.json({ status: compareStatus });
+    }
+    return new Response("not found", { status: 404 });
+  });
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
@@ -284,6 +306,22 @@ it("compares a build against the nearest approved ancestor", async () => {
       approved: 0,
     },
   });
+});
+
+it("asks GitHub for a baseline when no ancestor has a build", async () => {
+  const { t } = await setup();
+  const images = [{ name: "Header", content: "header-v1" }];
+  await runBuild(t, { commit: "c1", images });
+  expect(compareCalls).toEqual([]);
+
+  const shallow = await runBuild(t, { commit: "c2", images, prNumber: 7 });
+  expect(compareCalls).toEqual(["c1...c2"]);
+  expect(shallow.created.baseline).toEqual({ buildNumber: 1, commit: "c1" });
+  expect(shallow.build.counts).toMatchObject({ unchanged: 1 });
+
+  compareStatus = "diverged";
+  const unrelated = await runBuild(t, { commit: "c3", images, prNumber: 8 });
+  expect(unrelated.created.baseline).toBeNull();
 });
 
 it("treats byte-different but pixel-identical images as unchanged", async () => {

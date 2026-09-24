@@ -13,6 +13,7 @@ import {
   finalizeRequest,
   uploadUrlsRequest,
 } from "./lib/ciRequests";
+import { createInstallationToken, isAncestor } from "./lib/github";
 
 const CHUNK_SIZE = 1000;
 const MAX_METADATA_BYTES = 4096;
@@ -165,10 +166,11 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
   checkHashes(body.snapshots.map((snapshot) => snapshot.hash));
   checkMetadata(body.snapshots);
   checkOidcCommit(auth, body.git);
+  const buildName = body.buildName ?? "default";
 
   const build = await ctx.runMutation(internal.builds.createOrJoin, {
     projectId: auth.project.id,
-    buildName: body.buildName ?? "default",
+    buildName,
     nonce: body.nonce,
     shardIndex: body.shard.index,
     shardsTotal: body.shard.total,
@@ -184,6 +186,12 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
     },
     ciProvider: body.ci?.provider,
     ciRunUrl: body.ci?.runUrl,
+    fallbackBaselineBuildId: await findFallbackBaseline(
+      ctx,
+      auth,
+      buildName,
+      body,
+    ),
   });
 
   const lookups = (
@@ -222,6 +230,48 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
     warnings: [],
   });
 });
+
+async function findFallbackBaseline(
+  ctx: ActionCtx,
+  auth: CiAuth,
+  buildName: string,
+  body: CreateBuildRequest,
+): Promise<Id<"builds"> | undefined> {
+  const candidates = await ctx.runQuery(
+    internal.builds.fallbackBaselineCandidates,
+    {
+      projectId: auth.project.id,
+      buildName,
+      nonce: body.nonce,
+      baselineBranch: body.git.baselineBranch,
+      ancestors: body.git.ancestors,
+    },
+  );
+  if (candidates.length === 0) {
+    return undefined;
+  }
+  const repository = await ctx.runQuery(internal.builds.githubRepository, {
+    projectId: auth.project.id,
+  });
+  if (repository === null) {
+    return undefined;
+  }
+  const token = await createInstallationToken(repository.installationId);
+  for (const candidate of candidates) {
+    if (
+      await isAncestor(
+        token,
+        repository.owner,
+        repository.name,
+        candidate.commitSha,
+        body.git.commit,
+      )
+    ) {
+      return candidate.buildId;
+    }
+  }
+  return undefined;
+}
 
 async function createUploadUrls(
   ctx: ActionCtx,

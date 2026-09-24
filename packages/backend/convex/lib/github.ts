@@ -215,3 +215,27 @@ export async function isOrgOwner(
     throw error;
   }
 }
+
+export async function isAncestor(
+  installationToken: string,
+  owner: string,
+  name: string,
+  base: string,
+  head: string,
+): Promise<boolean> {
+  try {
+    const { status } = await githubRequest<{ status: string }>(
+      installationToken,
+      `/repos/${owner}/${name}/compare/${base}...${head}?per_page=1`,
+    );
+    return status === "ahead" || status === "identical";
+  } catch (error) {
+    if (
+      error instanceof GithubError &&
+      (error.status === 404 || error.status === 422)
+    ) {
+      return false;
+    }
+    throw error;
+  }
+}
