@@ -1,0 +1,20 @@
+{
+  "name": "@stateofpixel/backend",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./api": "./convex/_generated/api.js",
+    "./dataModel": "./convex/_generated/dataModel.d.ts"
+  },
+  "scripts": {
+    "dev": "convex dev",
+    "typecheck": "tsc -p convex",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "convex": "^1.46.0"
+  },
+  "devDependencies": {
+    "convex-test": "^0.0.59"
+  }
+}

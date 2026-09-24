@@ -1,0 +1,8 @@
+[build]
+  command = "cd ../../packages/backend && pnpm exec convex deploy --cmd 'pnpm --filter @stateofpixel/web build' --cmd-url-env-var-name VITE_CONVEX_URL"
+  publish = "dist/client"
+
+[dev]
+  command = "pnpm dev"
+  targetPort = 3000
+  port = 8888
