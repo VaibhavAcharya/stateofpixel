@@ -193,3 +193,20 @@ it("is available when the deployment has a key and products", async () => {
   expect(await t.query(api.billing.available, {})).toBe(false);
   vi.stubEnv("DODO_PAYMENTS_ENVIRONMENT", "test_mode");
 });
+
+it("keeps the plan while a renewal payment fails, and records it", async () => {
+  const { t, accountId, account } = await setup();
+  const event = (type: string, status: string) =>
+    subscriptionEvent(type, { accountId, subscriptionId: "sub_1", status });
+  await deliver(t, event("subscription.active", "active"));
+  await deliver(t, event("subscription.on_hold", "on_hold"));
+  expect(await account()).toMatchObject({
+    plan: "25gb",
+    billingStatus: "on_hold",
+  });
+  await deliver(t, event("subscription.renewed", "active"));
+  expect(await account()).toMatchObject({
+    plan: "25gb",
+    billingStatus: "active",
+  });
+});

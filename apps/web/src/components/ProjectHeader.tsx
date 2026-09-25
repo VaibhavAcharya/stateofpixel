@@ -65,7 +65,9 @@ export function ProjectHeader({
           </a>
         }
       />
-      {access?.storage && <StorageBanner storage={access.storage} />}
+      {access?.storage && (
+        <StorageBanner owner={owner} storage={access.storage} />
+      )}
       <nav className="mb-6 flex gap-5 border-b border-border">
         {tabs.map((item) => (
           <Link

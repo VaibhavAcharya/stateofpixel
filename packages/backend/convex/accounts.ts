@@ -91,7 +91,10 @@ export const home = query({
       type: v.union(v.literal("user"), v.literal("org")),
       installationSettingsUrl: v.union(v.string(), v.null()),
       storage: storageUsage,
-      subscribed: v.boolean(),
+      subscription: v.union(
+        v.null(),
+        v.object({ id: v.string(), status: v.string() }),
+      ),
       billingCustomer: v.boolean(),
     }),
   ),
@@ -110,7 +113,13 @@ export const home = query({
             ? `https://github.com/organizations/${account.login}/settings/installations/${account.installationId}`
             : `https://github.com/settings/installations/${account.installationId}`,
       storage: toStorageUsage(account),
-      subscribed: account.billingSubscriptionId !== undefined,
+      subscription:
+        account.billingSubscriptionId === undefined
+          ? null
+          : {
+              id: account.billingSubscriptionId,
+              status: account.billingStatus ?? "active",
+            },
       billingCustomer: account.billingCustomerId !== undefined,
     };
   },

@@ -254,6 +254,8 @@ it("links a signed-in user to their installations", async () => {
       login: "acme",
       type: "org",
       installed: true,
+      plan: "free",
+      subscribed: false,
     },
   ]);
   const projects = await user.query(api.accounts.projects, {

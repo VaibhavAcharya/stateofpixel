@@ -11,6 +11,7 @@ import {
 } from "./_generated/server";
 import { syncInstallation } from "./installations";
 import { GithubError, listUserInstallations } from "./lib/github";
+import { plan } from "./schema";
 
 const MAX_ACCOUNTS = 100;
 
@@ -21,6 +22,8 @@ export const accounts = query({
       login: v.string(),
       type: v.union(v.literal("user"), v.literal("org")),
       installed: v.boolean(),
+      plan,
+      subscribed: v.boolean(),
     }),
   ),
   handler: async (ctx) => {
@@ -43,6 +46,8 @@ export const accounts = query({
         login: account.login,
         type: account.type,
         installed: account.installationId !== undefined,
+        plan: account.plan,
+        subscribed: account.billingSubscriptionId !== undefined,
       });
     }
     return result.sort((a, b) => a.login.localeCompare(b.login));

@@ -1,13 +1,23 @@
 import { WarningIcon } from "@phosphor-icons/react/ssr";
+import { api } from "@stateofpixel/backend/api";
 import {
   formatGigabytes,
   graceEndsAt,
   type StorageUsage,
   storageState,
 } from "@stateofpixel/backend/storage";
+import { Link } from "@tanstack/react-router";
+import { useQuery } from "convex-helpers/react/cache/hooks";
 import { SUPPORT_EMAIL } from "../lib/supportEmail";
 
-export function StorageBanner({ storage }: { storage: StorageUsage }) {
+export function StorageBanner({
+  owner,
+  storage,
+}: {
+  owner: string;
+  storage: StorageUsage;
+}) {
+  const billingAvailable = useQuery(api.billing.available);
   const now = Date.now();
   const state = storageState(storage, now);
   if (state === "ok") {
@@ -35,15 +45,34 @@ export function StorageBanner({ storage }: { storage: StorageUsage }) {
         className={`shrink-0 ${state === "warning" ? "text-changed" : "text-failed"}`}
       />
       <span>
-        {message} Lower retention in project settings to free space, or write to{" "}
-        <a
-          href={`mailto:${SUPPORT_EMAIL}`}
-          className="font-medium text-link"
-          data-umami-event="Email"
-        >
-          {SUPPORT_EMAIL}
-        </a>{" "}
-        for a bigger plan.
+        {message} Lower retention in project settings to free space, or{" "}
+        {billingAvailable ? (
+          <>
+            <Link
+              to="/$owner"
+              params={{ owner }}
+              hash="plan"
+              className="font-medium text-link"
+              data-umami-event="Upgrade hint"
+              data-umami-event-source="storage banner"
+            >
+              upgrade the plan
+            </Link>
+            .
+          </>
+        ) : (
+          <>
+            write to{" "}
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="font-medium text-link"
+              data-umami-event="Email"
+            >
+              {SUPPORT_EMAIL}
+            </a>{" "}
+            for a bigger plan.
+          </>
+        )}
       </span>
     </p>
   );

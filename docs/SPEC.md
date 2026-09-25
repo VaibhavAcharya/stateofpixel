@@ -232,7 +232,7 @@ URL scheme mirrors GitHub: `/{owner}/{repo}`. Public pages (5.1) are server-rend
 | `/brand` | Logo files to download, usage rules, colors and type. |
 | `/privacy`, `/terms`, `/refunds` | Legal pages. Support email `hello@stateofpixel.com`. |
 
-When billing is available (`billing.available`), each paid plan in the pricing block shows a "Choose {n} GB" menu to a signed-in user, listing their installed accounts; picking one opens checkout for the chosen period. Otherwise paid plans show "Coming soon".
+Paid plans in the pricing block show "Coming soon" until billing is available (`billing.available`). Upgrading happens only from the plan box on the account home (5.3).
 
 These paths shadow GitHub accounts with the same login. Docs pages are not built yet.
 
@@ -258,12 +258,14 @@ Shown when the signed-in user has no installations. One button to the GitHub App
 +--------------------------------------------------------------+
 ```
 
-- Account switcher for users in several orgs.
+- Account switcher for users in several orgs. Each account shows its plan in muted text. When billing is available and the current account has no subscription, the menu has an "Upgrade plan" item that links to the plan box.
 - One row per project: name, latest build number, branch, conclusion pill, relative time.
 - Storage meter links to the Usage page (owners only; others see no meter). It ships with the Usage page (M3).
-- Storage banner from 80% of the limit (4.10). The same banner shows on project pages to users with write access.
+- Storage banner from 80% of the limit (4.10). The same banner shows on project pages to users with write access. When billing is available it links to the plan box ("upgrade the plan"); otherwise it points to the support email.
 - "Configure access on GitHub" links to the installation settings.
 - Plan box above the projects: plan name and storage used. When billing is available, it shows an Upgrade menu (paid plans, monthly and yearly) while the account has no subscription, and Manage billing once it has a billing customer. Both buttons show to every member; the actions check for an owner and the box shows the error.
+- Checkout returns to `/{owner}?subscription_id=...&status=...`. The status is a hint from Dodo, never proof of payment, so the plan box only says what happens next: "Payment received. Your plan updates in a few seconds." until the webhook makes that subscription active, then "Payment received. You are on the 25 GB plan."; "Your payment is processing" for `pending`; and for any other status, "The payment did not go through, so your plan did not change." The notice can be dismissed, which removes the query.
+- When a renewal fails (`on_hold` or `past_due`), the plan box says "Your last payment failed" and points to Manage billing. The plan stays until Dodo cancels the subscription.
 
 ### 5.4 Project page (`/{owner}/{repo}`)
 
@@ -443,6 +445,7 @@ The GitHub provider uses the GitHub App's own client ID and secret, so the user 
 | overLimitSince | number, optional | Start of grace period. Set when `storageBytes` reaches the limit, cleared when it drops under. |
 | billingCustomerId | string, optional | Dodo Payments customer id, set by the first active subscription. |
 | billingSubscriptionId | string, optional | The Dodo Payments subscription that sets the plan. Cleared when it ends. |
+| billingStatus | string, optional | Dodo status of that subscription, like `active` or `on_hold`. |
 | deletedAt | number, optional | |
 
 ### accountMembers
@@ -781,7 +784,7 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 | `me.refreshAccounts` | action | signed in | `GET /user/installations` with the user token, links the user to accounts. Runs at sign-in and from "Refresh" on the Install page. |
 | `permissions.refresh` | action | signed in | See above. Writes `none` when GitHub answers 404. `orgOwner` comes from the org membership role, or from the login for a user account. |
 | `projects.access` | query | signed in | Project id, cached permission, whether it is fresh, `canRead` and `canWrite`, and the account's storage usage when the user can write. The page calls `permissions.refresh` while it is not fresh. |
-| `accounts.home` | query | account member | The account, its installation settings URL, its storage usage (plan, bytes, limit, `overLimitSince`), and whether it has a subscription and a billing customer. The page works out the storage state with the clock, since queries do not read it. |
+| `accounts.home` | query | account member | The account, its installation settings URL, its storage usage (plan, bytes, limit, `overLimitSince`), its subscription id and status, and whether it has a billing customer. The page works out the storage state with the clock, since queries do not read it. |
 | `accounts.setPlan` | internal mutation | Convex dashboard or `npx convex run` | Sets `plan` and `storageLimitBytes`. A `custom` plan takes the limit as an argument. For plans set by hand; paid plans come from billing. |
 | `accounts.projects` | query | account member | Paginated projects with their latest build, searchable, sorted by name or last build. |
 | `builds.list` | query | read | Paginated with `.paginate()`, filters branch, pull request and a list of states. |
@@ -813,9 +816,9 @@ Dodo sends subscription events to the HTTP action `POST /dodo/webhook`. It verif
 
 | Subscription status | Action |
 |---|---|
-| `active` | Set the plan of its product, `billingCustomerId` and `billingSubscriptionId`. |
+| `active` | Set the plan of its product, `billingCustomerId`, `billingSubscriptionId` and `billingStatus`. |
 | `cancelled`, `expired`, `failed` | If it is the account's `billingSubscriptionId`, move to `free` and clear it. |
-| other (`on_hold`, `past_due`, `paused`, `pending`) | No change. |
+| other (`on_hold`, `past_due`, `paused`, `pending`) | If it is the account's `billingSubscriptionId`, set `billingStatus`. The plan stays. |
 
 Moving to `free` can put the account over its limit, which starts the grace period of section 4.10.
 

@@ -5,6 +5,7 @@ import {
   MonitorIcon,
   MoonIcon,
   PlusIcon,
+  RocketLaunchIcon,
   SignOutIcon,
   SquaresFourIcon,
   SunIcon,
@@ -15,6 +16,7 @@ import { useQuery } from "convex-helpers/react/cache/hooks";
 import type { ReactNode } from "react";
 import { type Theme, useTheme } from "../lib/theme";
 import { Menu, MenuLabel, MenuSeparator, menuItemClass } from "./Menu";
+import { PLAN_NAMES } from "./PlanBox";
 import { Avatar, accountAvatar, Logo } from "./ui";
 
 function Slash() {
@@ -74,6 +76,8 @@ export function AppHeader({
 function AccountSwitcher({ owner }: { owner?: string }) {
   const accounts = useQuery(api.me.accounts);
   const installUrl = useQuery(api.me.installUrl);
+  const billingAvailable = useQuery(api.billing.available);
+  const current = accounts?.find((account) => account.login === owner);
 
   return (
     <Menu
@@ -114,11 +118,30 @@ function AccountSwitcher({ owner }: { owner?: string }) {
         >
           <Avatar src={accountAvatar(account.login)} size={18} square />
           <span className="min-w-0 flex-1 truncate">{account.login}</span>
+          <span className="shrink-0 text-xs text-muted">
+            {PLAN_NAMES[account.plan]}
+          </span>
           {account.login === owner && (
             <CheckIcon size={14} className="shrink-0 text-muted" />
           )}
         </Link>
       ))}
+      {billingAvailable && current !== undefined && !current.subscribed && (
+        <>
+          <MenuSeparator />
+          <Link
+            to="/$owner"
+            params={{ owner: current.login }}
+            hash="plan"
+            className={`${menuItemClass} text-muted`}
+            data-umami-event="Upgrade hint"
+            data-umami-event-source="account switcher"
+          >
+            <RocketLaunchIcon size={16} className="shrink-0" />
+            Upgrade plan
+          </Link>
+        </>
+      )}
       {installUrl !== undefined && (
         <>
           <MenuSeparator />

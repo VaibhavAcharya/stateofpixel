@@ -1,4 +1,10 @@
-import { CaretDownIcon } from "@phosphor-icons/react/ssr";
+import {
+  CaretDownIcon,
+  CheckCircleIcon,
+  InfoIcon,
+  WarningIcon,
+  XIcon,
+} from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import {
   formatGigabytes,
@@ -22,7 +28,7 @@ import {
 } from "./Menu";
 import { buttonClass } from "./ui";
 
-const PLAN_NAMES = {
+export const PLAN_NAMES = {
   free: "Free",
   "25gb": "25 GB",
   "100gb": "100 GB",
@@ -30,55 +36,159 @@ const PLAN_NAMES = {
   custom: "Custom",
 } as const;
 
+export type CheckoutResult = { subscriptionId: string; status: string };
+
+type Notice = { tone: "success" | "info" | "error"; text: string };
+
+const NOTICE_STYLES = {
+  success: {
+    box: "bg-approved-bg",
+    icon: "text-approved",
+    Icon: CheckCircleIcon,
+  },
+  info: { box: "bg-pending-bg", icon: "text-pending", Icon: InfoIcon },
+  error: { box: "bg-failed-bg", icon: "text-failed", Icon: WarningIcon },
+} as const;
+
+const PAID_STATUSES = new Set(["active", "succeeded"]);
+const PROCESSING_STATUSES = new Set(["pending", "processing"]);
+const FAILED_RENEWAL_STATUSES = new Set(["on_hold", "past_due"]);
+
+function planNotice(
+  planName: string,
+  subscription: Subscription | null,
+  checkoutResult: CheckoutResult | null,
+): Notice | null {
+  if (checkoutResult !== null) {
+    if (PAID_STATUSES.has(checkoutResult.status)) {
+      return subscription?.id === checkoutResult.subscriptionId &&
+        subscription.status === "active"
+        ? {
+            tone: "success",
+            text: `Payment received. You are on the ${planName} plan.`,
+          }
+        : {
+            tone: "info",
+            text: "Payment received. Your plan updates in a few seconds.",
+          };
+    }
+    if (PROCESSING_STATUSES.has(checkoutResult.status)) {
+      return {
+        tone: "info",
+        text: "Your payment is processing. Your plan changes once it clears.",
+      };
+    }
+    return {
+      tone: "error",
+      text: "The payment did not go through, so your plan did not change. Try again, or use another card.",
+    };
+  }
+  if (
+    subscription !== null &&
+    FAILED_RENEWAL_STATUSES.has(subscription.status)
+  ) {
+    return {
+      tone: "error",
+      text: `Your last payment failed. Update your payment method in Manage billing to keep the ${planName} plan.`,
+    };
+  }
+  return null;
+}
+
+type Subscription = { id: string; status: string };
+
 export function PlanBox({
   login,
   storage,
-  subscribed,
+  subscription,
   billingCustomer,
+  checkoutResult,
+  onDismissCheckout,
 }: {
   login: string;
   storage: StorageUsage & { plan: keyof typeof PLAN_NAMES };
-  subscribed: boolean;
+  subscription: Subscription | null;
   billingCustomer: boolean;
+  checkoutResult: CheckoutResult | null;
+  onDismissCheckout: () => void;
 }) {
   const available = useQuery(api.billing.available);
   const billing = useBilling();
+  const planName = PLAN_NAMES[storage.plan];
+  const notice = planNotice(planName, subscription, checkoutResult);
   return (
-    <section className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface px-4 py-3 ring-1 ring-border">
-      <div className="text-sm">
-        <span className="font-medium">{PLAN_NAMES[storage.plan]} plan</span>
-        <span className="text-muted tabular-nums">
-          {" "}
-          · {formatGigabytes(storage.storageBytes)} of{" "}
-          {formatGigabytes(storage.storageLimitBytes)} used
-        </span>
-        {billing.error !== null && (
-          <p className="mt-1 text-failed">{billing.error}</p>
-        )}
-      </div>
-      {available && (
-        <div className="flex gap-2">
-          {billingCustomer && (
-            <button
-              type="button"
-              className={buttonClass()}
-              disabled={billing.pending}
-              onClick={() => void billing.manage(login)}
-            >
-              Manage billing
-            </button>
-          )}
-          {!subscribed && (
-            <UpgradeMenu
-              pending={billing.pending}
-              onChoose={(plan, interval) =>
-                void billing.checkout(login, plan, interval)
-              }
-            />
+    <div id="plan" className="mb-6 flex scroll-mt-4 flex-col gap-2">
+      {notice !== null && (
+        <PlanNotice
+          notice={notice}
+          onDismiss={checkoutResult === null ? undefined : onDismissCheckout}
+        />
+      )}
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface px-4 py-3 ring-1 ring-border">
+        <div className="text-sm">
+          <span className="font-medium">{planName} plan</span>
+          <span className="text-muted tabular-nums">
+            {" "}
+            · {formatGigabytes(storage.storageBytes)} of{" "}
+            {formatGigabytes(storage.storageLimitBytes)} used
+          </span>
+          {billing.error !== null && (
+            <p className="mt-1 text-failed">{billing.error}</p>
           )}
         </div>
+        {available && (
+          <div className="flex gap-2">
+            {billingCustomer && (
+              <button
+                type="button"
+                className={buttonClass()}
+                disabled={billing.pending}
+                onClick={() => void billing.manage(login)}
+              >
+                Manage billing
+              </button>
+            )}
+            {subscription === null && (
+              <UpgradeMenu
+                pending={billing.pending}
+                onChoose={(plan, interval) =>
+                  void billing.checkout(login, plan, interval)
+                }
+              />
+            )}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function PlanNotice({
+  notice,
+  onDismiss,
+}: {
+  notice: Notice;
+  onDismiss?: () => void;
+}) {
+  const { box, icon, Icon } = NOTICE_STYLES[notice.tone];
+  return (
+    <p
+      role="status"
+      className={`flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-sm ${box}`}
+    >
+      <Icon size={16} className={`shrink-0 ${icon}`} />
+      <span className="flex-1">{notice.text}</span>
+      {onDismiss !== undefined && (
+        <button
+          type="button"
+          aria-label="Dismiss"
+          className="rounded-sm p-1 text-muted hover:text-text"
+          onClick={onDismiss}
+        >
+          <XIcon size={12} />
+        </button>
       )}
-    </section>
+    </p>
   );
 }
 

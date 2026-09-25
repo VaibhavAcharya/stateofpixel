@@ -16,11 +16,23 @@ import {
   EmptyState,
 } from "../../components/ui";
 import { prefetchAccount } from "../../lib/prefetch";
-import { validateProjectSearch } from "../../lib/projectSearch";
+import {
+  type ProjectSearch,
+  validateProjectSearch,
+} from "../../lib/projectSearch";
 import { useListKeys } from "../../lib/useListKeys";
 
 export const Route = createFileRoute("/$owner/")({
-  validateSearch: validateProjectSearch,
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): ProjectSearch & { subscription_id?: string; status?: string } => ({
+    ...validateProjectSearch(search),
+    subscription_id:
+      typeof search.subscription_id === "string"
+        ? search.subscription_id
+        : undefined,
+    status: typeof search.status === "string" ? search.status : undefined,
+  }),
   loader: ({ context, params }) =>
     prefetchAccount(context.convex, params.owner),
   component: AccountPage,
@@ -82,12 +94,31 @@ function AccountHome({ owner }: { owner: string }) {
       />
       {home !== undefined && (
         <>
-          <StorageBanner storage={home.storage} />
+          <StorageBanner owner={owner} storage={home.storage} />
           <PlanBox
             login={owner}
             storage={home.storage}
-            subscribed={home.subscribed}
+            subscription={home.subscription}
             billingCustomer={home.billingCustomer}
+            checkoutResult={
+              search.subscription_id === undefined ||
+              search.status === undefined
+                ? null
+                : {
+                    subscriptionId: search.subscription_id,
+                    status: search.status,
+                  }
+            }
+            onDismissCheckout={() =>
+              void navigate({
+                search: (prev) => ({
+                  ...prev,
+                  subscription_id: undefined,
+                  status: undefined,
+                }),
+                replace: true,
+              })
+            }
           />
         </>
       )}

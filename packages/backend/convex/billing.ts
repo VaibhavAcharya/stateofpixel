@@ -246,14 +246,19 @@ export const syncSubscription = internalMutation({
         ...planFields(account, plan),
         billingCustomerId: args.customerId,
         billingSubscriptionId: args.subscriptionId,
+        billingStatus: args.status,
       });
-    } else if (
-      isEndedStatus(args.status) &&
-      account.billingSubscriptionId === args.subscriptionId
-    ) {
+    } else if (account.billingSubscriptionId !== args.subscriptionId) {
+      return null;
+    } else if (isEndedStatus(args.status)) {
       await ctx.db.patch("accounts", account._id, {
         ...planFields(account, "free"),
         billingSubscriptionId: undefined,
+        billingStatus: undefined,
+      });
+    } else {
+      await ctx.db.patch("accounts", account._id, {
+        billingStatus: args.status,
       });
     }
     return null;

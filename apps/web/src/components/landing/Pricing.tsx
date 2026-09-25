@@ -1,13 +1,11 @@
 import { CheckIcon } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
-import { useConvexAuth } from "convex/react";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useState } from "react";
 import { SUPPORT_EMAIL } from "../../lib/supportEmail";
-import { type PaidPlan, useBilling } from "../../lib/useBilling";
-import { Menu, MenuLabel, menuItemClass, useCloseMenu } from "../Menu";
+import type { PaidPlan } from "../../lib/useBilling";
 import { AuthButton } from "../SignIn";
-import { Avatar, accountAvatar, buttonClass, LeadCopy } from "../ui";
+import { LeadCopy } from "../ui";
 
 const SECTION = "mx-auto max-w-[1448px] px-6 py-24 max-sm:px-4 max-sm:py-12";
 
@@ -403,88 +401,12 @@ function TierCard({
           </li>
         ))}
       </ul>
-      {free ? (
+      {free && (
         <div className="mt-auto pt-6">
           <AuthButton label="Install the GitHub App" />
         </div>
-      ) : (
-        available &&
-        tier.plan !== "free" && (
-          <ChooseAccount
-            plan={tier.plan}
-            gigabytes={tier.gigabytes}
-            billing={billing}
-          />
-        )
       )}
     </div>
-  );
-}
-
-function ChooseAccount({
-  plan,
-  gigabytes,
-  billing,
-}: {
-  plan: PaidPlan;
-  gigabytes: number;
-  billing: Billing;
-}) {
-  const { isAuthenticated } = useConvexAuth();
-  const accounts = useQuery(api.me.accounts, isAuthenticated ? {} : "skip");
-  const checkout = useBilling();
-  const installed = accounts?.filter((account) => account.installed) ?? [];
-  if (installed.length === 0) {
-    return null;
-  }
-  return (
-    <div className="mt-auto pt-6">
-      <Menu
-        label={`Choose ${gigabytes} GB`}
-        triggerClassName={`${buttonClass()} w-full`}
-        trigger={
-          checkout.pending ? "Opening checkout" : `Choose ${gigabytes} GB`
-        }
-      >
-        <MenuLabel>For account</MenuLabel>
-        {installed.map((account) => (
-          <AccountItem
-            key={account.login}
-            login={account.login}
-            onChoose={() =>
-              void checkout.checkout(account.login, plan, billing)
-            }
-          />
-        ))}
-      </Menu>
-      {checkout.error !== null && (
-        <p className="mt-2 text-xs text-failed">{checkout.error}</p>
-      )}
-    </div>
-  );
-}
-
-function AccountItem({
-  login,
-  onChoose,
-}: {
-  login: string;
-  onChoose: () => void;
-}) {
-  const close = useCloseMenu();
-  return (
-    <button
-      type="button"
-      className={menuItemClass}
-      data-umami-event="Checkout"
-      onClick={() => {
-        close();
-        onChoose();
-      }}
-    >
-      <Avatar src={accountAvatar(login)} size={16} square />
-      {login}
-    </button>
   );
 }
 
