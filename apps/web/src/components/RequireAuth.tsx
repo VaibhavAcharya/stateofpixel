@@ -1,7 +1,7 @@
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import type { ReactNode } from "react";
-import { SignIn } from "./SignIn";
-import { LeadCopy, SkeletonRows } from "./ui";
+import { SignInScreen } from "./SignIn";
+import { Skeleton } from "./ui";
 
 export function RequireAuth({
   redirectTo,
@@ -13,17 +13,14 @@ export function RequireAuth({
   return (
     <>
       <AuthLoading>
-        <main className="mx-auto max-w-[1200px] px-6 pt-6">
-          <SkeletonRows />
-        </main>
+        <div className="flex h-12 items-center gap-3 border-b border-border bg-surface px-4">
+          <Skeleton className="size-5 rounded-xs" />
+          <Skeleton className="h-3 w-28 rounded-xs" />
+          <Skeleton className="ml-auto size-6 rounded-full" />
+        </div>
       </AuthLoading>
       <Unauthenticated>
-        <main className="mx-auto max-w-[1200px] px-6 pt-6">
-          <LeadCopy title="Sign in to continue.">
-            Access comes from your GitHub permissions on the repository.
-          </LeadCopy>
-          <SignIn redirectTo={redirectTo} />
-        </main>
+        <SignInScreen redirectTo={redirectTo} />
       </Unauthenticated>
       <Authenticated>{children}</Authenticated>
     </>

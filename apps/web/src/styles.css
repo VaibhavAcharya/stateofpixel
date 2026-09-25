@@ -76,6 +76,29 @@
 
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --color-shimmer: #0000000a;
+
+  --animate-enter: enter 250ms var(--ease-out-strong);
+  --animate-fade: fade 100ms ease-out;
+  --animate-shimmer: shimmer 1.5s linear infinite;
+
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes shimmer {
+    to {
+      background-position: -200% 0;
+    }
+  }
 }
 
 @layer base {
@@ -114,6 +137,7 @@
     --color-canvas: #000000;
     --color-checker-a: #1a1a1a;
     --color-checker-b: #292929;
+    --color-shimmer: #ffffff0d;
     --shadow-menu: 0 8px 30px #00000066, 0 2px 6px #0000003d;
     --shadow-tooltip: 0 4px 16px #00000066;
     --shadow-field-focus:
@@ -128,6 +152,19 @@
     color: var(--color-text);
     font: 400 13px / 20px var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-link) 22%, transparent);
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
   :focus-visible {
     outline: 2px solid var(--color-focus);
@@ -142,6 +179,24 @@
       scroll-behavior: auto !important;
     }
   }
+}
+
+@utility mono {
+  font-family: var(--font-mono);
+  font-size: 0.925em;
+  font-variant-ligatures: none;
+}
+
+@utility skeleton {
+  background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--color-shimmer) 50%,
+      transparent 100%
+    )
+    var(--color-surface-2);
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
 }
 
 @layer components {

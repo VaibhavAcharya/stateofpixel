@@ -1,4 +1,4 @@
-import { CheckCircle, Warning } from "@phosphor-icons/react/ssr";
+import { CheckCircle, Warning, X } from "@phosphor-icons/react/ssr";
 import { useCallback, useEffect, useState } from "react";
 
 export type ToastMessage = {
@@ -53,13 +53,22 @@ function Toast({
   return (
     <div
       role={toast.tone === "error" ? "alert" : "status"}
-      className="pointer-events-auto flex w-full max-w-[420px] items-center gap-2 rounded-md border border-border bg-surface px-3 py-2.5 text-sm shadow-menu"
+      className="pointer-events-auto flex w-full max-w-[420px] animate-enter items-start gap-2.5 rounded-md bg-surface py-2.5 pr-2 pl-3 text-sm shadow-menu ring-1 ring-border"
     >
       <Icon
         size={16}
-        className={toast.tone === "success" ? "text-approved" : "text-failed"}
+        weight="fill"
+        className={`mt-0.5 shrink-0 ${toast.tone === "success" ? "text-approved" : "text-failed"}`}
       />
-      {toast.text}
+      <span className="min-w-0 flex-1">{toast.text}</span>
+      <button
+        type="button"
+        aria-label="Dismiss"
+        className="-my-0.5 flex size-6 shrink-0 items-center justify-center rounded-sm text-muted hover:bg-hover hover:text-text"
+        onClick={() => dismiss(toast.id)}
+      >
+        <X size={12} />
+      </button>
     </div>
   );
 }

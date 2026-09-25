@@ -81,7 +81,7 @@ UI font: IBM Plex Sans (SIL OFL 1.1). Mono: Lilex (OFL 1.1), a programming font 
 | `text-2xl` | 24 / 34 | 450 and 600 | -0.035em | Empty-state and landing lead copy |
 | `text-display` | clamp(40px, 4.6vw, 66px) / 1.13 | 400 | -0.05em | Landing only, Playfair Display |
 
-Rules. Numbers (counts, diff percent, sizes, build numbers) use `font-variant-numeric: tabular-nums`. Hashes, snapshot names, branch names and file paths use Lilex at the same size as the text around them. Max prose width is 65ch (docs, empty states). Headings use `text-wrap: balance`.
+Rules. Numbers (counts, diff percent, sizes, build numbers) use `font-variant-numeric: tabular-nums`. Hashes, branch names and file paths use Lilex through the `mono` utility, which sets it at 0.925em of the text around it: Lilex at the same pixel size reads larger than Plex Sans and pushes rows wider. Snapshot names use Plex Sans: the parent path in `muted`, the last segment in `text`, and the viewport suffix (`[1280]`) as a separate `mono` `muted` label that never truncates. Max prose width is 65ch (docs, empty states). Headings use `text-wrap: balance`.
 
 The lead-copy pattern is the most recognisable onkeiki trait worth borrowing: a bold phrase in `text` followed by a sentence in `muted` at the same size, in one paragraph. "No builds yet. Add three lines to your CI and push." Use it for empty states, the install page and the landing hero, nowhere else.
 
@@ -250,9 +250,9 @@ Inputs. Height 32px, padding 0 10px, radius `radius-md`, `surface` fill, border 
 
 Pills. Height 20px, padding 0 6px, radius `radius-xs`, 11px weight 500, status fill and status text color, 12px icon then label. Always icon plus word ("changed", "12 to review"), never a bare dot. Counts inside pills are tabular. The diff percent next to a changed row is plain `text-xs muted` text, not a pill.
 
-Tables (builds list, account home, usage). No outer card on wide screens; the table sits on `bg` with a 1px `border` line under the header and between rows (onkeiki draws its comparison table with row lines only). Header row: 32px, `text-2xs` weight 500, `muted`, no uppercase. Body rows: 40px, `text-sm`, padding 0 12px per cell, hover `hover` fill across the row, the whole row is one link. Column order follows SPEC 5.4. Build number and time are right-aligned and tabular; SHA is mono `muted`. Relative time shows the absolute date in a tooltip. Pending builds show a 12px spinner and "2 of 4 shards" in the status cell. "Load more" is a secondary button centered under the table.
+Tables (builds list, account home, usage). No outer card on wide screens; the table sits on `bg` with a 1px `border` line under the header and between rows (onkeiki draws its comparison table with row lines only). Header row: 32px, `text-2xs` weight 500, `muted`, no uppercase. Body rows: 44px (48px on the account home), `text-sm`, padding 0 12px per cell, hover `hover` fill across the row, the whole row is one link. Column order follows SPEC 5.4. Build number is `#412` in weight 500 on the left; time is right-aligned and tabular; SHA is mono `muted`. The branch cell is a button that sets the branch filter; the active filter shows as a removable chip above the table. Relative time shows the absolute date in a tooltip. Pending builds show a 12px spinner and "2 of 4 shards" in the status cell. "Load more" is a secondary button centered under the table.
 
-Sidebar list rows (build page). Height 32px, padding 0 8px, radius `radius-sm`, `text-sm`. Left: review icon (16px, colored by review state). Middle: snapshot name in mono, truncated with an ellipsis in the middle so the viewport suffix `[1280]` stays visible; full name in `title`. Right: diff percent for changed rows, `text-xs muted`, tabular. Selected row: `hover` fill plus a 2px `link` bar on the left edge inside the row. Keyboard focus on a row uses the standard focus ring. Group headers ("Changed (10)") are 28px, `text-xs` weight 500, `muted`, with a caret; Unchanged is collapsed by default.
+Sidebar list rows (build page). Height 32px, padding 0 8px, radius `radius-sm`, `text-sm`. Left: review icon (16px, colored by review state). Middle: snapshot name in mono, truncated with an ellipsis in the middle so the viewport suffix `[1280]` stays visible; full name in `title`. Right: diff percent for changed rows, `text-xs muted`, tabular. Selected row: `hover` fill plus a 2px `link` bar on the left edge inside the row. Keyboard focus on a row uses the standard focus ring. Group headers are 28px, `text-xs` weight 500, `muted`: the diff status icon in its color, the label, then the count and a caret right-aligned. Every group collapses; Unchanged is collapsed by default. The per-status counts live here instead of in the build header. The sidebar ends with a 40px footer holding a "Keyboard shortcuts `?`" button.
 
 Tabs (project page). Text tabs, 40px tall, `text-sm`, `muted` when inactive, `text` when active with a 2px `accent` underline sitting on the header's bottom border. Gap 20px. Hover changes color only.
 
@@ -266,7 +266,7 @@ Keyboard hint chips (kbd). Height 20px, min width 20px, padding 0 5px, radius `r
 
 Empty states. Left-aligned in the content column, not centered in a box. The lead-copy pattern at `text-2xl`, then at most one short paragraph and one primary action. The Setup card (SPEC 4.2) is the only boxed empty state: `surface`, 1px dotted `border` (onkeiki uses dotted borders for empty states and list separators), radius `radius-md`, padding 24px, with the 3-line CI snippet in a code block.
 
-Skeletons. Blocks of `surface-2` with the exact size of the content they stand in for: 40px table rows with three bars, 32px sidebar rows, a viewer frame at 16:10. A 1.5s shimmer (`linear-gradient` with `#ffffff0d` in dark, `#0000000a` in light) that is removed under reduced motion. Signed-in pages show skeletons until auth and the permission check finish (SPEC 5).
+Skeletons. Blocks of `surface-2` with the exact size of the content they stand in for: 40px table rows with three bars, 32px sidebar rows, a viewer frame at 16:10. A 1.5s shimmer (`linear-gradient` with `#ffffff0d` in dark, `#0000000a` in light) that is removed under reduced motion. In code this is the `skeleton` utility with the `--color-shimmer` token, next to the `mono` utility and the `enter`, `fade` and `shimmer` keyframes in `styles.css`. Signed-in pages show skeletons until auth and the permission check finish (SPEC 5).
 
 Code blocks. `surface-2` fill, 1px `border`, radius `radius-md`, 13px/1.8 Lilex, 40px caption bar with file name and copy button. Inline code: `surface-2`, 1px `border`, radius `radius-xs`, padding 1px 4px.
 
@@ -274,10 +274,10 @@ Code blocks. `surface-2` fill, 1px `border`, radius `radius-md`, 13px/1.8 Lilex,
 
 The viewer is a `surface` panel with radius `radius-lg` and 1px `border`. Inside it, from top to bottom:
 
-1. Title row, 48px: snapshot name (`text-base` weight 500, mono), diff status pill, diff percent and pixel count (`text-xs muted`, tabular), dimensions right-aligned (`1280x720 to 1280x812` when they differ, with the second value in `changed` color).
-2. Toolbar, 40px: mode segmented control on the left (Side by side 1, Diff 2, Slider 3, Flip 4), zoom segmented control on the right (Fit f, 100% 0, 200%), and the current zoom as tabular text when zoomed by wheel.
+1. Title row, 48px: snapshot name (`text-base` weight 500, split as in the sidebar), diff status pill, diff percent and pixel count (`text-xs muted`, tabular), then right-aligned the dimensions (`1280x720 to 1280x812` when they differ, with the second value in `changed` color), the position ("3 of 20") and previous and next buttons for `k` and `j`.
+2. Toolbar, 44px: mode segmented control on the left (Side by side 1, Diff 2, Slider 3, Flip 4, with the key printed after the label from 1024px up), a toggle next to it for the current mode (Diff only in Diff, Showing new / Showing baseline with `space` in Flip), zoom segmented control on the right (Fit f, 100% 0, 200%), hidden below 640px.
 3. Stage: `canvas` fill, 16px padding, fills the remaining height. Images sit on the checkerboard at top-left alignment (SPEC 5.5), with no radius and no shadow. At zoom above 100%, `image-rendering: pixelated`. Each image in side-by-side has a 24px caption strip above it ("Baseline #405", "New #411") in `text-xs muted`. In Flip mode the caption is the current side and switches instantly; the frame border turns `link` color while showing the baseline so the state is visible without reading.
-4. Review bar, 56px, top border: `[Reject  r]` secondary danger on the left, `[Approve  a]` primary on the right, review info ("Approved by @alice 3 min ago") between them in `text-xs muted`.
+4. Review bar, 56px, top border: review info on the left ("Approved by @alice 3 min ago", "Waiting for review") in `text-xs muted` with the review icon; on the right `[Undo  u]` ghost (only once reviewed), `[Reject  r]` danger and `[Approve  a]` primary, grouped so the pointer travels the shortest distance between them. The kbd chip inside a primary button uses the inverted style (`accent-fg` at 15% fill). `r` swaps the bar for a comment field with Cancel and Reject.
 
 Checkerboard CSS, 8px squares:
 
@@ -293,9 +293,9 @@ Slider handle: 2px vertical line in `link`, with a 24px round grip (`surface` fi
 
 ## Layout
 
-Breakpoints: 640, 768, 1024, 1280. App header is 48px, `surface`, bottom border, with the product name, account switcher, and avatar menu. Public pages use a 64px header and a 1448px max width with a 24px gutter (onkeiki's `--keiki-site-width` and `--site-nav-height`).
+Breakpoints: 640, 768, 1024, 1280. App header is 48px, `surface`, bottom border. Left: the logo mark (a 20px ink square with two pixel cut-outs, linking to all projects), a slash, the account switcher (account avatar, login, up-down caret; the menu lists accounts and "Add GitHub account"), and on project pages a slash and the repo name. Right: the user avatar, which opens a menu with name and login, a System, Light, Dark icon switch, and Sign out. Public pages use a 64px header and a 1448px max width with a 24px gutter (onkeiki's `--keiki-site-width` and `--site-nav-height`).
 
-Account home and project pages. Content max width 1200px, left-aligned inside the gutter, 24px top padding. Page title row: `text-xl` title, right side has the storage meter or tabs. Filters are a row of 28px ghost-style select buttons above the table, 8px apart.
+Account home and project pages. Content max width 1200px, centered, 32px top padding (24px below 640px). A left-aligned column on a 1440px screen left a wide empty band on the right, so the column is centered like onkeiki's site width. Page title row: optional leading avatar (40px, `radius-xs`), `text-xl` title with a `text-xs muted` meta line under it, and a secondary button on the right ("Configure on GitHub", "Repository"). Filters are a row of 28px ghost-style select buttons above the table, 8px apart.
 
 Build review page. Full width, no max width, the viewport height is fixed and only the sidebar list and the stage scroll.
 
@@ -316,15 +316,19 @@ Build review page. Full width, no max width, the viewport height is fixed and on
 +------------------+---------------------------------------------+
 ```
 
-The sidebar is 300px at 1280 and up, 260px from 1024 to 1279, `surface` with a right border. The count pills in the build header are buttons that scroll the list to that group. The detail footer (history, metadata) sits below the review bar and is collapsed to one 32px line by default so the stage keeps its height.
+Build header, about 76px: line one is `#411` in `muted` then the commit message in `text-lg` weight 600, truncated, then the conclusion pill; line two is `text-xs muted` metadata with 14px icons: branch (links to the filtered builds list), SHA, PR, "vs #405 on main", time. "Reject build" and "Approve all N" sit on the right and are hidden until the build is finalized. The sidebar is 300px at 1280 and up, 260px from 1024 to 1279, `surface` with a right border. The detail footer (metadata) sits below the review bar and is collapsed to one 32px line by default so the stage keeps its height.
 
-From 768 to 1023 the sidebar becomes a 260px drawer toggled by a button left of the title row; `j` and `k` still work with it closed. Below 768 the page is one column: the build header wraps to two lines, the snapshot picker is a full-width button ("3 of 13, Header/Default [1280]") that opens a sheet with the grouped list, side-by-side stacks baseline above new, and the review bar is sticky at the bottom with 44px buttons and prev/next arrows. Default mode on phones is Slider, since two stacked images at phone width are too small to compare (proposal).
+Below 1024 the sidebar becomes a drawer over the viewer (up to 320px, `shadow-menu`, dimmed backdrop), opened by a "3 of 13" button in the title row; `j` and `k` still work with it closed. Below 640 the header actions and review buttons stretch to full width, mode labels shorten (Side, Diff, Slider, Flip), side-by-side stacks baseline above new, and buttons are 44px on coarse pointers. Default mode on phones stays whatever the user picked last.
 
-Builds table on mobile: rows become two-line cards 64px tall without borders around them, line one is `#412` plus the conclusion pill and time, line two is branch and commit message in `muted`. PR and SHA columns are dropped.
+Builds table on mobile: rows become two-line list items with a row line between them, line one is `#412` plus the conclusion pill and time, line two is the branch in mono and the commit message in `muted`. PR and SHA are dropped.
 
 Baselines grid: `repeat(auto-fill, minmax(220px, 1fr))`, gap 16px. Each tile is a `surface-2` box at the image's aspect ratio capped at 4:3, image `object-fit: contain` top-aligned (never `cover`, which would crop), name under it in `text-xs` mono. Hover draws a 1px `field-border` outline.
 
 Settings: one column, 640px max width, sections separated by 48px and a dotted `border` line, label above field.
+
+Landing (`/`): 64px sticky header on `surface` with the wordmark and one primary button (Sign in, or Open dashboard when signed in), 1448px max width. Sections top to bottom: centered lead-copy hero with Get started and a ghost "How it works" anchor; the product art, a static HTML mock of the build page on a checkerboard inside a `radius-xl` frame; three steps in a 3-column grid; the CI snippet next to its lead copy on a `bg` band with hairlines above and below; the pricing lead copy over three facts split by dotted lines; one Playfair display line; a dotted footer. The page follows the theme setting.
+
+Sign-in (any signed-in page while signed out): centered 360px column, 32px logo, `text-xl` title, one `text-sm muted` line, and a full-width primary "Continue with GitHub" button. While auth loads, the page shows a skeleton of the 48px app header only.
 
 ## Accessibility
 

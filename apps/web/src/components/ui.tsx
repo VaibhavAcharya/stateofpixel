@@ -40,7 +40,18 @@ const TONE_CLASSES: Record<Tone, string> = {
   rejected: "bg-rejected-bg text-rejected",
 };
 
-type Icon = ComponentType<{
+export const TONE_TEXT: Record<Tone, string> = {
+  unchanged: "text-unchanged",
+  changed: "text-changed",
+  added: "text-added",
+  removed: "text-removed",
+  failed: "text-failed",
+  pending: "text-pending",
+  approved: "text-approved",
+  rejected: "text-rejected",
+};
+
+export type Icon = ComponentType<{
   size?: number;
   weight?: "regular" | "bold" | "fill";
   className?: string;
@@ -71,7 +82,7 @@ export function Pill({
 }) {
   return (
     <span
-      className={`inline-flex h-5 items-center gap-1 rounded-xs px-1.5 text-2xs font-medium tabular-nums whitespace-nowrap ${TONE_CLASSES[tone]}`}
+      className={`inline-flex h-5 shrink-0 items-center gap-1 rounded-xs pr-1.5 pl-1 text-2xs font-medium whitespace-nowrap tabular-nums ${TONE_CLASSES[tone]}`}
     >
       <IconComponent size={12} weight="bold" />
       {children}
@@ -151,19 +162,43 @@ export function BuildStatePill({
 
 export function SupersededPill() {
   return (
-    <span className="inline-flex h-5 items-center rounded-xs border border-border px-1.5 text-2xs font-medium text-muted">
+    <span className="inline-flex h-5 shrink-0 items-center rounded-xs px-1.5 text-2xs font-medium text-muted shadow-[inset_0_0_0_1px_var(--color-border)]">
       superseded
     </span>
   );
 }
 
-function Spinner({ size = 12 }: { size?: number }) {
-  return <CircleNotch size={size} weight="bold" className="animate-spin" />;
+export function Spinner({
+  size = 12,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <CircleNotch
+      size={size}
+      weight="bold"
+      className={`animate-spin ${className}`}
+    />
+  );
 }
 
-export function Kbd({ children }: { children: ReactNode }) {
+export function Kbd({
+  children,
+  inverted = false,
+}: {
+  children: ReactNode;
+  inverted?: boolean;
+}) {
   return (
-    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-xs border border-border bg-surface px-[5px] font-mono text-2xs text-muted">
+    <kbd
+      className={`inline-flex h-5 min-w-5 items-center justify-center rounded-xs px-[5px] font-mono text-2xs font-normal ${
+        inverted
+          ? "bg-accent-fg/15 text-accent-fg/80"
+          : "bg-surface text-muted shadow-[inset_0_0_0_1px_var(--color-border)]"
+      }`}
+    >
       {children}
     </kbd>
   );
@@ -174,6 +209,7 @@ export function RelativeTime({ timestamp }: { timestamp: number }) {
     <time
       dateTime={new Date(timestamp).toISOString()}
       title={formatAbsolute(timestamp)}
+      className="whitespace-nowrap tabular-nums"
     >
       {formatRelative(timestamp)}
     </time>
@@ -182,17 +218,25 @@ export function RelativeTime({ timestamp }: { timestamp: number }) {
 
 const BUTTON_VARIANTS = {
   primary: "bg-accent text-accent-fg hover:bg-accent-hover",
-  secondary: "border border-border bg-surface hover:bg-hover",
+  secondary:
+    "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)] hover:bg-hover",
   ghost: "text-muted hover:bg-hover hover:text-text",
-  danger: "border border-border bg-surface text-rejected hover:bg-hover",
+  danger:
+    "bg-surface text-rejected shadow-[inset_0_0_0_1px_var(--color-border)] hover:bg-rejected-bg",
+};
+
+const BUTTON_SIZES = {
+  md: "h-8 gap-1.5 px-3 text-sm",
+  sm: "h-6 gap-1 rounded-sm px-2 text-xs",
+  icon: "size-8",
+  "icon-sm": "size-6 rounded-sm",
 };
 
 export function buttonClass(
   variant: keyof typeof BUTTON_VARIANTS = "secondary",
-  size: "md" | "sm" = "md",
+  size: keyof typeof BUTTON_SIZES = "md",
 ) {
-  const sizing = size === "md" ? "h-8 px-3 text-sm" : "h-6 px-2 text-xs";
-  return `inline-flex items-center justify-center gap-1.5 rounded-control font-medium transition-colors duration-100 disabled:pointer-events-none disabled:opacity-45 ${sizing} ${BUTTON_VARIANTS[variant]}`;
+  return `inline-flex shrink-0 items-center justify-center rounded-control font-medium whitespace-nowrap transition-colors duration-100 select-none disabled:pointer-events-none disabled:opacity-45 pointer-coarse:min-h-11 ${BUTTON_SIZES[size]} ${BUTTON_VARIANTS[variant]}`;
 }
 
 export function LeadCopy({
@@ -203,29 +247,143 @@ export function LeadCopy({
   children: ReactNode;
 }) {
   return (
-    <p className="max-w-[65ch] text-2xl text-muted">
+    <p className="max-w-[65ch] text-2xl font-[450] tracking-[-0.035em] text-balance text-muted max-sm:text-xl">
       <strong className="font-semibold text-text">{title}</strong> {children}
     </p>
   );
 }
 
+export function EmptyState({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-start gap-6 py-12">
+      <LeadCopy title={title}>{children}</LeadCopy>
+      {action}
+    </div>
+  );
+}
+
+export function Skeleton({ className }: { className: string }) {
+  return <div aria-hidden className={`skeleton rounded-md ${className}`} />;
+}
+
 export function SkeletonRows({
-  rows = 5,
+  rows = 6,
   height = "h-10",
 }: {
   rows?: number;
   height?: string;
 }) {
   return (
-    <div className="flex flex-col gap-1" aria-hidden>
+    <div className="flex flex-col" aria-hidden>
       {Array.from({ length: rows }, (_, index) => `skeleton-${index}`).map(
         (key) => (
           <div
             key={key}
-            className={`${height} animate-pulse rounded-md bg-surface-2`}
-          />
+            className={`${height} flex items-center gap-6 border-b border-border px-3`}
+          >
+            <div className="skeleton h-3 w-12 rounded-xs" />
+            <div className="skeleton h-3 w-40 rounded-xs" />
+            <div className="skeleton ml-auto h-3 w-16 rounded-xs" />
+          </div>
         ),
       )}
     </div>
+  );
+}
+
+export function Logo({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      aria-hidden
+      className="shrink-0"
+    >
+      <rect width="20" height="20" rx="5" fill="currentColor" />
+      <rect x="5" y="5" width="4" height="4" className="fill-bg" />
+      <rect x="11" y="11" width="4" height="4" className="fill-bg" />
+    </svg>
+  );
+}
+
+export function Wordmark() {
+  return (
+    <span className="flex items-center gap-2 text-sm font-semibold tracking-[-0.01em]">
+      <Logo />
+      stateofpixel
+    </span>
+  );
+}
+
+export function Avatar({
+  src,
+  size = 20,
+  square = false,
+}: {
+  src: string | null | undefined;
+  size?: number;
+  square?: boolean;
+}) {
+  const shape = square ? "rounded-xs" : "rounded-full";
+  if (!src) {
+    return (
+      <span
+        aria-hidden
+        className={`inline-block shrink-0 bg-surface-2 ${shape}`}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      className={`shrink-0 bg-surface-2 ${shape} shadow-[0_0_0_1px_var(--color-border)]`}
+    />
+  );
+}
+
+const VIEWPORT_SUFFIX = /^(.*?)\s*\[([^\]]+)\]$/;
+
+export function splitSnapshotName(name: string) {
+  const match = VIEWPORT_SUFFIX.exec(name);
+  const base = match?.[1] ?? name;
+  const slash = base.lastIndexOf("/");
+  return {
+    parent: slash === -1 ? "" : base.slice(0, slash + 1),
+    leaf: slash === -1 ? base : base.slice(slash + 1),
+    variant: match?.[2] ?? null,
+  };
+}
+
+export function SnapshotName({
+  name,
+  className = "",
+}: {
+  name: string;
+  className?: string;
+}) {
+  const { parent, leaf, variant } = splitSnapshotName(name);
+  return (
+    <span className={`flex min-w-0 items-center gap-1.5 ${className}`}>
+      <span className="min-w-0 truncate">
+        <span className="text-muted">{parent}</span>
+        {leaf}
+      </span>
+      {variant !== null && (
+        <span className="mono shrink-0 text-muted tabular-nums">{variant}</span>
+      )}
+    </span>
   );
 }
