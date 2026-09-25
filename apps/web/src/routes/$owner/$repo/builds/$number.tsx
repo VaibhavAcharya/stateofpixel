@@ -1,19 +1,19 @@
 import {
-  ArrowCounterClockwise,
-  ArrowsLeftRight,
-  CaretDown,
-  CaretRight,
-  CaretUp,
-  Clock,
-  GitBranch,
-  GitCommit,
-  GitPullRequest,
-  Info,
-  Keyboard,
-  ListBullets,
-  MagnifyingGlass,
-  Warning,
-  X,
+  ArrowCounterClockwiseIcon,
+  ArrowsLeftRightIcon,
+  CaretDownIcon,
+  CaretRightIcon,
+  CaretUpIcon,
+  ClockIcon,
+  GitBranchIcon,
+  GitCommitIcon,
+  GitPullRequestIcon,
+  InfoIcon,
+  KeyboardIcon,
+  MagnifyingGlassIcon,
+  SidebarSimpleIcon,
+  WarningIcon,
+  XIcon,
 } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import type { Id } from "@stateofpixel/backend/dataModel";
@@ -27,8 +27,10 @@ import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { ConvexError } from "convex/values";
 import {
+  createContext,
   type ReactNode,
   type RefObject,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -94,14 +96,42 @@ const ACTION_VERBS: Record<ReviewAction, string> = {
   undo: "undo the review of",
 };
 
+const ShortcutsContext = createContext<{
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}>({ open: false, setOpen: () => {} });
+
 function BuildRoute() {
   const { owner, repo, number } = Route.useParams();
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   return (
     <RequireAuth redirectTo={`/${owner}/${repo}/builds/${number}`}>
-      <div className="flex h-dvh flex-col">
-        <AppHeader owner={owner} repo={repo} />
-        <BuildAccess owner={owner} repo={repo} number={Number(number)} />
-      </div>
+      <ShortcutsContext.Provider
+        value={{ open: shortcutsOpen, setOpen: setShortcutsOpen }}
+      >
+        <div className="flex h-dvh flex-col">
+          <AppHeader
+            owner={owner}
+            repo={repo}
+            actions={
+              <button
+                type="button"
+                aria-label="Keyboard shortcuts"
+                title="Keyboard shortcuts (?)"
+                className={buttonClass("ghost", "icon")}
+                onClick={() => setShortcutsOpen(true)}
+              >
+                <KeyboardIcon size={18} />
+              </button>
+            }
+          />
+          <BuildAccess owner={owner} repo={repo} number={Number(number)} />
+        </div>
+        <ShortcutsDialog
+          open={shortcutsOpen}
+          onClose={() => setShortcutsOpen(false)}
+        />
+      </ShortcutsContext.Provider>
     </RequireAuth>
   );
 }
@@ -294,7 +324,8 @@ function BuildPage({
     () => new Set(["unchanged"]),
   );
   const [rejecting, setRejecting] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const { open: shortcutsOpen, setOpen: setShortcutsOpen } =
+    useContext(ShortcutsContext);
   const [listOpen, setListOpen] = useState(false);
   const filterInput = useRef<HTMLInputElement>(null);
   const settings = useViewerSettings();
@@ -541,19 +572,6 @@ function BuildPage({
               <p className="px-2 py-3 text-sm text-muted">No snapshots yet.</p>
             )}
           </nav>
-          <div className="flex h-10 shrink-0 items-center border-t border-border px-2">
-            <button
-              type="button"
-              className={`${buttonClass("ghost", "sm")} w-full justify-start`}
-              onClick={() => setShortcutsOpen(true)}
-            >
-              <Keyboard size={14} />
-              Keyboard shortcuts
-              <span className="ml-auto">
-                <Kbd>?</Kbd>
-              </span>
-            </button>
-          </div>
         </aside>
         <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface">
           {snapshotId === undefined ? (
@@ -591,10 +609,6 @@ function BuildPage({
           )}
         </section>
       </div>
-      <ShortcutsDialog
-        open={shortcutsOpen}
-        onClose={() => setShortcutsOpen(false)}
-      />
       <Toasts toasts={toasts} dismiss={dismiss} />
     </>
   );
@@ -632,7 +646,7 @@ function NoSelection({
           className={`${buttonClass()} lg:hidden`}
           onClick={onOpenList}
         >
-          <ListBullets size={16} />
+          <SidebarSimpleIcon size={16} />
           Browse snapshots
         </button>
       </div>
@@ -665,7 +679,7 @@ function SnapshotNavigation({
         className={`${buttonClass("secondary", "sm")} lg:hidden`}
         onClick={onOpenList}
       >
-        <ListBullets size={14} />
+        <SidebarSimpleIcon size={14} />
         <span className="tabular-nums">
           {position > 0 ? `${position} of ${total}` : total}
         </span>
@@ -680,7 +694,7 @@ function SnapshotNavigation({
         className={buttonClass("ghost", "icon-sm")}
         onClick={onPrevious}
       >
-        <CaretUp size={14} />
+        <CaretUpIcon size={14} />
       </button>
       <button
         type="button"
@@ -689,7 +703,7 @@ function SnapshotNavigation({
         className={buttonClass("ghost", "icon-sm")}
         onClick={onNext}
       >
-        <CaretDown size={14} />
+        <CaretDownIcon size={14} />
       </button>
     </div>
   );
@@ -707,7 +721,7 @@ function FilterInput({
   return (
     <div className="shrink-0 p-2">
       <label className="relative flex items-center">
-        <MagnifyingGlass
+        <MagnifyingGlassIcon
           size={14}
           className="pointer-events-none absolute left-2.5 text-subtle"
         />
@@ -736,7 +750,7 @@ function FilterInput({
             className={`absolute right-1 ${buttonClass("ghost", "icon-sm")}`}
             onClick={() => onChange("")}
           >
-            <X size={12} />
+            <XIcon size={12} />
           </button>
         )}
       </label>
@@ -749,7 +763,7 @@ function MetaItem({
   label,
   children,
 }: {
-  icon: typeof GitBranch;
+  icon: typeof GitBranchIcon;
   label: string;
   children: ReactNode;
 }) {
@@ -802,7 +816,7 @@ function BuildHeader({
           {build.superseded && <SupersededPill />}
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-          <MetaItem icon={GitBranch} label="Branch">
+          <MetaItem icon={GitBranchIcon} label="Branch">
             <Link
               to="/$owner/$repo"
               params={{ owner, repo }}
@@ -812,7 +826,7 @@ function BuildHeader({
               {build.branch}
             </Link>
           </MetaItem>
-          <MetaItem icon={GitCommit} label="Commit">
+          <MetaItem icon={GitCommitIcon} label="Commit">
             <a
               href={`${github}/commit/${build.commitSha}`}
               className="mono hover:text-link"
@@ -821,7 +835,7 @@ function BuildHeader({
             </a>
           </MetaItem>
           {build.prNumber !== null && (
-            <MetaItem icon={GitPullRequest} label="Pull request">
+            <MetaItem icon={GitPullRequestIcon} label="Pull request">
               <a
                 href={`${github}/pull/${build.prNumber}`}
                 className="tabular-nums hover:text-link"
@@ -830,7 +844,7 @@ function BuildHeader({
               </a>
             </MetaItem>
           )}
-          <MetaItem icon={ArrowsLeftRight} label="Baseline">
+          <MetaItem icon={ArrowsLeftRightIcon} label="Baseline">
             {build.baseline === null ? (
               "First build, no baseline"
             ) : (
@@ -851,7 +865,7 @@ function BuildHeader({
               </span>
             )}
           </MetaItem>
-          <MetaItem icon={Clock} label="Created">
+          <MetaItem icon={ClockIcon} label="Created">
             <RelativeTime timestamp={build.createdAt} />
           </MetaItem>
         </div>
@@ -911,7 +925,7 @@ function Banners({
     banners.push({
       key: "superseded",
       tone: "bg-unchanged-bg",
-      icon: <Info size={16} className="text-unchanged" />,
+      icon: <InfoIcon size={16} className="text-unchanged" />,
       content: (
         <>
           A newer build exists for this PR.{" "}
@@ -941,7 +955,7 @@ function Banners({
     banners.push({
       key: "expired",
       tone: "bg-unchanged-bg",
-      icon: <Clock size={16} className="text-unchanged" />,
+      icon: <ClockIcon size={16} className="text-unchanged" />,
       content: "This build never finished.",
     });
   }
@@ -949,7 +963,7 @@ function Banners({
     banners.push({
       key: "error",
       tone: "bg-failed-bg",
-      icon: <Warning size={16} className="text-failed" />,
+      icon: <WarningIcon size={16} className="text-failed" />,
       content: build.ciRunUrl ? (
         <>
           Upload failed.{" "}
@@ -1007,7 +1021,7 @@ function SnapshotGroup({
   linkParams: { owner: string; repo: string; number: string };
   onSelect: () => void;
 }) {
-  const Caret = open ? CaretDown : CaretRight;
+  const Caret = open ? CaretDownIcon : CaretRightIcon;
   const StatusIcon = DIFF_ICONS[status];
 
   return (
@@ -1196,7 +1210,7 @@ function SnapshotDetail({
                     className={buttonClass("ghost")}
                     onClick={onUndo}
                   >
-                    <ArrowCounterClockwise size={14} />
+                    <ArrowCounterClockwiseIcon size={14} />
                     Undo
                     <Kbd>u</Kbd>
                   </button>
@@ -1282,7 +1296,7 @@ function Details({ metadata }: { metadata: Record<string, unknown> }) {
   if (entries.length === 0) {
     return null;
   }
-  const Caret = open ? CaretDown : CaretRight;
+  const Caret = open ? CaretDownIcon : CaretRightIcon;
   return (
     <footer className="shrink-0 border-t border-border text-xs">
       <button

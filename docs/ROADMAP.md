@@ -33,6 +33,31 @@ Progress tracker for [PLAN.md](./PLAN.md). Details for each item are in [SPEC.md
 - [x] Auto-approve on the default branch
 - [x] Dogfooding: `visual.yml` and first test PR scenarios
 
+## Web polish
+
+Group 1: auth and navigation
+- [ ] Sign-in button shows progress while redirecting to GitHub and while the code exchange runs
+- [ ] Sign out lands on `/`
+- [ ] "All projects" entry in the account switcher, and `/install` as the signed-in home in the breadcrumb
+- [ ] Keyboard shortcuts button as an icon in the app header
+
+Group 2: speed
+- [ ] Measure where page and navigation time goes
+- [ ] Keep query results across navigation, prefetch neighbours, render cached permissions while they refresh
+- [ ] Optimistic updates for build counts, conclusion and Approve all
+
+Group 3: lists and viewer
+- [ ] Polish every list: projects, builds, accounts, sidebar
+- [ ] Diff overlay toggle in Side by side, on by default
+
+Group 4: landing
+- [ ] Drop Playfair Display, one sans and one mono only
+- [ ] More sections, built to convert
+- [ ] Comparison pages against the alternatives
+- [ ] Brand section with the logo and its usage
+- [ ] Open Graph image per page
+- [ ] Logo as the favicon
+
 ## M2: real-world CI
 
 - [ ] Sharding and `stateofpixel finalize`

@@ -1,4 +1,4 @@
-import { CheckCircle, Warning, X } from "@phosphor-icons/react/ssr";
+import { CheckCircleIcon, WarningIcon, XIcon } from "@phosphor-icons/react/ssr";
 import { useCallback, useEffect, useState } from "react";
 
 export type ToastMessage = {
@@ -48,7 +48,7 @@ function Toast({
     const timer = setTimeout(() => dismiss(toast.id), 5000);
     return () => clearTimeout(timer);
   }, [toast.id, dismiss]);
-  const Icon = toast.tone === "success" ? CheckCircle : Warning;
+  const Icon = toast.tone === "success" ? CheckCircleIcon : WarningIcon;
 
   return (
     <div
@@ -67,7 +67,7 @@ function Toast({
         className="-my-0.5 flex size-6 shrink-0 items-center justify-center rounded-sm text-muted hover:bg-hover hover:text-text"
         onClick={() => dismiss(toast.id)}
       >
-        <X size={12} />
+        <XIcon size={12} />
       </button>
     </div>
   );

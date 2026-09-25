@@ -1,4 +1,4 @@
-import { Check, Copy } from "@phosphor-icons/react/ssr";
+import { CheckIcon, CopyIcon } from "@phosphor-icons/react/ssr";
 import { useEffect, useState } from "react";
 import { buttonClass } from "./ui";
 
@@ -33,7 +33,7 @@ export function CodeBlock({
               .then(() => setCopied(true));
           }}
         >
-          {copied ? <Check size={14} /> : <Copy size={14} />}
+          {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
         </button>
       </figcaption>
       <pre className="overflow-x-auto p-4 font-mono text-xs leading-[1.8]">

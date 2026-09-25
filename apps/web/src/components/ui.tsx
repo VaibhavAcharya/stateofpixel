@@ -1,14 +1,14 @@
 import {
-  Check,
-  Circle,
-  CircleHalf,
-  CircleNotch,
-  Clock,
-  Equals,
-  Minus,
-  Plus,
-  Warning,
-  X,
+  CheckIcon,
+  CircleHalfIcon,
+  CircleIcon,
+  CircleNotchIcon,
+  ClockIcon,
+  EqualsIcon,
+  MinusIcon,
+  PlusIcon,
+  WarningIcon,
+  XIcon,
 } from "@phosphor-icons/react/ssr";
 import type { ComponentType, ReactNode } from "react";
 import { formatAbsolute, formatCount, formatRelative } from "../lib/format";
@@ -58,17 +58,17 @@ export type Icon = ComponentType<{
 }>;
 
 export const DIFF_ICONS: Record<DiffStatus, Icon> = {
-  unchanged: Equals,
-  changed: CircleHalf,
-  added: Plus,
-  removed: Minus,
-  failed: Warning,
+  unchanged: EqualsIcon,
+  changed: CircleHalfIcon,
+  added: PlusIcon,
+  removed: MinusIcon,
+  failed: WarningIcon,
 };
 
 export const REVIEW_ICONS: Record<Exclude<ReviewState, "none">, Icon> = {
-  pending: Circle,
-  approved: Check,
-  rejected: X,
+  pending: CircleIcon,
+  approved: CheckIcon,
+  rejected: XIcon,
 };
 
 export function Pill({
@@ -120,14 +120,14 @@ export function BuildStatePill({
   }
   if (status === "expired") {
     return (
-      <Pill tone="unchanged" icon={Clock}>
+      <Pill tone="unchanged" icon={ClockIcon}>
         expired
       </Pill>
     );
   }
   if (status === "error") {
     return (
-      <Pill tone="failed" icon={Warning}>
+      <Pill tone="failed" icon={WarningIcon}>
         error
       </Pill>
     );
@@ -135,25 +135,25 @@ export function BuildStatePill({
   switch (conclusion) {
     case "no_changes":
       return (
-        <Pill tone="unchanged" icon={Equals}>
+        <Pill tone="unchanged" icon={EqualsIcon}>
           no changes
         </Pill>
       );
     case "approved":
       return (
-        <Pill tone="approved" icon={Check}>
+        <Pill tone="approved" icon={CheckIcon}>
           approved
         </Pill>
       );
     case "rejected":
       return (
-        <Pill tone="rejected" icon={X}>
+        <Pill tone="rejected" icon={XIcon}>
           {formatCount(counts.rejected)} rejected
         </Pill>
       );
     default:
       return (
-        <Pill tone="pending" icon={Circle}>
+        <Pill tone="pending" icon={CircleIcon}>
           {formatCount(counts.pending)} to review
         </Pill>
       );
@@ -176,7 +176,7 @@ export function Spinner({
   className?: string;
 }) {
   return (
-    <CircleNotch
+    <CircleNotchIcon
       size={size}
       weight="bold"
       className={`animate-spin ${className}`}

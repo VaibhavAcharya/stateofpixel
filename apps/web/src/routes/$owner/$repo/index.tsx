@@ -1,4 +1,8 @@
-import { ArrowSquareOut, GitBranch, X } from "@phosphor-icons/react/ssr";
+import {
+  ArrowUpRightIcon,
+  GitBranchIcon,
+  XIcon,
+} from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -55,7 +59,7 @@ function ProjectPage() {
               className={buttonClass()}
             >
               Repository
-              <ArrowSquareOut size={14} className="text-muted" />
+              <ArrowUpRightIcon size={14} className="text-muted" />
             </a>
           }
         />
@@ -120,7 +124,7 @@ function BuildsTable({
       {branch !== undefined && (
         <div className="mb-4 flex items-center gap-2">
           <span className="inline-flex h-7 items-center gap-1.5 rounded-sm bg-surface pr-1 pl-2 text-xs shadow-[inset_0_0_0_1px_var(--color-border)]">
-            <GitBranch size={14} className="text-muted" />
+            <GitBranchIcon size={14} className="text-muted" />
             <span className="text-muted">Branch</span>
             <span className="mono max-w-60 truncate">{branch}</span>
             <button
@@ -129,7 +133,7 @@ function BuildsTable({
               className={buttonClass("ghost", "icon-sm")}
               onClick={() => void navigate({ search: {} })}
             >
-              <X size={12} />
+              <XIcon size={12} />
             </button>
           </span>
         </div>

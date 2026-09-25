@@ -1,4 +1,4 @@
-import { X } from "@phosphor-icons/react/ssr";
+import { XIcon } from "@phosphor-icons/react/ssr";
 import { useEffect, useRef } from "react";
 import { buttonClass, Kbd } from "./ui";
 
@@ -74,7 +74,7 @@ export function ShortcutsDialog({
           className={buttonClass("ghost", "icon")}
           onClick={onClose}
         >
-          <X size={16} />
+          <XIcon size={16} />
         </button>
       </div>
       <div className="flex flex-col gap-5 px-6 pt-4 pb-6">

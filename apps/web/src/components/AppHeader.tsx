@@ -1,16 +1,18 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import {
-  CaretUpDown,
-  Check,
-  Monitor,
-  Moon,
-  Plus,
-  SignOut,
-  Sun,
+  CaretUpDownIcon,
+  CheckIcon,
+  MonitorIcon,
+  MoonIcon,
+  PlusIcon,
+  SignOutIcon,
+  SquaresFourIcon,
+  SunIcon,
 } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import type { ReactNode } from "react";
 import { type Theme, useTheme } from "../lib/theme";
 import { Menu, MenuLabel, MenuSeparator, menuItemClass } from "./Menu";
 import { Avatar, Logo } from "./ui";
@@ -33,7 +35,15 @@ function Slash() {
   );
 }
 
-export function AppHeader({ owner, repo }: { owner?: string; repo?: string }) {
+export function AppHeader({
+  owner,
+  repo,
+  actions,
+}: {
+  owner?: string;
+  repo?: string;
+  actions?: ReactNode;
+}) {
   return (
     <header className="flex h-12 shrink-0 items-center gap-1 border-b border-border bg-surface px-4">
       <Link
@@ -57,7 +67,8 @@ export function AppHeader({ owner, repo }: { owner?: string; repo?: string }) {
           </Link>
         </>
       )}
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1">
+        {actions}
         <UserMenu />
       </div>
     </header>
@@ -75,17 +86,28 @@ function AccountSwitcher({ owner }: { owner?: string }) {
       trigger={
         <>
           {owner === undefined ? (
-            <span className="text-muted">Projects</span>
+            <>
+              <SquaresFourIcon size={18} className="shrink-0 text-muted" />
+              <span>All projects</span>
+            </>
           ) : (
             <>
               <Avatar src={accountAvatar(owner)} size={18} square />
               <span className="truncate">{owner}</span>
             </>
           )}
-          <CaretUpDown size={14} className="shrink-0 text-muted" />
+          <CaretUpDownIcon size={14} className="shrink-0 text-muted" />
         </>
       }
     >
+      <Link to="/install" className={menuItemClass}>
+        <SquaresFourIcon size={18} className="shrink-0 text-muted" />
+        <span className="min-w-0 flex-1 truncate">All projects</span>
+        {owner === undefined && (
+          <CheckIcon size={14} className="shrink-0 text-muted" />
+        )}
+      </Link>
+      <MenuSeparator />
       <MenuLabel>Accounts</MenuLabel>
       {accounts?.map((account) => (
         <Link
@@ -97,7 +119,7 @@ function AccountSwitcher({ owner }: { owner?: string }) {
           <Avatar src={accountAvatar(account.login)} size={18} square />
           <span className="min-w-0 flex-1 truncate">{account.login}</span>
           {account.login === owner && (
-            <Check size={14} className="shrink-0 text-muted" />
+            <CheckIcon size={14} className="shrink-0 text-muted" />
           )}
         </Link>
       ))}
@@ -105,7 +127,7 @@ function AccountSwitcher({ owner }: { owner?: string }) {
         <>
           <MenuSeparator />
           <a href={installUrl} className={`${menuItemClass} text-muted`}>
-            <Plus size={16} className="shrink-0" />
+            <PlusIcon size={16} className="shrink-0" />
             Add GitHub account
           </a>
         </>
@@ -114,15 +136,16 @@ function AccountSwitcher({ owner }: { owner?: string }) {
   );
 }
 
-const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
-  { value: "system", label: "System", icon: Monitor },
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
+const THEME_OPTIONS: { value: Theme; label: string; icon: typeof SunIcon }[] = [
+  { value: "system", label: "System", icon: MonitorIcon },
+  { value: "light", label: "Light", icon: SunIcon },
+  { value: "dark", label: "Dark", icon: MoonIcon },
 ];
 
 function UserMenu() {
   const viewer = useQuery(api.users.viewer);
   const { signOut } = useAuthActions();
+  const navigate = useNavigate();
   const [theme, setTheme] = useTheme();
 
   return (
@@ -170,9 +193,9 @@ function UserMenu() {
       <button
         type="button"
         className={menuItemClass}
-        onClick={() => void signOut()}
+        onClick={() => void navigate({ to: "/" }).then(() => signOut())}
       >
-        <SignOut size={16} className="shrink-0 text-muted" />
+        <SignOutIcon size={16} className="shrink-0 text-muted" />
         Sign out
       </button>
     </Menu>

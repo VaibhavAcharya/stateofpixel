@@ -1,4 +1,4 @@
-import { CaretLeft, CaretRight } from "@phosphor-icons/react/ssr";
+import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react/ssr";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { formatCount, formatPercent } from "../lib/format";
 import { type DiffStatus, DiffStatusPill, Kbd, SnapshotName } from "./ui";
@@ -416,8 +416,8 @@ function Slider({
         style={{ left: `${position}%` }}
       >
         <span className="absolute top-1/2 left-1/2 flex h-6 w-6 -translate-1/2 items-center justify-center rounded-full bg-surface text-muted shadow-menu ring-1 ring-border">
-          <CaretLeft size={8} weight="bold" />
-          <CaretRight size={8} weight="bold" />
+          <CaretLeftIcon size={8} weight="bold" />
+          <CaretRightIcon size={8} weight="bold" />
         </span>
       </div>
       <input

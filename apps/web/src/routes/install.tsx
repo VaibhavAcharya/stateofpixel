@@ -1,9 +1,9 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import {
-  ArrowRight,
-  GithubLogo,
-  LockSimple,
-  Plus,
+  ArrowRightIcon,
+  GithubLogoIcon,
+  LockSimpleIcon,
+  PlusIcon,
 } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -63,7 +63,7 @@ function Accounts() {
 
   const installButton = installUrl !== undefined && (
     <a href={installUrl} className={buttonClass("primary")}>
-      <GithubLogo size={16} weight="fill" />
+      <GithubLogoIcon size={16} weight="fill" />
       Install on GitHub
     </a>
   );
@@ -71,7 +71,7 @@ function Accounts() {
   return (
     <Page>
       <PageHeader
-        title="Projects"
+        title="All projects"
         meta={
           refreshing ? (
             <span className="flex items-center gap-1.5">
@@ -87,7 +87,7 @@ function Accounts() {
           accounts.length > 0 &&
           installUrl !== undefined && (
             <a href={installUrl} className={buttonClass()}>
-              <Plus size={14} />
+              <PlusIcon size={14} />
               Add account
             </a>
           )
@@ -141,7 +141,7 @@ function Accounts() {
                 className="ml-auto flex items-center gap-1 text-xs text-muted hover:text-text"
               >
                 Overview
-                <ArrowRight size={12} />
+                <ArrowRightIcon size={12} />
               </Link>
             </div>
             {account.projects.length === 0 ? (
@@ -163,13 +163,13 @@ function Accounts() {
                       <span className="text-muted">{project.owner} /</span>
                       <span className="font-medium">{project.name}</span>
                       {project.private && (
-                        <LockSimple
+                        <LockSimpleIcon
                           size={12}
                           aria-label="Private"
                           className="text-muted"
                         />
                       )}
-                      <ArrowRight
+                      <ArrowRightIcon
                         size={14}
                         className="ml-auto text-subtle opacity-0 transition-opacity duration-100 group-hover:opacity-100"
                       />

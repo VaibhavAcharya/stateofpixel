@@ -1,26 +1,80 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { GithubLogo } from "@phosphor-icons/react/ssr";
+import { GithubLogoIcon } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
-import { buttonClass, Logo } from "./ui";
+import { useConvexAuth } from "convex/react";
+import { useEffect, useState } from "react";
+import { buttonClass, Logo, Spinner } from "./ui";
 
 export function SignInButton({
   redirectTo = "/install",
   label = "Sign in with GitHub",
+  className = "",
 }: {
   redirectTo?: string;
   label?: string;
+  className?: string;
 }) {
   const { signIn } = useAuthActions();
+  const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        setPending(false);
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   return (
     <button
       type="button"
-      className={buttonClass("primary")}
-      onClick={() => void signIn("github", { redirectTo })}
+      aria-busy={pending}
+      disabled={pending}
+      className={`${buttonClass("primary")} disabled:opacity-100 ${className}`}
+      onClick={() => {
+        setPending(true);
+        signIn("github", { redirectTo }).catch(() => setPending(false));
+      }}
     >
-      <GithubLogo size={16} weight="fill" />
-      {label}
+      {pending ? (
+        <Spinner size={16} />
+      ) : (
+        <GithubLogoIcon size={16} weight="fill" />
+      )}
+      {pending ? "Opening GitHub" : label}
     </button>
   );
+}
+
+export function AuthButton({
+  label,
+  className = "",
+}: {
+  label: string;
+  className?: string;
+}) {
+  const { isLoading, isAuthenticated } = useConvexAuth();
+  if (isLoading) {
+    return (
+      <span
+        aria-busy
+        className={`${buttonClass("primary")} pointer-events-none ${className}`}
+      >
+        <GithubLogoIcon size={16} weight="fill" />
+        {label}
+      </span>
+    );
+  }
+  if (isAuthenticated) {
+    return (
+      <Link to="/install" className={`${buttonClass("primary")} ${className}`}>
+        Open dashboard
+      </Link>
+    );
+  }
+  return <SignInButton label={label} className={className} />;
 }
 
 export function SignInScreen({ redirectTo }: { redirectTo: string }) {
@@ -40,6 +94,18 @@ export function SignInScreen({ redirectTo }: { redirectTo: string }) {
           <SignInButton redirectTo={redirectTo} label="Continue with GitHub" />
         </div>
       </div>
+    </main>
+  );
+}
+
+export function SigningIn() {
+  return (
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 pb-24 text-sm text-muted">
+      <Logo size={32} />
+      <span className="flex items-center gap-2">
+        <Spinner size={14} />
+        Signing you in with GitHub
+      </span>
     </main>
   );
 }

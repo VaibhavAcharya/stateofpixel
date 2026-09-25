@@ -1,4 +1,4 @@
-import { ArrowSquareOut, LockSimple } from "@phosphor-icons/react/ssr";
+import { ArrowUpRightIcon, LockSimpleIcon } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
@@ -60,7 +60,7 @@ function AccountHome({ owner }: { owner: string }) {
           home?.installationSettingsUrl && (
             <a href={home.installationSettingsUrl} className={buttonClass()}>
               Configure on GitHub
-              <ArrowSquareOut size={14} className="text-muted" />
+              <ArrowUpRightIcon size={14} className="text-muted" />
             </a>
           )
         }
@@ -99,7 +99,7 @@ function AccountHome({ owner }: { owner: string }) {
                   >
                     <span className="truncate">{project.name}</span>
                     {project.private && (
-                      <LockSimple
+                      <LockSimpleIcon
                         size={12}
                         aria-label="Private"
                         className="shrink-0 text-muted"

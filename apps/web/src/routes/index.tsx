@@ -1,9 +1,12 @@
 import playfairCss from "@fontsource-variable/playfair-display/index.css?url";
-import { Camera, CheckCircle, CloudArrowUp } from "@phosphor-icons/react/ssr";
+import {
+  CameraIcon,
+  CheckCircleIcon,
+  CloudArrowUpIcon,
+} from "@phosphor-icons/react/ssr";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Authenticated, Unauthenticated } from "convex/react";
 import { CodeBlock } from "../components/CodeBlock";
-import { SignInButton } from "../components/SignIn";
+import { AuthButton } from "../components/SignIn";
 import {
   buttonClass,
   DIFF_ICONS,
@@ -37,17 +40,17 @@ steps:
 
 const STEPS: { icon: Icon; title: string; text: string }[] = [
   {
-    icon: Camera,
+    icon: CameraIcon,
     title: "Capture in your CI",
     text: "Playwright, Storybook or any folder of PNGs. Screenshots render on your runners, next to your tests.",
   },
   {
-    icon: CloudArrowUp,
+    icon: CloudArrowUpIcon,
     title: "Upload what changed",
     text: "The CLI diffs against the baseline and uploads only new images. Unchanged pixels never leave CI.",
   },
   {
-    icon: CheckCircle,
+    icon: CheckCircleIcon,
     title: "Review and merge",
     text: "Approve changes with the keyboard. The GitHub check turns green when every change is approved.",
   },
@@ -68,14 +71,7 @@ function Home() {
             <Wordmark />
           </Link>
           <nav className="ml-auto flex items-center gap-2">
-            <Unauthenticated>
-              <SignInButton label="Sign in" />
-            </Unauthenticated>
-            <Authenticated>
-              <Link to="/install" className={buttonClass("primary")}>
-                Open dashboard
-              </Link>
-            </Authenticated>
+            <AuthButton label="Sign in" />
           </nav>
         </div>
       </header>
@@ -90,14 +86,7 @@ function Home() {
             merge on a green check.
           </p>
           <div className="mt-8 flex items-center gap-3">
-            <Unauthenticated>
-              <SignInButton label="Get started" />
-            </Unauthenticated>
-            <Authenticated>
-              <Link to="/install" className={buttonClass("primary")}>
-                Open dashboard
-              </Link>
-            </Authenticated>
+            <AuthButton label="Get started" />
             <a href="#how" className={buttonClass("ghost")}>
               How it works
             </a>
@@ -173,9 +162,7 @@ function Home() {
             <span className="text-[#85877f]">Nothing ships by surprise.</span>
           </p>
           <div className="mt-10">
-            <Unauthenticated>
-              <SignInButton label="Get started with GitHub" />
-            </Unauthenticated>
+            <AuthButton label="Get started with GitHub" />
           </div>
         </section>
       </main>
