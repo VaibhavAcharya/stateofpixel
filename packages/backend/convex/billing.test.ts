@@ -186,12 +186,12 @@ it("ignores the end of a subscription the account no longer uses", async () => {
   });
 });
 
-it("is available when the deployment has a key and products", async () => {
+it("is available when the deployment has an API key", async () => {
   const t = convexTest(schema, modules);
   expect(await t.query(api.billing.available, {})).toBe(true);
-  vi.stubEnv("DODO_PAYMENTS_ENVIRONMENT", "live_mode");
+  vi.stubEnv("DODO_PAYMENTS_API_KEY", undefined);
   expect(await t.query(api.billing.available, {})).toBe(false);
-  vi.stubEnv("DODO_PAYMENTS_ENVIRONMENT", "test_mode");
+  vi.stubEnv("DODO_PAYMENTS_API_KEY", "test-api-key");
 });
 
 it("keeps the plan while a renewal payment fails, and records it", async () => {

@@ -84,7 +84,7 @@ See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (sta
 - [x] Storage billing with Dodo Payments: checkout, customer portal, subscription webhook
 - [x] Plan box on the account home, with payment result and failed renewal notices
 - [x] Upgrade hints in the account switcher and the storage banner
-- [ ] Dodo Payments live mode on production: live products, webhook and env vars
+- [x] Dodo Payments live mode on production: live products, webhook and env vars
 - [ ] Show when a cancelled subscription ends
 - [ ] Usage page
 - [ ] PR comment summary

@@ -802,7 +802,7 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 | `tokens.revoke` | mutation | admin | |
 | `projects.remove` | mutation | admin | Checks the typed name, deletes the project, schedules chunked deletion of its data. |
 | `usage.get` | query | org owner | Usage page data. Not built yet. |
-| `billing.available` | query | anyone | Whether this deployment has a Dodo API key and products for its environment. |
+| `billing.available` | query | anyone | Whether this deployment has a Dodo API key. |
 | `billing.checkout` | action | org owner | `{ login, plan, interval }`. Returns a Dodo Payments checkout URL for a paid plan, monthly or yearly. Throws `already_subscribed` when the account has a subscription. |
 | `billing.portal` | action | org owner | Returns a Dodo Payments customer portal link for payment method, invoices and cancelling. Throws `not_subscribed` without a customer. |
 

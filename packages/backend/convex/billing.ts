@@ -50,9 +50,7 @@ function dodo(): DodoPayments {
 export const available = query({
   args: {},
   returns: v.boolean(),
-  handler: async () =>
-    env.DODO_PAYMENTS_API_KEY !== undefined &&
-    productId(billingEnvironment(), "25gb", "monthly") !== null,
+  handler: async () => env.DODO_PAYMENTS_API_KEY !== undefined,
 });
 
 export const checkout = action({
@@ -63,12 +61,13 @@ export const checkout = action({
     if (target.billingSubscriptionId !== null) {
       throw new ConvexError({ code: "already_subscribed" });
     }
-    const product = productId(billingEnvironment(), plan, interval);
-    if (product === null) {
-      throw new ConvexError({ code: "billing_not_configured" });
-    }
     const session = await dodo().checkoutSessions.create({
-      product_cart: [{ product_id: product, quantity: 1 }],
+      product_cart: [
+        {
+          product_id: productId(billingEnvironment(), plan, interval),
+          quantity: 1,
+        },
+      ],
       customer:
         target.billingCustomerId === null
           ? undefined
