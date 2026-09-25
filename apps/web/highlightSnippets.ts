@@ -4,9 +4,10 @@ import { codeToTokens } from "shiki";
 import type { Plugin } from "vite";
 
 const QUERY = "?highlight";
-const LANGUAGES: Record<string, "yaml" | "shellscript"> = {
+const LANGUAGES: Record<string, "yaml" | "shellscript" | "typescript"> = {
   ".yml": "yaml",
   ".sh": "shellscript",
+  ".ts": "typescript",
 };
 
 export function highlightSnippets(): Plugin {

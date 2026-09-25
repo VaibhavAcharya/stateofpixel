@@ -230,7 +230,7 @@ URL scheme mirrors GitHub: `/{owner}/{repo}`. Public pages (5.1) are server-rend
 
 | Path | Content |
 |---|---|
-| `/` | Landing. One-sentence pitch, the "how it works" diagram, a 3-line CI snippet, pricing block, Sign in button. |
+| `/` | Landing. One-sentence pitch, the review demo, setup snippets per runner, upload times from our own CI, team access, a cost comparison, pricing block, FAQ, Sign in button. |
 | `/brand` | Logo files to download, usage rules, colors and type. |
 | `/privacy`, `/terms`, `/refunds` | Legal pages. Support email `hello@stateofpixel.com`. |
 

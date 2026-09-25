@@ -75,230 +75,47 @@ const exactMoney = new Intl.NumberFormat("en-US", {
   currency: "USD",
   minimumFractionDigits: 2,
 });
-const count = new Intl.NumberFormat("en-US");
 
-function gigabytes(value: number) {
+export function gigabytes(value: number) {
   return value < 1
     ? `${Math.round(value * 1024)} MB`
     : `${value.toFixed(1)} GB`;
 }
 
-function usePricing() {
-  const [screens, setScreens] = useState(300);
-  const [variants, setVariants] = useState(3);
-  const [builds, setBuilds] = useState(400);
-  const [changed, setChanged] = useState(5);
-  const [kilobytes, setKilobytes] = useState(80);
-  const snapshots = screens * variants * builds;
-  const monthlyImages = snapshots * (changed / 100) * 2;
+export type Workload = {
+  screens: number;
+  variants: number;
+  builds: number;
+  changed: number;
+  kilobytes: number;
+};
+
+export const DEFAULT_WORKLOAD: Workload = {
+  screens: 300,
+  variants: 3,
+  builds: 400,
+  changed: 5,
+  kilobytes: 80,
+};
+
+export function estimate(workload: Workload) {
+  const snapshots = workload.screens * workload.variants * workload.builds;
+  const monthlyImages = snapshots * (workload.changed / 100) * 2;
   const stored =
-    (monthlyImages * kilobytes * (RETENTION_DAYS / 30)) / 1024 / 1024;
-  const numbers = {
+    (monthlyImages * workload.kilobytes * (RETENTION_DAYS / 30)) / 1024 / 1024;
+  return {
     snapshots,
     stored,
     tier: fittingTier(stored),
     chromatic: cheapest(CHROMATIC, snapshots),
     argos: cheapest(ARGOS, snapshots),
   };
-  const sliders = (
-    <div className="flex flex-col gap-6">
-      <Range
-        label="Stories or pages"
-        value={screens}
-        min={20}
-        max={2000}
-        step={10}
-        onChange={setScreens}
-      />
-      <Range
-        label="Viewports and themes"
-        value={variants}
-        min={1}
-        max={8}
-        step={1}
-        onChange={setVariants}
-      />
-      <Range
-        label="Builds per month"
-        value={builds}
-        min={20}
-        max={2000}
-        step={10}
-        onChange={setBuilds}
-      />
-      <Range
-        label="Changed per build"
-        value={changed}
-        min={1}
-        max={30}
-        step={1}
-        suffix="%"
-        onChange={setChanged}
-      />
-      <Range
-        label="Average screenshot"
-        value={kilobytes}
-        min={10}
-        max={300}
-        step={10}
-        suffix=" KB"
-        onChange={setKilobytes}
-      />
-    </div>
-  );
-  return { numbers, sliders };
-}
-
-type Numbers = ReturnType<typeof usePricing>["numbers"];
-
-function Range({
-  label,
-  value,
-  min,
-  max,
-  step,
-  suffix = "",
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  suffix?: string;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="flex items-baseline justify-between text-sm">
-        <span className="font-medium">{label}</span>
-        <span className="text-muted tabular-nums">
-          {count.format(value)}
-          {suffix}
-        </span>
-      </span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="mt-2 w-full accent-[var(--color-accent)]"
-      />
-    </label>
-  );
 }
 
 export function formatPrice(value: number) {
   return Number.isInteger(value)
     ? money.format(value)
     : exactMoney.format(value);
-}
-
-function Meter({ numbers, billing }: { numbers: Numbers; billing: Billing }) {
-  const { tier } = numbers;
-  const limit = tier?.gigabytes ?? LARGEST_GIGABYTES;
-  const share = Math.min(numbers.stored / limit, 1);
-  return (
-    <div>
-      <div className="flex items-baseline justify-between text-sm">
-        <span className="font-medium tabular-nums">
-          {gigabytes(numbers.stored)} stored
-        </span>
-        <span className="text-muted tabular-nums">
-          {tier === null
-            ? `Over ${LARGEST_GIGABYTES} GB`
-            : `${tier.gigabytes} GB ${tier.monthly === 0 ? "free" : "plan"}`}
-        </span>
-      </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-2 ring-1 ring-border ring-inset">
-        <div
-          className={`h-full rounded-full ${tier?.monthly === 0 ? "bg-accent" : "bg-pending"}`}
-          style={{ width: `${Math.max(share * 100, 1)}%` }}
-        />
-      </div>
-      <p className="mt-2 text-xs text-muted">
-        With {RETENTION_DAYS}-day retention for pull request images.{" "}
-        {tier === null ? (
-          <>
-            More than our largest plan,{" "}
-            <a
-              href={`mailto:${SUPPORT_EMAIL}`}
-              className="text-link"
-              data-umami-event="Email"
-            >
-              write to us
-            </a>
-            .
-          </>
-        ) : tier.monthly === 0 ? (
-          "Fits in the free tier."
-        ) : (
-          `Fits in the ${tier.gigabytes} GB plan, ${formatPrice(monthlyPrice(tier, billing))} a month.`
-        )}
-      </p>
-    </div>
-  );
-}
-
-function Comparison({
-  numbers,
-  billing,
-}: {
-  numbers: Numbers;
-  billing: Billing;
-}) {
-  const ours =
-    numbers.tier === null ? null : monthlyPrice(numbers.tier, billing);
-  return (
-    <div>
-      <p className="text-xs text-subtle">
-        {count.format(numbers.snapshots)} snapshots a month on per-snapshot
-        pricing
-      </p>
-      <dl className="mt-2 flex flex-col border-t border-dotted border-field-border/50">
-        <div className="flex items-baseline justify-between border-b border-dotted border-field-border/50 py-3 text-sm font-medium">
-          <dt>stateofpixel</dt>
-          <dd className="tabular-nums">
-            {ours === null ? "Contact us" : `${formatPrice(ours)} /mo`}
-          </dd>
-        </div>
-        {[
-          ["Chromatic", numbers.chromatic],
-          ["Argos", numbers.argos],
-        ].map(([name, cost]) => (
-          <div
-            key={name}
-            className="flex items-baseline justify-between border-b border-dotted border-field-border/50 py-3 text-sm text-subtle"
-          >
-            <dt>{name}</dt>
-            <dd className="tabular-nums line-through decoration-field-border/60">
-              {money.format(Number(cost))} /mo
-            </dd>
-          </div>
-        ))}
-      </dl>
-      {ours !== null && (
-        <p className="mt-3 text-sm font-medium">
-          {money.format(numbers.argos - ours)} a month less than Argos,{" "}
-          {money.format(numbers.chromatic - ours)} less than Chromatic.
-        </p>
-      )}
-    </div>
-  );
-}
-
-function Footnote({ available }: { available: boolean }) {
-  return (
-    <p className="mt-8 max-w-[90ch] text-xs text-muted">
-      Chromatic and Argos monthly list prices from their pricing pages on 25
-      September 2026, before tax. Their TurboSnap and Storybook rates can lower
-      the count. Stored size counts each changed screenshot and its diff once;
-      re-runs of the same pull request upload nothing new.
-      {!available && " Paid plans are coming soon."}
-    </p>
-  );
 }
 
 const FREE_FEATURES = [
@@ -350,19 +167,17 @@ function BillingSwitch({
 function TierCard({
   tier,
   billing,
-  highlighted,
   available,
 }: {
   tier: Tier;
   billing: Billing;
-  highlighted: boolean;
   available: boolean;
 }) {
   const free = tier.monthly === 0;
   const price = monthlyPrice(tier, billing);
   return (
     <div
-      className={`flex flex-col rounded-lg bg-surface p-6 ${free ? "pixel-texture col-span-2 max-lg:col-span-3 max-sm:col-span-1" : ""} ${highlighted ? "ring-2 ring-accent" : "ring-1 ring-border"}`}
+      className={`flex flex-col rounded-lg bg-surface p-6 ${free ? "pixel-texture col-span-2 max-lg:col-span-3 max-sm:col-span-1" : ""} ring-1 ring-border`}
     >
       <p className="text-base font-semibold">
         {free ? "Free" : `${tier.gigabytes} GB`}
@@ -411,7 +226,6 @@ function TierCard({
 }
 
 export function PricingPlans() {
-  const { numbers, sliders } = usePricing();
   const [billing, setBilling] = useState<Billing>("monthly");
   const available = useQuery(api.billing.available);
   return (
@@ -421,7 +235,7 @@ export function PricingPlans() {
         className="max-w-[760px]"
       >
         Every plan has unlimited snapshots, seats and builds. {FREE_GIGABYTES}{" "}
-        GB is free, which covers most teams. Move the sliders to check yours.
+        GB is free, which covers most teams.
       </LeadCopy>
       <div className="mt-12 flex flex-col gap-4">
         <BillingSwitch billing={billing} onChange={setBilling} />
@@ -431,7 +245,6 @@ export function PricingPlans() {
               key={tier.gigabytes}
               tier={tier}
               billing={billing}
-              highlighted={tier === (numbers.tier ?? null)}
               available={available === true}
             />
           ))}
@@ -445,17 +258,9 @@ export function PricingPlans() {
           >
             Write to {SUPPORT_EMAIL}
           </a>
-          .
+          .{available !== true && " Paid plans are coming soon."}
         </p>
       </div>
-      <div className="mt-12 grid grid-cols-[1fr_1.1fr] gap-12 border-t border-dotted border-field-border/50 pt-12 max-lg:grid-cols-1">
-        {sliders}
-        <div className="flex flex-col gap-8">
-          <Meter numbers={numbers} billing={billing} />
-          <Comparison numbers={numbers} billing={billing} />
-        </div>
-      </div>
-      <Footnote available={available === true} />
     </section>
   );
 }
