@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.0.0...v1.1.0) (2026-09-25)
+
+
+### Features
+
+* complete M2 ([561fca0](https://github.com/VaibhavAcharya/stateofpixel/commit/561fca0513d2de3450f1033cca2639bf832d7b0f))
+* retention crons and dogfooding suites ([1148eb1](https://github.com/VaibhavAcharya/stateofpixel/commit/1148eb1c78a48ec88bbfa92f313f90f129d94caf))
+
 ## 1.0.0 (2026-09-25)
 
 
