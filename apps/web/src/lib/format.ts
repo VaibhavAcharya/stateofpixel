@@ -38,3 +38,9 @@ export function formatAbsolute(timestamp: number): string {
     timeStyle: "short",
   });
 }
+
+export function formatDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    dateStyle: "medium",
+  });
+}

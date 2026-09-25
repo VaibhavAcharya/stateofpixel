@@ -8,6 +8,7 @@ const modules = import.meta.glob("./**/*.ts");
 const GIGABYTE = 1024 ** 3;
 const WEBHOOK_SECRET = `whsec_${btoa("test-dodo-webhook-secret")}`;
 const MONTHLY_25GB = "pdt_0NoN5TjZdBKHRU6UskUXu";
+const NEXT_BILLING_DATE = "2026-10-25T10:00:00Z";
 
 beforeAll(() => {
   vi.stubEnv("DODO_PAYMENTS_API_KEY", "test-api-key");
@@ -42,6 +43,7 @@ function subscriptionEvent(
     subscriptionId: string;
     status: string;
     productId?: string;
+    cancelAtNextBillingDate?: boolean;
   },
 ) {
   return {
@@ -53,6 +55,8 @@ function subscriptionEvent(
       subscription_id: fields.subscriptionId,
       status: fields.status,
       product_id: fields.productId ?? MONTHLY_25GB,
+      next_billing_date: NEXT_BILLING_DATE,
+      cancel_at_next_billing_date: fields.cancelAtNextBillingDate ?? false,
       customer: { customer_id: "cus_acme", email: "billing@acme.test" },
       metadata: { accountId: fields.accountId },
     },
@@ -209,4 +213,38 @@ it("keeps the plan while a renewal payment fails, and records it", async () => {
     plan: "25gb",
     billingStatus: "active",
   });
+});
+
+it("keeps the plan until a subscription cancelled at the next billing date ends", async () => {
+  const { t, accountId, account } = await setup();
+  const fields = { accountId, subscriptionId: "sub_1", status: "active" };
+  await deliver(t, subscriptionEvent("subscription.active", fields));
+  expect(await account()).toMatchObject({
+    billingPeriodEndsAt: Date.parse(NEXT_BILLING_DATE),
+    billingCancelsAtPeriodEnd: false,
+  });
+  await deliver(
+    t,
+    subscriptionEvent("subscription.updated", {
+      ...fields,
+      cancelAtNextBillingDate: true,
+    }),
+  );
+  expect(await account()).toMatchObject({
+    plan: "25gb",
+    billingSubscriptionId: "sub_1",
+    billingCancelsAtPeriodEnd: true,
+  });
+  await deliver(
+    t,
+    subscriptionEvent("subscription.cancelled", {
+      ...fields,
+      status: "cancelled",
+      cancelAtNextBillingDate: true,
+    }),
+  );
+  const ended = await account();
+  expect(ended).toMatchObject({ plan: "free" });
+  expect(ended?.billingPeriodEndsAt).toBeUndefined();
+  expect(ended?.billingCancelsAtPeriodEnd).toBeUndefined();
 });

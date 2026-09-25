@@ -130,9 +130,8 @@ function AccountSwitcher({ owner }: { owner?: string }) {
         <>
           <MenuSeparator />
           <Link
-            to="/$owner"
+            to="/$owner/settings/billing"
             params={{ owner: current.login }}
-            hash="plan"
             className={`${menuItemClass} text-muted`}
             data-umami-event="Upgrade hint"
             data-umami-event-source="account switcher"

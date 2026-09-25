@@ -49,9 +49,8 @@ export function StorageBanner({
         {billingAvailable ? (
           <>
             <Link
-              to="/$owner"
+              to="/$owner/settings/billing"
               params={{ owner }}
-              hash="plan"
               className="font-medium text-link"
               data-umami-event="Upgrade hint"
               data-umami-event-source="storage banner"

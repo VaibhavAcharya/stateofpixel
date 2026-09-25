@@ -8,6 +8,7 @@ import type { Doc } from "./_generated/dataModel";
 import { internalMutation, type QueryCtx, query } from "./_generated/server";
 import { PLAN_STORAGE_LIMIT_BYTES, withStorageBytes } from "./lib/storage";
 import {
+  accountRole,
   buildConclusion,
   buildCounts,
   buildStatus,
@@ -61,16 +62,17 @@ async function toProjectRow(
   };
 }
 
-async function findMemberAccount(ctx: QueryCtx, login: string) {
+export async function findMembership(ctx: QueryCtx, login: string) {
   const userId = await getAuthUserId(ctx);
   if (userId === null) {
     return null;
   }
+  const user = await ctx.db.get("users", userId);
   const account = await ctx.db
     .query("accounts")
     .withIndex("by_login", (q) => q.eq("login", login))
     .first();
-  if (account === null) {
+  if (user === null || account === null) {
     return null;
   }
   const membership = await ctx.db
@@ -79,7 +81,22 @@ async function findMemberAccount(ctx: QueryCtx, login: string) {
       q.eq("accountId", account._id).eq("userId", userId),
     )
     .unique();
-  return membership === null ? null : account;
+  return membership === null ? null : { account, user, membership };
+}
+
+export async function findMemberAccount(ctx: QueryCtx, login: string) {
+  return (await findMembership(ctx, login))?.account ?? null;
+}
+
+export function memberRole(
+  account: Doc<"accounts">,
+  user: Doc<"users">,
+  membership: Doc<"accountMembers">,
+): Infer<typeof accountRole> | null {
+  if (account.type === "user") {
+    return user.login === account.login ? "owner" : "member";
+  }
+  return membership.role ?? null;
 }
 
 export const home = query({
@@ -93,16 +110,23 @@ export const home = query({
       storage: storageUsage,
       subscription: v.union(
         v.null(),
-        v.object({ id: v.string(), status: v.string() }),
+        v.object({
+          id: v.string(),
+          status: v.string(),
+          periodEndsAt: v.union(v.number(), v.null()),
+          cancelsAtPeriodEnd: v.boolean(),
+        }),
       ),
       billingCustomer: v.boolean(),
+      role: v.union(accountRole, v.null()),
     }),
   ),
   handler: async (ctx, { login }) => {
-    const account = await findMemberAccount(ctx, login);
-    if (account === null) {
+    const found = await findMembership(ctx, login);
+    if (found === null) {
       return null;
     }
+    const { account } = found;
     return {
       login: account.login,
       type: account.type,
@@ -119,8 +143,11 @@ export const home = query({
           : {
               id: account.billingSubscriptionId,
               status: account.billingStatus ?? "active",
+              periodEndsAt: account.billingPeriodEndsAt ?? null,
+              cancelsAtPeriodEnd: account.billingCancelsAtPeriodEnd ?? false,
             },
       billingCustomer: account.billingCustomerId !== undefined,
+      role: memberRole(account, found.user, found.membership),
     };
   },
 });

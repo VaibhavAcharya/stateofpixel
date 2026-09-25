@@ -19,7 +19,7 @@ import {
   planForProduct,
   productId,
 } from "./lib/billing";
-import { GithubError, isOrgOwner } from "./lib/github";
+import { isAccountOwner } from "./members";
 
 const paidPlan = v.union(
   v.literal("25gb"),
@@ -45,6 +45,10 @@ function dodo(): DodoPayments {
     bearerToken: env.DODO_PAYMENTS_API_KEY,
     environment: billingEnvironment(),
   });
+}
+
+function billingUrl(login: string): string {
+  return `${env.SITE_URL}/${login}/settings/billing`;
 }
 
 export const available = query({
@@ -73,7 +77,7 @@ export const checkout = action({
           ? undefined
           : { customer_id: target.billingCustomerId },
       metadata: { accountId: target.accountId },
-      return_url: `${env.SITE_URL}/${login}`,
+      return_url: billingUrl(login),
     });
     if (session.checkout_url == null) {
       throw new Error("Dodo returned no checkout URL");
@@ -92,7 +96,7 @@ export const portal = action({
     }
     const session = await dodo().customers.customerPortal.create(
       target.billingCustomerId,
-      { return_url: `${env.SITE_URL}/${login}` },
+      { return_url: billingUrl(login) },
     );
     return session.link;
   },
@@ -110,18 +114,10 @@ async function requireBillingOwner(ctx: ActionCtx, login: string) {
   if (target === null) {
     throw new ConvexError({ code: "not_found" });
   }
-  let owner: boolean;
-  try {
-    owner =
-      target.accountType === "user"
-        ? login === target.userLogin
-        : await isOrgOwner(target.githubToken, login);
-  } catch (error) {
-    if (error instanceof GithubError && error.status === 401) {
-      throw new ConvexError({ code: "github_token_invalid" });
-    }
-    throw error;
-  }
+  const owner = await isAccountOwner(target.githubToken, target.userLogin, {
+    type: target.accountType,
+    login,
+  });
   if (!owner) {
     throw new ConvexError({ code: "not_owner" });
   }
@@ -201,6 +197,8 @@ export const webhook = httpAction(async (ctx, request) => {
       customerId: subscription.customer.customer_id,
       productId: subscription.product_id,
       status: subscription.status,
+      periodEndsAt: Date.parse(subscription.next_billing_date),
+      cancelsAtPeriodEnd: subscription.cancel_at_next_billing_date,
     });
   }
   return new Response(null, { status: 204 });
@@ -219,6 +217,8 @@ export const syncSubscription = internalMutation({
     customerId: v.string(),
     productId: v.string(),
     status: v.string(),
+    periodEndsAt: v.number(),
+    cancelsAtPeriodEnd: v.boolean(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -246,6 +246,8 @@ export const syncSubscription = internalMutation({
         billingCustomerId: args.customerId,
         billingSubscriptionId: args.subscriptionId,
         billingStatus: args.status,
+        billingPeriodEndsAt: args.periodEndsAt,
+        billingCancelsAtPeriodEnd: args.cancelsAtPeriodEnd,
       });
     } else if (account.billingSubscriptionId !== args.subscriptionId) {
       return null;
@@ -254,10 +256,14 @@ export const syncSubscription = internalMutation({
         ...planFields(account, "free"),
         billingSubscriptionId: undefined,
         billingStatus: undefined,
+        billingPeriodEndsAt: undefined,
+        billingCancelsAtPeriodEnd: undefined,
       });
     } else {
       await ctx.db.patch("accounts", account._id, {
         billingStatus: args.status,
+        billingPeriodEndsAt: args.periodEndsAt,
+        billingCancelsAtPeriodEnd: args.cancelsAtPeriodEnd,
       });
     }
     return null;

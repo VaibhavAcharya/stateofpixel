@@ -86,9 +86,10 @@ See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (sta
 - [x] Upgrade hints in the account switcher and the storage banner
 - [x] Dodo Payments live mode on production: live products, webhook and env vars
 - [ ] Show when a cancelled subscription ends, from `cancel_at_next_billing_date` and `next_billing_date`
+- [ ] Account tabs: Projects, Members with roles from GitHub, and Billing with the plan box
 - [ ] Change between paid plans without cancelling first; `billing.checkout` refuses with `already_subscribed` today
-- [ ] Show Upgrade and Manage billing only to owners; other members see them and get `not_owner`
-- [ ] Plan box details from SPEC 5.9: billing period, payment method and invoices
+- [ ] Disable Upgrade and Manage billing for members who are not owners, and the project Settings tab for users who are not repo admins, each with a tooltip
+- [ ] Plan box details from SPEC 5.10: payment method and invoices
 - [ ] Usage page
 - [ ] PR comment summary
 - [ ] Tokenless auth for fork PRs

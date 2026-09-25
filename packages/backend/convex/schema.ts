@@ -41,6 +41,8 @@ export const plan = v.union(
   v.literal("custom"),
 );
 
+export const accountRole = v.union(v.literal("owner"), v.literal("member"));
+
 export const storageUsage = v.object({
   plan,
   storageBytes: v.number(),
@@ -98,6 +100,8 @@ export default defineSchema({
     billingCustomerId: v.optional(v.string()),
     billingSubscriptionId: v.optional(v.string()),
     billingStatus: v.optional(v.string()),
+    billingPeriodEndsAt: v.optional(v.number()),
+    billingCancelsAtPeriodEnd: v.optional(v.boolean()),
     deletedAt: v.optional(v.number()),
   })
     .index("by_githubAccountId", ["githubAccountId"])
@@ -107,6 +111,7 @@ export default defineSchema({
   accountMembers: defineTable({
     userId: v.id("users"),
     accountId: v.id("accounts"),
+    role: v.optional(accountRole),
   })
     .index("by_userId", ["userId"])
     .index("by_accountId_and_userId", ["accountId", "userId"]),

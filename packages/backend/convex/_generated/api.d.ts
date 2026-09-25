@@ -34,6 +34,7 @@ import type * as lib_projectTokens from "../lib/projectTokens.js";
 import type * as lib_storage from "../lib/storage.js";
 import type * as lib_urls from "../lib/urls.js";
 import type * as me from "../me.js";
+import type * as members from "../members.js";
 import type * as permissions from "../permissions.js";
 import type * as projects from "../projects.js";
 import type * as rateLimits from "../rateLimits.js";
@@ -76,6 +77,7 @@ declare const fullApi: ApiFromModules<{
   "lib/storage": typeof lib_storage;
   "lib/urls": typeof lib_urls;
   me: typeof me;
+  members: typeof members;
   permissions: typeof permissions;
   projects: typeof projects;
   rateLimits: typeof rateLimits;

@@ -9,12 +9,10 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { PageHeader } from "./Page";
 import { StorageBanner } from "./StorageBanner";
-import { buttonClass, type Icon } from "./ui";
+import { Tab, Tabs } from "./Tabs";
+import { buttonClass } from "./ui";
 
-type Tab = "builds" | "baselines" | "settings";
-
-const TAB_CLASS =
-  "-mb-px flex h-10 items-center gap-1.5 border-b-2 text-sm transition-colors duration-100";
+type ProjectTab = "builds" | "baselines" | "settings";
 
 export function ProjectHeader({
   owner,
@@ -23,28 +21,14 @@ export function ProjectHeader({
 }: {
   owner: string;
   repo: string;
-  tab: Tab;
+  tab: ProjectTab;
 }) {
   const access = useQuery(api.projects.access, { owner, name: repo });
-  const tabs: { value: Tab; label: string; to: string; icon: Icon }[] = [
-    { value: "builds", label: "Builds", to: "/$owner/$repo", icon: StackIcon },
-    {
-      value: "baselines",
-      label: "Baselines",
-      to: "/$owner/$repo/baselines",
-      icon: ImagesIcon,
-    },
-    ...(access?.canAdmin
-      ? [
-          {
-            value: "settings" as const,
-            label: "Settings",
-            to: "/$owner/$repo/settings",
-            icon: GearIcon,
-          },
-        ]
-      : []),
-  ];
+  const settingsLocked =
+    access !== undefined &&
+    access !== null &&
+    access.permission !== null &&
+    !access.canAdmin;
 
   return (
     <>
@@ -68,24 +52,34 @@ export function ProjectHeader({
       {access?.storage && (
         <StorageBanner owner={owner} storage={access.storage} />
       )}
-      <nav className="mb-6 flex gap-5 border-b border-border">
-        {tabs.map((item) => (
-          <Link
-            key={item.value}
-            to={item.to}
-            params={{ owner, repo }}
-            aria-current={item.value === tab ? "page" : undefined}
-            className={`${TAB_CLASS} ${
-              item.value === tab
-                ? "border-accent text-text"
-                : "border-transparent text-muted hover:text-text"
-            }`}
-          >
-            <item.icon size={16} />
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <Tabs>
+        <Tab
+          to="/$owner/$repo"
+          params={{ owner, repo }}
+          icon={StackIcon}
+          label="Builds"
+          active={tab === "builds"}
+        />
+        <Tab
+          to="/$owner/$repo/baselines"
+          params={{ owner, repo }}
+          icon={ImagesIcon}
+          label="Baselines"
+          active={tab === "baselines"}
+        />
+        <Tab
+          to="/$owner/$repo/settings"
+          params={{ owner, repo }}
+          icon={GearIcon}
+          label="Settings"
+          active={tab === "settings"}
+          disabledReason={
+            settingsLocked
+              ? "Only admins of this repository on GitHub can change its settings."
+              : undefined
+          }
+        />
+      </Tabs>
     </>
   );
 }

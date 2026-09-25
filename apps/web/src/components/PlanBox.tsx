@@ -8,10 +8,12 @@ import {
 import { api } from "@stateofpixel/backend/api";
 import {
   formatGigabytes,
+  PLAN_STORAGE_LIMIT_BYTES,
   type StorageUsage,
 } from "@stateofpixel/backend/storage";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import type { ReactNode } from "react";
+import { formatDate } from "../lib/format";
 import { type PaidPlan, useBilling } from "../lib/useBilling";
 import {
   type Billing,
@@ -26,7 +28,7 @@ import {
   menuItemClass,
   useCloseMenu,
 } from "./Menu";
-import { buttonClass } from "./ui";
+import { buttonClass, Tooltip } from "./ui";
 
 export const PLAN_NAMES = {
   free: "Free",
@@ -92,23 +94,56 @@ function planNotice(
       text: `Your last payment failed. Update your payment method in Manage billing to keep the ${planName} plan.`,
     };
   }
+  if (
+    subscription?.status === "active" &&
+    subscription.cancelsAtPeriodEnd &&
+    subscription.periodEndsAt !== null
+  ) {
+    return {
+      tone: "info",
+      text: `Your ${planName} plan is cancelled. It stays until ${formatDate(
+        subscription.periodEndsAt,
+      )}, then the account moves to the Free plan with ${formatGigabytes(
+        PLAN_STORAGE_LIMIT_BYTES.free,
+      )} of storage.`,
+    };
+  }
   return null;
 }
 
-type Subscription = { id: string; status: string };
+function periodLine(subscription: Subscription | null): string | null {
+  if (subscription?.status !== "active" || subscription.periodEndsAt === null) {
+    return null;
+  }
+  const date = formatDate(subscription.periodEndsAt);
+  return subscription.cancelsAtPeriodEnd
+    ? `Ends on ${date}`
+    : `Renews on ${date}`;
+}
+
+type Subscription = {
+  id: string;
+  status: string;
+  periodEndsAt: number | null;
+  cancelsAtPeriodEnd: boolean;
+};
 
 export function PlanBox({
   login,
+  accountType,
   storage,
   subscription,
   billingCustomer,
+  role,
   checkoutResult,
   onDismissCheckout,
 }: {
   login: string;
+  accountType: "user" | "org";
   storage: StorageUsage & { plan: keyof typeof PLAN_NAMES };
   subscription: Subscription | null;
   billingCustomer: boolean;
+  role: "owner" | "member" | null;
   checkoutResult: CheckoutResult | null;
   onDismissCheckout: () => void;
 }) {
@@ -116,8 +151,15 @@ export function PlanBox({
   const billing = useBilling();
   const planName = PLAN_NAMES[storage.plan];
   const notice = planNotice(planName, subscription, checkoutResult);
+  const period = periodLine(subscription);
+  const lockedReason =
+    role !== "member"
+      ? undefined
+      : accountType === "org"
+        ? `Only owners of ${login} on GitHub can change the plan and billing.`
+        : `Only ${login} can change the plan and billing.`;
   return (
-    <div id="plan" className="mb-6 flex scroll-mt-4 flex-col gap-2">
+    <div className="flex flex-col gap-2">
       {notice !== null && (
         <PlanNotice
           notice={notice}
@@ -132,24 +174,33 @@ export function PlanBox({
             · {formatGigabytes(storage.storageBytes)} of{" "}
             {formatGigabytes(storage.storageLimitBytes)} used
           </span>
+          {period !== null && <span className="text-muted"> · {period}</span>}
           {billing.error !== null && (
             <p className="mt-1 text-failed">{billing.error}</p>
           )}
         </div>
         {available && (
           <div className="flex gap-2">
-            {billingCustomer && (
-              <button
-                type="button"
-                className={buttonClass()}
-                disabled={billing.pending}
-                onClick={() => void billing.manage(login)}
-              >
-                Manage billing
-              </button>
-            )}
+            {billingCustomer &&
+              (lockedReason === undefined ? (
+                <button
+                  type="button"
+                  className={buttonClass()}
+                  disabled={billing.pending}
+                  onClick={() => void billing.manage(login)}
+                >
+                  Manage billing
+                </button>
+              ) : (
+                <Tooltip label={lockedReason} align="end">
+                  <button type="button" aria-disabled className={buttonClass()}>
+                    Manage billing
+                  </button>
+                </Tooltip>
+              ))}
             {subscription === null && (
               <UpgradeMenu
+                disabledReason={lockedReason}
                 pending={billing.pending}
                 onChoose={(plan, interval) =>
                   void billing.checkout(login, plan, interval)
@@ -194,13 +245,25 @@ function PlanNotice({
 
 export function UpgradeMenu({
   label = "Upgrade",
+  disabledReason,
   pending,
   onChoose,
 }: {
   label?: string;
+  disabledReason?: string;
   pending: boolean;
   onChoose: (plan: PaidPlan, interval: Billing) => void;
 }) {
+  if (disabledReason !== undefined) {
+    return (
+      <Tooltip label={disabledReason} align="end">
+        <button type="button" aria-disabled className={buttonClass("primary")}>
+          {label}
+          <CaretDownIcon size={12} />
+        </button>
+      </Tooltip>
+    );
+  }
   return (
     <Menu
       label={label}

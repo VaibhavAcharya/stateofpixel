@@ -11,7 +11,13 @@ import {
   XIcon,
 } from "@phosphor-icons/react/ssr";
 import type { Doc } from "@stateofpixel/backend/dataModel";
-import type { ComponentType, ReactNode } from "react";
+import {
+  type ComponentType,
+  cloneElement,
+  type ReactElement,
+  type ReactNode,
+  useId,
+} from "react";
 import { formatAbsolute, formatCount, formatRelative } from "../lib/format";
 
 export type DiffStatus = Doc<"snapshots">["diffStatus"];
@@ -226,12 +232,13 @@ export function RelativeTime({ timestamp }: { timestamp: number }) {
 }
 
 const BUTTON_VARIANTS = {
-  primary: "bg-accent text-accent-fg hover:bg-accent-hover",
+  primary: "bg-accent text-accent-fg not-aria-disabled:hover:bg-accent-hover",
   secondary:
-    "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)] hover:bg-hover",
-  ghost: "text-muted hover:bg-hover hover:text-text",
+    "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)] not-aria-disabled:hover:bg-hover",
+  ghost:
+    "text-muted not-aria-disabled:hover:bg-hover not-aria-disabled:hover:text-text",
   danger:
-    "bg-surface text-rejected shadow-[inset_0_0_0_1px_var(--color-border)] hover:bg-rejected-bg",
+    "bg-surface text-rejected shadow-[inset_0_0_0_1px_var(--color-border)] not-aria-disabled:hover:bg-rejected-bg",
 };
 
 const BUTTON_SIZES = {
@@ -245,7 +252,33 @@ export function buttonClass(
   variant: keyof typeof BUTTON_VARIANTS = "secondary",
   size: keyof typeof BUTTON_SIZES = "md",
 ) {
-  return `inline-flex shrink-0 items-center justify-center rounded-control font-medium whitespace-nowrap transition-colors duration-100 select-none disabled:pointer-events-none disabled:opacity-45 pointer-coarse:min-h-11 ${BUTTON_SIZES[size]} ${BUTTON_VARIANTS[variant]}`;
+  return `inline-flex shrink-0 items-center justify-center rounded-control font-medium whitespace-nowrap transition-colors duration-100 select-none disabled:pointer-events-none disabled:opacity-45 aria-disabled:cursor-not-allowed aria-disabled:opacity-45 pointer-coarse:min-h-11 ${BUTTON_SIZES[size]} ${BUTTON_VARIANTS[variant]}`;
+}
+
+export function Tooltip({
+  label,
+  align = "start",
+  children,
+}: {
+  label: string;
+  align?: "start" | "end";
+  children: ReactElement<{ "aria-describedby"?: string }>;
+}) {
+  const id = useId();
+  return (
+    <span className="group/tooltip relative inline-flex">
+      {cloneElement(children, { "aria-describedby": id })}
+      <span
+        role="tooltip"
+        id={id}
+        className={`pointer-events-none invisible absolute top-full z-40 mt-1.5 w-max max-w-64 rounded-md bg-surface px-2.5 py-1.5 text-xs font-normal text-text opacity-0 shadow-tooltip ring-1 ring-border transition-opacity duration-100 group-focus-within/tooltip:visible group-focus-within/tooltip:opacity-100 group-hover/tooltip:visible group-hover/tooltip:opacity-100 ${
+          align === "end" ? "right-0" : "left-0"
+        }`}
+      >
+        {label}
+      </span>
+    </span>
+  );
 }
 
 export function LeadCopy({
