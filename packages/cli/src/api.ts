@@ -149,6 +149,10 @@ export function isServerError(error: unknown): boolean {
   );
 }
 
+export function isRateLimited(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.status === 429;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

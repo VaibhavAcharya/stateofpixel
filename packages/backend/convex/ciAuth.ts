@@ -32,7 +32,7 @@ type CiProject = { id: Id<"projects">; fullName: string };
 
 export type CiAuth =
   | { method: "oidc"; project: CiProject; claims: GithubOidcClaims }
-  | { method: "token"; project: CiProject };
+  | { method: "token"; project: CiProject; tokenHash: string };
 
 export async function authenticateCi(
   ctx: ActionCtx,
@@ -45,10 +45,11 @@ export async function authenticateCi(
   const token = header.slice("Bearer ".length).trim();
 
   if (isProjectToken(token)) {
+    const tokenHash = await hashProjectToken(token);
     const project = await ctx.runMutation(internal.ciAuth.useProjectToken, {
-      tokenHash: await hashProjectToken(token),
+      tokenHash,
     });
-    return project === null ? null : { method: "token", project };
+    return project === null ? null : { method: "token", project, tokenHash };
   }
 
   const claims = await verifyGithubOidcToken(token);

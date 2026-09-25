@@ -29,10 +29,12 @@ import type * as lib_images from "../lib/images.js";
 import type * as lib_matchesBranch from "../lib/matchesBranch.js";
 import type * as lib_permissions from "../lib/permissions.js";
 import type * as lib_projectTokens from "../lib/projectTokens.js";
+import type * as lib_storage from "../lib/storage.js";
 import type * as lib_urls from "../lib/urls.js";
 import type * as me from "../me.js";
 import type * as permissions from "../permissions.js";
 import type * as projects from "../projects.js";
+import type * as rateLimits from "../rateLimits.js";
 import type * as retention from "../retention.js";
 import type * as reviews from "../reviews.js";
 import type * as snapshots from "../snapshots.js";
@@ -67,10 +69,12 @@ declare const fullApi: ApiFromModules<{
   "lib/matchesBranch": typeof lib_matchesBranch;
   "lib/permissions": typeof lib_permissions;
   "lib/projectTokens": typeof lib_projectTokens;
+  "lib/storage": typeof lib_storage;
   "lib/urls": typeof lib_urls;
   me: typeof me;
   permissions: typeof permissions;
   projects: typeof projects;
+  rateLimits: typeof rateLimits;
   retention: typeof retention;
   reviews: typeof reviews;
   snapshots: typeof snapshots;
@@ -104,4 +108,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+};

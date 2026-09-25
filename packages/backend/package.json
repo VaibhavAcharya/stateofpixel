@@ -5,7 +5,8 @@
   "exports": {
     "./api": "./convex/_generated/api.js",
     "./conclude": "./convex/lib/conclude.ts",
-    "./dataModel": "./convex/_generated/dataModel.d.ts"
+    "./dataModel": "./convex/_generated/dataModel.d.ts",
+    "./storage": "./convex/lib/storage.ts"
   },
   "scripts": {
     "dev": "convex dev",
@@ -15,6 +16,7 @@
   "dependencies": {
     "@auth/core": "^0.41.3",
     "@convex-dev/auth": "^0.0.95",
+    "@convex-dev/rate-limiter": "^0.4.0",
     "convex": "^1.46.0",
     "convex-helpers": "0.1.124",
     "jose": "^6.2.12"

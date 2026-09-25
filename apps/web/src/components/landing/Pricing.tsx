@@ -216,7 +216,11 @@ function Meter({ numbers, billing }: { numbers: Numbers; billing: Billing }) {
         {tier === null ? (
           <>
             More than our largest plan,{" "}
-            <a href={`mailto:${SUPPORT_EMAIL}`} className="text-link">
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="text-link"
+              data-umami-event="Email"
+            >
               write to us
             </a>
             .
@@ -320,6 +324,8 @@ function BillingSwitch({
           key={value}
           type="button"
           aria-pressed={billing === value}
+          data-umami-event="Billing period"
+          data-umami-event-period={value}
           onClick={() => onChange(value)}
           className={`h-7 rounded-sm px-3 text-xs font-medium transition-colors duration-100 ${
             billing === value
@@ -421,7 +427,11 @@ export function PricingPlans() {
         </div>
         <p className="text-sm text-muted">
           Need more than {LARGEST_GIGABYTES} GB?{" "}
-          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-link">
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            className="text-link"
+            data-umami-event="Email"
+          >
             Write to {SUPPORT_EMAIL}
           </a>
           .

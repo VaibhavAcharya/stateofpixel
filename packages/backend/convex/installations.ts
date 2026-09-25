@@ -13,8 +13,8 @@ import {
   listInstallationRepositories,
   toRepositoryFields,
 } from "./lib/github";
+import { PLAN_STORAGE_LIMIT_BYTES } from "./lib/storage";
 
-const FREE_STORAGE_LIMIT_BYTES = 10 * 1024 ** 3;
 const PROJECT_CHUNK_SIZE = 200;
 
 const repositoryFields = v.object({
@@ -116,7 +116,7 @@ export const upsertAccount = internalMutation({
     return ctx.db.insert("accounts", {
       ...args,
       plan: "free",
-      storageLimitBytes: FREE_STORAGE_LIMIT_BYTES,
+      storageLimitBytes: PLAN_STORAGE_LIMIT_BYTES.free,
       storageBytes: 0,
     });
   },

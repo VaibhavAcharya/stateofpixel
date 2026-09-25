@@ -43,6 +43,7 @@ import {
   Spinner,
 } from "../../../../components/ui";
 import { MODES, useViewerSettings } from "../../../../components/Viewer";
+import { track } from "../../../../lib/analytics";
 import { errorCode } from "../../../../lib/errorCode";
 import { formatCount } from "../../../../lib/format";
 import { prefetchBuild } from "../../../../lib/prefetch";
@@ -440,6 +441,7 @@ function BuildPage({
     if (!canReview || row === undefined || row.reviewState === "none") {
       return;
     }
+    track("Review", { action });
     applyReview({
       buildId: build.buildId,
       snapshotIds: [row.id],
@@ -480,6 +482,7 @@ function BuildPage({
     if (!canReview) {
       return;
     }
+    track("Review all", { action });
     applyReview({ buildId: build.buildId, snapshotIds: "all", action }).catch(
       () => show("error", `Could not ${action} all snapshots.`),
     );

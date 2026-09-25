@@ -71,8 +71,19 @@ function Privacy() {
       <h2>Cookies and browser storage</h2>
       <p>
         The site stores your sign-in session and your theme choice in your
-        browser's local storage. We do not use analytics, advertising or
-        tracking cookies.
+        browser's local storage. We do not use advertising or tracking cookies.
+      </p>
+
+      <h2>Analytics</h2>
+      <p>
+        We use Umami Cloud to count page views and clicks on some buttons, such
+        as sign in, copy code and approve. Umami does not use cookies. It
+        records the page, the page you came from, your browser, operating
+        system, device type, screen size, language, country and page load times.
+        Before anything is sent, we replace account names, repository names,
+        build numbers and snapshot names in page addresses with placeholders,
+        and we leave out search parameters. If your browser sends Do Not Track,
+        nothing is sent.
       </p>
 
       <h2>How we use it</h2>
@@ -94,6 +105,7 @@ function Privacy() {
           Convex, for the database, file storage and the backend functions.
         </li>
         <li>Netlify, to host the website.</li>
+        <li>Umami, for the analytics described above.</li>
       </ul>
       <p>
         These providers may process data in other countries. Before paid plans

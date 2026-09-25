@@ -20,10 +20,13 @@ import { conclude } from "./lib/conclude";
 import { isBaselineCandidate } from "./lib/history";
 import { matchesBranch } from "./lib/matchesBranch";
 import { findReadableBuild, findReadableProject } from "./lib/permissions";
+import { formatGigabytes, storageState, storageWarnings } from "./lib/storage";
 import { buildUrl } from "./lib/urls";
+import { DAILY_BUILDS, DAILY_UPLOAD_BYTES, rateLimiter } from "./rateLimits";
 import { buildConclusion, buildCounts, buildStatus } from "./schema";
 
 const EXPIRY_MS = 60 * 60 * 1000;
+const MAX_SHARDS = 256;
 const MAX_ANCESTORS = 100;
 const BUILDS_PER_COMMIT = 10;
 const FINALIZE_PAGE_SIZE = 500;
@@ -72,6 +75,8 @@ export const createOrJoin = internalMutation({
     shardIndex: v.number(),
     url: v.string(),
     accountId: v.id("accounts"),
+    storageBlocked: v.boolean(),
+    warnings: v.array(v.string()),
     baselineBuildId: v.union(v.id("builds"), v.null()),
     baseline: v.union(
       v.null(),
@@ -81,10 +86,13 @@ export const createOrJoin = internalMutation({
   }),
   handler: async (ctx, args) => {
     const project = await ctx.db.get("projects", args.projectId);
-    if (project === null) {
+    const account =
+      project === null ? null : await ctx.db.get("accounts", project.accountId);
+    if (project === null || account === null) {
       throw ciError(404, "project_not_found", "Project not found.");
     }
     validateShard(args.shardIndex, args.shardsTotal);
+    const now = Date.now();
 
     const existing = await ctx.db
       .query("builds")
@@ -97,9 +105,18 @@ export const createOrJoin = internalMutation({
       .unique();
     const build =
       existing === null
-        ? await createBuild(ctx, project, args)
+        ? await createBuild(ctx, project, args, {
+            storageBlocked: storageState(account, now) === "blocked",
+          })
         : checkJoin(existing, args.shardsTotal);
     const shardIndex = args.shardIndex ?? (build.shardsJoined ?? 0) + 1;
+    if (shardIndex > MAX_SHARDS) {
+      throw ciError(
+        400,
+        "too_many_shards",
+        `A build can have up to ${MAX_SHARDS} shards.`,
+      );
+    }
     if (args.shardIndex === null) {
       await ctx.db.patch("builds", build._id, { shardsJoined: shardIndex });
     }
@@ -114,6 +131,8 @@ export const createOrJoin = internalMutation({
       shardIndex,
       url: buildUrl(project, build.number),
       accountId: project.accountId,
+      storageBlocked: build.storageBlocked,
+      warnings: storageWarnings(account, now),
       baselineBuildId: baseline?._id ?? null,
       baseline:
         baseline === null
@@ -129,7 +148,10 @@ export const createOrJoin = internalMutation({
 
 function validateShard(shardIndex: number | null, shardsTotal: number | null) {
   const validTotal =
-    shardsTotal === null || (Number.isInteger(shardsTotal) && shardsTotal >= 1);
+    shardsTotal === null ||
+    (Number.isInteger(shardsTotal) &&
+      shardsTotal >= 1 &&
+      shardsTotal <= MAX_SHARDS);
   const validIndex =
     shardIndex === null
       ? shardsTotal === null
@@ -140,7 +162,7 @@ function validateShard(shardIndex: number | null, shardsTotal: number | null) {
     throw ciError(
       400,
       "invalid_shard",
-      "shard.index must be between 1 and shard.total.",
+      `shard.index must be between 1 and shard.total, and shard.total at most ${MAX_SHARDS}.`,
     );
   }
 }
@@ -185,7 +207,9 @@ async function createBuild(
     fallbackBaselineBuildId?: Id<"builds">;
     mergedPrNumber?: number;
   },
+  { storageBlocked }: { storageBlocked: boolean },
 ): Promise<Doc<"builds">> {
+  await checkDailyLimits(ctx, project.accountId);
   const baseline =
     (await selectBaseline(
       ctx,
@@ -231,7 +255,7 @@ async function createBuild(
     fullRows: !args.subset,
     baselineBuildId: baseline?._id,
     counts: EMPTY_COUNTS,
-    storageBlocked: false,
+    storageBlocked,
     checkVersion: 0,
     checkOutOfSync: true,
     ciProvider: args.ciProvider,
@@ -249,6 +273,32 @@ async function createBuild(
     throw new Error("Build insert failed");
   }
   return build;
+}
+
+async function checkDailyLimits(ctx: MutationCtx, accountId: Id<"accounts">) {
+  const uploads = await rateLimiter.check(ctx, "uploadedBytes", {
+    key: accountId,
+  });
+  if (!uploads.ok) {
+    throw ciError(
+      429,
+      "upload_limit_reached",
+      `This account uploaded its daily limit of ${formatGigabytes(DAILY_UPLOAD_BYTES)}. Try again in ${formatWait(uploads.retryAfter)}.`,
+    );
+  }
+  const builds = await rateLimiter.limit(ctx, "builds", { key: accountId });
+  if (!builds.ok) {
+    throw ciError(
+      429,
+      "build_limit_reached",
+      `This account created its daily limit of ${DAILY_BUILDS.toLocaleString("en-US")} builds. Try again in ${formatWait(builds.retryAfter)}.`,
+    );
+  }
+}
+
+function formatWait(ms: number): string {
+  const minutes = Math.ceil(ms / 60_000);
+  return minutes < 60 ? `${minutes} min` : `${Math.ceil(minutes / 60)} h`;
 }
 
 async function selectBaseline(
@@ -369,6 +419,7 @@ export const githubRepository = internalQuery({
 export const lookupSnapshots = internalQuery({
   args: {
     baselineBuildId: v.union(v.id("builds"), v.null()),
+    storageBlocked: v.boolean(),
     snapshots: v.array(v.object({ name: v.string(), hash: v.string() })),
   },
   returns: v.array(
@@ -383,7 +434,7 @@ export const lookupSnapshots = internalQuery({
       baselineUrl: v.optional(v.string()),
     }),
   ),
-  handler: async (ctx, { baselineBuildId, snapshots }) => {
+  handler: async (ctx, { baselineBuildId, storageBlocked, snapshots }) => {
     return Promise.all(
       snapshots.map(async ({ name, hash }) => {
         const baselineImage =
@@ -396,7 +447,9 @@ export const lookupSnapshots = internalQuery({
         if (baselineImage.hash === hash) {
           return { name, hash, status: "unchanged" as const };
         }
-        const baselineUrl = await getUrl(ctx, baselineImage);
+        const baselineUrl = storageBlocked
+          ? null
+          : await getUrl(ctx, baselineImage);
         return {
           name,
           hash,
@@ -450,6 +503,7 @@ export const forCi = internalQuery({
     v.object({
       buildId: v.id("builds"),
       accountId: v.id("accounts"),
+      storageBlocked: v.boolean(),
       number: v.number(),
       url: v.string(),
       status: buildStatus,
@@ -472,6 +526,7 @@ export const forCi = internalQuery({
     return {
       buildId: build._id,
       accountId: project.accountId,
+      storageBlocked: build.storageBlocked,
       number: build.number,
       url: buildUrl(project, build.number),
       status: build.status,
@@ -628,11 +683,12 @@ async function toSnapshot(
   >
 > {
   const image = await findImage(ctx, accountId, result.hash.toLowerCase());
-  if (result.status === "failed" || image === null) {
+  if (result.status === "failed" || (image === null && !build.storageBlocked)) {
     return { imageId: image?._id, diffStatus: "failed", reviewState: "none" };
   }
+  const reviewState = image === null ? "none" : "pending";
   if (build.baselineBuildId === undefined) {
-    return { imageId: image._id, diffStatus: "added", reviewState: "pending" };
+    return { imageId: image?._id, diffStatus: "added", reviewState };
   }
   const baseline = await findBaselineSnapshot(
     ctx,
@@ -640,14 +696,14 @@ async function toSnapshot(
     result.name,
   );
   if (baseline?.imageId === undefined) {
-    return { imageId: image._id, diffStatus: "added", reviewState: "pending" };
+    return { imageId: image?._id, diffStatus: "added", reviewState };
   }
   const baselineFields = {
-    imageId: image._id,
+    imageId: image?._id,
     baselineSnapshotId: baseline._id,
     baselineImageId: baseline.imageId,
   };
-  if (baseline.imageId === image._id || result.status === "unchanged") {
+  if (baseline.imageId === image?._id || result.status === "unchanged") {
     return { ...baselineFields, diffStatus: "unchanged", reviewState: "none" };
   }
   const diffImage =
@@ -660,7 +716,7 @@ async function toSnapshot(
     diffStatus: "changed",
     diffRatio: result.diffRatio,
     diffPixels: result.diffPixels,
-    reviewState: "pending",
+    reviewState,
   };
 }
 
@@ -788,10 +844,13 @@ export const finalize = internalMutation({
       }
     }
 
+    const notCompared =
+      build.storageBlocked && counts.changed + counts.added > 0;
     await ctx.db.patch("builds", buildId, {
       counts,
       status: "finalized",
-      conclusion: conclude(counts),
+      conclusion: notCompared ? "changes" : conclude(counts),
+      fullRows: build.fullRows && !notCompared,
       ancestors: [],
       finalizedAt: Date.now(),
     });
@@ -1001,6 +1060,7 @@ export const get = query({
       buildId: v.id("builds"),
       baselineBranch: v.string(),
       autoApproved: v.boolean(),
+      storageBlocked: v.boolean(),
       finalizedAt: v.union(v.number(), v.null()),
       ciRunUrl: v.union(v.string(), v.null()),
       baseline: v.union(
@@ -1035,6 +1095,7 @@ export const get = query({
       buildId: build._id,
       baselineBranch: build.baselineBranch,
       autoApproved: build.autoApproved,
+      storageBlocked: build.storageBlocked,
       finalizedAt: build.finalizedAt ?? null,
       ciRunUrl: build.ciRunUrl ?? null,
       baseline:

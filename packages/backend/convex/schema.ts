@@ -33,6 +33,21 @@ export const buildConclusion = v.union(
   v.literal("rejected"),
 );
 
+export const plan = v.union(
+  v.literal("free"),
+  v.literal("25gb"),
+  v.literal("100gb"),
+  v.literal("500gb"),
+  v.literal("custom"),
+);
+
+export const storageUsage = v.object({
+  plan,
+  storageBytes: v.number(),
+  storageLimitBytes: v.number(),
+  overLimitSince: v.optional(v.number()),
+});
+
 export const repoPermission = v.union(
   v.literal("none"),
   v.literal("read"),
@@ -76,7 +91,7 @@ export default defineSchema({
     login: v.string(),
     type: v.union(v.literal("user"), v.literal("org")),
     installationId: v.optional(v.number()),
-    plan: v.union(v.literal("free"), v.literal("paid")),
+    plan,
     storageLimitBytes: v.number(),
     storageBytes: v.number(),
     overLimitSince: v.optional(v.number()),

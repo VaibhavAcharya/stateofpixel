@@ -38,6 +38,8 @@ export function CodeBlock({
           type="button"
           aria-label={copied ? "Copied" : "Copy code"}
           className={buttonClass("ghost", "icon-sm")}
+          data-umami-event="Copy code"
+          data-umami-event-file={fileName}
           onClick={() => {
             void navigator.clipboard
               .writeText(code)

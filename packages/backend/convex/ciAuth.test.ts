@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import rateLimiter from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { type CryptoKey, exportJWK, generateKeyPair, SignJWT } from "jose";
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
@@ -47,6 +48,7 @@ afterEach(() => {
 
 async function setup() {
   const t = convexTest(schema, modules);
+  rateLimiter.register(t);
   const { userId, projectId } = await t.run(async (ctx) => {
     const userId = await ctx.db.insert("users", {
       githubUserId: 42,
@@ -60,7 +62,7 @@ async function setup() {
       type: "org",
       installationId: 10,
       plan: "free",
-      storageLimitBytes: 0,
+      storageLimitBytes: 10 * 1024 ** 3,
       storageBytes: 0,
     });
     const projectId = await ctx.db.insert("projects", {

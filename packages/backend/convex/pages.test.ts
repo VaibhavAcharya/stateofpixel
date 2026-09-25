@@ -33,7 +33,7 @@ async function setup({ private: isPrivate = true } = {}) {
       type: "org",
       installationId: 10,
       plan: "free",
-      storageLimitBytes: 0,
+      storageLimitBytes: 10 * 1024 ** 3,
       storageBytes: 0,
     });
     await ctx.db.insert("accountMembers", { accountId, userId });

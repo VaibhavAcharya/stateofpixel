@@ -3,7 +3,11 @@ import { SUPPORT_EMAIL } from "../lib/supportEmail";
 import { PublicPage } from "./landing/sections";
 
 export function SupportEmail() {
-  return <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>;
+  return (
+    <a href={`mailto:${SUPPORT_EMAIL}`} data-umami-event="Email">
+      {SUPPORT_EMAIL}
+    </a>
+  );
 }
 
 export function LegalPage({

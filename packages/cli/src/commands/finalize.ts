@@ -2,6 +2,7 @@ import {
   ApiError,
   createApiClient,
   DEFAULT_API_URL,
+  isRateLimited,
   isServerError,
 } from "../api";
 import { defaultNonce, readCiInfo, readGitInfo, resolveToken } from "../ci-env";
@@ -50,6 +51,12 @@ export async function finalizeCommand(
     });
     final = await waitForFinalize(api, build.buildId, true);
   } catch (error) {
+    if (isRateLimited(error) && !options.strict) {
+      console.warn(
+        `stateofpixel: skipped, ${error.message} Use --strict to fail instead.`,
+      );
+      return;
+    }
     if (isServerError(error) && !options.strict) {
       console.warn(
         `stateofpixel: skipped, the service is not reachable (${error instanceof Error ? error.message : error}). Use --strict to fail instead.`,

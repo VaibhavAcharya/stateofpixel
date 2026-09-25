@@ -203,10 +203,10 @@ A re-run of a failed CI job gets a new `GITHUB_RUN_ATTEMPT`, so it creates a fre
 
 ### 4.10 Storage limit reached
 
-1. Account reaches 80% of its storage limit. Account and project pages show a yellow banner. The CLI prints a warning line.
-2. At 100%, a 14-day grace period starts (proposal). Everything keeps working, banner turns red.
-3. After grace, builds still hash-compare, but new images are not stored. Snapshots that match the baseline are `unchanged` as usual. Anything changed is marked `not stored`, and the check is neutral, "Storage limit reached, not compared". CI never fails because of us.
-4. Freeing space (shorter retention, deleting projects) or upgrading ends the state immediately.
+1. Account reaches 80% of its storage limit. Account and project pages show a yellow banner to members with write access. The CLI prints a warning line.
+2. At 100%, a 14-day grace period starts and `overLimitSince` is set. Everything keeps working, banner turns red and names the date grace ends.
+3. After grace, new builds get `storageBlocked`. They still hash-compare, but `POST /builds` returns no upload URLs for new hashes and no baseline URLs, so the CLI neither uploads nor diffs. Snapshots that match the baseline are `unchanged` as usual. Changed and added snapshots get a row with no image and review state `none`. The build finalizes as `changes`, is never a baseline, cannot be reviewed, and the check is neutral, "Storage limit reached, not compared". CI never fails because of us.
+4. Freeing space (shorter retention, deleting projects) or upgrading ends the state as soon as `storageBytes` drops under the limit. Until billing ships, `accounts.setPlan` (an internal mutation run from the Convex dashboard) changes an account's plan.
 
 ### 4.11 Removing access
 
@@ -429,10 +429,10 @@ The GitHub provider uses the GitHub App's own client ID and secret, so the user 
 | login | string | Index. |
 | type | `"user"` or `"org"` | |
 | installationId | number, optional | Missing after uninstall. Index. |
-| plan | `"free"` or `"paid"` | |
+| plan | `"free"`, `"25gb"`, `"100gb"`, `"500gb"` or `"custom"` | Custom is for accounts above 500 GB, with a limit set by hand. |
 | storageLimitBytes | number | From plan. |
-| storageBytes | number | Updated by the daily cron. |
-| overLimitSince | number, optional | Start of grace period. |
+| storageBytes | number | Added at upload confirm, subtracted by `collectImages`. |
+| overLimitSince | number, optional | Start of grace period. Set when `storageBytes` reaches the limit, cleared when it drops under. |
 | billingCustomerId | string, optional | Payment provider id (M3). |
 | deletedAt | number, optional | |
 
@@ -503,7 +503,7 @@ The account home lists projects through `by_accountId_and_lastBuildAt` or `by_ac
 | baselineBuildId | Id<"builds">, optional | Missing for orphans. |
 | supersededById | Id<"builds">, optional | |
 | counts | object | `{unchanged, changed, added, removed, failed, pending, approved, rejected}`. Kept in sync by every mutation that changes a snapshot, so pages never count rows. |
-| storageBlocked | boolean | Over limit after grace. |
+| storageBlocked | boolean | Set at create when the account is over its limit after grace. |
 | expiryJobId | Id<"_scheduled_functions">, optional | The scheduled expiry, cancelled at finalize. |
 | githubCheckRunId | number, optional | |
 | checkVersion | number | Incremented by every change that affects the check. |
@@ -689,11 +689,11 @@ Response:
     { "name": "Header/Promo [chromium 1280]", "status": "added",
       "uploadUrl": "https://..." }
   ],
-  "warnings": ["Storage at 82% of the free tier"]
+  "warnings": ["Storage at 82% of the 10 GB limit."]
 }
 ```
 
-Status here is the hash-level answer: `unchanged` when hashes match, `changed` when the baseline has a different hash, `added` when there is no baseline. `uploadUrl` is present only when the account does not have that hash. If the same hash appears under several names, it gets one upload URL.
+Status here is the hash-level answer: `unchanged` when hashes match, `changed` when the baseline has a different hash, `added` when there is no baseline. `uploadUrl` is present only when the account does not have that hash. If the same hash appears under several names, it gets one upload URL. A storage-blocked build (4.10) gets no `uploadUrl` and no `baselineUrl`.
 
 Upload URLs are valid for 1 hour, and each upload POST has a 2 minute timeout. The CLI POSTs the raw PNG with `Content-Type: image/png` and gets back `{ "storageId": "..." }`.
 
@@ -752,7 +752,7 @@ In one internal query:
 
 ### 7.7 Errors
 
-`{ "error": { "code": "baseline_branch_unknown", "message": "..." } }` with HTTP status. The CLI prints the message and exits 1 for 4xx caused by config, and exits 0 with a warning for 5xx (proposal: our outage should not break their CI). `--strict` makes 5xx exit 1. HTTP actions are not retried by Convex, so the CLI retries 5xx and network errors 3 times with backoff; every endpoint is idempotent by nonce, shard index and hash.
+`{ "error": { "code": "baseline_branch_unknown", "message": "..." } }` with HTTP status. The CLI prints the message and exits 1 for 4xx caused by config, and exits 0 with a warning for 5xx (proposal: our outage should not break their CI). A 429 from a rate limit is handled the same way: the CLI prints the message and exits 0. `--strict` makes 5xx and 429 exit 1. HTTP actions are not retried by Convex, so the CLI retries 5xx and network errors 3 times with backoff; every endpoint is idempotent by nonce, shard index and hash.
 
 ## 8. App functions
 
@@ -900,22 +900,27 @@ In `packages/backend/convex/crons.ts` ([docs](https://docs.convex.dev/scheduling
 | `collectImages` | daily 04:00 UTC | Deletes images with no snapshot referencing them (checked through `by_imageId`, `by_baselineImageId` and `by_diffImageId`) and `lastReferencedAt` over 24 hours ago, and their stored files. Subtracts the bytes from `accounts.storageBytes`. |
 | `cleanupEvents` | daily 04:30 UTC | Deletes `githubEvents` older than 7 days. |
 
-Not built yet: `pruneRows` (daily 03:00 UTC) applies the row pruning rules from the snapshots table, and `usage` (daily 05:00 UTC) writes `usageDaily`, sets `accounts.storageBytes` and sets or clears `overLimitSince`. Build expiry is not a cron: `builds.expire` is scheduled per build, 60 minutes after creation, and sets `expired` if the build is still pending.
+Not built yet: `pruneRows` (daily 03:00 UTC) applies the row pruning rules from the snapshots table, and `usage` (daily 05:00 UTC) writes `usageDaily`. `accounts.storageBytes` and `overLimitSince` are kept current by upload confirm and `collectImages`. Build expiry is not a cron: `builds.expire` is scheduled per build, 60 minutes after creation, and sets `expired` if the build is still pending.
 
 Storage billed is the sum of `images.bytes` per account. Every image counts once, however many builds reference it.
 
 ## 12. Limits
 
-| Limit | Value (proposal) | Why |
+The CI API enforces these. A request over a limit gets a 4xx with the codes in brackets, and an image over the size or dimension limit comes back in `rejectedUploads`.
+
+| Limit | Value | Why |
 |---|---|---|
-| Snapshots per build | 20,000 | Keeps a 20k manifest near 2 MB. |
-| Request body for POST /builds | 16 MB | Convex HTTP actions accept up to 20 MiB. The CLI splits bigger manifests into several calls with the same nonce and shard. |
+| Snapshots per build | 20,000 (`too_many_snapshots`) | Keeps a 20k manifest near 2 MB. |
+| Request body for every CI call | 16 MB (`body_too_large`) | Convex HTTP actions accept up to 20 MiB. The CLI splits bigger manifests into several calls with the same nonce and shard. |
 | Image size | 20 MB | Checked from `_storage.size` at confirm. |
 | Image dimensions | 10,000 x 50,000 px | |
-| Snapshot name | 512 chars | |
-| Metadata per snapshot | 4 KB | |
-| Shards per build | 256 | |
+| Snapshot name | 512 chars (`snapshot_name_too_long`) | |
+| Metadata per snapshot | 4 KB (`metadata_too_large`) | |
+| Shards per build | 256 (`invalid_shard`, `too_many_shards` for auto shards) | |
 | Build timeout | 60 min from creation to finalize | |
+| Requests per token | 600 a minute (`rate_limited`, 429) | Token bucket keyed by project token, or by project for OIDC. |
+| Builds per account | 2,000 a day (`build_limit_reached`, 429) | Counted when a build is created, not when a shard joins. |
+| Bytes uploaded per account | 20 GB a day (`upload_limit_reached`, 429) | Counted at upload confirm. New builds are refused once the day's bytes are used. |
 | Server chunk size | 1,000 snapshots per query or mutation | 1 s, 4,096 index ranges and 16,000 writes per function ([limits](https://docs.convex.dev/production/state/limits)). |
 
 ## 13. Not in v1

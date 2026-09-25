@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { toStorageUsage } from "./accounts";
 import {
   allows,
   findAllowedProject,
@@ -9,7 +10,7 @@ import {
   requirePermission,
 } from "./lib/permissions";
 import { deleteBuildRows } from "./retention";
-import { repoPermission } from "./schema";
+import { repoPermission, storageUsage } from "./schema";
 
 const MAX_BRANCH_PATTERNS = 20;
 const MAX_BRANCH_PATTERN_LENGTH = 200;
@@ -33,6 +34,7 @@ export const access = query({
       canWrite: v.boolean(),
       canAdmin: v.boolean(),
       hasBuilds: v.boolean(),
+      storage: v.union(storageUsage, v.null()),
     }),
   ),
   handler: async (ctx, { owner, name }) => {
@@ -41,6 +43,10 @@ export const access = query({
       return null;
     }
     const access = await readAccess(ctx, project._id);
+    const canWrite = allows(project, access, "write");
+    const account = canWrite
+      ? await ctx.db.get("accounts", project.accountId)
+      : null;
     return {
       projectId: project._id,
       owner: project.owner,
@@ -50,9 +56,10 @@ export const access = query({
       permission: access.permission,
       fresh: access.fresh,
       canRead: allows(project, access, "read"),
-      canWrite: allows(project, access, "write"),
+      canWrite,
       canAdmin: allows(project, access, "admin"),
       hasBuilds: project.lastBuildAt !== undefined,
+      storage: account === null ? null : toStorageUsage(account),
     };
   },
 });

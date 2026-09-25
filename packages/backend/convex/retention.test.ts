@@ -37,7 +37,7 @@ async function setup() {
       type: "org",
       installationId: 10,
       plan: "free",
-      storageLimitBytes: 0,
+      storageLimitBytes: 10 * 1024 ** 3,
       storageBytes: 30,
     });
     const projectId = await ctx.db.insert("projects", {

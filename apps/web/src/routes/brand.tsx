@@ -188,6 +188,8 @@ function AssetCard({
               key={format}
               href={`/brand/${file}.${format}`}
               download
+              data-umami-event="Brand download"
+              data-umami-event-file={`${file}.${format}`}
               className="inline-flex h-7 items-center gap-1.5 rounded-sm px-2 text-xs text-muted uppercase hover:bg-hover hover:text-text"
             >
               <DownloadSimpleIcon size={12} />

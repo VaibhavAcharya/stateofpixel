@@ -5,18 +5,30 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
+import { withStorageBytes } from "./lib/storage";
+import { rateLimiter } from "./rateLimits";
 
 const TOUCH_AFTER_MS = 12 * 60 * 60 * 1000;
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+const MAX_IMAGE_WIDTH = 10_000;
+const MAX_IMAGE_HEIGHT = 50_000;
 
 export const createUploadTargets = internalMutation({
-  args: { accountId: v.id("accounts"), hashes: v.array(v.string()) },
+  args: {
+    accountId: v.id("accounts"),
+    storageBlocked: v.boolean(),
+    hashes: v.array(v.string()),
+  },
   returns: v.array(v.object({ hash: v.string(), uploadUrl: v.string() })),
-  handler: async (ctx, { accountId, hashes }) => {
+  handler: async (ctx, { accountId, storageBlocked, hashes }) => {
     const targets = [];
     const now = Date.now();
     for (const hash of new Set(hashes)) {
       const image = await findImage(ctx, accountId, hash);
       if (image === null) {
+        if (storageBlocked) {
+          continue;
+        }
         targets.push({
           hash,
           uploadUrl: await ctx.storage.generateUploadUrl(),
@@ -69,7 +81,12 @@ export async function confirmUpload(
   if (file === null) {
     return null;
   }
-  if (normalizeSha256(file.sha256) !== upload.hash.toLowerCase()) {
+  if (
+    normalizeSha256(file.sha256) !== upload.hash.toLowerCase() ||
+    file.size > MAX_IMAGE_BYTES ||
+    upload.width > MAX_IMAGE_WIDTH ||
+    upload.height > MAX_IMAGE_HEIGHT
+  ) {
     await ctx.storage.delete(upload.storageId);
     return null;
   }
@@ -90,11 +107,18 @@ export async function confirmUpload(
     storageId: upload.storageId,
     lastReferencedAt: Date.now(),
   });
+  await rateLimiter.limit(ctx, "uploadedBytes", {
+    key: accountId,
+    count: file.size,
+    reserve: true,
+  });
   const account = await ctx.db.get("accounts", accountId);
   if (account !== null) {
-    await ctx.db.patch("accounts", accountId, {
-      storageBytes: account.storageBytes + file.size,
-    });
+    await ctx.db.patch(
+      "accounts",
+      accountId,
+      withStorageBytes(account, account.storageBytes + file.size, Date.now()),
+    );
   }
   return ctx.db.get("images", imageId);
 }

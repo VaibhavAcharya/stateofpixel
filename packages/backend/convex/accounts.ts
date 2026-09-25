@@ -5,8 +5,15 @@ import {
 } from "convex/server";
 import { type Infer, v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { type QueryCtx, query } from "./_generated/server";
-import { buildConclusion, buildCounts, buildStatus } from "./schema";
+import { internalMutation, type QueryCtx, query } from "./_generated/server";
+import { PLAN_STORAGE_LIMIT_BYTES, withStorageBytes } from "./lib/storage";
+import {
+  buildConclusion,
+  buildCounts,
+  buildStatus,
+  plan,
+  storageUsage,
+} from "./schema";
 
 const projectRow = v.object({
   owner: v.string(),
@@ -81,6 +88,7 @@ export const home = query({
       login: v.string(),
       type: v.union(v.literal("user"), v.literal("org")),
       installationSettingsUrl: v.union(v.string(), v.null()),
+      storage: storageUsage,
     }),
   ),
   handler: async (ctx, { login }) => {
@@ -97,7 +105,54 @@ export const home = query({
           : account.type === "org"
             ? `https://github.com/organizations/${account.login}/settings/installations/${account.installationId}`
             : `https://github.com/settings/installations/${account.installationId}`,
+      storage: toStorageUsage(account),
     };
+  },
+});
+
+export function toStorageUsage(
+  account: Doc<"accounts">,
+): Infer<typeof storageUsage> {
+  return {
+    plan: account.plan,
+    storageBytes: account.storageBytes,
+    storageLimitBytes: account.storageLimitBytes,
+    overLimitSince: account.overLimitSince,
+  };
+}
+
+export const setPlan = internalMutation({
+  args: {
+    login: v.string(),
+    plan,
+    storageLimitBytes: v.optional(v.number()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const account = await ctx.db
+      .query("accounts")
+      .withIndex("by_login", (q) => q.eq("login", args.login))
+      .first();
+    if (account === null) {
+      throw new Error(`No account ${args.login}`);
+    }
+    const storageLimitBytes =
+      args.plan === "custom"
+        ? args.storageLimitBytes
+        : PLAN_STORAGE_LIMIT_BYTES[args.plan];
+    if (storageLimitBytes === undefined) {
+      throw new Error("A custom plan needs storageLimitBytes");
+    }
+    await ctx.db.patch("accounts", account._id, {
+      plan: args.plan,
+      storageLimitBytes,
+      ...withStorageBytes(
+        { ...account, storageLimitBytes },
+        account.storageBytes,
+        Date.now(),
+      ),
+    });
+    return null;
   },
 });
 

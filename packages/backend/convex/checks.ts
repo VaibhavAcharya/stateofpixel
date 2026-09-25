@@ -213,6 +213,9 @@ function toCheckFields(
   if (build.status === "error") {
     return completed("failure", "Upload failed, see CI logs");
   }
+  if (build.storageBlocked && build.conclusion !== "no_changes") {
+    return completed("neutral", "Storage limit reached, not compared");
+  }
   switch (build.conclusion) {
     case "no_changes":
       return completed("success", "No visual changes");

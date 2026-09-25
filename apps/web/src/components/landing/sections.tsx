@@ -278,6 +278,8 @@ export function HowSteps() {
                 type="button"
                 role="tab"
                 aria-selected={tab === value}
+                data-umami-event="Setup tab"
+                data-umami-event-tab={value}
                 onClick={() => setTab(value)}
                 className={`h-7 rounded-sm px-3 text-xs font-medium transition-colors duration-100 ${
                   tab === value
@@ -512,6 +514,7 @@ export function Footer() {
         </nav>
         <a
           href={`mailto:${SUPPORT_EMAIL}`}
+          data-umami-event="Email"
           className="ml-auto hover:text-text max-sm:ml-0"
         >
           {SUPPORT_EMAIL}

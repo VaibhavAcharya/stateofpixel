@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { ApiError, createApiClient } from "./api";
+import { ApiError, createApiClient, isRateLimited } from "./api";
 
 function client(responses: (() => Response)[]) {
   let calls = 0;
@@ -49,4 +49,17 @@ it("gives up after the retries", async () => {
     status: 503,
   });
   expect(calls()).toBe(4);
+});
+
+it("does not retry rate limits", async () => {
+  const { api, calls } = client([
+    () =>
+      Response.json(
+        { error: { code: "rate_limited", message: "Too many requests." } },
+        { status: 429 },
+      ),
+  ]);
+  const error = await api.request("GET", "/whoami").catch((e) => e);
+  expect(isRateLimited(error)).toBe(true);
+  expect(calls()).toBe(1);
 });

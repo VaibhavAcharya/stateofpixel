@@ -257,6 +257,15 @@ export function Banners({
       content: "This build never finished.",
     });
   }
+  if (build.storageBlocked && build.conclusion !== "no_changes") {
+    banners.push({
+      key: "storage",
+      tone: "bg-failed-bg",
+      icon: <WarningIcon size={16} className="text-failed" />,
+      content:
+        "The account was over its storage limit, so new images were not stored and changes were not compared.",
+    });
+  }
   if (build.status === "error") {
     banners.push({
       key: "error",

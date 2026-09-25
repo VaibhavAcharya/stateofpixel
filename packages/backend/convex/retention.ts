@@ -8,6 +8,7 @@ import {
 } from "./_generated/server";
 import { deleteImage } from "./blobs";
 import { matchesBranch } from "./lib/matchesBranch";
+import { withStorageBytes } from "./lib/storage";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const IMAGE_GRACE_MS = DAY_MS;
@@ -231,9 +232,15 @@ export const collectImages = internalMutation({
     for (const [accountId, bytes] of freedBytes) {
       const account = await ctx.db.get("accounts", accountId);
       if (account !== null) {
-        await ctx.db.patch("accounts", accountId, {
-          storageBytes: Math.max(0, account.storageBytes - bytes),
-        });
+        await ctx.db.patch(
+          "accounts",
+          accountId,
+          withStorageBytes(
+            account,
+            Math.max(0, account.storageBytes - bytes),
+            Date.now(),
+          ),
+        );
       }
     }
     if (!page.isDone) {

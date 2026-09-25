@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import type { ConvexReactClient } from "convex/react";
 import type { ReactNode } from "react";
+import { UMAMI_BEFORE_SEND_SCRIPT } from "../lib/analytics";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRouteWithContext<{
@@ -24,7 +25,20 @@ export const Route = createRootRouteWithContext<{
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
-    scripts: [{ children: THEME_SCRIPT }],
+    scripts: [
+      { children: THEME_SCRIPT },
+      { children: UMAMI_BEFORE_SEND_SCRIPT },
+      {
+        src: "https://cloud.umami.is/script.js",
+        defer: true,
+        "data-website-id": "82c68e9d-e447-43cc-9f60-87ef5c9b1f7f",
+        "data-domains": "stateofpixel.com",
+        "data-before-send": "umamiBeforeSend",
+        "data-exclude-search": "true",
+        "data-do-not-track": "true",
+        "data-performance": "true",
+      },
+    ],
   }),
   headers: () => ({
     "Cache-Control": "public, max-age=0, must-revalidate",

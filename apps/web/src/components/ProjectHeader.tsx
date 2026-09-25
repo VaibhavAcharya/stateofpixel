@@ -8,6 +8,7 @@ import { api } from "@stateofpixel/backend/api";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { PageHeader } from "./Page";
+import { StorageBanner } from "./StorageBanner";
 import { buttonClass, type Icon } from "./ui";
 
 type Tab = "builds" | "baselines" | "settings";
@@ -64,6 +65,7 @@ export function ProjectHeader({
           </a>
         }
       />
+      {access?.storage && <StorageBanner storage={access.storage} />}
       <nav className="mb-6 flex gap-5 border-b border-border">
         {tabs.map((item) => (
           <Link

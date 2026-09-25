@@ -33,6 +33,8 @@ export function SignInButton({
       aria-busy={pending}
       disabled={pending}
       className={`${buttonClass("primary")} disabled:opacity-100 ${className}`}
+      data-umami-event="Sign in"
+      data-umami-event-label={label}
       onClick={() => {
         setPending(true);
         signIn("github", { redirectTo }).catch(() => setPending(false));
@@ -69,7 +71,11 @@ export function AuthButton({
   }
   if (isAuthenticated) {
     return (
-      <Link to="/install" className={`${buttonClass("primary")} ${className}`}>
+      <Link
+        to="/install"
+        className={`${buttonClass("primary")} ${className}`}
+        data-umami-event="Open dashboard"
+      >
         Open dashboard
       </Link>
     );

@@ -1,10 +1,16 @@
 /// <reference types="vite/client" />
+import rateLimiter from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { exportPKCS8, generateKeyPair } from "jose";
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { api as functions, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { hashProjectToken } from "./lib/projectTokens";
+import {
+  DAILY_BUILDS,
+  DAILY_UPLOAD_BYTES,
+  rateLimiter as limits,
+} from "./rateLimits";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -72,6 +78,7 @@ afterEach(() => {
 
 async function setup() {
   const t = convexTest(schema, modules);
+  rateLimiter.register(t);
   const tokenHash = await hashProjectToken(TOKEN);
   const accountId = await t.run(async (ctx) => {
     const userId = await ctx.db.insert("users", {
@@ -86,7 +93,7 @@ async function setup() {
       type: "org",
       installationId: 10,
       plan: "free",
-      storageLimitBytes: 0,
+      storageLimitBytes: 10 * 1024 ** 3,
       storageBytes: 0,
     });
     const projectId = await ctx.db.insert("projects", {
@@ -969,4 +976,190 @@ it("links a squash-merged main build to its PR", async () => {
     notReviewedOnPr: false,
   });
   expect(await snapshot(3, "Promo")).toMatchObject({ notReviewedOnPr: true });
+});
+
+const LIMIT_BYTES = 10 * 1024 ** 3;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+it("warns in CI when storage is near the limit", async () => {
+  const { t, accountId } = await setup();
+  await t.run((ctx) =>
+    ctx.db.patch("accounts", accountId, { storageBytes: LIMIT_BYTES * 0.85 }),
+  );
+  const { created } = await runBuild(t, {
+    commit: "c1",
+    images: [{ name: "Header", content: "header-v1" }],
+  });
+  expect(created.warnings).toEqual(["Storage at 85% of the 10 GB limit."]);
+});
+
+it("keeps storing images during the grace period", async () => {
+  const { t, accountId } = await setup();
+  await t.run((ctx) =>
+    ctx.db.patch("accounts", accountId, { storageBytes: LIMIT_BYTES }),
+  );
+  const startedAt = Date.now();
+  const { created, build } = await runBuild(t, {
+    commit: "c1",
+    images: [{ name: "Header", content: "header-v1" }],
+  });
+  expect(created.snapshots[0].uploadUrl).toEqual(expect.any(String));
+  expect(created.warnings).toEqual([
+    `Storage limit of 10 GB reached. From ${new Date(startedAt + 14 * DAY_MS).toISOString().slice(0, 10)}, new images are not stored. Lower retention in project settings to free space.`,
+  ]);
+  expect(build.conclusion).toBe("approved");
+  const account = await t.run((ctx) => ctx.db.get("accounts", accountId));
+  expect(account?.overLimitSince).toBeGreaterThanOrEqual(startedAt);
+});
+
+it("stops storing new images after the grace period", async () => {
+  const { t, accountId } = await setup();
+  await runBuild(t, {
+    commit: "c1",
+    images: [
+      { name: "Header", content: "header-v1" },
+      { name: "Footer", content: "footer-v1" },
+    ],
+  });
+  await t.run((ctx) =>
+    ctx.db.patch("accounts", accountId, {
+      storageBytes: LIMIT_BYTES,
+      overLimitSince: Date.now() - 15 * DAY_MS,
+    }),
+  );
+
+  checkCalls = [];
+  const { created, build } = await runBuild(t, {
+    commit: "c2",
+    ancestors: ["c1"],
+    prNumber: 7,
+    images: [
+      { name: "Header", content: "header-v2" },
+      { name: "Footer", content: "footer-v1" },
+      { name: "Promo", content: "promo-v1" },
+    ],
+    changed: ["Header"],
+  });
+  expect(created.snapshots).toEqual([
+    { name: "Header", hash: expect.any(String), status: "changed" },
+    { name: "Footer", hash: expect.any(String), status: "unchanged" },
+    { name: "Promo", hash: expect.any(String), status: "added" },
+  ]);
+  expect(created.warnings).toEqual([
+    "Storage limit of 10 GB reached. New images are not stored, so changes are not compared. Lower retention in project settings to free space.",
+  ]);
+  expect(build).toMatchObject({
+    conclusion: "changes",
+    counts: { unchanged: 1, changed: 1, added: 1, failed: 0, pending: 0 },
+  });
+  expect(lastCheck()).toMatchObject({
+    conclusion: "neutral",
+    title: "Storage limit reached, not compared",
+  });
+
+  const next = await runBuild(t, {
+    commit: "c3",
+    ancestors: ["c2", "c1"],
+    images: [{ name: "Header", content: "header-v1" }],
+  });
+  expect(next.created.baseline).toEqual({ buildNumber: 1, commit: "c1" });
+});
+
+it("enforces the build limits", async () => {
+  const { t } = await setup();
+  const git = {
+    commit: "c1",
+    branch: "main",
+    baselineBranch: "main",
+    ancestors: [],
+  };
+  const [header] = await snapshotsOf([
+    { name: "Header", content: "header-v1" },
+  ]);
+
+  const longName = await api(t, "POST", "/builds", {
+    nonce: "run-1",
+    shard: { index: 1, total: 1 },
+    git,
+    snapshots: [{ ...header, name: "x".repeat(513) }],
+  });
+  expect(longName.body.error.code).toBe("snapshot_name_too_long");
+
+  const shards = await api(t, "POST", "/builds", {
+    nonce: "run-2",
+    shard: { index: 1, total: 257 },
+    git,
+    snapshots: [header],
+  });
+  expect(shards.body.error.code).toBe("invalid_shard");
+
+  const created = await api(t, "POST", "/builds", {
+    nonce: "run-3",
+    shard: { index: 1, total: 1 },
+    git,
+    snapshots: [header],
+  });
+  const completed = await api(
+    t,
+    "POST",
+    `/builds/${created.body.buildId}/shards/1/complete`,
+    {
+      uploads: [
+        {
+          hash: header?.hash,
+          storageId: await store(t, "header-v1"),
+          kind: "screenshot",
+          width: 10,
+          height: 50_001,
+        },
+      ],
+      results: [{ name: "Header", hash: header?.hash, status: "added" }],
+    },
+  );
+  expect(completed.body.rejectedUploads).toEqual([header?.hash]);
+});
+
+it("rate limits requests per token", async () => {
+  const { t } = await setup();
+  const key = `token:${await hashProjectToken(TOKEN)}`;
+  await t.run((ctx) => limits.limit(ctx, "ciRequests", { key, count: 600 }));
+  const response = await api(t, "GET", "/whoami");
+  expect(response.status).toBe(429);
+  expect(response.body.error.code).toBe("rate_limited");
+});
+
+it("limits builds and uploaded bytes per account per day", async () => {
+  const { t, accountId } = await setup();
+  const git = {
+    commit: "c1",
+    branch: "main",
+    baselineBranch: "main",
+    ancestors: [],
+  };
+  const create = (nonce: string) =>
+    api(t, "POST", "/builds", {
+      nonce,
+      shard: { index: 1, total: 1 },
+      git,
+      snapshots: [],
+    });
+
+  await t.run((ctx) =>
+    limits.limit(ctx, "builds", { key: accountId, count: DAILY_BUILDS }),
+  );
+  const builds = await create("run-1");
+  expect(builds.status).toBe(429);
+  expect(builds.body.error.code).toBe("build_limit_reached");
+
+  await t.run(async (ctx) => {
+    await limits.reset(ctx, "builds", { key: accountId });
+    await limits.limit(ctx, "uploadedBytes", {
+      key: accountId,
+      count: DAILY_UPLOAD_BYTES + 1,
+      reserve: true,
+    });
+  });
+  const uploads = await create("run-2");
+  expect(uploads.status).toBe(429);
+  expect(uploads.body.error.code).toBe("upload_limit_reached");
 });

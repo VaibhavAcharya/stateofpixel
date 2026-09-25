@@ -315,6 +315,7 @@ export function ReviewDemo() {
               <button
                 type="button"
                 className={buttonClass("primary")}
+                data-umami-event="Demo approve all"
                 onClick={state.approveAll}
               >
                 Approve all

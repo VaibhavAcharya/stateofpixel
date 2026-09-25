@@ -88,11 +88,11 @@ See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (sta
 
 ## Free tier and limits
 
-- [ ] Free tier of 10 GB stored per account
+- [x] Free tier of 10 GB stored per account
 - [x] Retention crons: PR-only images kept 60 days, unreferenced images deleted
-- [ ] Storage warning at 80%, 14-day grace at 100%, then new images are not stored
-- [ ] Rate limits for builds per account, requests per token and bytes uploaded per day
-- [ ] Enforce the limits in SPEC section 12
+- [x] Storage warning at 80%, 14-day grace at 100%, then new images are not stored
+- [x] Rate limits for builds per account, requests per token and bytes uploaded per day
+- [x] Enforce the limits in SPEC section 12
 - [ ] Per-account egress tracking
 - [ ] Landing and FAQ copy for the free tier
 

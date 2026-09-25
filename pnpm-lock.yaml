@@ -126,6 +126,9 @@ importers:
       '@convex-dev/auth':
         specifier: ^0.0.95
         version: 0.0.95(@auth/core@0.41.3)(convex@1.46.0(react@19.3.0))(react@19.3.0)
+      '@convex-dev/rate-limiter':
+        specifier: ^0.4.0
+        version: 0.4.0(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(zod@4.6.5)
       convex:
         specifier: ^1.46.0
         version: 1.46.0(react@19.3.0)
@@ -337,6 +340,20 @@ packages:
       '@auth/core': ^0.41.1
       convex: ^1.17.0
       react: ^18.2.0 || ^19.0.0-0
+    peerDependenciesMeta:
+      react:
+        optional: true
+
+  '@convex-dev/batch-worker@0.3.4':
+    resolution: {integrity: sha512-CKeOrPFsPoIKozMNP/qKExSwE6vd63QDKbZIbchK+P3S7fyGuFjRLbTg6+QmC/mzOjn6I5N8zo+k/SdXqeaA2g==}
+    peerDependencies:
+      convex: ^1.43.0
+
+  '@convex-dev/rate-limiter@0.4.0':
+    resolution: {integrity: sha512-AEXbo8+pMT1bPlOJiofmue55EoiFp9ygCcEnckx+RENoPjRYEg5jiihAtaD5TKDwdmHJyvLwNQ1h+MbhgvMyOA==}
+    peerDependencies:
+      convex: ^1.43.0
+      react: ^18.2.0 || ^19.0.0
     peerDependenciesMeta:
       react:
         optional: true
@@ -5228,6 +5245,29 @@ snapshots:
       server-only: 0.0.1
     optionalDependencies:
       react: 19.3.0
+
+  '@convex-dev/batch-worker@0.3.4(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(zod@4.6.5)':
+    dependencies:
+      convex: 1.46.0(react@19.3.0)
+      convex-helpers: 0.1.124(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(zod@4.6.5)
+    transitivePeerDependencies:
+      - '@standard-schema/spec'
+      - hono
+      - react
+      - typescript
+      - zod
+
+  '@convex-dev/rate-limiter@0.4.0(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(zod@4.6.5)':
+    dependencies:
+      '@convex-dev/batch-worker': 0.3.4(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(zod@4.6.5)
+      convex: 1.46.0(react@19.3.0)
+    optionalDependencies:
+      react: 19.3.0
+    transitivePeerDependencies:
+      - '@standard-schema/spec'
+      - hono
+      - typescript
+      - zod
 
   '@convex-dev/react-query@0.1.0(@tanstack/react-query@5.103.2(react@19.3.0))(convex@1.46.0(react@19.3.0))':
     dependencies:

@@ -7,6 +7,7 @@ import { ListToolbar, SearchField } from "../../components/ListControls";
 import { Page, PageHeader } from "../../components/Page";
 import { ProjectTable } from "../../components/ProjectTable";
 import { RequireAuth } from "../../components/RequireAuth";
+import { StorageBanner } from "../../components/StorageBanner";
 import {
   Avatar,
   accountAvatar,
@@ -78,6 +79,7 @@ function AccountHome({ owner }: { owner: string }) {
           )
         }
       />
+      {home !== undefined && <StorageBanner storage={home.storage} />}
       <ListToolbar>
         <SearchField
           value={search.q ?? ""}

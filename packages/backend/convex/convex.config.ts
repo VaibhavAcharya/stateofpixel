@@ -1,7 +1,8 @@
+import rateLimiter from "@convex-dev/rate-limiter/convex.config.js";
 import { defineApp } from "convex/server";
 import { v } from "convex/values";
 
-export default defineApp({
+const app = defineApp({
   env: {
     GITHUB_APP_ID: v.string(),
     GITHUB_APP_SLUG: v.string(),
@@ -10,3 +11,6 @@ export default defineApp({
     SITE_URL: v.string(),
   },
 });
+app.use(rateLimiter);
+
+export default app;

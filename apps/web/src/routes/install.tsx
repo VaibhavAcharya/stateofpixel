@@ -70,7 +70,11 @@ function Accounts() {
   }, [refresh]);
 
   const installButton = installUrl !== undefined && (
-    <a href={installUrl} className={buttonClass("primary")}>
+    <a
+      href={installUrl}
+      className={buttonClass("primary")}
+      data-umami-event="Install GitHub App"
+    >
       <GithubLogoIcon size={16} weight="fill" />
       Install on GitHub
     </a>
@@ -94,7 +98,11 @@ function Accounts() {
           accounts !== undefined &&
           accounts.length > 0 &&
           installUrl !== undefined && (
-            <a href={installUrl} className={buttonClass()}>
+            <a
+              href={installUrl}
+              className={buttonClass()}
+              data-umami-event="Install GitHub App"
+            >
               <PlusIcon size={14} />
               Add account
             </a>

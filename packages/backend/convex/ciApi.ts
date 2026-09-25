@@ -21,9 +21,13 @@ import {
   GithubError,
   isAncestor,
 } from "./lib/github";
+import { rateLimiter } from "./rateLimits";
 import { DEFAULT_BUILD_NAME } from "./schema";
 
 const CHUNK_SIZE = 1000;
+const MAX_BODY_BYTES = 16 * 1024 * 1024;
+const MAX_SNAPSHOTS_PER_BUILD = 20_000;
+const MAX_NAME_LENGTH = 512;
 const MAX_METADATA_BYTES = 4096;
 const SHA256_HEX = /^[0-9a-f]{64}$/i;
 const SHARD_COMPLETE_PATH =
@@ -45,6 +49,19 @@ function ciRoute(handler: CiHandler) {
         401,
         "unauthorized",
         "Use a GitHub Actions OIDC token with audience stateofpixel, or a project token.",
+      );
+    }
+    const { ok, retryAfter } = await rateLimiter.limit(ctx, "ciRequests", {
+      key:
+        auth.method === "token"
+          ? `token:${auth.tokenHash}`
+          : `oidc:${auth.project.id}`,
+    });
+    if (!ok) {
+      return errorResponse(
+        429,
+        "rate_limited",
+        `Too many requests for this token. Try again in ${Math.ceil(retryAfter / 1000)} s.`,
       );
     }
     try {
@@ -74,9 +91,17 @@ async function readBody<V extends GenericValidator>(
   request: Request,
   validator: V,
 ): Promise<Infer<V>> {
+  const text = await request.text();
+  if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) {
+    throw ciError(
+      413,
+      "body_too_large",
+      `Body is over ${MAX_BODY_BYTES / 1024 / 1024} MB. Split the snapshots over several shards.`,
+    );
+  }
   let body: unknown;
   try {
-    body = await request.json();
+    body = JSON.parse(text);
   } catch {
     throw ciError(400, "invalid_request", "Body must be JSON.");
   }
@@ -103,9 +128,26 @@ function checkHashes(hashes: string[]) {
   }
 }
 
+function checkSnapshotCount(count: number) {
+  if (count > MAX_SNAPSHOTS_PER_BUILD) {
+    throw ciError(
+      400,
+      "too_many_snapshots",
+      `A build can have up to ${MAX_SNAPSHOTS_PER_BUILD.toLocaleString("en-US")} snapshots.`,
+    );
+  }
+}
+
 function checkNames(names: string[]) {
   const seen = new Set<string>();
   for (const name of names) {
+    if (name.length > MAX_NAME_LENGTH) {
+      throw ciError(
+        400,
+        "snapshot_name_too_long",
+        `Snapshot name "${name.slice(0, 50)}..." is over ${MAX_NAME_LENGTH} characters.`,
+      );
+    }
     if (name === "") {
       throw ciError(
         400,
@@ -182,6 +224,7 @@ export const whoami = ciRoute(async (_ctx, _request, auth) =>
 
 export const createBuild = ciRoute(async (ctx, request, auth) => {
   const body = await readBody(request, createBuildRequest);
+  checkSnapshotCount(body.snapshots.length);
   checkNames(body.snapshots.map((snapshot) => snapshot.name));
   checkHashes(body.snapshots.map((snapshot) => snapshot.hash));
   checkMetadata(body.snapshots);
@@ -223,6 +266,7 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
       ).map((snapshots) =>
         ctx.runQuery(internal.builds.lookupSnapshots, {
           baselineBuildId: build.baselineBuildId,
+          storageBlocked: build.storageBlocked,
           snapshots,
         }),
       ),
@@ -231,7 +275,7 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
 
   const uploadUrls = await createUploadUrls(
     ctx,
-    build.accountId,
+    build,
     lookups.map((lookup) => lookup.hash),
   );
 
@@ -248,7 +292,7 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
         ? { uploadUrl: uploadUrls.get(snapshot.hash) }
         : {}),
     })),
-    warnings: [],
+    warnings: build.warnings,
   });
 });
 
@@ -324,13 +368,14 @@ async function findMergedPr(
 
 async function createUploadUrls(
   ctx: ActionCtx,
-  accountId: Id<"accounts">,
+  build: { accountId: Id<"accounts">; storageBlocked: boolean },
   hashes: string[],
 ): Promise<Map<string, string>> {
   const targets = await Promise.all(
     chunk([...new Set(hashes)]).map((chunkHashes) =>
       ctx.runMutation(internal.blobs.createUploadTargets, {
-        accountId,
+        accountId: build.accountId,
+        storageBlocked: build.storageBlocked,
         hashes: chunkHashes,
       }),
     ),
@@ -360,6 +405,14 @@ async function completeShard(
 ) {
   const build = await getBuildForCi(ctx, auth, buildIdParam);
   const body = await readBody(request, completeShardRequest);
+  const { counts } = build;
+  checkSnapshotCount(
+    counts.unchanged +
+      counts.changed +
+      counts.added +
+      counts.failed +
+      body.results.length,
+  );
   checkNames(body.results.map((result) => result.name));
   checkHashes([
     ...body.uploads.map((upload) => upload.hash),
@@ -414,7 +467,7 @@ async function createUploadUrlsForBuild(
   checkHashes(body.hashes);
   const uploadUrls = await createUploadUrls(
     ctx,
-    build.accountId,
+    build,
     body.hashes.map((hash) => hash.toLowerCase()),
   );
   return Response.json({
