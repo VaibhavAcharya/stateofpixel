@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.1.0...v1.2.0) (2026-09-25)
+
+
+### Features
+
+* add storage plans and limits, rate limits and umami analytics ([b492842](https://github.com/VaibhavAcharya/stateofpixel/commit/b492842ecb6b9c79d40657fbb3f31c2aa292f6a9))
+
 ## [1.1.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.0.0...v1.1.0) (2026-09-25)
 
 
