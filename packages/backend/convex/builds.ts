@@ -205,7 +205,12 @@ async function createBuild(
     doneShardIndexes: [],
     subset: args.subset,
     status: "pending",
-    autoApproved: baseline === null,
+    autoApproved:
+      baseline === null ||
+      (args.git.prNumber === undefined &&
+        project.autoApproveBranches.some((pattern) =>
+          matchesBranch(pattern, args.git.branch),
+        )),
     fullRows: true,
     baselineBuildId: baseline?._id,
     counts: EMPTY_COUNTS,
@@ -343,6 +348,20 @@ export const githubRepository = internalQuery({
     };
   },
 });
+
+export function matchesBranch(pattern: string, branch: string): boolean {
+  const source = pattern
+    .trim()
+    .split("**")
+    .map((part) =>
+      part
+        .split("*")
+        .map((text) => text.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+        .join("[^/]*"),
+    )
+    .join(".*");
+  return new RegExp(`^${source}$`).test(branch);
+}
 
 function isBaselineCandidate(build: Doc<"builds">): boolean {
   return (
@@ -561,7 +580,11 @@ export const insertSnapshots = internalMutation({
         }
         continue;
       }
-      const snapshot = await toSnapshot(ctx, build, accountId, result);
+      const compared = await toSnapshot(ctx, build, accountId, result);
+      const snapshot =
+        build.autoApproved && compared.reviewState === "pending"
+          ? { ...compared, reviewState: "approved" as const }
+          : compared;
       const snapshotId = await ctx.db.insert("snapshots", {
         buildId,
         shardIndex,
@@ -605,7 +628,7 @@ async function toSnapshot(
     return { imageId: image?._id, diffStatus: "failed", reviewState: "none" };
   }
   if (build.baselineBuildId === undefined) {
-    return { imageId: image._id, diffStatus: "added", reviewState: "approved" };
+    return { imageId: image._id, diffStatus: "added", reviewState: "pending" };
   }
   const baseline = await findBaselineSnapshot(
     ctx,
@@ -647,7 +670,7 @@ async function recordApproval(
     snapshotId,
     buildId: build._id,
     action: "approve",
-    source: "orphan",
+    source: build.baselineBuildId === undefined ? "orphan" : "auto_branch",
   });
   if (build.prNumber !== undefined) {
     await ctx.db.insert("approvedImages", {

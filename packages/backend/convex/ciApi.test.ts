@@ -643,3 +643,40 @@ it("re-sends the check when GitHub asks for it", async () => {
     conclusion: "success",
   });
 });
+
+it("auto-approves builds on the default branch", async () => {
+  const { t } = await setup();
+  await runBuild(t, {
+    commit: "c1",
+    images: [{ name: "Header", content: "header-v1" }],
+  });
+  const main = await runBuild(t, {
+    commit: "c2",
+    ancestors: ["c1"],
+    images: [
+      { name: "Header", content: "header-v2" },
+      { name: "Promo", content: "promo-v1" },
+    ],
+    changed: ["Header"],
+  });
+  expect(main.build).toMatchObject({
+    conclusion: "approved",
+    counts: { changed: 1, added: 1, pending: 0, approved: 2 },
+  });
+  expect(lastCheck()).toMatchObject({
+    conclusion: "success",
+    title: "Baseline updated, 2 changes",
+  });
+  const sources = await t.run(async (ctx) =>
+    (await ctx.db.query("reviews").collect()).map((review) => review.source),
+  );
+  expect(sources.filter((source) => source === "auto_branch")).toHaveLength(2);
+
+  const next = await runBuild(t, {
+    commit: "c3",
+    ancestors: ["c2", "c1"],
+    prNumber: 9,
+    images: [{ name: "Header", content: "header-v2" }],
+  });
+  expect(next.created.baseline).toEqual({ buildNumber: 2, commit: "c2" });
+});

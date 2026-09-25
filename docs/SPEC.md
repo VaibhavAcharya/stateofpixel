@@ -179,7 +179,7 @@ Rejections do not carry over (proposal). A rejected image showing up again is sh
 ### 4.7 Merge to the default branch
 
 1. Merge creates a push on `main`. CI runs `stateofpixel upload`.
-2. `main` matches the auto-approve pattern, so the build is approved and becomes the newest baseline.
+2. `main` matches the auto-approve pattern, so the build is approved and becomes the newest baseline. A build is auto-approved when it has no PR number and its branch matches one of `autoApproveBranches` (`*` matches within one path segment, `**` across segments). Its changed and added snapshots are inserted as approved with a `reviews` row of source `auto_branch`.
 3. For squash and rebase merges, the new commit is not a descendant of the PR head. The server calls `GET /repos/{o}/{r}/commits/{sha}/pulls`. If it finds a merged PR, the build page shows "From PR #123" and links the PR's last build.
 
 Auto-approve on main means anything that lands on main is the truth. If a change was not reviewed on the PR (check not required), it still becomes the baseline. The build page for that main build marks such snapshots "Not reviewed on PR" so it is visible.

@@ -30,7 +30,7 @@ Progress tracker for [PLAN.md](./PLAN.md). Details for each item are in [SPEC.md
 - [x] GitHub check runs
 - [x] Pages: account home, project builds list, build review page
 - [x] Review actions and keyboard shortcuts
-- [ ] Auto-approve on the default branch
+- [x] Auto-approve on the default branch
 - [ ] Dogfooding: `visual.yml` and first test PR scenarios
 
 ## M2: real-world CI
