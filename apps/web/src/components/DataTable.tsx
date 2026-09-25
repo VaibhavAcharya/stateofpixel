@@ -57,7 +57,7 @@ export function DataTable<Row extends RowData>({
         {table.getHeaderGroups().map((group) => (
           <tr
             key={group.id}
-            className="h-8 border-b border-border text-left text-2xs font-medium text-muted"
+            className="h-8 border-b border-border bg-surface-2 text-left text-2xs font-medium text-muted"
           >
             {group.headers.map((header) => {
               const sorted = header.column.getIsSorted();
