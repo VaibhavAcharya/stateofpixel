@@ -1,14 +1,24 @@
 # stateofpixel
 
-Visual regression testing that runs in your CI. See [docs/PLAN.md](docs/PLAN.md) and [docs/SPEC.md](docs/SPEC.md).
+Visual regression testing that runs in your CI. This README is for working on the repo. CLI usage is in [packages/cli/README.md](packages/cli/README.md).
+
+- [docs/PLAN.md](docs/PLAN.md): why we build it and how it works
+- [docs/SPEC.md](docs/SPEC.md): pages, tables, API, CLI and states in detail
+- [docs/DESIGN.md](docs/DESIGN.md): the design system
+- [docs/ROADMAP.md](docs/ROADMAP.md): what is done and what is next
 
 ## Layout
 
 - `apps/web`: TanStack Start app, deployed on Netlify
 - `packages/backend`: Convex functions and schema
-- `packages/cli`: the `stateofpixel` CLI
+- `packages/cli`: the `stateofpixel` CLI and Playwright reporter
+- `apps/web/visual`: Playwright tests that capture the web app for dogfooding
+- `examples/playground`: static pages and Storybook stories that the test PRs change
+- `scripts/test-pr.sh`: opens the dogfooding test PRs
 
 ## Development
+
+Node 22 or newer. CI uses the version in `.node-version`.
 
 ```sh
 pnpm install
@@ -34,25 +44,25 @@ Production code deploys from Netlify: its build runs `convex deploy` with `CONVE
 
 ## CLI
 
+Build the workspace CLI and point it at your local deployment with a project token from the local project settings:
+
 ```sh
 pnpm --filter stateofpixel build
-node packages/cli/dist/index.mjs compare <dir> <baseline-dir>
-```
-
-`compare` writes `stateofpixel-report/index.html`. Options: `--out <dir>`, `--threshold <0-1>` (default 0.1), `--include-aa`.
-
-```sh
 STATEOFPIXEL_API_URL=http://127.0.0.1:3211/api/v1 STATEOFPIXEL_TOKEN=sop_... \
   node packages/cli/dist/index.mjs upload <dir>
 ```
 
-`upload` uses the GitHub Actions OIDC token when `id-token: write` is granted, else `STATEOFPIXEL_TOKEN`. Without `STATEOFPIXEL_API_URL` it talks to production. Run `upload --help` for flags.
+Without `STATEOFPIXEL_API_URL` it talks to production.
 
 ## Dogfooding
 
-`.github/workflows/visual.yml` captures `examples/playground/pages` with Playwright and uploads them to production with the workspace CLI, as build name `playground`. It authenticates with the GitHub Actions OIDC token.
+`.github/workflows/visual.yml` uploads three builds to production with the workspace CLI, authenticated with the GitHub Actions OIDC token:
 
-`scripts/test-pr.sh <scenario>` opens a draft PR that changes the playground in a known way and states the expected check. Scenarios: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`. It needs `gh` signed in.
+- `playground`: `examples/playground/pages`, captured by `pnpm --filter @stateofpixel/playground capture`
+- `storybook`: the playground stories, built with `pnpm --filter @stateofpixel/playground build-storybook` and captured with `stateofpixel storybook`
+- `web`: the landing page, captured by `pnpm --filter @stateofpixel/web visual` through the Playwright reporter. The reporter uploads on CI only, so a local run only writes screenshots.
+
+`scripts/test-pr.sh <scenario>` opens a draft PR that changes the playground in a known way and prints the expected check for `playground` and `storybook`. Scenarios: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`, `add-story`, `remove-story`. It needs `gh` signed in.
 
 Netlify deploy previews and branch deploys build only the web app against the production Convex URL. Only production builds run `convex deploy`.
 
@@ -64,3 +74,9 @@ pnpm typecheck
 pnpm test
 pnpm build
 ```
+
+`typecheck` in `apps/web` reads the types from `packages/cli/dist`, so run `pnpm --filter stateofpixel build` first on a fresh checkout, as `ci.yml` does.
+
+## Releases
+
+release-please opens a release PR for `packages/cli` from conventional commits on `main`. Merging it tags the release, and `release.yml` then tests, builds and publishes the CLI to npm.

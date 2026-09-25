@@ -70,9 +70,9 @@ Group 4: landing
 
 ## Dogfooding
 
-See PLAN.md, Dogfooding. `visual.yml` uploads three builds: `playground` (static pages), `storybook` (playground stories) and `web` (the landing page).
+See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (static pages), `storybook` (playground stories) and `web` (the landing page).
 
-- [x] Playwright suite for the public web pages (landing, pricing) through `stateofpixel/playwright`
+- [x] Playwright suite for the public web pages (landing) through `stateofpixel/playwright`
 - [ ] A seeded build page that renders without GitHub sign-in, captured in the same suite
 - [x] Storybook stories in `examples/playground`, captured with `stateofpixel storybook`
 - [x] `scripts/test-pr.sh` scenarios with an expected check result each
@@ -95,6 +95,15 @@ See PLAN.md, Dogfooding. `visual.yml` uploads three builds: `playground` (static
 - [ ] Enforce the limits in SPEC section 12
 - [ ] Per-account egress tracking
 - [ ] Landing and FAQ copy for the free tier
+
+## Legal
+
+Needed before applying for a payment gateway.
+
+- [ ] Privacy policy page
+- [ ] Terms and conditions page
+- [ ] Refund policy page
+- [ ] Links to all three in the site footer
 
 ## Marketing pages
 

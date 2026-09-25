@@ -1,8 +1,8 @@
 # stateofpixel: product spec
 
-Companion to [PLAN.md](./PLAN.md). PLAN.md says why and how; this file says exactly what: pages, tables, API, CLI, states and flows. Items marked (proposal) are my defaults and need your call. Items marked (unverified) need a check against GitHub or Convex docs before we build on them.
+Companion to [PLAN.md](./PLAN.md). PLAN.md says why and how; this file says exactly what: pages, tables, API, CLI, states and flows. Items marked (proposal) are defaults that are not final. Items marked (unverified) need a check against GitHub or Convex docs before we build on them.
 
-Stack: pnpm monorepo, TanStack Start on Netlify, Convex for database, auth (Convex Auth) and file storage. See PLAN.md for the repo layout and dogfooding.
+Stack: pnpm monorepo, TanStack Start on Netlify, Convex for database, auth (Convex Auth) and file storage. See the [README](../README.md) for the repo layout and dogfooding.
 
 ## Contents
 
@@ -229,9 +229,8 @@ URL scheme mirrors GitHub: `/{owner}/{repo}`. Public pages (5.1) are server-rend
 | Path | Content |
 |---|---|
 | `/` | Landing. One-sentence pitch, the "how it works" diagram, a 3-line CI snippet, pricing block, Sign in button. |
-| `/pricing` | Free tier, storage price, what counts as storage, retention defaults, FAQ. |
-| `/docs` | Getting started, Playwright, Storybook, folder upload, sharding, baselines explained, flakiness, CLI reference, config reference. Static Markdown pages. |
-| `/login` | Redirects to GitHub OAuth. |
+
+Docs pages are not built yet.
 
 ### 5.2 Install (`/install`)
 
@@ -281,7 +280,7 @@ Builds tab:
 ```
 
 - Columns: build number, conclusion pill with counts, branch, commit message (first line) and short SHA, PR number linking to GitHub, build name as the Suite column if the project has more than one, relative time with absolute time on hover.
-- Filters are in the URL query so they can be shared. M1 has the branch filter (`?branch=`, through `by_projectId_and_branch`); status and build name filters come later.
+- Filters are in the URL query so they can be shared. The builds list filters by branch (`?branch=`), pull request (`?pr=`) and states (`?state=`), and sorts with `?order=asc`. There is no build name filter yet.
 - 50 rows per page, "Load more" by cursor.
 - Pending builds show a spinner and shard progress, updated live.
 - Empty project shows the Setup card (4.2) instead.
@@ -416,7 +415,7 @@ Documents are capped at 1 MiB and arrays at 8,192 elements ([limits](https://doc
 | githubUserId | number | From the GitHub profile. Index `by_githubUserId`. |
 | login | string | Updated on each sign-in. |
 | name | string, optional | |
-| image | string | Avatar URL. |
+| image | string, optional | Avatar URL. |
 | githubToken | string | User access token, saved from the provider's `profile(profile, tokens)` callback. Read only by internal functions, never returned to the client. |
 | lastSeenAt | number | |
 
@@ -460,7 +459,10 @@ Which signed-in users can see which account. `me.refreshAccounts` rewrites a use
 | diffIncludeAA | boolean | Default false. |
 | prRetentionDays | number | Default 60. |
 | nextBuildNumber | number | Read and incremented in the mutation that creates a build. Convex mutations are serializable, so numbers never collide. |
+| lastBuildAt | number, optional | Set when a build is created. Sorts the account home and tells whether the project has builds. |
 | archivedAt | number, optional | Set when access is removed. |
+
+The account home lists projects through `by_accountId_and_lastBuildAt` or `by_accountId_and_name`, and searches them with the search index `search_name` on `name`, filtered by `accountId`.
 
 ### projectTokens
 
@@ -516,6 +518,8 @@ Indexes:
 - `by_projectId_and_buildName_and_commitSha` on `[projectId, buildName, commitSha]`, for baseline lookup.
 - `by_projectId_and_buildName_and_prNumber` on `[projectId, buildName, prNumber]`, for carry-over and superseding.
 - `by_projectId_and_branch` on `[projectId, branch]`, for the branch filter and branch activity in `deleteOldBuilds`.
+- `by_projectId_and_prNumber` on `[projectId, prNumber]`, for the pull request filter and `pull_request` webhooks.
+- `by_projectId_and_status_and_conclusion` on `[projectId, status, conclusion]`, for the states filter.
 - `by_baselineBuildId` on `[baselineBuildId]`, so `deleteOldBuilds` keeps builds that are another build's baseline.
 - The builds list uses `by_projectId_and_number` in descending order.
 
@@ -576,7 +580,7 @@ For carry-over lookups there is also `by_projectId_and_buildName_and_prNumber_an
 | r2Key | string, optional | For later. |
 | lastReferencedAt | number | Set at confirm. `createUploadTargets` moves it forward when a build reuses the image and it is over 12 hours old, so `collectImages` never deletes an image a pending build relies on. |
 
-Index `by_accountId_and_hash` on `[accountId, hash]`, unique by code. The same PNG in two accounts is stored twice.
+Index `by_accountId_and_hash` on `[accountId, hash]`, unique by code. The same PNG in two accounts is stored twice. Index `by_storageId` lets a confirm check that no image row already uses a `storageId`.
 
 An image row is created only after an upload is confirmed (see 7.3), so there is no "pending upload" state to clean up in this table.
 
@@ -586,7 +590,7 @@ An image row is created only after an upload is confirmed (see 7.3), so there is
 |---|---|---|
 | accountId | Id<"accounts"> | |
 | projectId | Id<"projects"> | |
-| day | string | `YYYY-MM-DD`, UTC. Index `by_projectId_and_day`. |
+| day | string | `YYYY-MM-DD`, UTC. Indexes `by_projectId_and_day` and `by_accountId_and_day`. |
 | baselineBytes, prBytes, diffBytes | number | Computed by the daily cron. |
 | builds, snapshots, uploadedImages | number | For our own dashboards, not billing. |
 
@@ -723,7 +727,7 @@ Confirming uploads, per chunk of 1,000:
 3. If an image with that hash already exists for the account (two shards uploaded the same PNG at once), delete the new file and point to the existing image.
 4. Otherwise insert the `images` row.
 
-Then insert snapshot rows in chunks of 1,000, carrying over approvals through `approvedImages` as they are inserted (4.6), increment `shardsDone`, and when it reaches `shardsTotal`, schedule the finalize mutation with `runAfter(0)`.
+Then insert snapshot rows in chunks of 1,000, carrying over approvals through `approvedImages` as they are inserted (4.6), add the shard index to `doneShardIndexes`, and when it holds `shardsTotal` indexes, schedule the finalize mutation with `runAfter(0)`.
 
 Finalize, in chunked mutations:
 1. Compute `removed` (baseline names missing from this build), unless `subset`.
@@ -763,18 +767,20 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 
 | Function | Kind | Permission | Purpose |
 |---|---|---|---|
-| `me.get` | query | signed in | User and the accounts they can see. |
+| `me.accounts` | query | signed in | The accounts the user can see, and whether each is installed. |
+| `me.installUrl` | query | signed in | The GitHub App install URL. |
 | `me.refreshAccounts` | action | signed in | `GET /user/installations` with the user token, links the user to accounts. Runs at sign-in and from "Refresh" on the Install page. |
 | `permissions.refresh` | action | signed in | See above. Writes `none` when GitHub answers 404. `orgOwner` comes from the org membership role, or from the login for a user account. |
 | `projects.access` | query | signed in | Project id, cached permission, whether it is fresh, `canRead` and `canWrite`. The page calls `permissions.refresh` while it is not fresh. |
-| `accounts.home` | query | account member | Projects of an account with their latest build. |
+| `accounts.home` | query | account member | The account and its installation settings URL. |
+| `accounts.projects` | query | account member | Paginated projects with their latest build, searchable, sorted by name or last build. |
 | `builds.list` | query | read | Paginated with `.paginate()`, filters branch, pull request and a list of states. |
 | `builds.get` | query | read | Build and counts by number. |
 | `snapshots.list` | query | read | Paginated sidebar list by `by_buildId_and_diffStatus_and_name`. Includes image URLs from `blobs.getUrl`. |
 | `snapshots.get` | query | read | One snapshot with metadata, review info and history. |
 | `reviews.apply` | mutation | write | `{ buildId, snapshotIds or "all", action, comment }`. "all" runs in chunks of 1,000 through scheduled mutations; the UI shows progress from `counts`. |
-| `baselines.current` | query | read | Build names seen on the default branch, the chosen one (the requested name, else `default`, else the first), and its newest full approved build. |
-| `baselines.list` | query | read | Paginated snapshots of that build, with an optional name prefix. |
+| `baselines.current` | query | read | Every build name seen on the default branch, each with its newest full approved build. |
+| `baselines.list` | query | read | Paginated snapshots of one build name's baseline, with an optional name prefix. |
 | `baselines.history` | query | read | Changed rows for one name on the default branch. |
 | `projects.settings` | query | admin | The settings page fields. |
 | `projects.updateSettings` | mutation | admin | Partial update. |
@@ -793,8 +799,9 @@ GitHub App permissions:
 | Permission | Level | Why |
 |---|---|---|
 | Checks | write | Create and update check runs. |
-| Pull requests | read | PR number, base branch, squash merge lookup. |
+| Pull requests | read and write | PR number, base branch, squash merge lookup. Write is not used yet. |
 | Contents | read | Compare API for baseline fallback. |
+| Actions | read | Not used yet. |
 | Metadata | read | Required by GitHub. |
 
 The app's OAuth settings are also what Convex Auth uses for sign-in (section 6).
@@ -837,52 +844,19 @@ Package `stateofpixel`, closed source, published unminified with source maps. No
 | `--shard i/n` or `--shard auto` | `STATEOFPIXEL_SHARD` | `1/1` |
 | `--nonce` | `STATEOFPIXEL_NONCE` | CI run id plus attempt |
 | `--baseline-branch` | `STATEOFPIXEL_BASELINE_BRANCH` | PR base, else default branch |
-| `--baseline-commit` | `STATEOFPIXEL_BASELINE_COMMIT` | computed |
 | `--subset` | | off. Use when only some snapshots ran, so missing ones are not `removed`. |
 | `--threshold` | | from project settings |
-| `--ignore <glob>` | | none |
 | `--strict` | | off |
 | `--dry-run` | | off. Hash and print the plan, upload nothing. |
 | | `STATEOFPIXEL_TOKEN` | OIDC on GitHub Actions |
 
 Snapshot name from a folder upload is the path relative to `<dir>` without `.png`, like `components/Button/primary`.
 
-M1 ships `--build-name`, `--shard i/n`, `--nonce`, `--baseline-branch`, `--subset`, `--threshold`, `--strict` and `--dry-run`. M2 adds `--shard auto`, `finalize` with `--build-name`, `--nonce`, `--baseline-branch`, `--skip-if-empty` and `--strict`, `storybook`, and the Playwright reporter. A `<name>.meta.json` file next to `<name>.png` is sent as that snapshot's metadata. `--baseline-commit`, `--ignore` and the config file come later. Git info comes from the GitHub Actions env and event payload (the PR head SHA, not the merge SHA) and from local git; `ancestors` is `git rev-list` of the commit, or of `HEAD` without the merge commit when the PR head is not in a shallow checkout. The API base URL is `STATEOFPIXEL_API_URL`, default `https://graceful-dogfish-423.convex.site/api/v1` until a custom domain exists.
-
-### Config file
-
-`stateofpixel.config.json` in the repo root, all fields optional:
-
-```json
-{
-  "buildName": "storybook",
-  "threshold": 0.1,
-  "ignore": ["**/*.flaky.png"],
-  "storybook": {
-    "viewports": [375, 1280],
-    "browsers": ["chromium"],
-    "include": ["components/**"],
-    "exclude": ["**/Playground"],
-    "waitForSelector": "#storybook-root > *",
-    "delay": 0
-  }
-}
-```
+`finalize` takes `--build-name`, `--nonce`, `--baseline-branch`, `--skip-if-empty` and `--strict`. A `<name>.meta.json` file next to `<name>.png` is sent as that snapshot's metadata. Git info comes from the GitHub Actions env and event payload (the PR head SHA, not the merge SHA) and from local git; `ancestors` is `git rev-list` of the commit, or of `HEAD` without the merge commit when the PR head is not in a shallow checkout. The API base URL is `STATEOFPIXEL_API_URL`, default `https://graceful-dogfish-423.convex.site/api/v1` until a custom domain exists.
 
 ### Playwright integration
 
-A reporter plus a helper:
-
-```ts
-// playwright.config.ts
-reporter: [["list"], ["stateofpixel/playwright"]]
-
-// in a test
-import { snapshot } from "stateofpixel/playwright";
-await snapshot(page, "Checkout/Empty cart");
-```
-
-`snapshot` applies the flakiness defaults (animations disabled, caret hidden, fonts loaded), appends `[browser width]` to the name, saves a full-page PNG into `stateofpixel-screenshots` (or `STATEOFPIXEL_DIR`) and writes metadata next to it. The reporter clears that folder when the run begins and uploads it once the run ends, per shard when Playwright sharding is on. It uploads only when `CI` is set, unless the reporter option `uploadOutsideCi` is true, and marks the upload as a subset when the run did not pass. Reporter options: `buildName`, `nonce`, `baselineBranch`, `subset`, `threshold`, `strict`, `uploadOutsideCi`. Storybook captures and the Playwright helper use the Playwright the project installs, an optional peer dependency.
+A reporter plus a `snapshot(page, name)` helper, with setup in `packages/cli/README.md`. `snapshot` applies the flakiness defaults (animations disabled, caret hidden, fonts loaded), appends `[browser width]` to the name, saves a full-page PNG into `stateofpixel-screenshots` (or `STATEOFPIXEL_DIR`) and writes metadata next to it. The reporter clears that folder when the run begins and uploads it once the run ends, per shard when Playwright sharding is on. It uploads only when `CI` is set, unless the reporter option `uploadOutsideCi` is true, and marks the upload as a subset when the run did not pass. Reporter options: `buildName`, `nonce`, `baselineBranch`, `subset`, `threshold`, `strict`, `uploadOutsideCi`. Storybook captures and the Playwright helper use the Playwright the project installs, an optional peer dependency.
 
 ### Output
 
@@ -921,13 +895,12 @@ In `packages/backend/convex/crons.ts` ([docs](https://docs.convex.dev/scheduling
 
 | Cron | Schedule | Work |
 |---|---|---|
-| `expireBuilds` | none, per build | Scheduled at build creation for 60 min later. Sets `expired` if still pending. |
 | `syncChecks` | every 5 min | Retries GitHub check updates that did not land. |
-| `pruneRows` | daily 03:00 UTC | Row pruning rules from the snapshots table. Not built yet. |
 | `deleteOldBuilds` | daily 03:30 UTC | Deletes builds of PRs closed longer than `prRetentionDays` ago, and builds of branches with no new build for that long. Never deletes pending builds, builds on the default branch or an auto-approve branch, or a build that another build uses as its baseline. Deletes the build row first, then its snapshots and reviews in chunks, then the PR's `approvedImages` once no build of that PR is left. |
 | `collectImages` | daily 04:00 UTC | Deletes images with no snapshot referencing them (checked through `by_imageId`, `by_baselineImageId` and `by_diffImageId`) and `lastReferencedAt` over 24 hours ago, and their stored files. Subtracts the bytes from `accounts.storageBytes`. |
-| `usage` | daily 05:00 UTC, not built yet | Writes `usageDaily`, sets `accounts.storageBytes`, sets or clears `overLimitSince`. |
 | `cleanupEvents` | daily 04:30 UTC | Deletes `githubEvents` older than 7 days. |
+
+Not built yet: `pruneRows` (daily 03:00 UTC) applies the row pruning rules from the snapshots table, and `usage` (daily 05:00 UTC) writes `usageDaily`, sets `accounts.storageBytes` and sets or clears `overLimitSince`. Build expiry is not a cron: `builds.expire` is scheduled per build, 60 minutes after creation, and sets `expired` if the build is still pending.
 
 Storage billed is the sum of `images.bytes` per account. Every image counts once, however many builds reference it.
 
@@ -952,4 +925,4 @@ Storage billed is the sum of `images.bytes` per account. Every image counts once
 - Thumbnails. Generating them needs decoding on the server; the browser scales full images instead. Revisit if the Baselines grid is slow.
 - Ignore regions drawn in the UI. Masks live in test code.
 - Organization-level roles beyond what GitHub gives.
-- Wait-for-review in CI (`--wait`), PR comments, flaky detection, billing UI (all M3).
+- Wait-for-review in CI (`--wait`). PR comments, flaky detection and billing are tracked in ROADMAP.md.

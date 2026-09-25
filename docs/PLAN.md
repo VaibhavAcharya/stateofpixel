@@ -1,6 +1,6 @@
-# stateofpixel: research and plan
+# stateofpixel: plan
 
-Research date: 2026-09-24. Pages, tables, API and flows in detail are in [SPEC.md](./SPEC.md). Sources are linked inline. Items marked (unverified) came from secondhand sources or memory and need a check before we depend on them.
+Pages, tables, API and flows in detail are in [SPEC.md](./SPEC.md), and progress is in [ROADMAP.md](./ROADMAP.md). Sources are linked inline. Items marked (unverified) came from secondhand sources or memory and need a check before we depend on them.
 
 ## Why we are building it
 
@@ -24,7 +24,7 @@ Chromatic is expensive because it renders in its own browser fleet. If the user 
 - TurboSnap-style dependency graphs. The user decides what to render, and hash dedupe makes re-uploading unchanged work free anyway.
 - AI or perceptual diffing, accessibility tests, Figma sync.
 - GitLab and Bitbucket. GitHub only.
-- Open-sourcing any part. The CLI and the server stay closed source for now.
+- Open-sourcing any part. The CLI and the server stay closed source for now. The CLI ships to npm unminified with source maps, under a short license that allows free use with stateofpixel, and the docs list every request it sends.
 
 ## Landscape
 
@@ -93,14 +93,13 @@ steps:
 
 As in the diagram above. Details that matter:
 
-- Env detection with [env-ci](https://github.com/semantic-release/env-ci) plus our own reads for base branch, which env-ci does not give everywhere.
-- On GitHub `pull_request` events, `GITHUB_SHA` is a synthetic merge commit. Read `pull_request.head.sha` and `base.sha` from `$GITHUB_EVENT_PATH` (from memory, unverified).
+- On GitHub `pull_request` events, `GITHUB_SHA` is a synthetic merge commit. Read `pull_request.head.sha` and `base.sha` from `$GITHUB_EVENT_PATH`.
 - File SHA-256 is the storage key. If two files differ in bytes but not pixels (PNG metadata, zlib settings), the 0-threshold local diff catches it and the snapshot counts as unchanged.
 - Snapshot identity is `name + browser + viewport`. Keep baselines per `os+browser` so a macOS run never compares to a Linux baseline.
 
 ### Sharded CI
 
-Each shard uploads with the same nonce (`STATEOFPIXEL_PARALLEL_NONCE`, default to the CI run id) and a shard index. The build completes either when `total` shards arrive or when `stateofpixel finalize` runs. Same model as Argos ([docs](https://argos-ci.com/docs/learn/how-to-guides/ci-pipelines/parallel-testing-sharding.md)).
+Each shard uploads with the same nonce (`STATEOFPIXEL_NONCE`, default to the CI run id and attempt) and a shard index. The build completes either when `total` shards arrive or when `stateofpixel finalize` runs. Same model as Argos ([docs](https://argos-ci.com/docs/learn/how-to-guides/ci-pipelines/parallel-testing-sharding.md)).
 
 ### Review
 
@@ -123,7 +122,7 @@ Adapted from Argos ([docs](https://argos-ci.com/docs/learn/platform-fundamentals
 3. Pick the newest build that is finalized, approved, same build name, and whose commit is in that ancestor list.
 4. Per snapshot name, the baseline is that build's image. Missing name means new.
 
-Keep an override: `--baseline-commit <sha>`.
+Override the baseline branch with `--baseline-branch <branch>`.
 
 ## Diff engine
 
@@ -148,7 +147,7 @@ This is the user's problem technically, and our problem in practice, because the
 ## Integrations for v1
 
 - Playwright: a reporter that collects screenshots from tests, plus a `snapshot(page, name)` helper.
-- Storybook: `stateofpixel storybook ./storybook-static` builds the list from `index.json` and captures each story with Playwright in the user's CI. Viewports and themes as config.
+- Storybook: `stateofpixel storybook ./storybook-static` builds the list from `index.json` and captures each story with Playwright in the user's CI, at every width in `--viewports`.
 - Anything else: `stateofpixel upload <dir>`, where file path is the name. This covers Cypress, BackstopJS output, native app screenshots.
 
 ## Stack
@@ -161,22 +160,22 @@ stateofpixel/
   packages/backend/      convex/ folder: schema, queries, mutations,
                          http.ts (CI API, GitHub webhooks), crons.ts
   packages/cli/          `stateofpixel` npm package, closed source
-  packages/shared/       API request/response types and validators,
-                         bundled into the CLI at build time
   examples/playground/   small pages and stories we break on purpose
                          for dogfooding test PRs
-  .github/workflows/     ci.yml (lint, types, tests), visual.yml (dogfood)
+  scripts/test-pr.sh     opens the dogfooding test PRs
+  .github/workflows/     ci.yml (lint, types, tests), visual.yml (dogfood),
+                         release.yml (CLI releases)
 ```
 
-- Web app: TanStack Start (`@tanstack/react-start`, docs still say Release Candidate, [docs](https://tanstack.com/start/latest/docs/framework/react/overview)) on Netlify with `@netlify/vite-plugin-tanstack-start` ([docs](https://docs.netlify.com/build/frameworks/framework-setup-guides/tanstack-start/)). Convex data through `@convex-dev/react-query` ([docs](https://docs.convex.dev/client/tanstack/tanstack-start/)). Public pages (landing, pricing, docs) render on the server. Signed-in pages render on the client, because Convex Auth has no TanStack Start SSR support yet.
+- Web app: TanStack Start (`@tanstack/react-start`, docs still say Release Candidate, [docs](https://tanstack.com/start/latest/docs/framework/react/overview)) on Netlify with `@netlify/vite-plugin-tanstack-start` ([docs](https://docs.netlify.com/build/frameworks/framework-setup-guides/tanstack-start/)). Convex data through `@convex-dev/react-query` ([docs](https://docs.convex.dev/client/tanstack/tanstack-start/)). Public pages render on the server. Signed-in pages render on the client, because Convex Auth has no TanStack Start SSR support yet.
 - Backend: Convex for database, file storage, scheduled functions and crons. The CI API and GitHub webhooks are Convex HTTP actions ([docs](https://docs.convex.dev/functions/http-actions)). Live queries mean the build page updates by itself while shards arrive, with no polling.
 - Auth: Convex Auth with the GitHub provider ([docs](https://labs.convex.dev/auth/config/oauth/github)). It is beta and may change in backward-incompatible ways ([docs](https://docs.convex.dev/auth/convex-auth)), so pin the version.
 - CI auth: GitHub Actions OIDC tokens verified with `jose` inside the HTTP actions (tested from `visual.yml`), or a hashed project token.
 - Image storage: Convex File Storage now, Cloudflare R2 later. All storage calls go through one module (`packages/backend/convex/blobs.ts`) with four functions: create upload targets, confirm an upload, get a URL, delete. Each image row records which store holds it, so moving to R2 (through the `@convex-dev/r2` component) can happen image by image.
 - CLI: Node 20+, published to npm, odiff-bin as optional dependency, pixelmatch as fallback.
-- GitHub App with `checks: write`, `pull_requests: read`, `contents: read`.
-- Deploys: Netlify runs `npx convex deploy --cmd 'pnpm --filter web build'` with a production deploy key for production and a preview key for deploy previews, so every deploy preview gets its own Convex preview deployment ([docs](https://docs.convex.dev/production/hosting/netlify), [previews](https://docs.convex.dev/production/hosting/preview-deployments)). Not tested with pnpm filters yet.
-- Tests: Vitest for the CLI and shared package, `convex-test` for backend functions.
+- GitHub App with `checks: write`, `pull_requests: write`, `contents: read`, `actions: read`.
+- Deploys: production builds on Netlify run `convex deploy` with a production deploy key, then build the web app ([docs](https://docs.convex.dev/production/hosting/netlify)). Deploy previews and branch deploys build only the web app, against the production Convex URL.
+- Tests: Vitest for the CLI, `convex-test` for backend functions.
 
 Convex limits shape the backend code ([limits](https://docs.convex.dev/production/state/limits)). A query or mutation has 1 s, 4,096 index ranges, 32,000 documents scanned and 16,000 written. HTTP action bodies are capped at 20 MiB. So every bulk path works in chunks of about 1,000 snapshots: the HTTP action takes the full manifest, then runs internal queries and mutations per chunk.
 
@@ -185,7 +184,7 @@ Convex limits shape the backend code ([limits](https://docs.convex.dev/productio
 stateofpixel tests itself from the first milestone that has a server.
 
 - `visual.yml` runs on every PR in this repo. It builds the CLI from the workspace, not from npm, so every PR also tests the CLI it changes.
-- It captures two sources: the web app's own pages (landing, pricing, a seeded build page) with Playwright, and `examples/playground` with a mix of static pages and Storybook stories.
+- It uploads three builds: `playground` (static pages in `examples/playground`), `storybook` (the playground stories) and `web` (the landing page, through the Playwright reporter). A seeded build page is planned for `web`.
 - It uploads to the production stateofpixel instance, as a project for this repo. A PR that changes the backend is tested by the old production backend. That forces the CI API to stay backward compatible, which the CLI needs anyway since users upgrade on their own schedule.
 - Test PRs: `scripts/test-pr.sh <scenario>` creates a branch that changes the playground in a known way, pushes it and opens a draft PR. Scenarios today: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`, `add-story`, `remove-story`. Planned: `flaky` (an animation left on), `many-changes`, `sharded`. Each one has an expected check result, so a quick look at the PR list shows whether the service behaves.
 - Scenarios for merges (squash, rebase, merge commit) run against a separate test repo, so they do not pollute this repo's history.
@@ -204,21 +203,9 @@ Convex prices, Starter plan pay-as-you-go ([pricing](https://www.convex.dev/pric
 
 So a mid-size team costs about $3 a month on Convex, and most of it is egress. With R2 the same team costs cents. That is fine while we have few users. Egress is the number to watch; move bytes to R2 when egress becomes the biggest line on the Convex bill.
 
-Pricing: a free tier of 10 GB stored per account, then pay only for storage. No per-snapshot, per-build or per-seat fees, so the whole team can review. Storage is the only cost that grows for us, so it is the only thing we bill. The free tier is 10 GB stored per account, and PR-only images are kept 60 days by default. Above the free tier storage costs $1 per GB a month, billed on the monthly average. Over the limit we warn and soft-fail, we do not block CI.
+Pricing: a free tier of 10 GB stored per account, then pay only for storage. No per-snapshot, per-build or per-seat fees, so the whole team can review. Storage is the only cost that grows for us, so it is the only thing we bill. PR-only images are kept 60 days by default. Above the free tier storage costs $1 per GB a month, billed on the monthly average. Paid plans show as coming soon until billing ships. Over the limit we warn and soft-fail, we do not block CI.
 
 Storage-only billing means retention is a product feature. Show each project its stored GB, and let users set how long PR-only images are kept.
-
-## Roadmap
-
-M0, CLI only. `stateofpixel compare <dir> <baseline-dir>` runs locally with odiff and writes an HTML report. Proves the diff, naming and flakiness defaults with no server.
-
-M1, the service. Monorepo setup, Convex schema, GitHub App, Convex Auth sign-in, OIDC auth for CI, builds API as HTTP actions, uploads to Convex File Storage, baseline selection, GitHub check, review page, auto-approve on default branch. Dogfooding starts here: `visual.yml` and the first test PR scenarios.
-
-M2, real-world CI. Sharding and finalize, squash merge handling, approval carry-over, Storybook capture command, retention and GC, project tokens for non-GitHub CI.
-
-M3, growth. Storage billing and a usage page, PR comment summary, tokenless fork PRs, flaky detection, move image bytes to R2 when egress cost calls for it.
-
-Later: open-source the CLI and the server together.
 
 ## Risks
 
@@ -232,16 +219,3 @@ Later: open-source the CLI and the server together.
 - TanStack Start docs still call it a Release Candidate.
 - The Convex free plan returns errors when over limits. Run production on Starter with a card on file from day one.
 - Concurrency on Starter may be 16 queries and 16 mutations at once (unverified). Many CI shards uploading at once could queue. Move to Pro when that shows up.
-
-## Decisions
-
-- Source: the CLI and the server are closed source for now. Opening both is a later plan. The CLI ships to npm unminified with source maps, under a short license that allows free use with stateofpixel, and the docs list every request it sends.
-- Pricing: a free tier of 10 GB stored per account, then $1 per GB a month above it, billed on the monthly average stored. Paid plans show as coming soon until billing ships.
-- Retention: PR-only images are kept 60 days by default.
-- Git hosts: GitHub only. No GitLab planned.
-- Repo: one pnpm monorepo with the CLI and the app.
-- Stack: TanStack Start on Netlify, Convex for database, auth and file storage.
-- Image bytes: Convex File Storage now, R2 later, behind one storage module.
-- Auth: Convex Auth with GitHub, signed-in pages render on the client.
-- Dogfooding: this repo's CI uses stateofpixel from M1, with scripted test PRs.
-
