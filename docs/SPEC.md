@@ -614,7 +614,7 @@ Convex HTTP actions in `packages/backend/convex/http.ts`, served at `https://<de
 
 Two token kinds:
 
-- GitHub Actions OIDC token with audience `stateofpixel`. `convex/ciAuth.ts` verifies it with `jose` against `https://token.actions.githubusercontent.com/.well-known/jwks` (issuer `https://token.actions.githubusercontent.com`, RS256) and maps the `repository_id` claim to a project that is not archived. It is not a `customJwt` provider in `convex/auth.config.ts`, so a CI token is never a signed-in identity for app queries and mutations. `POST /builds` checks that the `sha` claim matches `git.commit`, or that the `ref` claim is `refs/pull/{prNumber}/merge` for the PR the build claims (the `sha` claim is the synthetic merge commit on `pull_request` runs). Not tested from a real GitHub Actions run yet.
+- GitHub Actions OIDC token with audience `stateofpixel`. `convex/ciAuth.ts` verifies it with `jose` against `https://token.actions.githubusercontent.com/.well-known/jwks` (issuer `https://token.actions.githubusercontent.com`, RS256) and maps the `repository_id` claim to a project that is not archived. It is not a `customJwt` provider in `convex/auth.config.ts`, so a CI token is never a signed-in identity for app queries and mutations. `POST /builds` checks that the `sha` claim matches `git.commit`, or that the `ref` claim is `refs/pull/{prNumber}/merge` for the PR the build claims (the `sha` claim is the synthetic merge commit on `pull_request` runs).
 - Project token (`sop_...`). The action hashes it and looks it up by `tokenHash`. Revoked tokens and tokens of archived projects are rejected. `lastUsedAt` is written at most once a minute.
 
 A missing or rejected token returns 401 with code `unauthorized`.
