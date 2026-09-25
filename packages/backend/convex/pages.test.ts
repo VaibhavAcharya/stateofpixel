@@ -1,7 +1,8 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -273,4 +274,144 @@ it("shows the account home only to members", async () => {
       .withIdentity({ subject: `${strangerId}|s` })
       .query(api.accounts.home, { login: "acme" }),
   ).toBeNull();
+});
+
+async function buildState(
+  t: ReturnType<typeof convexTest>,
+  buildId: Id<"builds">,
+) {
+  return t.run(async (ctx) => {
+    const build = await ctx.db.get("builds", buildId);
+    return {
+      conclusion: build?.conclusion,
+      counts: build?.counts,
+      checkVersion: build?.checkVersion,
+    };
+  });
+}
+
+it("approves, rejects and undoes a snapshot and updates the build", async () => {
+  const { t, user, grant, buildId, snapshotId } = await setup();
+  await grant("write");
+
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: [snapshotId],
+    action: "approve",
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    conclusion: "approved",
+    counts: { pending: 0, approved: 1 },
+    checkVersion: 2,
+  });
+  expect(
+    await t.run((ctx) => ctx.db.query("approvedImages").collect()),
+  ).toHaveLength(1);
+
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: [snapshotId],
+    action: "reject",
+    comment: " Header moved ",
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    conclusion: "rejected",
+    counts: { approved: 0, rejected: 1 },
+  });
+  expect(
+    await t.run((ctx) => ctx.db.query("approvedImages").collect()),
+  ).toHaveLength(0);
+  const detail = await user.query(api.snapshots.get, { buildId, snapshotId });
+  expect(detail?.lastReview).toMatchObject({
+    action: "reject",
+    login: "octocat",
+    comment: "Header moved",
+  });
+
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: [snapshotId],
+    action: "undo",
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    conclusion: "changes",
+    counts: { pending: 1, rejected: 0 },
+  });
+});
+
+it("needs write access and a reviewable build", async () => {
+  const { user, grant, buildId, snapshotId } = await setup();
+  await grant("read");
+  await expect(
+    user.mutation(api.reviews.apply, {
+      buildId,
+      snapshotIds: [snapshotId],
+      action: "approve",
+    }),
+  ).rejects.toThrow(/forbidden/);
+
+  const {
+    t: t2,
+    user: writer,
+    grant: grantWrite,
+    buildId: supersededId,
+    snapshotId: s2,
+  } = await setup();
+  await grantWrite("write");
+  await t2.run((ctx) =>
+    ctx.db.patch("builds", supersededId, { supersededById: supersededId }),
+  );
+  await expect(
+    writer.mutation(api.reviews.apply, {
+      buildId: supersededId,
+      snapshotIds: [s2],
+      action: "approve",
+    }),
+  ).rejects.toThrow(/build_not_reviewable/);
+});
+
+it("approves every pending snapshot with approve all", async () => {
+  const { t, user, grant, buildId } = await setup();
+  await grant("write");
+  await t.run(async (ctx) => {
+    for (const name of ["A", "B", "C"]) {
+      await ctx.db.insert("snapshots", {
+        buildId,
+        shardIndex: 1,
+        name,
+        diffStatus: "added",
+        reviewState: "pending",
+        metadata: {},
+      });
+    }
+    const build = await ctx.db.get("builds", buildId);
+    if (build) {
+      await ctx.db.patch("builds", buildId, {
+        counts: { ...build.counts, added: 3, pending: 4 },
+      });
+    }
+  });
+
+  vi.useFakeTimers();
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: "all",
+    action: "approve",
+  });
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+  vi.useRealTimers();
+
+  expect(await buildState(t, buildId)).toMatchObject({
+    conclusion: "approved",
+    counts: { pending: 0, approved: 4 },
+  });
+  const sources = await t.run(async (ctx) =>
+    (await ctx.db.query("reviews").collect()).map((review) => review.source),
+  );
+  expect(sources).toEqual([
+    "approve_all",
+    "approve_all",
+    "approve_all",
+    "approve_all",
+  ]);
 });

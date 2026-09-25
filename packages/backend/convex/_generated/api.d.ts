@@ -28,6 +28,7 @@ import type * as lib_urls from "../lib/urls.js";
 import type * as me from "../me.js";
 import type * as permissions from "../permissions.js";
 import type * as projects from "../projects.js";
+import type * as reviews from "../reviews.js";
 import type * as snapshots from "../snapshots.js";
 import type * as tokens from "../tokens.js";
 import type * as users from "../users.js";
@@ -59,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   me: typeof me;
   permissions: typeof permissions;
   projects: typeof projects;
+  reviews: typeof reviews;
   snapshots: typeof snapshots;
   tokens: typeof tokens;
   users: typeof users;

@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { formatCount, formatPercent } from "../lib/format";
-import { type DiffStatus, DiffStatusPill } from "./ui";
+import { type DiffStatus, DiffStatusPill, Kbd } from "./ui";
 
 export type ViewerMode = "side" | "diff" | "slider" | "flip";
 export type ViewerZoom = "fit" | "100" | "200";
@@ -17,7 +17,7 @@ export type ViewerSnapshot = {
   diffImage: Image | null;
 };
 
-const MODES: { value: ViewerMode; label: string; key: string }[] = [
+export const MODES: { value: ViewerMode; label: string; key: string }[] = [
   { value: "side", label: "Side by side", key: "1" },
   { value: "diff", label: "Diff", key: "2" },
   { value: "slider", label: "Slider", key: "3" },
@@ -44,27 +44,22 @@ function useStoredState<Value extends string>(
       }
     } catch {}
   }, [key, allowed]);
-  const update = (next: Value) => {
-    setValue(next);
-    try {
-      localStorage.setItem(key, next);
-    } catch {}
-  };
+  const update = useCallback(
+    (next: Value) => {
+      setValue(next);
+      try {
+        localStorage.setItem(key, next);
+      } catch {}
+    },
+    [key],
+  );
   return [value, update] as const;
 }
 
 const MODE_VALUES = MODES.map((mode) => mode.value);
 const ZOOM_VALUES = ZOOMS.map((zoom) => zoom.value);
 
-export function Viewer({
-  snapshot,
-  baselineLabel,
-  newLabel,
-}: {
-  snapshot: ViewerSnapshot;
-  baselineLabel: string;
-  newLabel: string;
-}) {
+export function useViewerSettings() {
   const [mode, setMode] = useStoredState<ViewerMode>(
     "viewer-mode",
     "side",
@@ -75,6 +70,24 @@ export function Viewer({
     "fit",
     ZOOM_VALUES,
   );
+  const [showBaseline, setShowBaseline] = useState(false);
+  return { mode, setMode, zoom, setZoom, showBaseline, setShowBaseline };
+}
+
+export type ViewerSettings = ReturnType<typeof useViewerSettings>;
+
+export function Viewer({
+  snapshot,
+  baselineLabel,
+  newLabel,
+  settings,
+}: {
+  snapshot: ViewerSnapshot;
+  baselineLabel: string;
+  newLabel: string;
+  settings: ViewerSettings;
+}) {
+  const { mode, setMode, zoom, setZoom } = settings;
   const { image, baselineImage } = snapshot;
   const single = image === null || baselineImage === null;
 
@@ -128,8 +141,7 @@ export function Viewer({
           />
         ) : (
           <Compare
-            mode={mode}
-            zoom={zoom}
+            settings={settings}
             snapshot={snapshot}
             image={image}
             baselineImage={baselineImage}
@@ -172,23 +184,21 @@ function Dimensions({
 }
 
 function Compare({
-  mode,
-  zoom,
+  settings,
   snapshot,
   image,
   baselineImage,
   baselineLabel,
   newLabel,
 }: {
-  mode: ViewerMode;
-  zoom: ViewerZoom;
+  settings: ViewerSettings;
   snapshot: ViewerSnapshot;
   image: Image;
   baselineImage: Image;
   baselineLabel: string;
   newLabel: string;
 }) {
-  const [showBaseline, setShowBaseline] = useState(false);
+  const { mode, zoom, showBaseline, setShowBaseline } = settings;
 
   if (mode === "side") {
     return (
@@ -215,10 +225,10 @@ function Compare({
     <div>
       <button
         type="button"
-        className="mb-2 text-xs text-link"
-        onClick={() => setShowBaseline((value) => !value)}
+        className="mb-2 inline-flex items-center gap-1.5 text-xs text-link"
+        onClick={() => setShowBaseline(!showBaseline)}
       >
-        Show {showBaseline ? "new" : "baseline"}
+        Show {showBaseline ? "new" : "baseline"} <Kbd>space</Kbd>
       </button>
       <Frame
         image={showBaseline ? baselineImage : image}

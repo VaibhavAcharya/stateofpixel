@@ -777,7 +777,7 @@ Functions that need a permission throw a `ConvexError` with code `permission_unk
 | `projects.delete` | mutation | admin | Marks deleted, schedules chunked deletion. |
 | `usage.get` | query | org owner | Usage page data. |
 
-`reviews.apply` on superseded, pending, expired or storage-blocked builds throws a `ConvexError` with code `build_not_reviewable`.
+`reviews.apply` on superseded, pending, expired or storage-blocked builds throws a `ConvexError` with code `build_not_reviewable`. `approve` and `reject` apply to snapshots with review state `pending`, `approved` or `rejected`; `undo` sets them back to `pending` and removes their `approvedImages` rows. `"all"` only touches `pending` snapshots, runs 500 per scheduled mutation (changed first, then added), and cannot undo. Every call recomputes the conclusion and bumps the GitHub check.
 
 ## 9. GitHub integration
 
