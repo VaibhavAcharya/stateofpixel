@@ -280,6 +280,10 @@ export default defineSchema({
     permission: repoPermission,
     orgOwner: v.boolean(),
     checkedAt: v.number(),
+    freshness: v.optional(
+      v.union(v.literal("fresh"), v.literal("stale"), v.literal("expired")),
+    ),
+    freshnessJobId: v.optional(v.id("_scheduled_functions")),
   }).index("by_userId_and_projectId", ["userId", "projectId"]),
 
   githubEvents: defineTable({

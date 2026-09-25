@@ -97,7 +97,7 @@ function SettingsForm({
 }) {
   const settings = useQuery(api.projects.settings, { projectId });
   const update = useMutation(api.projects.updateSettings);
-  if (settings === undefined) {
+  if (!settings) {
     return <SkeletonRows />;
   }
   const save = (changes: Omit<Parameters<typeof update>[0], "projectId">) =>
@@ -357,7 +357,7 @@ function Tokens({ projectId }: { projectId: Id<"projects"> }) {
           Create token
         </button>
       </form>
-      {tokens !== undefined && tokens.length > 0 && (
+      {tokens && tokens.length > 0 && (
         <ul className="border-t border-border">
           {tokens.map((token) => (
             <li

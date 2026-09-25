@@ -162,7 +162,7 @@ it("creates, uses and revokes a project token", async () => {
     method: "token",
   });
 
-  const [listed] = await user.query(api.tokens.list, { projectId });
+  const [listed] = (await user.query(api.tokens.list, { projectId })) ?? [];
   expect(listed).toMatchObject({ name: "CircleCI" });
   expect(listed?.lastUsedAt).not.toBeNull();
   const stored = await t.run((ctx) => ctx.db.query("projectTokens").first());
@@ -201,7 +201,5 @@ it("only lets repository admins manage tokens", async () => {
   expect(await user.action(api.permissions.refresh, { projectId })).toBe(
     "none",
   );
-  await expect(user.query(api.tokens.list, { projectId })).rejects.toThrow(
-    /not_found/,
-  );
+  expect(await user.query(api.tokens.list, { projectId })).toBeNull();
 });

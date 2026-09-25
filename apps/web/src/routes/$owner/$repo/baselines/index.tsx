@@ -24,7 +24,6 @@ import { useProjectAccess } from "../../../../lib/useProjectAccess";
 type Search = { build?: string; prefix?: string };
 
 const PAGE_SIZE = 60;
-const DEFAULT_BUILD_NAME = "default";
 
 export const Route = createFileRoute("/$owner/$repo/baselines/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
@@ -54,14 +53,13 @@ function BaselinesRoute() {
 }
 
 function BaselinesAccess({ owner, repo }: { owner: string; repo: string }) {
+  const search = Route.useSearch();
   const result = useProjectAccess(owner, repo);
-  const buildNames = useQuery(api.baselines.buildNames, {
+  const current = useQuery(api.baselines.current, {
     owner,
     name: repo,
+    buildName: search.build,
   });
-  if (result.state === "loading" || buildNames === undefined) {
-    return <SkeletonRows />;
-  }
   if (result.state === "not_found") {
     return (
       <EmptyState title="Project not found.">
@@ -70,12 +68,25 @@ function BaselinesAccess({ owner, repo }: { owner: string; repo: string }) {
       </EmptyState>
     );
   }
+  if (result.state === "loading" || !current) {
+    return <SkeletonRows />;
+  }
+  if (current.build === null) {
+    return (
+      <EmptyState title="No baseline yet.">
+        Baselines come from approved builds on{" "}
+        <span className="mono">{result.access.defaultBranch}</span>. Merge a
+        change or push to {result.access.defaultBranch} to create one.
+      </EmptyState>
+    );
+  }
   return (
     <Baselines
       owner={owner}
       repo={repo}
-      defaultBranch={result.access.defaultBranch}
-      buildNames={buildNames}
+      buildNames={current.buildNames}
+      buildName={current.buildName}
+      build={current.build}
     />
   );
 }
@@ -83,38 +94,23 @@ function BaselinesAccess({ owner, repo }: { owner: string; repo: string }) {
 function Baselines({
   owner,
   repo,
-  defaultBranch,
   buildNames,
+  buildName,
+  build,
 }: {
   owner: string;
   repo: string;
-  defaultBranch: string;
   buildNames: string[];
+  buildName: string;
+  build: { number: number; commitSha: string };
 }) {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const buildName =
-    search.build ??
-    (buildNames.includes(DEFAULT_BUILD_NAME)
-      ? DEFAULT_BUILD_NAME
-      : (buildNames[0] ?? DEFAULT_BUILD_NAME));
-  const args = { owner, name: repo, buildName };
-  const current = useQuery(api.baselines.current, args);
   const { results, status, loadMore } = usePaginatedQuery(
     api.baselines.list,
-    { ...args, prefix: search.prefix },
+    { owner, name: repo, buildName, prefix: search.prefix },
     { initialNumItems: PAGE_SIZE },
   );
-
-  if (current === null) {
-    return (
-      <EmptyState title="No baseline yet.">
-        Baselines come from approved builds on{" "}
-        <span className="mono">{defaultBranch}</span>. Merge a change or push to{" "}
-        {defaultBranch} to create one.
-      </EmptyState>
-    );
-  }
 
   return (
     <>
@@ -133,24 +129,22 @@ function Baselines({
             label="Build"
             value={buildName}
             options={buildNames.map((name) => ({ value: name, label: name }))}
-            onChange={(build) =>
-              void navigate({ search: (prev) => ({ ...prev, build }) })
+            onChange={(next) =>
+              void navigate({ search: (prev) => ({ ...prev, build: next }) })
             }
           />
         )}
-        {current !== undefined && (
-          <p className="ml-auto text-xs text-muted">
-            From build{" "}
-            <Link
-              to="/$owner/$repo/builds/$number"
-              params={{ owner, repo, number: String(current.number) }}
-              className="text-text tabular-nums hover:text-link"
-            >
-              #{current.number}
-            </Link>{" "}
-            at <span className="mono">{shortSha(current.commitSha)}</span>
-          </p>
-        )}
+        <p className="ml-auto text-xs text-muted">
+          From build{" "}
+          <Link
+            to="/$owner/$repo/builds/$number"
+            params={{ owner, repo, number: String(build.number) }}
+            className="text-text tabular-nums hover:text-link"
+          >
+            #{build.number}
+          </Link>{" "}
+          at <span className="mono">{shortSha(build.commitSha)}</span>
+        </p>
       </ListToolbar>
       {status === "LoadingFirstPage" ? (
         <Grid>
@@ -171,7 +165,7 @@ function Baselines({
               <Link
                 to="/$owner/$repo/baselines/$"
                 params={{ owner, repo, _splat: snapshot.name }}
-                search={{ build: search.build }}
+                search={{ build: buildName }}
                 title={snapshot.name}
                 className="group flex flex-col gap-2"
               >

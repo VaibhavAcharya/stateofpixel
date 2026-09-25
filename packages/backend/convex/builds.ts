@@ -953,7 +953,7 @@ export const list = query({
     name: v.string(),
     branch: v.optional(v.string()),
     prNumber: v.optional(v.number()),
-    state: v.optional(buildFilter),
+    states: v.optional(v.array(buildFilter)),
     order: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
     paginationOpts: paginationOptsValidator,
   },
@@ -965,7 +965,8 @@ export const list = query({
     }
     const projectId = project._id;
     const { branch, prNumber } = args;
-    const match = args.state === undefined ? null : FILTER_MATCH[args.state];
+    const matches = (args.states ?? []).map((state) => FILTER_MATCH[state]);
+    const match = matches.length === 1 ? (matches[0] ?? null) : null;
     const builds = ctx.db.query("builds");
     const indexed =
       prNumber !== undefined
@@ -994,10 +995,18 @@ export const list = query({
     const filtered = indexed.filter((q) =>
       q.and(
         branch === undefined ? true : q.eq(q.field("branch"), branch),
-        match === null ? true : q.eq(q.field("status"), match.status),
-        match?.conclusion === undefined
+        matches.length === 0
           ? true
-          : q.eq(q.field("conclusion"), match.conclusion),
+          : q.or(
+              ...matches.map(({ status, conclusion }) =>
+                q.and(
+                  q.eq(q.field("status"), status),
+                  conclusion === undefined
+                    ? true
+                    : q.eq(q.field("conclusion"), conclusion),
+                ),
+              ),
+            ),
       ),
     );
     const page = await filtered

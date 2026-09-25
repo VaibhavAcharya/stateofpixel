@@ -11,7 +11,7 @@ import { columnHelper, DataTable } from "../../../components/DataTable";
 import {
   FilterChip,
   ListToolbar,
-  SelectMenu,
+  MultiSelectMenu,
 } from "../../../components/ListControls";
 import { Page } from "../../../components/Page";
 import { ProjectHeader } from "../../../components/ProjectHeader";
@@ -44,15 +44,14 @@ type BuildFilter =
 type Search = {
   branch?: string;
   pr?: number;
-  state?: BuildFilter;
+  state?: string;
   order?: "asc";
 };
 type BuildRow = FunctionReturnType<typeof api.builds.list>["page"][number];
 
 const PAGE_SIZE = 50;
 
-const STATE_OPTIONS: { value: BuildFilter | undefined; label: string }[] = [
-  { value: undefined, label: "All" },
+const STATE_OPTIONS: { value: BuildFilter; label: string }[] = [
   { value: "to_review", label: "To review" },
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },
@@ -62,9 +61,25 @@ const STATE_OPTIONS: { value: BuildFilter | undefined; label: string }[] = [
   { value: "error", label: "Error" },
 ];
 
-const STATES = STATE_OPTIONS.flatMap((option) =>
-  option.value === undefined ? [] : [option.value],
-);
+const DEFAULT_STATES: BuildFilter[] = [
+  "to_review",
+  "approved",
+  "rejected",
+  "pending",
+  "error",
+];
+
+function parseStates(value: string | undefined): BuildFilter[] {
+  const states = value?.split(",") ?? DEFAULT_STATES;
+  return STATE_OPTIONS.map((option) => option.value).filter((state) =>
+    states.includes(state),
+  );
+}
+
+function formatStates(states: BuildFilter[]): string | undefined {
+  const value = parseStates(states.join(",")).join(",");
+  return value === DEFAULT_STATES.join(",") ? undefined : value;
+}
 
 export const Route = createFileRoute("/$owner/$repo/")({
   validateSearch: (search: Record<string, unknown>): Search => {
@@ -75,7 +90,10 @@ export const Route = createFileRoute("/$owner/$repo/")({
           ? search.branch
           : undefined,
       pr: Number.isInteger(pr) && pr > 0 ? pr : undefined,
-      state: STATES.find((state) => state === search.state),
+      state:
+        typeof search.state === "string"
+          ? formatStates(parseStates(search.state))
+          : undefined,
       order: search.order === "asc" ? "asc" : undefined,
     };
   },
@@ -106,7 +124,7 @@ function ProjectBuilds({ owner, repo }: { owner: string; repo: string }) {
       name: repo,
       branch: search.branch,
       prNumber: search.pr,
-      state: search.state,
+      states: parseStates(search.state),
       order: search.order,
     },
     { initialNumItems: PAGE_SIZE },
@@ -121,6 +139,9 @@ function ProjectBuilds({ owner, repo }: { owner: string; repo: string }) {
         GitHub.
       </EmptyState>
     );
+  }
+  if (!result.access.hasBuilds) {
+    return <SetupCard owner={owner} repo={repo} />;
   }
   return <BuildsTable builds={builds} owner={owner} repo={repo} />;
 }
@@ -275,18 +296,16 @@ function BuildsTable({
   if (status === "LoadingFirstPage") {
     return <SkeletonRows />;
   }
-  if (results.length === 0 && !filtered) {
-    return <SetupCard owner={owner} repo={repo} />;
-  }
 
   return (
     <>
       <ListToolbar>
-        <SelectMenu
-          label="State"
-          value={search.state}
+        <MultiSelectMenu
+          label="Filter"
+          values={parseStates(search.state)}
           options={STATE_OPTIONS}
-          onChange={(state) => update({ state })}
+          defaultValues={DEFAULT_STATES}
+          onChange={(states) => update({ state: formatStates(states) })}
         />
         {search.branch !== undefined && (
           <FilterChip

@@ -13,18 +13,22 @@ import { diffStatus } from "./schema";
 
 const MAX_HISTORY = 50;
 
-export const buildNames = query({
-  args: { owner: v.string(), name: v.string() },
-  returns: v.array(v.string()),
-  handler: async (ctx, args) => {
-    const project = await findReadableProject(ctx, args.owner, args.name);
-    if (project === null) {
-      return [];
-    }
-    const builds = await recentBuilds(ctx, project, project.defaultBranch);
-    return [...new Set(builds.map((build) => build.buildName))].sort();
-  },
-});
+const DEFAULT_BUILD_NAME = "default";
+
+function pickBuildName(
+  builds: Doc<"builds">[],
+  requested: string | undefined,
+): { buildNames: string[]; buildName: string } {
+  const buildNames = [
+    ...new Set(builds.map((build) => build.buildName)),
+  ].sort();
+  const buildName =
+    requested ??
+    (buildNames.includes(DEFAULT_BUILD_NAME)
+      ? DEFAULT_BUILD_NAME
+      : (buildNames[0] ?? DEFAULT_BUILD_NAME));
+  return { buildNames, buildName };
+}
 
 async function findBaseline(
   ctx: QueryCtx,
@@ -45,21 +49,40 @@ async function findBaseline(
 }
 
 export const current = query({
-  args: { owner: v.string(), name: v.string(), buildName: v.string() },
+  args: {
+    owner: v.string(),
+    name: v.string(),
+    buildName: v.optional(v.string()),
+  },
   returns: v.union(
     v.null(),
-    v.object({ number: v.number(), commitSha: v.string() }),
+    v.object({
+      buildNames: v.array(v.string()),
+      buildName: v.string(),
+      build: v.union(
+        v.null(),
+        v.object({ number: v.number(), commitSha: v.string() }),
+      ),
+    }),
   ),
   handler: async (ctx, args) => {
-    const baseline = await findBaseline(
-      ctx,
-      args.owner,
-      args.name,
-      args.buildName,
+    const project = await findReadableProject(ctx, args.owner, args.name);
+    if (project === null) {
+      return null;
+    }
+    const builds = await recentBuilds(ctx, project, project.defaultBranch);
+    const { buildNames, buildName } = pickBuildName(builds, args.buildName);
+    const baseline = builds.find(
+      (build) => build.buildName === buildName && isBaselineCandidate(build),
     );
-    return baseline === null
-      ? null
-      : { number: baseline.number, commitSha: baseline.commitSha };
+    return {
+      buildNames,
+      buildName,
+      build:
+        baseline === undefined
+          ? null
+          : { number: baseline.number, commitSha: baseline.commitSha },
+    };
   },
 });
 
@@ -113,35 +136,45 @@ export const history = query({
   args: {
     owner: v.string(),
     name: v.string(),
-    buildName: v.string(),
+    buildName: v.optional(v.string()),
     snapshotName: v.string(),
   },
-  returns: v.array(
+  returns: v.union(
+    v.null(),
     v.object({
-      buildNumber: v.number(),
-      commitSha: v.string(),
-      commitMessage: v.string(),
-      createdAt: v.number(),
-      diffStatus,
-      mergedPrNumber: v.union(v.number(), v.null()),
-      approvedBy: v.union(v.string(), v.null()),
-      image: imageInfo,
+      buildName: v.string(),
+      entries: v.array(
+        v.object({
+          buildNumber: v.number(),
+          commitSha: v.string(),
+          commitMessage: v.string(),
+          createdAt: v.number(),
+          diffStatus,
+          mergedPrNumber: v.union(v.number(), v.null()),
+          approvedBy: v.union(v.string(), v.null()),
+          image: imageInfo,
+        }),
+      ),
     }),
   ),
   handler: async (ctx, args) => {
     const project = await findReadableProject(ctx, args.owner, args.name);
     if (project === null) {
-      return [];
+      return null;
     }
+    const { buildName } = pickBuildName(
+      await recentBuilds(ctx, project, project.defaultBranch),
+      args.buildName,
+    );
     const changes = await findChanges(
       ctx,
       project,
       project.defaultBranch,
-      args.buildName,
+      buildName,
       args.snapshotName,
       MAX_HISTORY,
     );
-    return Promise.all(
+    const entries = await Promise.all(
       changes.map(async ({ build, snapshot }) => ({
         buildNumber: build.number,
         commitSha: build.commitSha,
@@ -153,6 +186,7 @@ export const history = query({
         image: await toImageInfo(ctx, snapshot.imageId),
       })),
     );
+    return { buildName, entries };
   },
 });
 

@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action, internalMutation, mutation, query } from "./_generated/server";
-import { requirePermission } from "./lib/permissions";
+import { findAllowedProject, requirePermission } from "./lib/permissions";
 import { generateProjectToken, hashProjectToken } from "./lib/projectTokens";
 
 const MAX_TOKENS = 100;
@@ -9,16 +9,21 @@ const MAX_NAME_LENGTH = 100;
 
 export const list = query({
   args: { projectId: v.id("projects") },
-  returns: v.array(
-    v.object({
-      id: v.id("projectTokens"),
-      name: v.string(),
-      createdAt: v.number(),
-      lastUsedAt: v.union(v.number(), v.null()),
-    }),
+  returns: v.union(
+    v.null(),
+    v.array(
+      v.object({
+        id: v.id("projectTokens"),
+        name: v.string(),
+        createdAt: v.number(),
+        lastUsedAt: v.union(v.number(), v.null()),
+      }),
+    ),
   ),
   handler: async (ctx, { projectId }) => {
-    await requirePermission(ctx, projectId, "admin");
+    if ((await findAllowedProject(ctx, projectId, "admin")) === null) {
+      return null;
+    }
     const tokens = await ctx.db
       .query("projectTokens")
       .withIndex("by_projectId", (q) => q.eq("projectId", projectId))

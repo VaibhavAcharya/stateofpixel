@@ -7,18 +7,20 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
 import { findChanges } from "./lib/history";
 import { imageInfo, toImageInfo } from "./lib/images";
-import { findReadableBuild, requirePermission } from "./lib/permissions";
+import { findAllowedProject, findReadableBuild } from "./lib/permissions";
 import { diffStatus, reviewState } from "./schema";
 
 const MAX_REJECTION_LOOKUPS = 20;
 const MAX_HISTORY = 10;
 
-async function requireBuild(ctx: QueryCtx, buildId: Id<"builds">) {
+async function findReadableBuildById(ctx: QueryCtx, buildId: Id<"builds">) {
   const build = await ctx.db.get("builds", buildId);
-  if (build === null) {
+  if (
+    build === null ||
+    (await findAllowedProject(ctx, build.projectId, "read")) === null
+  ) {
     return null;
   }
-  await requirePermission(ctx, build.projectId, "read");
   return build;
 }
 
@@ -38,7 +40,7 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const build = await requireBuild(ctx, args.buildId);
+    const build = await findReadableBuildById(ctx, args.buildId);
     if (build === null) {
       return { page: [], isDone: true, continueCursor: "" };
     }

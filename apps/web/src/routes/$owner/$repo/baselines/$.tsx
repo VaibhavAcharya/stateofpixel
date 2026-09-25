@@ -18,7 +18,9 @@ import { useViewerSettings, Viewer } from "../../../../components/Viewer";
 import { shortSha } from "../../../../lib/format";
 import { useProjectAccess } from "../../../../lib/useProjectAccess";
 
-type Entry = FunctionReturnType<typeof api.baselines.history>[number];
+type Entry = NonNullable<
+  FunctionReturnType<typeof api.baselines.history>
+>["entries"][number];
 
 export const Route = createFileRoute("/$owner/$repo/baselines/$")({
   validateSearch: (search: Record<string, unknown>): { build?: string } => ({
@@ -53,7 +55,7 @@ function HistoryAccess({
   repo: string;
   snapshotName: string;
 }) {
-  const { build = "default" } = Route.useSearch();
+  const { build } = Route.useSearch();
   const result = useProjectAccess(owner, repo);
   const history = useQuery(api.baselines.history, {
     owner,
@@ -61,9 +63,6 @@ function HistoryAccess({
     buildName: build,
     snapshotName,
   });
-  if (result.state === "loading" || history === undefined) {
-    return <SkeletonRows />;
-  }
   if (result.state === "not_found") {
     return (
       <EmptyState title="Project not found.">
@@ -72,7 +71,10 @@ function HistoryAccess({
       </EmptyState>
     );
   }
-  if (history.length === 0) {
+  if (result.state === "loading" || !history) {
+    return <SkeletonRows />;
+  }
+  if (history.entries.length === 0) {
     return (
       <EmptyState title="No history.">
         No build on {result.access.defaultBranch} changed this snapshot.
@@ -84,7 +86,7 @@ function HistoryAccess({
       owner={owner}
       repo={repo}
       snapshotName={snapshotName}
-      history={history}
+      history={history.entries}
     />
   );
 }

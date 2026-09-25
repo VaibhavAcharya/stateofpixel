@@ -800,6 +800,7 @@ async function reviewer(t: Test) {
       permission: "write",
       orgOwner: false,
       checkedAt: Date.now(),
+      freshness: "fresh",
     });
     return user._id;
   });

@@ -1,14 +1,19 @@
-import { ArrowUpRightIcon } from "@phosphor-icons/react/ssr";
+import {
+  ArrowUpRightIcon,
+  GearIcon,
+  ImagesIcon,
+  StackIcon,
+} from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { PageHeader } from "./Page";
-import { buttonClass } from "./ui";
+import { buttonClass, type Icon } from "./ui";
 
 type Tab = "builds" | "baselines" | "settings";
 
 const TAB_CLASS =
-  "-mb-px flex h-10 items-center border-b-2 text-sm transition-colors duration-100";
+  "-mb-px flex h-10 items-center gap-1.5 border-b-2 text-sm transition-colors duration-100";
 
 export function ProjectHeader({
   owner,
@@ -20,15 +25,21 @@ export function ProjectHeader({
   tab: Tab;
 }) {
   const access = useQuery(api.projects.access, { owner, name: repo });
-  const tabs: { value: Tab; label: string; to: string }[] = [
-    { value: "builds", label: "Builds", to: "/$owner/$repo" },
-    { value: "baselines", label: "Baselines", to: "/$owner/$repo/baselines" },
+  const tabs: { value: Tab; label: string; to: string; icon: Icon }[] = [
+    { value: "builds", label: "Builds", to: "/$owner/$repo", icon: StackIcon },
+    {
+      value: "baselines",
+      label: "Baselines",
+      to: "/$owner/$repo/baselines",
+      icon: ImagesIcon,
+    },
     ...(access?.canAdmin
       ? [
           {
             value: "settings" as const,
             label: "Settings",
             to: "/$owner/$repo/settings",
+            icon: GearIcon,
           },
         ]
       : []),
@@ -66,6 +77,7 @@ export function ProjectHeader({
                 : "border-transparent text-muted hover:text-text"
             }`}
           >
+            <item.icon size={16} />
             {item.label}
           </Link>
         ))}

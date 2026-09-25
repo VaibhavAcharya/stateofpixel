@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { expect, it, vi } from "vitest";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 
@@ -124,7 +124,7 @@ async function setup({ private: isPrivate = true } = {}) {
   const user = t.withIdentity({ subject: `${ids.userId}|session` });
   const grant = (
     permission: "none" | "read" | "write" | "admin",
-    checkedAt = Date.now(),
+    freshness: "fresh" | "stale" | "expired" = "fresh",
   ) =>
     t.run((ctx) =>
       ctx.db.insert("repoPermissions", {
@@ -132,7 +132,8 @@ async function setup({ private: isPrivate = true } = {}) {
         projectId: ids.projectId,
         permission,
         orgOwner: false,
-        checkedAt,
+        checkedAt: Date.now(),
+        freshness,
       }),
     );
   return { t, user, grant, ...ids };
@@ -165,9 +166,39 @@ it("asks for a permission check before showing a private project", async () => {
   });
 });
 
-it("hides builds while a permission is stale or none", async () => {
+it("keeps a stale permission readable while it refreshes", async () => {
+  const { t, user, userId, projectId } = await setup();
+  vi.useFakeTimers();
+  await t.mutation(internal.permissions.save, {
+    userId,
+    projectId,
+    permission: "read",
+    orgOwner: false,
+  });
+  const access = () => user.query(api.projects.access, repo);
+  expect(await access()).toMatchObject({ fresh: true, canRead: true });
+
+  vi.advanceTimersByTime(5 * 60 * 1000);
+  await t.finishInProgressScheduledFunctions();
+  expect(await access()).toMatchObject({ fresh: false, canRead: true });
+
+  vi.advanceTimersByTime(10 * 60 * 1000);
+  await t.finishInProgressScheduledFunctions();
+  expect(await access()).toMatchObject({ fresh: false, canRead: false });
+
+  await t.mutation(internal.permissions.save, {
+    userId,
+    projectId,
+    permission: "read",
+    orgOwner: false,
+  });
+  expect(await access()).toMatchObject({ fresh: true, canRead: true });
+  vi.useRealTimers();
+});
+
+it("hides builds while a permission is expired or none", async () => {
   const { user, grant } = await setup();
-  await grant("read", Date.now() - 10 * 60 * 1000);
+  await grant("read", "expired");
   expect(
     (await user.query(api.builds.list, { ...repo, paginationOpts: firstPage }))
       .page,
@@ -342,7 +373,7 @@ it("filters builds by state and pull request, in either order", async () => {
   const { user, grant } = await setup();
   await grant("read");
   const numbers = async (args: {
-    state?: "to_review" | "approved" | "pending";
+    states?: ("to_review" | "approved" | "pending")[];
     prNumber?: number;
     branch?: string;
     order?: "asc" | "desc";
@@ -357,12 +388,14 @@ it("filters builds by state and pull request, in either order", async () => {
 
   expect(await numbers({})).toEqual([2, 1]);
   expect(await numbers({ order: "asc" })).toEqual([1, 2]);
-  expect(await numbers({ state: "to_review" })).toEqual([2]);
-  expect(await numbers({ state: "approved" })).toEqual([1]);
-  expect(await numbers({ state: "pending" })).toEqual([]);
+  expect(await numbers({ states: ["to_review"] })).toEqual([2]);
+  expect(await numbers({ states: ["approved"] })).toEqual([1]);
+  expect(await numbers({ states: ["pending"] })).toEqual([]);
+  expect(await numbers({ states: ["to_review", "approved"] })).toEqual([2, 1]);
+  expect(await numbers({ states: ["pending", "approved"] })).toEqual([1]);
   expect(await numbers({ prNumber: 7 })).toEqual([2]);
-  expect(await numbers({ prNumber: 7, state: "approved" })).toEqual([]);
-  expect(await numbers({ branch: "main", state: "approved" })).toEqual([1]);
+  expect(await numbers({ prNumber: 7, states: ["approved"] })).toEqual([]);
+  expect(await numbers({ branch: "main", states: ["approved"] })).toEqual([1]);
 });
 
 async function buildState(
@@ -512,11 +545,11 @@ it("approves every pending snapshot with approve all", async () => {
 it("saves settings for admins only and checks the values", async () => {
   const writer = await setup();
   await writer.grant("write");
-  await expect(
-    writer.user.query(api.projects.settings, {
+  expect(
+    await writer.user.query(api.projects.settings, {
       projectId: writer.projectId,
     }),
-  ).rejects.toThrow(/forbidden/);
+  ).toBeNull();
 
   const { user, grant, projectId } = await setup();
   await grant("admin");
@@ -599,15 +632,16 @@ it("lists the current baselines and the history of one snapshot", async () => {
     }
   });
 
-  expect(await user.query(api.baselines.buildNames, repo)).toEqual(["default"]);
   const all = await user.query(api.baselines.list, {
     ...repo,
     buildName: "default",
     paginationOpts: firstPage,
   });
-  expect(
-    await user.query(api.baselines.current, { ...repo, buildName: "default" }),
-  ).toEqual({ number: 1, commitSha: "c1" });
+  expect(await user.query(api.baselines.current, repo)).toEqual({
+    buildNames: ["default"],
+    buildName: "default",
+    build: { number: 1, commitSha: "c1" },
+  });
   expect(all.page.map((snapshot) => snapshot.name)).toEqual([
     "components/Button",
     "components/Card",
@@ -623,11 +657,11 @@ it("lists the current baselines and the history of one snapshot", async () => {
 
   const history = await user.query(api.baselines.history, {
     ...repo,
-    buildName: "default",
     snapshotName: "pages/Home",
   });
-  expect(history).toMatchObject([
-    { buildNumber: 1, commitSha: "c1", diffStatus: "added" },
-  ]);
-  expect(history[0]?.image?.url).toEqual(expect.any(String));
+  expect(history).toMatchObject({
+    buildName: "default",
+    entries: [{ buildNumber: 1, commitSha: "c1", diffStatus: "added" }],
+  });
+  expect(history?.entries[0]?.image?.url).toEqual(expect.any(String));
 });

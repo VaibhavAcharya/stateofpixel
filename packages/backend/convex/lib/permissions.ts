@@ -6,7 +6,8 @@ import type { repoPermission } from "../schema";
 
 export type RepoPermission = Infer<typeof repoPermission>;
 
-export const PERMISSION_TTL_MS = 5 * 60 * 1000;
+export const PERMISSION_STALE_AFTER_MS = 5 * 60 * 1000;
+export const PERMISSION_EXPIRED_AFTER_MS = 15 * 60 * 1000;
 
 const RANK: Record<RepoPermission, number> = {
   none: 0,
@@ -19,6 +20,7 @@ export type Access = {
   userId: Id<"users"> | null;
   permission: RepoPermission | null;
   fresh: boolean;
+  usable: boolean;
 };
 
 export async function readAccess(
@@ -27,7 +29,7 @@ export async function readAccess(
 ): Promise<Access> {
   const userId = await getAuthUserId(ctx);
   if (userId === null) {
-    return { userId, permission: null, fresh: false };
+    return { userId, permission: null, fresh: false, usable: false };
   }
   const row = await ctx.db
     .query("repoPermissions")
@@ -38,7 +40,8 @@ export async function readAccess(
   return {
     userId,
     permission: row?.permission ?? null,
-    fresh: row !== null && Date.now() - row.checkedAt <= PERMISSION_TTL_MS,
+    fresh: row?.freshness === "fresh",
+    usable: row?.freshness === "fresh" || row?.freshness === "stale",
   };
 }
 
@@ -51,7 +54,7 @@ export function allows(
     return true;
   }
   return (
-    access.fresh &&
+    access.usable &&
     access.permission !== null &&
     RANK[access.permission] >= RANK[needed]
   );
@@ -82,6 +85,19 @@ export async function findReadableProject(
   }
   const access = await readAccess(ctx, project._id);
   return allows(project, access, "read") ? project : null;
+}
+
+export async function findAllowedProject(
+  ctx: QueryCtx,
+  projectId: Id<"projects">,
+  needed: Exclude<RepoPermission, "none">,
+): Promise<Doc<"projects"> | null> {
+  const project = await ctx.db.get("projects", projectId);
+  if (project === null) {
+    return null;
+  }
+  const access = await readAccess(ctx, projectId);
+  return allows(project, access, needed) ? project : null;
 }
 
 export async function findReadableBuild(
@@ -116,7 +132,7 @@ export async function requirePermission(
   if (access.userId === null) {
     throw new ConvexError({ code: "not_signed_in" });
   }
-  if (!access.fresh) {
+  if (!access.usable) {
     throw new ConvexError({ code: "permission_unknown" });
   }
   throw new ConvexError({

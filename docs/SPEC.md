@@ -596,7 +596,9 @@ An image row is created only after an upload is confirmed (see 7.3), so there is
 | projectId | Id<"projects"> | |
 | permission | `"none"`, `"read"`, `"write"`, `"admin"` | |
 | orgOwner | boolean | |
-| checkedAt | number | Stale after 5 minutes. |
+| checkedAt | number | When GitHub was last asked. |
+| freshness | `"fresh"`, `"stale"`, `"expired"`, optional | Set to `fresh` on every save, `stale` by a scheduled mutation 5 minutes later, `expired` 10 minutes after that. A missing value counts as `expired`. |
+| freshnessJobId | Id<"_scheduled_functions">, optional | The next scheduled change, cancelled when the row is saved again. |
 
 ### githubEvents
 
@@ -752,10 +754,10 @@ The web app talks to Convex directly with queries and mutations through `@convex
 
 Permission check pattern. Queries cannot call GitHub, so:
 1. Every query and mutation reads `repoPermissions` for the user and project.
-2. If the row is missing or older than 5 minutes, the page calls the `refreshPermissions` action, which calls `GET /repos/{owner}/{repo}` with the user's token (the `permissions` field has `admin`, `maintain`, `push`, `pull`) and writes the row. The query re-runs by itself when the row changes.
+2. If the row is missing or not `fresh`, the page calls the `permissions.refresh` action, which calls `GET /repos/{owner}/{repo}` with the user's token (the `permissions` field has `admin`, `maintain`, `push`, `pull`) and writes the row. The query re-runs by itself when the row changes. Queries never read the clock: freshness is a field that scheduled mutations change, so every query sees the same state and re-runs together when it changes. A `stale` row still grants access, so pages keep showing data while the refresh runs; an `expired` or missing row grants nothing.
 3. Until then the page shows a skeleton. Public repos skip the check for reading.
 
-Functions that need a permission throw a `ConvexError` with code `permission_unknown` when the row is missing or stale, `forbidden` when the level is too low, and `not_found` when the level is `none`. The page calls `permissions.refresh` on `permission_unknown` and retries.
+Mutations and actions that need a permission throw a `ConvexError` with code `permission_unknown` when the row is missing or expired, `forbidden` when the level is too low, and `not_found` when the level is `none`. Queries do not throw for permissions: they return `null`, or an empty page for paginated queries, and the page shows a skeleton until `projects.access` settles.
 
 | Function | Kind | Permission | Purpose |
 |---|---|---|---|
@@ -764,13 +766,12 @@ Functions that need a permission throw a `ConvexError` with code `permission_unk
 | `permissions.refresh` | action | signed in | See above. Writes `none` when GitHub answers 404. `orgOwner` comes from the org membership role, or from the login for a user account. |
 | `projects.access` | query | signed in | Project id, cached permission, whether it is fresh, `canRead` and `canWrite`. The page calls `permissions.refresh` while it is not fresh. |
 | `accounts.home` | query | account member | Projects of an account with their latest build. |
-| `builds.list` | query | read | Paginated with `.paginate()`, filters branch, status, build name. |
+| `builds.list` | query | read | Paginated with `.paginate()`, filters branch, pull request and a list of states. |
 | `builds.get` | query | read | Build and counts by number. |
 | `snapshots.list` | query | read | Paginated sidebar list by `by_buildId_and_diffStatus_and_name`. Includes image URLs from `blobs.getUrl`. |
 | `snapshots.get` | query | read | One snapshot with metadata, review info and history. |
 | `reviews.apply` | mutation | write | `{ buildId, snapshotIds or "all", action, comment }`. "all" runs in chunks of 1,000 through scheduled mutations; the UI shows progress from `counts`. |
-| `baselines.buildNames` | query | read | Build names seen on the default branch. |
-| `baselines.current` | query | read | The newest full approved build on the default branch for a build name. |
+| `baselines.current` | query | read | Build names seen on the default branch, the chosen one (the requested name, else `default`, else the first), and its newest full approved build. |
 | `baselines.list` | query | read | Paginated snapshots of that build, with an optional name prefix. |
 | `baselines.history` | query | read | Changed rows for one name on the default branch. |
 | `projects.settings` | query | admin | The settings page fields. |

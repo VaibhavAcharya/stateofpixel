@@ -5,7 +5,7 @@ import {
   XIcon,
 } from "@phosphor-icons/react/ssr";
 import { type ReactNode, useEffect, useState } from "react";
-import { Menu, menuItemClass, useCloseMenu } from "./Menu";
+import { Menu, MenuSeparator, menuItemClass, useCloseMenu } from "./Menu";
 import { buttonClass } from "./ui";
 
 const SEARCH_DELAY_MS = 200;
@@ -166,5 +166,91 @@ function SelectMenuItem({
       <span className="flex-1">{children}</span>
       {selected && <CheckIcon size={14} className="text-muted" />}
     </button>
+  );
+}
+
+export function MultiSelectMenu<Value extends string>({
+  label,
+  values,
+  options,
+  defaultValues,
+  onChange,
+}: {
+  label: string;
+  values: Value[];
+  options: { value: Value; label: string }[];
+  defaultValues: Value[];
+  onChange: (values: Value[]) => void;
+}) {
+  const labels = (selected: Value[]) =>
+    options
+      .filter((option) => selected.includes(option.value))
+      .map((option) => option.label);
+  const isDefault =
+    values.length === defaultValues.length &&
+    defaultValues.every((value) => values.includes(value));
+  const selectedLabels = labels(values);
+  const summary = isDefault
+    ? "Default"
+    : selectedLabels.length === options.length
+      ? "All"
+      : selectedLabels.length <= 4
+        ? selectedLabels.join(", ")
+        : `${selectedLabels.length} selected`;
+  const defaultLabel = `Default (${labels(defaultValues).join(", ")})`;
+  return (
+    <Menu
+      label={label}
+      width="w-64"
+      triggerClassName={`${buttonClass()} max-w-80 text-text`}
+      trigger={
+        <>
+          <span className="text-muted">{label}</span>
+          <span className="min-w-0 truncate">{summary}</span>
+          <CaretDownIcon size={12} className="shrink-0 text-muted" />
+        </>
+      }
+    >
+      <button
+        type="button"
+        role="menuitemradio"
+        aria-checked={isDefault}
+        title={defaultLabel}
+        className={menuItemClass}
+        onClick={() => onChange(defaultValues)}
+      >
+        <span className="min-w-0 flex-1 truncate">{defaultLabel}</span>
+        {isDefault && <CheckIcon size={14} className="shrink-0 text-muted" />}
+      </button>
+      <MenuSeparator />
+      {options.map((option) => {
+        const checked = values.includes(option.value);
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="menuitemcheckbox"
+            aria-checked={checked}
+            disabled={checked && values.length === 1}
+            className={`${menuItemClass} disabled:opacity-45`}
+            onClick={() =>
+              onChange(
+                checked
+                  ? values.filter((value) => value !== option.value)
+                  : options
+                      .map((item) => item.value)
+                      .filter(
+                        (value) =>
+                          value === option.value || values.includes(value),
+                      ),
+              )
+            }
+          >
+            <span className="flex-1">{option.label}</span>
+            {checked && <CheckIcon size={14} className="text-muted" />}
+          </button>
+        );
+      })}
+    </Menu>
   );
 }

@@ -8,7 +8,11 @@ import {
   getRepositoryPermissions,
   isOrgOwner,
 } from "./lib/github";
-import type { RepoPermission } from "./lib/permissions";
+import {
+  PERMISSION_EXPIRED_AFTER_MS,
+  PERMISSION_STALE_AFTER_MS,
+  type RepoPermission,
+} from "./lib/permissions";
 import { repoPermission } from "./schema";
 
 export const refresh = action({
@@ -122,16 +126,59 @@ export const save = internalMutation({
         q.eq("userId", userId).eq("projectId", projectId),
       )
       .unique();
-    const fields = { permission, orgOwner, checkedAt: Date.now() };
-    if (existing === null) {
-      await ctx.db.insert("repoPermissions", {
-        userId,
-        projectId,
-        ...fields,
-      });
-    } else {
-      await ctx.db.patch("repoPermissions", existing._id, fields);
+    if (existing?.freshnessJobId !== undefined) {
+      await ctx.scheduler.cancel(existing.freshnessJobId);
     }
+    const fields = {
+      permission,
+      orgOwner,
+      checkedAt: Date.now(),
+      freshness: "fresh" as const,
+    };
+    const permissionId =
+      existing === null
+        ? await ctx.db.insert("repoPermissions", {
+            userId,
+            projectId,
+            ...fields,
+          })
+        : existing._id;
+    if (existing !== null) {
+      await ctx.db.patch("repoPermissions", permissionId, fields);
+    }
+    const freshnessJobId = await ctx.scheduler.runAfter(
+      PERMISSION_STALE_AFTER_MS,
+      internal.permissions.age,
+      { permissionId, freshness: "stale" },
+    );
+    await ctx.db.patch("repoPermissions", permissionId, { freshnessJobId });
+    return null;
+  },
+});
+
+export const age = internalMutation({
+  args: {
+    permissionId: v.id("repoPermissions"),
+    freshness: v.union(v.literal("stale"), v.literal("expired")),
+  },
+  returns: v.null(),
+  handler: async (ctx, { permissionId, freshness }) => {
+    const row = await ctx.db.get("repoPermissions", permissionId);
+    if (row === null) {
+      return null;
+    }
+    const freshnessJobId =
+      freshness === "stale"
+        ? await ctx.scheduler.runAfter(
+            PERMISSION_EXPIRED_AFTER_MS - PERMISSION_STALE_AFTER_MS,
+            internal.permissions.age,
+            { permissionId, freshness: "expired" },
+          )
+        : undefined;
+    await ctx.db.patch("repoPermissions", permissionId, {
+      freshness,
+      freshnessJobId,
+    });
     return null;
   },
 });

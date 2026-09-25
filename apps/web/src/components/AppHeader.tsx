@@ -10,7 +10,7 @@ import {
   SunIcon,
 } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import type { ReactNode } from "react";
 import { type Theme, useTheme } from "../lib/theme";
@@ -47,8 +47,8 @@ export function AppHeader({
   return (
     <header className="flex h-12 shrink-0 items-center gap-1 border-b border-border bg-surface px-4">
       <Link
-        to="/install"
-        aria-label="stateofpixel, all projects"
+        to="/"
+        aria-label="stateofpixel home"
         className="-ml-1 flex size-8 items-center justify-center rounded-sm hover:bg-hover"
       >
         <Logo />
@@ -146,6 +146,9 @@ function UserMenu() {
   const viewer = useQuery(api.users.viewer);
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
+  const onAllProjects = useLocation({
+    select: (location) => location.pathname === "/install",
+  });
   const [theme, setTheme] = useTheme();
 
   return (
@@ -163,6 +166,21 @@ function UserMenu() {
           <span className="truncate text-xs text-muted">@{viewer.login}</span>
         )}
       </div>
+      <MenuSeparator />
+      {onAllProjects ? (
+        <span
+          aria-disabled
+          className={`${menuItemClass} pointer-events-none opacity-45`}
+        >
+          <SquaresFourIcon size={16} className="shrink-0 text-muted" />
+          All projects
+        </span>
+      ) : (
+        <Link to="/install" className={menuItemClass}>
+          <SquaresFourIcon size={16} className="shrink-0 text-muted" />
+          All projects
+        </Link>
+      )}
       <MenuSeparator />
       <div className="flex h-8 items-center justify-between gap-2 pr-1 pl-2">
         <span>Theme</span>

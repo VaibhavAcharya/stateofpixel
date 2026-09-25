@@ -3,6 +3,7 @@ import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import {
   allows,
+  findAllowedProject,
   findProject,
   readAccess,
   requirePermission,
@@ -30,6 +31,7 @@ export const access = query({
       canRead: v.boolean(),
       canWrite: v.boolean(),
       canAdmin: v.boolean(),
+      hasBuilds: v.boolean(),
     }),
   ),
   handler: async (ctx, { owner, name }) => {
@@ -49,21 +51,28 @@ export const access = query({
       canRead: allows(project, access, "read"),
       canWrite: allows(project, access, "write"),
       canAdmin: allows(project, access, "admin"),
+      hasBuilds: project.lastBuildAt !== undefined,
     };
   },
 });
 
 export const settings = query({
   args: { projectId: v.id("projects") },
-  returns: v.object({
-    defaultBranch: v.string(),
-    autoApproveBranches: v.array(v.string()),
-    diffThreshold: v.number(),
-    diffIncludeAA: v.boolean(),
-    prRetentionDays: v.number(),
-  }),
+  returns: v.union(
+    v.null(),
+    v.object({
+      defaultBranch: v.string(),
+      autoApproveBranches: v.array(v.string()),
+      diffThreshold: v.number(),
+      diffIncludeAA: v.boolean(),
+      prRetentionDays: v.number(),
+    }),
+  ),
   handler: async (ctx, { projectId }) => {
-    const { project } = await requirePermission(ctx, projectId, "admin");
+    const project = await findAllowedProject(ctx, projectId, "admin");
+    if (project === null) {
+      return null;
+    }
     return {
       defaultBranch: project.defaultBranch,
       autoApproveBranches: project.autoApproveBranches,

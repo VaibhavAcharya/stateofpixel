@@ -68,6 +68,16 @@ Group 4: landing
 - [x] Baselines tab and snapshot history
 - [x] Project settings page
 
+## Dogfooding
+
+See PLAN.md, Dogfooding. Today `visual.yml` uploads only the three static pages in `examples/playground`.
+
+- [ ] Playwright suite for the public web pages (landing, pricing) through `stateofpixel/playwright`
+- [ ] A seeded build page that renders without GitHub sign-in, captured in the same suite
+- [ ] Storybook stories in `examples/playground`, captured with `stateofpixel storybook`
+- [ ] `scripts/test-pr.sh` scenarios with an expected check result each
+- [ ] Merge scenarios (squash, rebase, merge commit) against a separate test repo
+
 ## M3: growth
 
 - [ ] Usage page and storage billing
