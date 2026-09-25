@@ -1,6 +1,6 @@
 {
   "name": "stateofpixel",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Visual regression testing that runs in your CI",
   "homepage": "https://stateofpixel.com",
   "license": "UNLICENSED",
