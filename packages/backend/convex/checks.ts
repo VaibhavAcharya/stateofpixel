@@ -14,6 +14,7 @@ import {
   updateCheckRun,
 } from "./lib/github";
 import { buildUrl } from "./lib/urls";
+import { DEFAULT_BUILD_NAME } from "./schema";
 
 const SYNC_STALE_MS = 5 * 60 * 1000;
 const MAX_LINKED_SNAPSHOTS = 10;
@@ -142,7 +143,7 @@ export const state = internalQuery({
       version: build.checkVersion,
       checkRunId: build.githubCheckRunId ?? null,
       checkName:
-        build.buildName === "default"
+        build.buildName === DEFAULT_BUILD_NAME
           ? "stateofpixel"
           : `stateofpixel/${build.buildName}`,
       commitSha: build.commitSha,
@@ -160,7 +161,7 @@ export const state = internalQuery({
   },
 });
 
-export function toCheckFields(
+function toCheckFields(
   build: Doc<"builds">,
   url: string,
   linked: Doc<"snapshots">[],

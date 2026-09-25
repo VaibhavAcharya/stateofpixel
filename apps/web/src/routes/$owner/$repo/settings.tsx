@@ -2,7 +2,6 @@ import { api } from "@stateofpixel/backend/api";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAction, useMutation } from "convex/react";
-import { ConvexError } from "convex/values";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { AppHeader } from "../../../components/AppHeader";
@@ -13,9 +12,11 @@ import { RequireAuth } from "../../../components/RequireAuth";
 import {
   buttonClass,
   EmptyState,
+  ProjectNotFound,
   RelativeTime,
   SkeletonRows,
 } from "../../../components/ui";
+import { errorCode } from "../../../lib/errorCode";
 import { useProjectAccess } from "../../../lib/useProjectAccess";
 
 export const Route = createFileRoute("/$owner/$repo/settings")({
@@ -34,12 +35,7 @@ const ERRORS: Record<string, string> = {
 };
 
 function errorMessage(error: unknown): string {
-  const code =
-    error instanceof ConvexError &&
-    typeof error.data === "object" &&
-    error.data !== null
-      ? String(error.data.code)
-      : null;
+  const code = errorCode(error);
   return (code !== null && ERRORS[code]) || "Could not save. Try again.";
 }
 
@@ -62,12 +58,7 @@ function SettingsAccess({ owner, repo }: { owner: string; repo: string }) {
     return <SkeletonRows />;
   }
   if (result.state === "not_found") {
-    return (
-      <EmptyState title="Project not found.">
-        The repository may not exist here, or you do not have access to it on
-        GitHub.
-      </EmptyState>
-    );
+    return <ProjectNotFound />;
   }
   if (!result.access.canAdmin) {
     return (

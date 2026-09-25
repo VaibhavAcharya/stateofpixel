@@ -5,8 +5,8 @@ import {
   isServerError,
 } from "../api";
 import { defaultNonce, readCiInfo, readGitInfo, resolveToken } from "../ci-env";
+import { formatCounts } from "../format";
 import { waitForFinalize } from "../upload";
-import { formatCounts } from "./upload";
 
 export type FinalizeCommandOptions = {
   buildName?: string;

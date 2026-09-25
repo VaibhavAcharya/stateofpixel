@@ -2,6 +2,8 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+export const DEFAULT_BUILD_NAME = "default";
+
 export const diffStatus = v.union(
   v.literal("unchanged"),
   v.literal("changed"),

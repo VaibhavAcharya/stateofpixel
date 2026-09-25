@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { matchesBranch } from "../builds";
+import { matchesBranch } from "./matchesBranch";
 
 it("matches branch globs", () => {
   expect(matchesBranch("main", "main")).toBe(true);

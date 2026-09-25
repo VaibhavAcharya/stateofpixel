@@ -21,6 +21,7 @@ import {
   GithubError,
   isAncestor,
 } from "./lib/github";
+import { DEFAULT_BUILD_NAME } from "./schema";
 
 const CHUNK_SIZE = 1000;
 const MAX_METADATA_BYTES = 4096;
@@ -61,7 +62,7 @@ function ciRoute(handler: CiHandler) {
   });
 }
 
-export function errorResponse(
+function errorResponse(
   status: number,
   code: string,
   message: string,
@@ -185,7 +186,7 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
   checkHashes(body.snapshots.map((snapshot) => snapshot.hash));
   checkMetadata(body.snapshots);
   checkOidcCommit(auth, body.git);
-  const buildName = body.buildName ?? "default";
+  const buildName = body.buildName ?? DEFAULT_BUILD_NAME;
   const joining =
     (await ctx.runQuery(internal.builds.buildIdByNonce, {
       projectId: auth.project.id,
@@ -442,7 +443,7 @@ export const buildAction = ciRoute(async (ctx, request, auth) => {
 
 export const finalizeBuild = ciRoute(async (ctx, request, auth) => {
   const body = await readBody(request, finalizeRequest);
-  const buildName = body.buildName ?? "default";
+  const buildName = body.buildName ?? DEFAULT_BUILD_NAME;
   const buildId =
     (await ctx.runQuery(internal.builds.buildIdByNonce, {
       projectId: auth.project.id,

@@ -17,6 +17,8 @@ import { touchCheck } from "./checks";
 import { ciError } from "./lib/ciErrors";
 import { snapshotResult, upload } from "./lib/ciRequests";
 import { conclude } from "./lib/conclude";
+import { isBaselineCandidate } from "./lib/history";
+import { matchesBranch } from "./lib/matchesBranch";
 import { findReadableBuild, findReadableProject } from "./lib/permissions";
 import { buildUrl } from "./lib/urls";
 import { buildConclusion, buildCounts, buildStatus } from "./schema";
@@ -363,28 +365,6 @@ export const githubRepository = internalQuery({
     };
   },
 });
-
-export function matchesBranch(pattern: string, branch: string): boolean {
-  const source = pattern
-    .trim()
-    .split("**")
-    .map((part) =>
-      part
-        .split("*")
-        .map((text) => text.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
-        .join("[^/]*"),
-    )
-    .join(".*");
-  return new RegExp(`^${source}$`).test(branch);
-}
-
-export function isBaselineCandidate(build: Doc<"builds">): boolean {
-  return (
-    build.status === "finalized" &&
-    (build.conclusion === "approved" || build.conclusion === "no_changes") &&
-    build.fullRows
-  );
-}
 
 export const lookupSnapshots = internalQuery({
   args: {
@@ -917,7 +897,7 @@ function toBuildSummary(build: Doc<"builds">): Infer<typeof buildSummary> {
   };
 }
 
-export const buildFilter = v.union(
+const buildFilter = v.union(
   v.literal("to_review"),
   v.literal("approved"),
   v.literal("rejected"),

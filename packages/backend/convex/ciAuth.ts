@@ -9,15 +9,15 @@ import {
 } from "./_generated/server";
 import { hashProjectToken, isProjectToken } from "./lib/projectTokens";
 
-export const GITHUB_OIDC_ISSUER = "https://token.actions.githubusercontent.com";
-export const GITHUB_OIDC_AUDIENCE = "stateofpixel";
+const GITHUB_OIDC_ISSUER = "https://token.actions.githubusercontent.com";
+const GITHUB_OIDC_AUDIENCE = "stateofpixel";
 const LAST_USED_WRITE_INTERVAL_MS = 60 * 1000;
 
 const githubJwks = createRemoteJWKSet(
   new URL(`${GITHUB_OIDC_ISSUER}/.well-known/jwks`),
 );
 
-export type GithubOidcClaims = {
+type GithubOidcClaims = {
   repositoryId: number;
   repository: string;
   sha: string;
@@ -28,7 +28,7 @@ export type GithubOidcClaims = {
 
 const ciProject = v.object({ id: v.id("projects"), fullName: v.string() });
 
-export type CiProject = { id: Id<"projects">; fullName: string };
+type CiProject = { id: Id<"projects">; fullName: string };
 
 export type CiAuth =
   | { method: "oidc"; project: CiProject; claims: GithubOidcClaims }

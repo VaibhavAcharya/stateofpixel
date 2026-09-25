@@ -26,6 +26,7 @@ import type * as lib_conclude from "../lib/conclude.js";
 import type * as lib_github from "../lib/github.js";
 import type * as lib_history from "../lib/history.js";
 import type * as lib_images from "../lib/images.js";
+import type * as lib_matchesBranch from "../lib/matchesBranch.js";
 import type * as lib_permissions from "../lib/permissions.js";
 import type * as lib_projectTokens from "../lib/projectTokens.js";
 import type * as lib_urls from "../lib/urls.js";
@@ -63,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   "lib/github": typeof lib_github;
   "lib/history": typeof lib_history;
   "lib/images": typeof lib_images;
+  "lib/matchesBranch": typeof lib_matchesBranch;
   "lib/permissions": typeof lib_permissions;
   "lib/projectTokens": typeof lib_projectTokens;
   "lib/urls": typeof lib_urls;

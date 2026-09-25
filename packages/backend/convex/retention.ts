@@ -1,9 +1,13 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalMutation, type QueryCtx } from "./_generated/server";
+import {
+  internalMutation,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
 import { deleteImage } from "./blobs";
-import { matchesBranch } from "./builds";
+import { matchesBranch } from "./lib/matchesBranch";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const IMAGE_GRACE_MS = DAY_MS;
@@ -129,24 +133,7 @@ export const deleteBuildData = internalMutation({
   args: { buildId: v.id("builds") },
   returns: v.null(),
   handler: async (ctx, { buildId }) => {
-    const snapshots = await ctx.db
-      .query("snapshots")
-      .withIndex("by_buildId_and_name", (q) => q.eq("buildId", buildId))
-      .take(DELETE_PAGE_SIZE);
-    const reviews = await ctx.db
-      .query("reviews")
-      .withIndex("by_buildId", (q) => q.eq("buildId", buildId))
-      .take(DELETE_PAGE_SIZE);
-    for (const snapshot of snapshots) {
-      await ctx.db.delete("snapshots", snapshot._id);
-    }
-    for (const review of reviews) {
-      await ctx.db.delete("reviews", review._id);
-    }
-    if (
-      snapshots.length === DELETE_PAGE_SIZE ||
-      reviews.length === DELETE_PAGE_SIZE
-    ) {
+    if (!(await deleteBuildRows(ctx, buildId))) {
       await ctx.scheduler.runAfter(0, internal.retention.deleteBuildData, {
         buildId,
       });
@@ -154,6 +141,29 @@ export const deleteBuildData = internalMutation({
     return null;
   },
 });
+
+export async function deleteBuildRows(
+  ctx: MutationCtx,
+  buildId: Id<"builds">,
+): Promise<boolean> {
+  const snapshots = await ctx.db
+    .query("snapshots")
+    .withIndex("by_buildId_and_name", (q) => q.eq("buildId", buildId))
+    .take(DELETE_PAGE_SIZE);
+  const reviews = await ctx.db
+    .query("reviews")
+    .withIndex("by_buildId", (q) => q.eq("buildId", buildId))
+    .take(DELETE_PAGE_SIZE);
+  for (const snapshot of snapshots) {
+    await ctx.db.delete("snapshots", snapshot._id);
+  }
+  for (const review of reviews) {
+    await ctx.db.delete("reviews", review._id);
+  }
+  return (
+    snapshots.length < DELETE_PAGE_SIZE && reviews.length < DELETE_PAGE_SIZE
+  );
+}
 
 export const deleteApprovals = internalMutation({
   args: {

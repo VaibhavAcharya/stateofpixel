@@ -2,12 +2,17 @@ import { ArrowUpRightIcon } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex-helpers/react/cache/hooks";
-import { AppHeader, accountAvatar } from "../../components/AppHeader";
+import { AppHeader } from "../../components/AppHeader";
 import { ListToolbar, SearchField } from "../../components/ListControls";
 import { Page, PageHeader } from "../../components/Page";
 import { ProjectTable } from "../../components/ProjectTable";
 import { RequireAuth } from "../../components/RequireAuth";
-import { Avatar, buttonClass, EmptyState } from "../../components/ui";
+import {
+  Avatar,
+  accountAvatar,
+  buttonClass,
+  EmptyState,
+} from "../../components/ui";
 import { prefetchAccount } from "../../lib/prefetch";
 import { validateProjectSearch } from "../../lib/projectSearch";
 import { useListKeys } from "../../lib/useListKeys";

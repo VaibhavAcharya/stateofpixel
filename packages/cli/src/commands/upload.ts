@@ -4,13 +4,13 @@ import path from "node:path";
 import { InvalidArgumentError } from "commander";
 import {
   ApiError,
-  type BuildCounts,
   createApiClient,
   DEFAULT_API_URL,
   isServerError,
 } from "../api";
 import { defaultNonce, readCiInfo, readGitInfo, resolveToken } from "../ci-env";
 import { createDiffEngine } from "../diff/engine";
+import { formatCount, formatCounts } from "../format";
 import {
   readSnapshots,
   type Shard,
@@ -129,16 +129,6 @@ function printSummary(
   console.log(`  review: ${build.url}`);
 }
 
-export function formatCounts(
-  total: number,
-  counts: Pick<
-    BuildCounts,
-    "unchanged" | "changed" | "added" | "removed" | "failed"
-  >,
-): string {
-  return `  ${formatCount(total)} snapshots  ${formatCount(counts.unchanged)} unchanged  ${formatCount(counts.changed)} changed  ${formatCount(counts.added)} added  ${formatCount(counts.removed)} removed${counts.failed > 0 ? `  ${formatCount(counts.failed)} failed` : ""}`;
-}
-
 function countResults(results: UploadOutput["results"]) {
   const counts = { unchanged: 0, changed: 0, added: 0, removed: 0, failed: 0 };
   for (const result of results) {
@@ -158,8 +148,4 @@ export function parseShard(value: string): Shard {
     throw new InvalidArgumentError("Must look like 1/4, or auto.");
   }
   return { index, total };
-}
-
-export function formatCount(count: number): string {
-  return count.toLocaleString("en-US");
 }

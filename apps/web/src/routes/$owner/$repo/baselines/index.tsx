@@ -14,6 +14,7 @@ import { RequireAuth } from "../../../../components/RequireAuth";
 import {
   buttonClass,
   EmptyState,
+  ProjectNotFound,
   Skeleton,
   SkeletonRows,
   Spinner,
@@ -61,12 +62,7 @@ function BaselinesAccess({ owner, repo }: { owner: string; repo: string }) {
   const result = useProjectAccess(owner, repo);
   const suites = useQuery(api.baselines.current, { owner, name: repo });
   if (result.state === "not_found") {
-    return (
-      <EmptyState title="Project not found.">
-        The repository may not exist here, or you do not have access to it on
-        GitHub.
-      </EmptyState>
-    );
+    return <ProjectNotFound />;
   }
   if (result.state === "loading" || !suites) {
     return <SkeletonRows />;

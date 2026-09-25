@@ -10,22 +10,14 @@ import {
   WarningIcon,
   XIcon,
 } from "@phosphor-icons/react/ssr";
+import type { Doc } from "@stateofpixel/backend/dataModel";
 import type { ComponentType, ReactNode } from "react";
 import { formatAbsolute, formatCount, formatRelative } from "../lib/format";
 
-export type DiffStatus =
-  | "unchanged"
-  | "changed"
-  | "added"
-  | "removed"
-  | "failed";
-export type ReviewState = "none" | "pending" | "approved" | "rejected";
-export type BuildStatus = "pending" | "finalized" | "expired" | "error";
-export type BuildConclusion =
-  | "no_changes"
-  | "changes"
-  | "approved"
-  | "rejected";
+export type DiffStatus = Doc<"snapshots">["diffStatus"];
+export type ReviewState = Doc<"snapshots">["reviewState"];
+export type BuildStatus = Doc<"builds">["status"];
+export type BuildConclusion = NonNullable<Doc<"builds">["conclusion"]>;
 
 type Tone = DiffStatus | Exclude<ReviewState, "none">;
 
@@ -250,12 +242,16 @@ export function buttonClass(
 export function LeadCopy({
   title,
   children,
+  className = "max-w-[65ch]",
 }: {
   title: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <p className="max-w-[65ch] text-2xl font-[450] tracking-[-0.035em] text-balance text-muted max-sm:text-xl">
+    <p
+      className={`text-2xl font-[450] tracking-[-0.035em] text-balance text-muted max-sm:text-xl ${className}`}
+    >
       <strong className="font-semibold text-text">{title}</strong> {children}
     </p>
   );
@@ -275,6 +271,15 @@ export function EmptyState({
       <LeadCopy title={title}>{children}</LeadCopy>
       {action}
     </div>
+  );
+}
+
+export function ProjectNotFound() {
+  return (
+    <EmptyState title="Project not found.">
+      The repository may not exist here, or you do not have access to it on
+      GitHub.
+    </EmptyState>
   );
 }
 
@@ -332,6 +337,10 @@ export function Wordmark() {
   );
 }
 
+export function accountAvatar(login: string) {
+  return `https://github.com/${login}.png?size=64`;
+}
+
 export function Avatar({
   src,
   size = 20,
@@ -364,7 +373,7 @@ export function Avatar({
 
 const VIEWPORT_SUFFIX = /^(.*?)\s*\[([^\]]+)\]$/;
 
-export function splitSnapshotName(name: string) {
+function splitSnapshotName(name: string) {
   const match = VIEWPORT_SUFFIX.exec(name);
   const base = match?.[1] ?? name;
   const slash = base.lastIndexOf("/");

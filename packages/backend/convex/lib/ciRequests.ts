@@ -72,8 +72,6 @@ export const completeShardRequest = v.object({
   errors: v.optional(v.array(v.string())),
 });
 
-export type CompleteShardRequest = Infer<typeof completeShardRequest>;
-
 export const uploadUrlsRequest = v.object({ hashes: v.array(sha256Hex) });
 
 export const finalizeRequest = v.object({

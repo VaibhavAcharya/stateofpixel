@@ -26,7 +26,6 @@ import {
 } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { ConvexError } from "convex/values";
 import { usePaginatedQuery, useQuery } from "convex-helpers/react/cache/hooks";
 import {
   createContext,
@@ -64,6 +63,7 @@ import {
   Viewer,
   type ViewerSettings,
 } from "../../../../components/Viewer";
+import { errorCode } from "../../../../lib/errorCode";
 import { formatCount, formatPercent, shortSha } from "../../../../lib/format";
 import { prefetchBuild } from "../../../../lib/prefetch";
 import { useProjectAccess } from "../../../../lib/useProjectAccess";
@@ -374,15 +374,6 @@ function PrefetchSnapshot({
     }
   }, [snapshot]);
   return null;
-}
-
-function errorCode(error: unknown): string | null {
-  return error instanceof ConvexError &&
-    typeof error.data === "object" &&
-    error.data !== null &&
-    "code" in error.data
-    ? String(error.data.code)
-    : null;
 }
 
 function BuildPage({

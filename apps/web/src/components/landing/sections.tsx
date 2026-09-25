@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import { CodeBlock } from "../CodeBlock";
 import { AuthButton } from "../SignIn";
-import { buttonClass, Kbd, Wordmark } from "../ui";
+import { buttonClass, Kbd, LeadCopy, Wordmark } from "../ui";
 import { ReviewDemo } from "./ReviewDemo";
 
 const WIDE = "mx-auto max-w-[1448px] px-6 max-sm:px-4";
@@ -12,22 +12,6 @@ const LEAD =
   "text-2xl font-[450] tracking-[-0.035em] text-balance text-muted max-sm:text-xl";
 const DISPLAY =
   "text-[clamp(40px,4.6vw,66px)] leading-[1.1] font-semibold tracking-[-0.045em] text-balance";
-
-function Lead({
-  title,
-  children,
-  className = "max-w-[720px]",
-}: {
-  title: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <p className={`${LEAD} ${className}`}>
-      <strong className="font-semibold text-text">{title}</strong> {children}
-    </p>
-  );
-}
 
 const WORKFLOW = `permissions:
   id-token: write
@@ -201,10 +185,13 @@ const LANES: { title: string; where: string; items: string[] }[] = [
 export function HowFlow() {
   return (
     <section id="how" className={`${SECTION} scroll-mt-16`}>
-      <Lead title="Your code never leaves your runner.">
+      <LeadCopy
+        title="Your code never leaves your runner."
+        className="max-w-[720px]"
+      >
         Only PNGs, their names and the commit go over the wire. Unchanged
         screenshots cost one hash in a JSON body.
-      </Lead>
+      </LeadCopy>
       <div className="mt-12 grid grid-cols-3 max-md:grid-cols-1">
         {LANES.map((lane, index) => (
           <div
@@ -253,10 +240,10 @@ export function HowSteps() {
     <section className="border-y border-border bg-bg">
       <div className={`${SECTION} grid grid-cols-2 gap-16 max-lg:grid-cols-1`}>
         <div>
-          <Lead title="Set up in three steps." className="max-w-[520px]">
+          <LeadCopy title="Set up in three steps." className="max-w-[520px]">
             No token to copy on GitHub Actions. The first build on your default
             branch becomes the baseline.
-          </Lead>
+          </LeadCopy>
           <ol className="mt-10 flex flex-col">
             {[
               [
@@ -344,9 +331,9 @@ export function WhatWeDont() {
   ];
   return (
     <section className={SECTION}>
-      <Lead title="What we don't do.">
+      <LeadCopy title="What we don't do." className="max-w-[720px]">
         Every feature we skip is a cost we don't pass on.
-      </Lead>
+      </LeadCopy>
       <ul className="mt-12 border-t border-dotted border-field-border/50">
         {items.map(([title, text]) => (
           <li
@@ -403,9 +390,9 @@ export function FaqList() {
       id="faq"
       className={`${SECTION} scroll-mt-16 grid grid-cols-[1fr_2fr] gap-12 max-lg:grid-cols-1`}
     >
-      <Lead title="Questions." className="max-w-[360px]">
+      <LeadCopy title="Questions." className="max-w-[360px]">
         The ones a security review asks first.
-      </Lead>
+      </LeadCopy>
       <div className="border-t border-dotted border-field-border/50">
         {FAQ.map(([question, answer]) => (
           <details
@@ -450,10 +437,10 @@ const NEXT = [
 export function StatusSection() {
   return (
     <section className={SECTION}>
-      <Lead title="Early, and built in the open.">
+      <LeadCopy title="Early, and built in the open." className="max-w-[720px]">
         stateofpixel tests itself: every pull request in our repo runs through
         it. Here is where it stands.
-      </Lead>
+      </LeadCopy>
       <div className="mt-12 grid grid-cols-2 gap-12 max-md:grid-cols-1">
         <StatusList title="Shipped" items={SHIPPED} done />
         <StatusList title="Next" items={NEXT} />

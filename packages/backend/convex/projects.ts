@@ -8,6 +8,7 @@ import {
   readAccess,
   requirePermission,
 } from "./lib/permissions";
+import { deleteBuildRows } from "./retention";
 import { repoPermission } from "./schema";
 
 const MAX_BRANCH_PATTERNS = 20;
@@ -156,24 +157,7 @@ export const deleteData = internalMutation({
       .withIndex("by_projectId_and_number", (q) => q.eq("projectId", projectId))
       .first();
     if (build !== null) {
-      const snapshots = await ctx.db
-        .query("snapshots")
-        .withIndex("by_buildId_and_name", (q) => q.eq("buildId", build._id))
-        .take(DELETE_PAGE_SIZE);
-      const reviews = await ctx.db
-        .query("reviews")
-        .withIndex("by_buildId", (q) => q.eq("buildId", build._id))
-        .take(DELETE_PAGE_SIZE);
-      for (const snapshot of snapshots) {
-        await ctx.db.delete("snapshots", snapshot._id);
-      }
-      for (const review of reviews) {
-        await ctx.db.delete("reviews", review._id);
-      }
-      if (
-        snapshots.length < DELETE_PAGE_SIZE &&
-        reviews.length < DELETE_PAGE_SIZE
-      ) {
+      if (await deleteBuildRows(ctx, build._id)) {
         if (build.expiryJobId !== undefined && build.status === "pending") {
           await ctx.scheduler.cancel(build.expiryJobId);
         }

@@ -7,21 +7,22 @@ import {
 import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAction } from "convex/react";
-import { ConvexError } from "convex/values";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useCallback, useEffect, useState } from "react";
-import { AppHeader, accountAvatar } from "../components/AppHeader";
+import { AppHeader } from "../components/AppHeader";
 import { ListToolbar, SearchField } from "../components/ListControls";
 import { Page, PageHeader } from "../components/Page";
 import { ProjectTable } from "../components/ProjectTable";
 import { RequireAuth } from "../components/RequireAuth";
 import {
   Avatar,
+  accountAvatar,
   buttonClass,
   EmptyState,
   SkeletonRows,
   Spinner,
 } from "../components/ui";
+import { errorCode } from "../lib/errorCode";
 import { validateProjectSearch } from "../lib/projectSearch";
 import { useListKeys } from "../lib/useListKeys";
 
@@ -55,10 +56,7 @@ function Accounts() {
     setError(null);
     refreshAccounts({})
       .catch((reason: unknown) => {
-        if (
-          reason instanceof ConvexError &&
-          reason.data?.code === "github_token_invalid"
-        ) {
+        if (errorCode(reason) === "github_token_invalid") {
           void signOut();
           return;
         }

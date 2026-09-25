@@ -1,10 +1,9 @@
 import { CheckIcon } from "@phosphor-icons/react/ssr";
 import { type ReactNode, useState } from "react";
 import { AuthButton } from "../SignIn";
+import { LeadCopy } from "../ui";
 
 const SECTION = "mx-auto max-w-[1448px] px-6 py-24 max-sm:px-4 max-sm:py-12";
-const LEAD =
-  "text-2xl font-[450] tracking-[-0.035em] text-balance text-muted max-sm:text-xl";
 
 const FREE_GIGABYTES = 10;
 const RETENTION_DAYS = 60;
@@ -214,14 +213,6 @@ function Footnote({ children }: { children?: ReactNode }) {
   );
 }
 
-function Lead({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <p className={`${LEAD} max-w-[760px]`}>
-      <strong className="font-semibold text-text">{title}</strong> {children}
-    </p>
-  );
-}
-
 const FREE_FEATURES = [
   `${FREE_GIGABYTES} GB of stored screenshots`,
   "Unlimited snapshots, builds and projects",
@@ -306,10 +297,13 @@ export function PricingPlans() {
   const { numbers, sliders } = usePricing();
   return (
     <section id="pricing" className={`${SECTION} scroll-mt-16`}>
-      <Lead title="Pay for storage, nothing else.">
+      <LeadCopy
+        title="Pay for storage, nothing else."
+        className="max-w-[760px]"
+      >
         Every plan has unlimited snapshots, seats and builds. The only thing
         that grows is the storage you keep.
-      </Lead>
+      </LeadCopy>
       <div className="mt-12">
         <PlanCards fits={numbers.fits} />
       </div>

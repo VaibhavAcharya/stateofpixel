@@ -2,7 +2,7 @@ import { GitBranchIcon, GitPullRequestIcon } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { UsePaginatedQueryReturnType } from "convex/react";
-import type { FunctionReturnType } from "convex/server";
+import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { usePaginatedQuery } from "convex-helpers/react/cache/hooks";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { AppHeader } from "../../../components/AppHeader";
@@ -19,9 +19,9 @@ import { RequireAuth } from "../../../components/RequireAuth";
 import {
   BuildStatePill,
   buttonClass,
-  EmptyState,
   LeadCopy,
   listRowLinkClass,
+  ProjectNotFound,
   RelativeTime,
   SkeletonRows,
   Spinner,
@@ -32,14 +32,9 @@ import { prefetchBuild } from "../../../lib/prefetch";
 import { useListKeys } from "../../../lib/useListKeys";
 import { useProjectAccess } from "../../../lib/useProjectAccess";
 
-type BuildFilter =
-  | "to_review"
-  | "approved"
-  | "rejected"
-  | "no_changes"
-  | "pending"
-  | "expired"
-  | "error";
+type BuildFilter = NonNullable<
+  FunctionArgs<typeof api.builds.list>["states"]
+>[number];
 
 type Search = {
   branch?: string;
@@ -138,12 +133,7 @@ function ProjectBuilds({ owner, repo }: { owner: string; repo: string }) {
     return <SkeletonRows />;
   }
   if (result.state === "not_found") {
-    return (
-      <EmptyState title="Project not found.">
-        The repository may not exist here, or you do not have access to it on
-        GitHub.
-      </EmptyState>
-    );
+    return <ProjectNotFound />;
   }
   if (!result.access.hasBuilds) {
     return <SetupCard owner={owner} repo={repo} />;

@@ -1,9 +1,9 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "@stateofpixel/backend/api";
 import { useAction } from "convex/react";
-import { ConvexError } from "convex/values";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useEffect, useState } from "react";
+import { errorCode } from "./errorCode";
 
 export function useProjectAccess(owner: string, name: string) {
   const access = useQuery(api.projects.access, { owner, name });
@@ -18,10 +18,7 @@ export function useProjectAccess(owner: string, name: string) {
       return;
     }
     refresh({ projectId }).catch((error: unknown) => {
-      if (
-        error instanceof ConvexError &&
-        error.data?.code === "github_token_invalid"
-      ) {
+      if (errorCode(error) === "github_token_invalid") {
         void signOut();
         return;
       }

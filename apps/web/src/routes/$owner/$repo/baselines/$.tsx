@@ -10,6 +10,7 @@ import { RequireAuth } from "../../../../components/RequireAuth";
 import {
   DiffStatusPill,
   EmptyState,
+  ProjectNotFound,
   RelativeTime,
   SkeletonRows,
   SnapshotName,
@@ -64,12 +65,7 @@ function HistoryAccess({
     snapshotName,
   });
   if (result.state === "not_found") {
-    return (
-      <EmptyState title="Project not found.">
-        The repository may not exist here, or you do not have access to it on
-        GitHub.
-      </EmptyState>
-    );
+    return <ProjectNotFound />;
   }
   if (result.state === "loading" || !history) {
     return <SkeletonRows />;

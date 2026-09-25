@@ -3,6 +3,14 @@ import type { QueryCtx } from "../_generated/server";
 
 const BUILD_SCAN = 100;
 
+export function isBaselineCandidate(build: Doc<"builds">): boolean {
+  return (
+    build.status === "finalized" &&
+    (build.conclusion === "approved" || build.conclusion === "no_changes") &&
+    build.fullRows
+  );
+}
+
 export async function findChanges(
   ctx: QueryCtx,
   project: Doc<"projects">,

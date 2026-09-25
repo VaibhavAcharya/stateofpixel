@@ -3,7 +3,7 @@ import { env } from "../_generated/server";
 
 const API_URL = "https://api.github.com";
 
-export type GithubAccount = {
+type GithubAccount = {
   id: number;
   login: string;
   type: "User" | "Organization";
@@ -17,7 +17,7 @@ export type GithubRepository = {
   default_branch: string;
 };
 
-export type GithubInstallation = {
+type GithubInstallation = {
   id: number;
   account: GithubAccount;
   suspended_at: string | null;
@@ -32,7 +32,7 @@ export class GithubError extends Error {
   }
 }
 
-export async function githubRequest<Result>(
+async function githubRequest<Result>(
   token: string,
   path: string,
   init: RequestInit = {},
@@ -53,7 +53,7 @@ export async function githubRequest<Result>(
   return (await response.json()) as Result;
 }
 
-export async function createAppJwt(): Promise<string> {
+async function createAppJwt(): Promise<string> {
   const privateKey = await importPKCS8(env.GITHUB_APP_PRIVATE_KEY, "RS256");
   const now = Math.floor(Date.now() / 1000);
   return new SignJWT({})

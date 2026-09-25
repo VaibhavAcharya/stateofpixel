@@ -15,11 +15,7 @@ import { useQuery } from "convex-helpers/react/cache/hooks";
 import type { ReactNode } from "react";
 import { type Theme, useTheme } from "../lib/theme";
 import { Menu, MenuLabel, MenuSeparator, menuItemClass } from "./Menu";
-import { Avatar, Logo } from "./ui";
-
-export function accountAvatar(login: string) {
-  return `https://github.com/${login}.png?size=64`;
-}
+import { Avatar, accountAvatar, Logo } from "./ui";
 
 function Slash() {
   return (

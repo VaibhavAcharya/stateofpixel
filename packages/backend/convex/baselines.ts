@@ -5,15 +5,12 @@ import {
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
-import { isBaselineCandidate } from "./builds";
-import { findChanges, recentBuilds } from "./lib/history";
+import { findChanges, isBaselineCandidate, recentBuilds } from "./lib/history";
 import { imageInfo, toImageInfo } from "./lib/images";
 import { findReadableProject } from "./lib/permissions";
-import { diffStatus } from "./schema";
+import { DEFAULT_BUILD_NAME, diffStatus } from "./schema";
 
 const MAX_HISTORY = 50;
-
-const DEFAULT_BUILD_NAME = "default";
 
 function pickBuildName(
   builds: Doc<"builds">[],
