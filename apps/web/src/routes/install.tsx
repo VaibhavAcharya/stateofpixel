@@ -7,8 +7,9 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useAction, useQuery } from "convex/react";
+import { useAction } from "convex/react";
 import { ConvexError } from "convex/values";
+import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useCallback, useEffect, useState } from "react";
 import { AppHeader, accountAvatar } from "../components/AppHeader";
 import { Page, PageHeader } from "../components/Page";

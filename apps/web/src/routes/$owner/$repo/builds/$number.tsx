@@ -16,6 +16,7 @@ import {
   XIcon,
 } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
+import { conclude } from "@stateofpixel/backend/conclude";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import {
   createFileRoute,
@@ -23,9 +24,10 @@ import {
   useNavigate,
   useParams,
 } from "@tanstack/react-router";
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { ConvexError } from "convex/values";
+import { usePaginatedQuery, useQuery } from "convex-helpers/react/cache/hooks";
 import {
   createContext,
   type ReactNode,
@@ -63,9 +65,13 @@ import {
   type ViewerSettings,
 } from "../../../../components/Viewer";
 import { formatCount, formatPercent, shortSha } from "../../../../lib/format";
+import { prefetchBuild } from "../../../../lib/prefetch";
 import { useProjectAccess } from "../../../../lib/useProjectAccess";
 
 export const Route = createFileRoute("/$owner/$repo/builds/$number")({
+  loader: ({ context, params }) => {
+    void prefetchBuild(context.convex, params);
+  },
   component: BuildRoute,
 });
 
@@ -84,7 +90,7 @@ const GROUPS: { status: DiffStatus; label: string }[] = [
   { status: "unchanged", label: "Unchanged" },
 ];
 
-const NEXT_STATE: Record<ReviewAction, ReviewState> = {
+const NEXT_STATE: Record<ReviewAction, Exclude<ReviewState, "none">> = {
   approve: "approved",
   reject: "rejected",
   undo: "pending",
@@ -264,37 +270,110 @@ function useSnapshotGroups(
 
 function useApplyReview() {
   return useMutation(api.reviews.apply).withOptimisticUpdate((store, args) => {
-    if (args.snapshotIds === "all") {
-      return;
-    }
     const next = NEXT_STATE[args.action];
-    const ids = new Set<string>(args.snapshotIds);
+    const ids =
+      args.snapshotIds === "all" ? null : new Set<string>(args.snapshotIds);
+    const previous = new Map<string, Exclude<ReviewState, "none">>();
+    const review = <Row extends { id: string; reviewState: ReviewState }>(
+      row: Row,
+    ): Row => {
+      const current = row.reviewState;
+      if (
+        current === "none" ||
+        current === next ||
+        (ids === null ? current !== "pending" : !ids.has(row.id))
+      ) {
+        return row;
+      }
+      previous.set(row.id, current);
+      return { ...row, reviewState: next };
+    };
+
     for (const { args: queryArgs, value } of store.getAllQueries(
       api.snapshots.list,
     )) {
-      if (value === undefined || queryArgs.buildId !== args.buildId) {
-        continue;
+      if (value !== undefined && queryArgs.buildId === args.buildId) {
+        store.setQuery(api.snapshots.list, queryArgs, {
+          ...value,
+          page: value.page.map(review),
+        });
       }
-      store.setQuery(api.snapshots.list, queryArgs, {
-        ...value,
-        page: value.page.map((row) =>
-          ids.has(row.id) && row.reviewState !== "none"
-            ? { ...row, reviewState: next }
-            : row,
-        ),
-      });
     }
     for (const { args: queryArgs, value } of store.getAllQueries(
       api.snapshots.get,
     )) {
-      if (value && ids.has(value.id) && value.reviewState !== "none") {
-        store.setQuery(api.snapshots.get, queryArgs, {
+      if (value && queryArgs.buildId === args.buildId) {
+        store.setQuery(api.snapshots.get, queryArgs, review(value));
+      }
+    }
+
+    const reviewCounts = (counts: Build["counts"]) => {
+      const result = { ...counts };
+      if (ids === null) {
+        result[next] += result.pending;
+        result.pending = 0;
+      } else {
+        for (const state of previous.values()) {
+          result[state]--;
+          result[next]++;
+        }
+      }
+      return result;
+    };
+    const updated = new Map<string, number>();
+    for (const { args: queryArgs, value } of store.getAllQueries(
+      api.builds.get,
+    )) {
+      if (value?.buildId === args.buildId) {
+        const counts = reviewCounts(value.counts);
+        store.setQuery(api.builds.get, queryArgs, {
           ...value,
-          reviewState: next,
+          counts,
+          conclusion: conclude(counts),
+        });
+        updated.set(queryArgs.projectId, value.number);
+      }
+    }
+    for (const { args: queryArgs, value } of store.getAllQueries(
+      api.builds.list,
+    )) {
+      const number = updated.get(queryArgs.projectId);
+      if (value !== undefined && number !== undefined) {
+        store.setQuery(api.builds.list, queryArgs, {
+          ...value,
+          page: value.page.map((row) => {
+            if (row.number !== number) {
+              return row;
+            }
+            const counts = reviewCounts(row.counts);
+            return { ...row, counts, conclusion: conclude(counts) };
+          }),
         });
       }
     }
   });
+}
+
+function PrefetchSnapshot({
+  buildId,
+  snapshotId,
+}: {
+  buildId: Id<"builds">;
+  snapshotId: Id<"snapshots">;
+}) {
+  const snapshot = useQuery(api.snapshots.get, { buildId, snapshotId });
+  useEffect(() => {
+    for (const image of [
+      snapshot?.image,
+      snapshot?.baselineImage,
+      snapshot?.diffImage,
+    ]) {
+      if (image) {
+        new Image().src = image.url;
+      }
+    }
+  }, [snapshot]);
+  return null;
 }
 
 function errorCode(error: unknown): string | null {
@@ -424,12 +503,22 @@ function BuildPage({
       return;
     }
     review("approve", current);
-    const nextPending = [
-      ...ordered.slice(currentIndex + 1),
-      ...ordered.slice(0, currentIndex),
-    ].find((row) => row.reviewState === "pending");
     select(nextPending);
   };
+
+  const nextPending = [
+    ...ordered.slice(currentIndex + 1),
+    ...ordered.slice(0, currentIndex),
+  ].find((row) => row.reviewState === "pending");
+  const neighbours = new Set(
+    [
+      ordered[currentIndex + 1] ?? ordered[0],
+      ordered[currentIndex - 1] ?? ordered[ordered.length - 1],
+      nextPending,
+    ].flatMap((row) =>
+      row === undefined || row.id === snapshotId ? [] : [row.id],
+    ),
+  );
 
   const reviewAll = (action: "approve" | "reject") => {
     if (!canReview) {
@@ -609,6 +698,9 @@ function BuildPage({
           )}
         </section>
       </div>
+      {[...neighbours].map((id) => (
+        <PrefetchSnapshot key={id} buildId={build.buildId} snapshotId={id} />
+      ))}
       <Toasts toasts={toasts} dismiss={dismiss} />
     </>
   );

@@ -36,15 +36,16 @@ Progress tracker for [PLAN.md](./PLAN.md). Details for each item are in [SPEC.md
 ## Web polish
 
 Group 1: auth and navigation
-- [ ] Sign-in button shows progress while redirecting to GitHub and while the code exchange runs
-- [ ] Sign out lands on `/`
-- [ ] "All projects" entry in the account switcher, and `/install` as the signed-in home in the breadcrumb
-- [ ] Keyboard shortcuts button as an icon in the app header
+- [x] Sign-in button shows progress while redirecting to GitHub and while the code exchange runs
+- [x] Sign out lands on `/`
+- [x] "All projects" entry in the account switcher, and `/install` as the signed-in home in the breadcrumb
+- [x] Keyboard shortcuts button as an icon in the app header
 
 Group 2: speed
-- [ ] Measure where page and navigation time goes
-- [ ] Keep query results across navigation, prefetch neighbours, render cached permissions while they refresh
-- [ ] Optimistic updates for build counts, conclusion and Approve all
+- [x] Measure where page and navigation time goes
+- [x] Keep query results across navigation, prefetch neighbours, render cached permissions while they refresh
+- [x] Optimistic updates for build counts, conclusion and Approve all
+- [ ] One round trip for project access and the page data on first visit
 
 Group 3: lists and viewer
 - [ ] Polish every list: projects, builds, accounts, sidebar

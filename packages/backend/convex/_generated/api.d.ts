@@ -21,6 +21,7 @@ import type * as http from "../http.js";
 import type * as installations from "../installations.js";
 import type * as lib_ciErrors from "../lib/ciErrors.js";
 import type * as lib_ciRequests from "../lib/ciRequests.js";
+import type * as lib_conclude from "../lib/conclude.js";
 import type * as lib_github from "../lib/github.js";
 import type * as lib_permissions from "../lib/permissions.js";
 import type * as lib_projectTokens from "../lib/projectTokens.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   installations: typeof installations;
   "lib/ciErrors": typeof lib_ciErrors;
   "lib/ciRequests": typeof lib_ciRequests;
+  "lib/conclude": typeof lib_conclude;
   "lib/github": typeof lib_github;
   "lib/permissions": typeof lib_permissions;
   "lib/projectTokens": typeof lib_projectTokens;

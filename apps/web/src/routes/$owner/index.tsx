@@ -1,7 +1,7 @@
 import { ArrowUpRightIcon, LockSimpleIcon } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache/hooks";
 import { AppHeader, accountAvatar } from "../../components/AppHeader";
 import { Page, PageHeader } from "../../components/Page";
 import { RequireAuth } from "../../components/RequireAuth";
@@ -13,8 +13,13 @@ import {
   RelativeTime,
   SkeletonRows,
 } from "../../components/ui";
+import { prefetchAccount } from "../../lib/prefetch";
 
-export const Route = createFileRoute("/$owner/")({ component: AccountPage });
+export const Route = createFileRoute("/$owner/")({
+  loader: ({ context, params }) =>
+    prefetchAccount(context.convex, params.owner),
+  component: AccountPage,
+});
 
 function AccountPage() {
   const { owner } = Route.useParams();

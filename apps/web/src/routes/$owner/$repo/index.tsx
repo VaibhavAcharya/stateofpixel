@@ -6,8 +6,8 @@ import {
 import { api } from "@stateofpixel/backend/api";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { usePaginatedQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
+import { usePaginatedQuery } from "convex-helpers/react/cache/hooks";
 import { AppHeader } from "../../../components/AppHeader";
 import { CodeBlock } from "../../../components/CodeBlock";
 import { Page, PageHeader } from "../../../components/Page";
@@ -23,6 +23,7 @@ import {
   SupersededPill,
 } from "../../../components/ui";
 import { shortSha } from "../../../lib/format";
+import { prefetchBuild } from "../../../lib/prefetch";
 import { useProjectAccess } from "../../../lib/useProjectAccess";
 
 type Search = { branch?: string };
@@ -33,6 +34,9 @@ export const Route = createFileRoute("/$owner/$repo/")({
     typeof search.branch === "string" && search.branch !== ""
       ? { branch: search.branch }
       : {},
+  loader: ({ context, params }) => {
+    void prefetchBuild(context.convex, params);
+  },
   component: ProjectPage,
 });
 

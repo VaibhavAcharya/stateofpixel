@@ -24,6 +24,7 @@
     "@tanstack/react-router-ssr-query": "^1.167.3",
     "@tanstack/react-start": "^1.168.58",
     "convex": "^1.46.0",
+    "convex-helpers": "0.1.124",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tailwindcss": "^4.3.3"

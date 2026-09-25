@@ -5,11 +5,13 @@ import {
   Outlet,
   Scripts,
 } from "@tanstack/react-router";
+import type { ConvexReactClient } from "convex/react";
 import type { ReactNode } from "react";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
+  convex: ConvexReactClient;
 }>()({
   head: () => ({
     meta: [
@@ -19,6 +21,11 @@ export const Route = createRootRouteWithContext<{
     ],
     links: [{ rel: "stylesheet", href: appCss }],
     scripts: [{ children: THEME_SCRIPT }],
+  }),
+  headers: () => ({
+    "Cache-Control": "public, max-age=0, must-revalidate",
+    "Netlify-CDN-Cache-Control":
+      "public, durable, s-maxage=86400, stale-while-revalidate=604800",
   }),
   component: RootComponent,
 });

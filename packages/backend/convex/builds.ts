@@ -16,6 +16,7 @@ import { confirmUpload, findImage, getUrl } from "./blobs";
 import { touchCheck } from "./checks";
 import { ciError } from "./lib/ciErrors";
 import { snapshotResult, upload } from "./lib/ciRequests";
+import { conclude } from "./lib/conclude";
 import { requirePermission } from "./lib/permissions";
 import { buildUrl } from "./lib/urls";
 import { buildConclusion, buildCounts, buildStatus } from "./schema";
@@ -776,19 +777,6 @@ export const finalize = internalMutation({
     return null;
   },
 });
-
-export function conclude(counts: Counts): Infer<typeof buildConclusion> {
-  if (counts.rejected > 0) {
-    return "rejected";
-  }
-  if (counts.changed + counts.added + counts.failed === 0) {
-    return "no_changes";
-  }
-  if (counts.pending === 0 && counts.failed === 0) {
-    return "approved";
-  }
-  return "changes";
-}
 
 async function cancelExpiry(ctx: MutationCtx, build: Doc<"builds">) {
   if (build.expiryJobId !== undefined) {

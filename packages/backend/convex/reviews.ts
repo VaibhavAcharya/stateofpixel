@@ -6,8 +6,8 @@ import {
   type MutationCtx,
   mutation,
 } from "./_generated/server";
-import { conclude } from "./builds";
 import { touchCheck } from "./checks";
+import { conclude } from "./lib/conclude";
 import { requirePermission } from "./lib/permissions";
 import type { buildCounts } from "./schema";
 
@@ -61,14 +61,35 @@ export const apply = mutation({
       if (action === "undo") {
         throw new ConvexError({ code: "invalid_action" });
       }
-      await ctx.scheduler.runAfter(0, internal.reviews.applyAll, {
-        buildId,
+      const options = {
         action,
         userId,
+        source: action === "approve" ? "approve_all" : "user",
         comment: trimmedComment,
-        diffStatus: "changed",
-        cursor: null,
-      });
+      } as const;
+      const counts = { ...build.counts };
+      let truncated = false;
+      for (const diffStatus of ["changed", "added"] as const) {
+        const snapshots = await ctx.db
+          .query("snapshots")
+          .withIndex("by_buildId_and_diffStatus_and_name", (q) =>
+            q.eq("buildId", buildId).eq("diffStatus", diffStatus),
+          )
+          .take(ALL_PAGE_SIZE);
+        truncated ||= snapshots.length === ALL_PAGE_SIZE;
+        await reviewPending(ctx, build, snapshots, counts, options);
+      }
+      await saveCounts(ctx, build, counts);
+      if (truncated) {
+        await ctx.scheduler.runAfter(0, internal.reviews.applyAll, {
+          buildId,
+          action,
+          userId,
+          comment: trimmedComment,
+          diffStatus: "changed",
+          cursor: null,
+        });
+      }
       return null;
     }
 
@@ -115,16 +136,12 @@ export const applyAll = internalMutation({
       )
       .paginate({ numItems: ALL_PAGE_SIZE, cursor: args.cursor });
     const counts = { ...build.counts };
-    for (const snapshot of page.page) {
-      if (snapshot.reviewState === "pending") {
-        await review(ctx, build, snapshot, counts, {
-          action: args.action,
-          userId: args.userId,
-          source: args.action === "approve" ? "approve_all" : "user",
-          comment: args.comment,
-        });
-      }
-    }
+    await reviewPending(ctx, build, page.page, counts, {
+      action: args.action,
+      userId: args.userId,
+      source: args.action === "approve" ? "approve_all" : "user",
+      comment: args.comment,
+    });
     await saveCounts(ctx, build, counts);
 
     const next = !page.isDone
@@ -153,6 +170,20 @@ function isReviewable(build: Doc<"builds">): boolean {
 function checkReviewable(build: Doc<"builds">) {
   if (!isReviewable(build)) {
     throw new ConvexError({ code: "build_not_reviewable" });
+  }
+}
+
+async function reviewPending(
+  ctx: MutationCtx,
+  build: Doc<"builds">,
+  snapshots: Doc<"snapshots">[],
+  counts: Counts,
+  options: Parameters<typeof review>[4],
+) {
+  for (const snapshot of snapshots) {
+    if (snapshot.reviewState === "pending") {
+      await review(ctx, build, snapshot, counts, options);
+    }
   }
 }
 

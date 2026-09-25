@@ -1,7 +1,8 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "@stateofpixel/backend/api";
-import { useAction, useQuery } from "convex/react";
+import { useAction } from "convex/react";
 import { ConvexError } from "convex/values";
+import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useEffect, useState } from "react";
 
 export function useProjectAccess(owner: string, name: string) {

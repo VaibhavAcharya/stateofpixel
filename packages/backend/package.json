@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./api": "./convex/_generated/api.js",
+    "./conclude": "./convex/lib/conclude.ts",
     "./dataModel": "./convex/_generated/dataModel.d.ts"
   },
   "scripts": {

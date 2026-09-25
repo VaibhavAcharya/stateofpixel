@@ -65,6 +65,9 @@ importers:
       convex:
         specifier: ^1.46.0
         version: 1.46.0(react@19.3.0)
+      convex-helpers:
+        specifier: 0.1.124
+        version: 0.1.124(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3)(zod@4.6.5)
       react:
         specifier: ^19.3.0
         version: 19.3.0
@@ -6288,6 +6291,14 @@ snapshots:
   consola@3.4.2: {}
 
   convert-source-map@2.0.0: {}
+
+  convex-helpers@0.1.124(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@5.9.3)(zod@4.6.5):
+    dependencies:
+      convex: 1.46.0(react@19.3.0)
+    optionalDependencies:
+      react: 19.3.0
+      typescript: 5.9.3
+      zod: 4.6.5
 
   convex-helpers@0.1.124(convex@1.46.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(zod@4.6.5):
     dependencies:

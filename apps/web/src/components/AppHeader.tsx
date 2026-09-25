@@ -11,7 +11,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache/hooks";
 import type { ReactNode } from "react";
 import { type Theme, useTheme } from "../lib/theme";
 import { Menu, MenuLabel, MenuSeparator, menuItemClass } from "./Menu";
