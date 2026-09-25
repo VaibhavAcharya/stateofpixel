@@ -1,18 +1,9 @@
 import {
-  ArrowCounterClockwiseIcon,
-  ArrowsLeftRightIcon,
   CaretDownIcon,
-  CaretRightIcon,
   CaretUpIcon,
-  ClockIcon,
-  GitBranchIcon,
-  GitCommitIcon,
-  GitPullRequestIcon,
-  InfoIcon,
   KeyboardIcon,
   MagnifyingGlassIcon,
   SidebarSimpleIcon,
-  WarningIcon,
   XIcon,
 } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
@@ -20,16 +11,13 @@ import { conclude } from "@stateofpixel/backend/conclude";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import {
   createFileRoute,
-  Link,
   useNavigate,
   useParams,
 } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import type { FunctionReturnType } from "convex/server";
 import { usePaginatedQuery, useQuery } from "convex-helpers/react/cache/hooks";
 import {
   createContext,
-  type ReactNode,
   type RefObject,
   useContext,
   useEffect,
@@ -37,34 +25,26 @@ import {
   useState,
 } from "react";
 import { AppHeader } from "../../../../components/AppHeader";
+import { Banners, BuildHeader } from "../../../../components/build/BuildHeader";
+import { BuildNotFound } from "../../../../components/build/BuildNotFound";
+import { SnapshotDetail } from "../../../../components/build/SnapshotDetail";
+import { SnapshotGroup } from "../../../../components/build/SnapshotGroup";
+import type { Build, SnapshotRow } from "../../../../components/build/types";
 import { RequireAuth } from "../../../../components/RequireAuth";
 import { ShortcutsDialog } from "../../../../components/ShortcutsDialog";
 import { Toasts, useToasts } from "../../../../components/Toast";
 import {
-  BuildStatePill,
   buttonClass,
-  DIFF_ICONS,
   type DiffStatus,
-  EmptyState,
   Kbd,
   LeadCopy,
-  REVIEW_ICONS,
-  RelativeTime,
   type ReviewState,
   Skeleton,
-  SnapshotName,
   Spinner,
-  SupersededPill,
-  TONE_TEXT,
 } from "../../../../components/ui";
-import {
-  MODES,
-  useViewerSettings,
-  Viewer,
-  type ViewerSettings,
-} from "../../../../components/Viewer";
+import { MODES, useViewerSettings } from "../../../../components/Viewer";
 import { errorCode } from "../../../../lib/errorCode";
-import { formatCount, formatPercent, shortSha } from "../../../../lib/format";
+import { formatCount } from "../../../../lib/format";
 import { prefetchBuild } from "../../../../lib/prefetch";
 import { useProjectAccess } from "../../../../lib/useProjectAccess";
 
@@ -73,11 +53,6 @@ export const Route = createFileRoute("/$owner/$repo/builds/$number")({
   component: BuildRoute,
 });
 
-type Build = NonNullable<FunctionReturnType<typeof api.builds.get>>;
-type SnapshotRow = FunctionReturnType<
-  typeof api.snapshots.list
->["page"][number];
-type Snapshot = NonNullable<FunctionReturnType<typeof api.snapshots.get>>;
 type ReviewAction = "approve" | "reject" | "undo";
 
 const GROUPS: { status: DiffStatus; label: string }[] = [
@@ -173,10 +148,10 @@ function BuildAccess({
     );
   }
   if (result.state === "not_found") {
-    return <NotFound title="Project not found." />;
+    return <BuildNotFound title="Project not found." />;
   }
   if (!build) {
-    return <NotFound title="Build not found." />;
+    return <BuildNotFound title="Build not found." />;
   }
   return (
     <BuildPage
@@ -209,16 +184,6 @@ function BuildSkeleton() {
         </div>
       </div>
     </>
-  );
-}
-
-function NotFound({ title }: { title: string }) {
-  return (
-    <div className="mx-auto w-full max-w-[1200px] px-6 max-sm:px-4">
-      <EmptyState title={title}>
-        It may not exist, or you do not have access to the repository on GitHub.
-      </EmptyState>
-    </div>
   );
 }
 
@@ -863,695 +828,5 @@ function FilterInput({
         )}
       </label>
     </div>
-  );
-}
-
-function MetaItem({
-  icon: IconComponent,
-  label,
-  children,
-}: {
-  icon: typeof GitBranchIcon;
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <span className="flex min-w-0 items-center gap-1.5" title={label}>
-      <IconComponent size={14} className="shrink-0 text-subtle" />
-      {children}
-    </span>
-  );
-}
-
-function BuildHeader({
-  build,
-  owner,
-  repo,
-  canWrite,
-  canReview,
-  onApproveAll,
-  onRejectAll,
-}: {
-  build: Build;
-  owner: string;
-  repo: string;
-  canWrite: boolean;
-  canReview: boolean;
-  onApproveAll: () => void;
-  onRejectAll: () => void;
-}) {
-  const github = `https://github.com/${owner}/${repo}`;
-  const nothingPending = !canReview || build.counts.pending === 0;
-
-  return (
-    <header className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-3 border-b border-border bg-surface px-4 py-3">
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <h1 className="flex min-w-0 items-baseline gap-2 text-lg font-semibold tracking-[-0.01em]">
-            <span className="shrink-0 text-muted tabular-nums">
-              #{build.number}
-            </span>
-            <span className="truncate">
-              {build.commitMessage || "No commit message"}
-            </span>
-          </h1>
-          <BuildStatePill
-            status={build.status}
-            conclusion={build.conclusion}
-            counts={build.counts}
-            shards={build.shards}
-          />
-          {build.superseded && <SupersededPill />}
-        </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-          <MetaItem icon={GitBranchIcon} label="Branch">
-            <Link
-              to="/$owner/$repo"
-              params={{ owner, repo }}
-              search={{ branch: build.branch }}
-              className="mono truncate text-text hover:text-link"
-            >
-              {build.branch}
-            </Link>
-          </MetaItem>
-          <MetaItem icon={GitCommitIcon} label="Commit">
-            <a
-              href={`${github}/commit/${build.commitSha}`}
-              className="mono hover:text-link"
-            >
-              {shortSha(build.commitSha)}
-            </a>
-          </MetaItem>
-          {build.prNumber !== null && (
-            <MetaItem icon={GitPullRequestIcon} label="Pull request">
-              <a
-                href={`${github}/pull/${build.prNumber}`}
-                className="tabular-nums hover:text-link"
-              >
-                #{build.prNumber}
-              </a>
-            </MetaItem>
-          )}
-          <MetaItem icon={ArrowsLeftRightIcon} label="Baseline">
-            {build.baseline === null ? (
-              "First build, no baseline"
-            ) : (
-              <span>
-                vs{" "}
-                <Link
-                  to="/$owner/$repo/builds/$number"
-                  params={{
-                    owner,
-                    repo,
-                    number: String(build.baseline.number),
-                  }}
-                  className="text-text tabular-nums hover:text-link"
-                >
-                  #{build.baseline.number}
-                </Link>{" "}
-                on <span className="mono">{build.baseline.branch}</span>
-              </span>
-            )}
-          </MetaItem>
-          <MetaItem icon={ClockIcon} label="Created">
-            <RelativeTime timestamp={build.createdAt} />
-          </MetaItem>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 empty:hidden max-sm:w-full">
-        {build.status !== "finalized" ? null : canWrite ? (
-          <>
-            <button
-              type="button"
-              className={`${buttonClass("danger")} max-sm:flex-1`}
-              disabled={nothingPending}
-              onClick={onRejectAll}
-            >
-              Reject build
-            </button>
-            <button
-              type="button"
-              className={`${buttonClass("primary")} max-sm:flex-1`}
-              disabled={nothingPending}
-              title="Approve all pending (shift+a)"
-              onClick={onApproveAll}
-            >
-              Approve all
-              {build.counts.pending > 0 && (
-                <span className="tabular-nums opacity-60">
-                  {formatCount(build.counts.pending)}
-                </span>
-              )}
-            </button>
-          </>
-        ) : (
-          <span className="text-xs text-muted">
-            You need write access on GitHub to review
-          </span>
-        )}
-      </div>
-    </header>
-  );
-}
-
-function Banners({
-  build,
-  owner,
-  repo,
-}: {
-  build: Build;
-  owner: string;
-  repo: string;
-}) {
-  const banners: {
-    key: string;
-    tone: string;
-    icon: ReactNode;
-    content: ReactNode;
-  }[] = [];
-  if (build.supersededBy !== null) {
-    banners.push({
-      key: "superseded",
-      tone: "bg-unchanged-bg",
-      icon: <InfoIcon size={16} className="text-unchanged" />,
-      content: (
-        <>
-          A newer build exists for this PR.{" "}
-          <Link
-            to="/$owner/$repo/builds/$number"
-            params={{ owner, repo, number: String(build.supersededBy) }}
-            className="font-medium text-link"
-          >
-            Open #{build.supersededBy}
-          </Link>
-        </>
-      ),
-    });
-  }
-  if (build.mergedPr !== null) {
-    const { mergedPr } = build;
-    banners.push({
-      key: "merged-pr",
-      tone: "bg-unchanged-bg",
-      icon: <GitPullRequestIcon size={16} className="text-unchanged" />,
-      content: (
-        <>
-          From PR{" "}
-          <a
-            href={`https://github.com/${owner}/${repo}/pull/${mergedPr.number}`}
-            className="font-medium text-link"
-          >
-            #{mergedPr.number}
-          </a>
-          {mergedPr.lastBuildNumber !== null && (
-            <>
-              . Its last build is{" "}
-              <Link
-                to="/$owner/$repo/builds/$number"
-                params={{
-                  owner,
-                  repo,
-                  number: String(mergedPr.lastBuildNumber),
-                }}
-                className="font-medium text-link"
-              >
-                #{mergedPr.lastBuildNumber}
-              </Link>
-            </>
-          )}
-          .
-        </>
-      ),
-    });
-  }
-  if (build.status === "pending") {
-    banners.push({
-      key: "pending",
-      tone: "bg-added-bg",
-      icon: <Spinner size={16} className="text-added" />,
-      content:
-        build.shards.total === null || build.shards.total === 1
-          ? "Waiting for screenshots. This page updates by itself."
-          : `Waiting for screenshots, ${build.shards.done} of ${build.shards.total} shards done. This page updates by itself.`,
-    });
-  }
-  if (build.status === "expired") {
-    banners.push({
-      key: "expired",
-      tone: "bg-unchanged-bg",
-      icon: <ClockIcon size={16} className="text-unchanged" />,
-      content: "This build never finished.",
-    });
-  }
-  if (build.status === "error") {
-    banners.push({
-      key: "error",
-      tone: "bg-failed-bg",
-      icon: <WarningIcon size={16} className="text-failed" />,
-      content: build.ciRunUrl ? (
-        <>
-          Upload failed.{" "}
-          <a href={build.ciRunUrl} className="font-medium text-link">
-            See CI logs
-          </a>
-        </>
-      ) : (
-        "Upload failed, see CI logs."
-      ),
-    });
-  }
-  if (banners.length === 0) {
-    return null;
-  }
-  return (
-    <div className="flex shrink-0 flex-col gap-2 border-b border-border bg-surface px-4 py-2">
-      {banners.map((banner) => (
-        <p
-          key={banner.key}
-          className={`flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-sm ${banner.tone}`}
-        >
-          <span className="shrink-0">{banner.icon}</span>
-          <span>{banner.content}</span>
-        </p>
-      ))}
-    </div>
-  );
-}
-
-function SnapshotGroup({
-  status,
-  label,
-  count,
-  open,
-  onToggle,
-  rows,
-  loading,
-  canLoadMore,
-  onLoadMore,
-  selectedId,
-  linkParams,
-  onSelect,
-}: {
-  status: DiffStatus;
-  label: string;
-  count: number;
-  open: boolean;
-  onToggle: () => void;
-  rows: SnapshotRow[];
-  loading: boolean;
-  canLoadMore: boolean;
-  onLoadMore: () => void;
-  selectedId: string | undefined;
-  linkParams: { owner: string; repo: string; number: string };
-  onSelect: () => void;
-}) {
-  const Caret = open ? CaretDownIcon : CaretRightIcon;
-  const StatusIcon = DIFF_ICONS[status];
-
-  return (
-    <div className="pt-2 first:pt-0">
-      <button
-        type="button"
-        aria-expanded={open}
-        className="group flex h-7 w-full items-center gap-1.5 rounded-sm px-2 text-xs font-medium text-muted hover:text-text"
-        onClick={onToggle}
-      >
-        <StatusIcon size={12} weight="bold" className={TONE_TEXT[status]} />
-        {label}
-        <span className="ml-auto flex items-center gap-1.5 font-normal tabular-nums">
-          {formatCount(count)}
-          <Caret size={12} className="text-subtle group-hover:text-muted" />
-        </span>
-      </button>
-      {open && (
-        <ul>
-          {rows.map((row) => (
-            <SnapshotRowLink
-              key={row.id}
-              row={row}
-              selected={row.id === selectedId}
-              linkParams={linkParams}
-              onSelect={onSelect}
-            />
-          ))}
-          {loading &&
-            Array.from({ length: Math.min(count, 4) }, (_, index) => ({
-              key: `${status}-${index}`,
-            })).map(({ key }) => (
-              <li key={key} className="flex h-8 items-center px-2">
-                <Skeleton className="h-3 w-40 rounded-xs" />
-              </li>
-            ))}
-        </ul>
-      )}
-      {open && canLoadMore && (
-        <button
-          type="button"
-          className="flex h-8 w-full items-center px-2 text-xs text-link hover:underline"
-          onClick={onLoadMore}
-        >
-          Load more
-        </button>
-      )}
-    </div>
-  );
-}
-
-function reviewTone(row: SnapshotRow) {
-  return row.reviewState === "none"
-    ? TONE_TEXT[row.diffStatus]
-    : TONE_TEXT[row.reviewState];
-}
-
-function SnapshotRowLink({
-  row,
-  selected,
-  linkParams,
-  onSelect,
-}: {
-  row: SnapshotRow;
-  selected: boolean;
-  linkParams: { owner: string; repo: string; number: string };
-  onSelect: () => void;
-}) {
-  const item = useRef<HTMLLIElement>(null);
-  useEffect(() => {
-    if (selected) {
-      item.current?.scrollIntoView({ block: "nearest" });
-    }
-  }, [selected]);
-  const Icon =
-    row.reviewState === "none"
-      ? DIFF_ICONS[row.diffStatus]
-      : REVIEW_ICONS[row.reviewState];
-  const reviewLabel =
-    row.reviewState === "none" ? "" : `, ${row.reviewState} review`;
-
-  return (
-    <li ref={item}>
-      <Link
-        to="/$owner/$repo/builds/$number/snapshots/$snapshotId"
-        params={{ ...linkParams, snapshotId: row.id }}
-        title={row.name}
-        aria-current={selected ? "page" : undefined}
-        aria-label={`${row.name}, ${row.diffStatus}${row.diffRatio === null ? "" : `, ${formatPercent(row.diffRatio)}`}${reviewLabel}`}
-        onClick={onSelect}
-        className={`relative flex h-8 items-center gap-2 rounded-sm px-2 text-sm transition-colors duration-100 hover:bg-hover ${
-          selected
-            ? "bg-hover before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-link"
-            : ""
-        }`}
-      >
-        <Icon
-          size={14}
-          weight={row.reviewState === "approved" ? "bold" : "regular"}
-          className={`shrink-0 ${reviewTone(row)}`}
-        />
-        <SnapshotName name={row.name} className="flex-1" />
-        {row.diffRatio !== null && (
-          <span className="shrink-0 text-xs text-muted tabular-nums">
-            {formatPercent(row.diffRatio)}
-          </span>
-        )}
-      </Link>
-    </li>
-  );
-}
-
-function SnapshotDetail({
-  owner,
-  repo,
-  build,
-  snapshotId,
-  settings,
-  canWrite,
-  canReview,
-  rejecting,
-  onStartReject,
-  onCancelReject,
-  onApprove,
-  onReject,
-  onUndo,
-  navigation,
-}: {
-  owner: string;
-  repo: string;
-  build: Build;
-  snapshotId: Id<"snapshots">;
-  settings: ViewerSettings;
-  canWrite: boolean;
-  canReview: boolean;
-  rejecting: boolean;
-  onStartReject: () => void;
-  onCancelReject: () => void;
-  onApprove: () => void;
-  onReject: (comment: string) => void;
-  onUndo: () => void;
-  navigation: ReactNode;
-}) {
-  const snapshot = useQuery(api.snapshots.get, {
-    owner,
-    name: repo,
-    number: build.number,
-    snapshotId,
-  });
-  if (snapshot === undefined) {
-    return (
-      <>
-        <div className="flex h-12 shrink-0 items-center gap-3 border-b border-border px-4">
-          <Skeleton className="h-3.5 w-56 rounded-xs" />
-        </div>
-        <div className="flex-1 bg-canvas p-4">
-          <Skeleton className="aspect-[16/10] w-full bg-surface" />
-        </div>
-      </>
-    );
-  }
-  if (snapshot === null) {
-    return <NotFound title="Snapshot not found." />;
-  }
-  const reviewable = canReview && snapshot.reviewState !== "none";
-
-  return (
-    <>
-      <Viewer
-        snapshot={snapshot}
-        settings={settings}
-        baselineLabel={
-          build.baseline === null
-            ? "Baseline"
-            : `Baseline #${build.baseline.number}`
-        }
-        newLabel={`New #${build.number}`}
-        navigation={navigation}
-      />
-      <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-4 py-2.5">
-        {rejecting ? (
-          <RejectForm onSubmit={onReject} onCancel={onCancelReject} />
-        ) : (
-          <>
-            <ReviewStatus snapshot={snapshot} />
-            {canWrite && reviewable && (
-              <div className="ml-auto flex items-center gap-2 max-sm:w-full">
-                {(snapshot.reviewState === "approved" ||
-                  snapshot.reviewState === "rejected") && (
-                  <button
-                    type="button"
-                    className={buttonClass("ghost")}
-                    onClick={onUndo}
-                  >
-                    <ArrowCounterClockwiseIcon size={14} />
-                    Undo
-                    <Kbd>u</Kbd>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className={`${buttonClass("danger")} max-sm:flex-1`}
-                  disabled={snapshot.reviewState === "rejected"}
-                  onClick={onStartReject}
-                >
-                  Reject
-                  <Kbd>r</Kbd>
-                </button>
-                <button
-                  type="button"
-                  className={`${buttonClass("primary")} max-sm:flex-1`}
-                  disabled={snapshot.reviewState === "approved"}
-                  onClick={onApprove}
-                >
-                  Approve
-                  <Kbd inverted>a</Kbd>
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-      {snapshot.history.length > 0 && (
-        <p className="flex shrink-0 flex-wrap items-center gap-x-2 border-t border-border px-4 py-2 text-xs text-muted">
-          <Link
-            to="/$owner/$repo/baselines/$"
-            params={{ owner, repo, _splat: snapshot.name }}
-            search={{
-              suite:
-                build.buildName === "default" ? undefined : build.buildName,
-            }}
-            className="hover:text-text"
-          >
-            History
-          </Link>
-          {snapshot.history.map((number) => (
-            <Link
-              key={number}
-              to="/$owner/$repo/builds/$number"
-              params={{ owner, repo, number: String(number) }}
-              className="text-link tabular-nums"
-            >
-              #{number}
-            </Link>
-          ))}
-        </p>
-      )}
-      <Details metadata={snapshot.metadata} />
-    </>
-  );
-}
-
-function ReviewStatus({ snapshot }: { snapshot: Snapshot }) {
-  const review = snapshot.lastReview;
-  if (snapshot.reviewState === "none") {
-    return (
-      <span className="text-xs text-muted">
-        Matches the baseline, no review needed
-      </span>
-    );
-  }
-  if (snapshot.reviewState === "pending" || review === null) {
-    return (
-      <span className="flex items-center gap-1.5 text-xs text-muted">
-        <REVIEW_ICONS.pending size={14} className="text-pending" />
-        Waiting for review
-        {snapshot.rejectedIn !== null &&
-          `, rejected in build #${snapshot.rejectedIn}`}
-      </span>
-    );
-  }
-  const Icon = REVIEW_ICONS[snapshot.reviewState];
-  const verb =
-    review.action === "approve"
-      ? "Approved"
-      : review.action === "reject"
-        ? "Rejected"
-        : "Review undone";
-  const carriedFrom = review.carriedFrom;
-  const who =
-    carriedFrom !== null
-      ? `in build #${carriedFrom.buildNumber}${carriedFrom.login === null ? "" : ` by @${carriedFrom.login}`} (carried over)`
-      : review.source === "orphan"
-        ? "as the first baseline"
-        : review.login === null
-          ? "automatically"
-          : `by @${review.login}`;
-  return (
-    <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted">
-      <Icon
-        size={14}
-        weight="bold"
-        className={`shrink-0 ${TONE_TEXT[snapshot.reviewState]}`}
-      />
-      <span className="truncate">
-        {verb} {who} <RelativeTime timestamp={review.createdAt} />
-        {review.comment && (
-          <span className="text-text">: {review.comment}</span>
-        )}
-        {snapshot.notReviewedOnPr && (
-          <span className="text-pending">, not reviewed on PR</span>
-        )}
-      </span>
-    </span>
-  );
-}
-
-function Details({ metadata }: { metadata: Record<string, unknown> }) {
-  const entries = Object.entries(metadata);
-  const [open, setOpen] = useState(false);
-  if (entries.length === 0) {
-    return null;
-  }
-  const Caret = open ? CaretDownIcon : CaretRightIcon;
-  return (
-    <footer className="shrink-0 border-t border-border text-xs">
-      <button
-        type="button"
-        aria-expanded={open}
-        className="flex h-8 w-full items-center gap-1.5 px-4 text-muted hover:text-text"
-        onClick={() => setOpen((value) => !value)}
-      >
-        <Caret size={12} />
-        Details
-        {!open && (
-          <span className="min-w-0 truncate text-subtle">
-            {entries
-              .map(([key, value]) => `${key} ${String(value)}`)
-              .join(", ")}
-          </span>
-        )}
-      </button>
-      {open && (
-        <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 px-4 pb-3 pl-[34px]">
-          {entries.map(([key, value]) => (
-            <div key={key} className="contents">
-              <dt className="text-muted">{key}</dt>
-              <dd className="mono truncate">{String(value)}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-    </footer>
-  );
-}
-
-function RejectForm({
-  onSubmit,
-  onCancel,
-}: {
-  onSubmit: (comment: string) => void;
-  onCancel: () => void;
-}) {
-  const [comment, setComment] = useState("");
-  const input = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    input.current?.focus();
-  }, []);
-  return (
-    <form
-      className="flex w-full items-center gap-2"
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSubmit(comment);
-      }}
-    >
-      <input
-        ref={input}
-        value={comment}
-        maxLength={500}
-        onChange={(event) => setComment(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            onCancel();
-          }
-        }}
-        placeholder="Why is this change wrong? (optional)"
-        aria-label="Reject comment"
-        className="h-8 min-w-0 flex-1 rounded-md bg-surface px-2.5 text-sm shadow-[inset_0_0_0_1px_var(--color-field-border)] transition-shadow duration-250 ease-standard outline-none placeholder:text-subtle focus:shadow-field-focus"
-      />
-      <button type="button" className={buttonClass("ghost")} onClick={onCancel}>
-        Cancel
-      </button>
-      <button type="submit" className={buttonClass("danger")}>
-        Reject
-      </button>
-    </form>
   );
 }
