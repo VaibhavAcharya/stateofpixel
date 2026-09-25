@@ -1,15 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { HeroChecks } from "../components/landing/HeroArt";
+import { CostSection, SpeedSection } from "../components/landing/Numbers";
 import { PricingPlans } from "../components/landing/Pricing";
 import {
   DemoSection,
   FaqList,
   FinalWithSnippet,
   HeroDescriptive,
-  HowFlow,
   HowSteps,
+  PipelinesSection,
   PublicPage,
-  StatusSection,
+  TeamSection,
   WhatWeDont,
 } from "../components/landing/sections";
 
@@ -31,12 +32,14 @@ function Home() {
     <PublicPage>
       <HeroDescriptive art={<HeroChecks />} />
       <DemoSection />
-      <HowFlow />
       <HowSteps />
+      <SpeedSection />
+      <TeamSection />
+      <PipelinesSection />
       <PricingPlans />
+      <CostSection />
       <WhatWeDont />
       <FaqList />
-      <StatusSection />
       <FinalWithSnippet />
     </PublicPage>
   );

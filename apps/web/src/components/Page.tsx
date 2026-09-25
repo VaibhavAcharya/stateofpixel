@@ -11,11 +11,13 @@ export function Page({ children }: { children: ReactNode }) {
 export function PageHeader({
   title,
   leading,
+  above,
   meta,
   actions,
 }: {
   title: ReactNode;
   leading?: ReactNode;
+  above?: ReactNode;
   meta?: ReactNode;
   actions?: ReactNode;
 }) {
@@ -24,6 +26,7 @@ export function PageHeader({
       <div className="flex min-w-0 items-center gap-3">
         {leading}
         <div className="flex min-w-0 flex-col">
+          {above && <div className="text-xs text-muted">{above}</div>}
           <h1 className="truncate text-xl font-semibold tracking-[-0.025em]">
             {title}
           </h1>

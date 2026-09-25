@@ -1,27 +1,29 @@
-import { ArrowRightIcon, CaretDownIcon } from "@phosphor-icons/react/ssr";
+import {
+  ArrowRightIcon,
+  CaretDownIcon,
+  GearSixIcon,
+  TerminalWindowIcon,
+} from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import { SUPPORT_EMAIL } from "../../lib/supportEmail";
+import checkoutTest from "../../snippets/checkout-test.ts?highlight";
 import local from "../../snippets/local.sh?highlight";
 import otherCi from "../../snippets/other-ci.sh?highlight";
+import playwrightConfig from "../../snippets/playwright.config.ts?highlight";
+import storybook from "../../snippets/storybook.yml?highlight";
 import workflow from "../../snippets/workflow.yml?highlight";
-import { CodeBlock } from "../CodeBlock";
+import { CodeBlock, type Snippet } from "../CodeBlock";
 import { AuthButton } from "../SignIn";
 import { buttonClass, Kbd, LeadCopy, Wordmark } from "../ui";
 import { ReviewDemo } from "./ReviewDemo";
 
-const WIDE = "mx-auto max-w-[1448px] px-6 max-sm:px-4";
-const SECTION = `${WIDE} py-24 max-sm:py-12`;
+export const WIDE = "mx-auto max-w-[1448px] px-6 max-sm:px-4";
+export const SECTION = `${WIDE} py-24 max-sm:py-12`;
 const LEAD =
   "text-2xl font-[450] tracking-[-0.035em] text-balance text-muted max-sm:text-xl";
-const DISPLAY =
+export const DISPLAY =
   "text-[clamp(40px,4.6vw,66px)] leading-[1.1] font-semibold tracking-[-0.045em] text-balance";
-
-const CLI_OUTPUT = `$ npx stateofpixel upload screenshots
-stateofpixel  build #412  pricing-cards vs main (#409)
-  219 snapshots  214 unchanged  4 changed  1 added  0 removed
-  uploaded 9 images (0.1 MB) in 1.9 s
-  review: https://stateofpixel.com/acme/web/builds/412`;
 
 /* Header */
 
@@ -136,97 +138,68 @@ function DemoKeys() {
   );
 }
 
-/* How it works */
+/* Setup */
 
-const LANES: { title: string; where: string; items: string[] }[] = [
-  {
-    title: "Your runner",
-    where: "GitHub Actions or any CI",
-    items: [
-      "Renders screenshots with your browser and fonts",
-      "Hashes every PNG with SHA-256",
-      "Diffs changed images with odiff",
-    ],
-  },
-  {
-    title: "stateofpixel",
-    where: "Stores bytes, never renders",
-    items: [
-      "Picks the baseline from your git history",
-      "Answers which hashes it has not seen",
-      "Stores only those images and their diffs",
-    ],
-  },
-  {
-    title: "GitHub",
-    where: "Checks write, pull requests read",
-    items: [
-      "Check run on the commit, linked to the review",
-      "Action required while changes wait",
-      "Success when every change is approved",
-    ],
-  },
-];
-
-export function HowFlow() {
-  return (
-    <section id="how" className={`${SECTION} scroll-mt-16`}>
-      <LeadCopy
-        title="Your code never leaves your runner."
-        className="max-w-[720px]"
-      >
-        Only PNGs, their names and the commit go over the wire. Unchanged
-        screenshots cost one hash in a JSON body.
-      </LeadCopy>
-      <div className="mt-12 grid grid-cols-3 max-md:grid-cols-1">
-        {LANES.map((lane, index) => (
-          <div
-            key={lane.title}
-            className="relative border-dotted border-field-border/50 py-6 pr-8 md:not-first:pl-8 md:not-last:border-r max-md:border-b"
-          >
-            <p className="text-2xs font-medium text-muted uppercase tracking-wide tabular-nums">
-              0{index + 1}
-            </p>
-            <h3 className="mt-2 text-lg font-semibold tracking-[-0.01em]">
-              {lane.title}
-            </h3>
-            <p className="text-xs text-muted">{lane.where}</p>
-            <ul className="mt-4 flex flex-col gap-2 text-sm">
-              {lane.items.map((item) => (
-                <li key={item} className="flex gap-2">
-                  <span className="mt-2 size-1 shrink-0 rounded-full bg-text" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-      <figure className="mt-10 overflow-hidden rounded-md bg-surface-2 shadow-[inset_0_0_0_1px_var(--color-border)]">
-        <figcaption className="flex h-10 items-center border-b border-border px-4 text-xs text-muted">
-          CI log, for the demo build above
-        </figcaption>
-        <pre className="overflow-x-auto p-4 font-mono text-xs leading-[1.8]">
-          <code>{CLI_OUTPUT}</code>
-        </pre>
-      </figure>
-    </section>
-  );
+function Logo({ name }: { name: string }) {
+  return <img src={`/logos/${name}.svg`} alt="" width={14} height={14} />;
 }
 
+type SetupTab = {
+  label: string;
+  icon: ReactNode;
+  note: string;
+  blocks: { file: string; snippet: Snippet }[];
+};
+
+const SETUP_TABS = {
+  playwright: {
+    label: "Playwright",
+    icon: <Logo name="playwright" />,
+    note: "snapshot() waits for fonts, disables animations and hides the caret. The reporter uploads when the run ends, once per shard.",
+    blocks: [
+      { file: "playwright.config.ts", snippet: playwrightConfig },
+      { file: "tests/checkout.spec.ts", snippet: checkoutTest },
+    ],
+  },
+  storybook: {
+    label: "Storybook",
+    icon: <Logo name="storybook" />,
+    note: "Captures every story at each width, named like Button/Primary [chromium 1280]. Needs Playwright in the project.",
+    blocks: [{ file: ".github/workflows/visual.yml", snippet: storybook }],
+  },
+  actions: {
+    label: "GitHub Actions",
+    icon: <Logo name="github-actions" />,
+    note: "Point the CLI at the folder your tests write screenshots to. The file path becomes the snapshot name.",
+    blocks: [{ file: ".github/workflows/visual.yml", snippet: workflow }],
+  },
+  other: {
+    label: "Other CI",
+    icon: <GearSixIcon size={14} className="text-muted" />,
+    note: "Create a project token in the project settings and set it as STATEOFPIXEL_TOKEN.",
+    blocks: [{ file: "ci.sh", snippet: otherCi }],
+  },
+  local: {
+    label: "Local",
+    icon: <TerminalWindowIcon size={14} className="text-muted" />,
+    note: "Compare two folders on your machine and open an HTML report. No account needed.",
+    blocks: [{ file: "terminal", snippet: local }],
+  },
+} satisfies Record<string, SetupTab>;
+
+type SetupTabKey = keyof typeof SETUP_TABS;
+
 export function HowSteps() {
-  const [tab, setTab] = useState<"actions" | "other" | "local">("actions");
-  const snippet = { actions: workflow, other: otherCi, local }[tab];
-  const file = {
-    actions: ".github/workflows/visual.yml",
-    other: "ci.sh",
-    local: "terminal",
-  }[tab];
+  const [tab, setTab] = useState<SetupTabKey>("playwright");
+  const current: SetupTab = SETUP_TABS[tab];
   return (
-    <section className="border-y border-border bg-bg">
+    <section id="how" className="scroll-mt-16">
       <div className={`${SECTION} grid grid-cols-2 gap-16 max-lg:grid-cols-1`}>
         <div>
-          <LeadCopy title="Set up in three steps." className="max-w-[520px]">
+          <LeadCopy
+            title="Works with the tests you have."
+            className="max-w-[520px]"
+          >
             No token to copy on GitHub Actions. The first build on your default
             branch becomes the baseline.
           </LeadCopy>
@@ -237,8 +210,8 @@ export function HowSteps() {
                 "Pick the repositories. Each one becomes a project.",
               ],
               [
-                "Add one step after your tests",
-                "Point the CLI at the folder your tests write screenshots to.",
+                "Add the reporter or one CI step",
+                "Playwright, Storybook or any folder of PNGs.",
               ],
               [
                 "Open a pull request",
@@ -260,19 +233,13 @@ export function HowSteps() {
             ))}
           </ol>
         </div>
-        <div className="flex flex-col gap-3 lg:pt-2">
+        <div className="flex min-w-0 flex-col gap-3 lg:pt-2">
           <div
             role="tablist"
             aria-label="Where it runs"
-            className="flex gap-1 self-start rounded-control bg-surface-2 p-0.5"
+            className="flex flex-wrap gap-1 self-start rounded-control bg-surface-2 p-0.5"
           >
-            {(
-              [
-                ["actions", "GitHub Actions"],
-                ["other", "Other CI"],
-                ["local", "Local"],
-              ] as const
-            ).map(([value, label]) => (
+            {(Object.keys(SETUP_TABS) as SetupTabKey[]).map((value) => (
               <button
                 key={value}
                 type="button"
@@ -281,20 +248,122 @@ export function HowSteps() {
                 data-umami-event="Setup tab"
                 data-umami-event-tab={value}
                 onClick={() => setTab(value)}
-                className={`h-7 rounded-sm px-3 text-xs font-medium transition-colors duration-100 ${
+                className={`flex h-7 items-center gap-1.5 rounded-sm px-2.5 text-xs font-medium transition-colors duration-100 ${
                   tab === value
                     ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
                     : "text-muted hover:text-text"
                 }`}
               >
-                {label}
+                {SETUP_TABS[value].icon}
+                {SETUP_TABS[value].label}
               </button>
             ))}
           </div>
-          <CodeBlock fileName={file} {...snippet} />
+          {current.blocks.map((block) => (
+            <CodeBlock
+              key={block.file}
+              fileName={block.file}
+              {...block.snippet}
+            />
+          ))}
+          <p className="text-xs text-muted">{current.note}</p>
         </div>
       </div>
     </section>
+  );
+}
+
+const ACCESS: [string, string][] = [
+  ["Read", "See builds, baselines and snapshot history"],
+  ["Write", "Approve and reject changes"],
+  ["Admin", "Change project settings and tokens"],
+  ["Account owner", "Change the plan and billing"],
+];
+
+export function TeamSection() {
+  return (
+    <section
+      className={`${SECTION} grid grid-cols-[1fr_1.2fr] gap-12 max-lg:grid-cols-1`}
+    >
+      <LeadCopy title="Your team is already set up." className="max-w-[520px]">
+        Access comes from GitHub, so there are no invites and no seats to buy.
+        Remove someone from the repository and they lose access here within 5
+        minutes.
+      </LeadCopy>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-dotted border-field-border/50 text-left text-xs text-muted">
+            <th className="pb-3 font-medium">On GitHub</th>
+            <th className="pb-3 font-medium">On stateofpixel</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ACCESS.map(([role, can]) => (
+            <tr
+              key={role}
+              className="border-b border-dotted border-field-border/50"
+            >
+              <td className="py-4 pr-6 font-medium whitespace-nowrap">
+                {role}
+              </td>
+              <td className="py-4 text-muted">{can}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+const PIPELINES: [string, string][] = [
+  [
+    "Sharded suites",
+    "Each shard uploads its part, and the check reports once, after the last one. Use --shard 2/4, or --shard auto with a finalize step.",
+  ],
+  [
+    "New pushes and rebases",
+    "An image approved once on a pull request stays approved on the next push. A rejected image comes back as pending, with a note.",
+  ],
+  [
+    "Our outages",
+    "If stateofpixel is down or rate limited, the upload warns and exits 0. Pass --strict to fail instead.",
+  ],
+  [
+    "Running out of storage",
+    "The CLI warns at 80%. After 14 days over the limit, new images are not stored and the check turns neutral, so CI keeps passing.",
+  ],
+  [
+    "Large suites",
+    "Up to 20,000 snapshots a build. An unchanged screenshot costs one hash, not an upload.",
+  ],
+];
+
+export function PipelinesSection() {
+  return (
+    <section className={SECTION}>
+      <LeadCopy title="Made for real pipelines." className="max-w-[720px]">
+        Sharding, rebases, outages and limits are handled by default.
+      </LeadCopy>
+      <DottedRows items={PIPELINES} />
+    </section>
+  );
+}
+
+function DottedRows({ items }: { items: [string, string][] }) {
+  return (
+    <ul className="mt-12 border-t border-dotted border-field-border/50">
+      {items.map(([title, text]) => (
+        <li
+          key={title}
+          className="grid grid-cols-[minmax(0,420px)_1fr] gap-x-8 border-b border-dotted border-field-border/50 py-5 max-md:grid-cols-1"
+        >
+          <span className="text-xl font-semibold tracking-[-0.025em]">
+            {title}
+          </span>
+          <span className="text-sm text-muted md:pt-1.5">{text}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -322,19 +391,7 @@ export function WhatWeDont() {
       <LeadCopy title="What we don't do." className="max-w-[720px]">
         Every feature we skip is a cost we don't pass on.
       </LeadCopy>
-      <ul className="mt-12 border-t border-dotted border-field-border/50">
-        {items.map(([title, text]) => (
-          <li
-            key={title}
-            className="grid grid-cols-[minmax(0,420px)_1fr] gap-x-8 border-b border-dotted border-field-border/50 py-5 max-md:grid-cols-1"
-          >
-            <span className="text-xl font-semibold tracking-[-0.025em]">
-              {title}
-            </span>
-            <span className="text-sm text-muted md:pt-1.5">{text}</span>
-          </li>
-        ))}
-      </ul>
+      <DottedRows items={items} />
     </section>
   );
 }
@@ -349,6 +406,10 @@ const FAQ: [string, string][] = [
   [
     "What GitHub permissions does the app ask for?",
     "Checks write, to set the check. Pull requests read, for the PR number and base branch. Contents read, which GitHub requires for the compare API we use to find the baseline commit. Metadata read, which every app has.",
+  ],
+  [
+    "Who can approve changes?",
+    "Anyone with write access to the repository on GitHub. There are no seats, so the whole team can review.",
   ],
   [
     "Which test runners work?",
@@ -369,6 +430,10 @@ const FAQ: [string, string][] = [
   [
     "Is it open source?",
     "Not yet. The CLI and the server are closed source for now.",
+  ],
+  [
+    "What happens if I cancel a paid plan?",
+    "The plan stays until the end of the billing period. Then the account moves to the Free plan with 10 GB of storage.",
   ],
 ];
 
@@ -399,72 +464,6 @@ export function FaqList() {
         ))}
       </div>
     </section>
-  );
-}
-
-/* Status */
-
-const SHIPPED = [
-  "CLI upload with hash dedupe and local odiff diffs",
-  "GitHub App, OIDC sign-in for Actions, project tokens",
-  "Baselines from git history, auto-approve on main",
-  "Review page with four views and keyboard shortcuts",
-  "GitHub check runs",
-  "Sharding and a finalize command",
-  "Approval carry-over across rebases",
-  "Storybook capture command and Playwright reporter",
-];
-
-const NEXT = [
-  "Retention and a usage page",
-  "PR comment summary",
-  "Tokenless auth for fork PRs",
-  "Flaky snapshot detection",
-];
-
-export function StatusSection() {
-  return (
-    <section className={SECTION}>
-      <LeadCopy title="Early, and built in the open." className="max-w-[720px]">
-        stateofpixel tests itself: every pull request in our repo runs through
-        it. Here is where it stands.
-      </LeadCopy>
-      <div className="mt-12 grid grid-cols-2 gap-12 max-md:grid-cols-1">
-        <StatusList title="Shipped" items={SHIPPED} done />
-        <StatusList title="Next" items={NEXT} />
-      </div>
-    </section>
-  );
-}
-
-function StatusList({
-  title,
-  items,
-  done = false,
-}: {
-  title: string;
-  items: string[];
-  done?: boolean;
-}) {
-  return (
-    <div>
-      <h3 className="border-b border-dotted border-field-border/50 pb-3 text-sm font-medium text-muted">
-        {title}
-      </h3>
-      <ul>
-        {items.map((item) => (
-          <li
-            key={item}
-            className="flex items-center gap-3 border-b border-dotted border-field-border/50 py-3 text-sm"
-          >
-            <span
-              className={`size-2 shrink-0 rounded-full ${done ? "bg-approved" : "ring-1 ring-field-border ring-inset"}`}
-            />
-            {item}
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
 

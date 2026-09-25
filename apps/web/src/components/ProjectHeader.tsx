@@ -34,7 +34,7 @@ export function ProjectHeader({
     <>
       <PageHeader
         title={repo}
-        meta={
+        above={
           <Link to="/$owner" params={{ owner }} className="hover:text-text">
             {owner}
           </Link>

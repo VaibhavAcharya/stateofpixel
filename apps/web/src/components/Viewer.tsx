@@ -1,7 +1,21 @@
-import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react/ssr";
-import { type ReactNode, useState } from "react";
+import {
+  ArrowsLeftRightIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
+  CircleHalfIcon,
+  SquareSplitHorizontalIcon,
+  SwapIcon,
+} from "@phosphor-icons/react/ssr";
+import { type ReactElement, type ReactNode, useState } from "react";
 import { formatCount, formatPercent } from "../lib/format";
-import { type DiffStatus, DiffStatusPill, Kbd, SnapshotName } from "./ui";
+import {
+  type DiffStatus,
+  DiffStatusPill,
+  type Icon,
+  Kbd,
+  SnapshotName,
+  Tooltip,
+} from "./ui";
 
 export type ViewerMode = "side" | "diff" | "slider" | "flip";
 export type ViewerZoom = "fit" | "100" | "200";
@@ -22,12 +36,37 @@ export const MODES: {
   value: ViewerMode;
   label: string;
   shortLabel: string;
+  icon: Icon;
   key: string;
 }[] = [
-  { value: "side", label: "Side by side", shortLabel: "Side", key: "1" },
-  { value: "diff", label: "Diff", shortLabel: "Diff", key: "2" },
-  { value: "slider", label: "Slider", shortLabel: "Slider", key: "3" },
-  { value: "flip", label: "Flip", shortLabel: "Flip", key: "4" },
+  {
+    value: "side",
+    label: "Side by side",
+    shortLabel: "Side",
+    icon: SquareSplitHorizontalIcon,
+    key: "1",
+  },
+  {
+    value: "diff",
+    label: "Diff",
+    shortLabel: "Diff",
+    icon: CircleHalfIcon,
+    key: "2",
+  },
+  {
+    value: "slider",
+    label: "Slider",
+    shortLabel: "Slider",
+    icon: ArrowsLeftRightIcon,
+    key: "3",
+  },
+  {
+    value: "flip",
+    label: "Flip",
+    shortLabel: "Flip",
+    icon: SwapIcon,
+    key: "4",
+  },
 ];
 
 const ZOOMS: { value: ViewerZoom; label: string; key?: string }[] = [
@@ -97,57 +136,27 @@ export function Viewer({
           {navigation}
         </div>
       </div>
-      <div className="flex h-11 shrink-0 items-center gap-2 overflow-x-auto border-b border-border px-4">
+      <div className="flex min-h-11 shrink-0 flex-wrap items-center gap-2 border-b border-border px-4 py-1.5">
         {!single && (
-          <Segmented
-            label="View mode"
-            options={MODES.map(({ value, label, shortLabel, key }) => ({
-              value,
-              label,
-              shortLabel,
-              hint: key,
-            }))}
-            value={mode}
-            onChange={setMode}
-          />
-        )}
-        {!single && mode === "side" && snapshot.diffImage !== null && (
-          <ToggleButton
-            pressed={settings.sideDiff}
-            onClick={() => settings.setSideDiff(!settings.sideDiff)}
-          >
-            Diff
-            <Kbd>d</Kbd>
-          </ToggleButton>
-        )}
-        {!single && mode === "diff" && snapshot.diffImage !== null && (
-          <ToggleButton
-            pressed={settings.diffOnly}
-            onClick={() => settings.setDiffOnly(!settings.diffOnly)}
-          >
-            Diff only
-          </ToggleButton>
-        )}
-        {!single && mode === "flip" && (
-          <ToggleButton
-            pressed={settings.showBaseline}
-            onClick={() => settings.setShowBaseline(!settings.showBaseline)}
-          >
-            {settings.showBaseline ? "Showing baseline" : "Showing new"}
-            <Kbd>space</Kbd>
-          </ToggleButton>
+          <div className="flex min-w-0 flex-wrap items-center rounded-control bg-surface-2 p-0.5">
+            <Segmented
+              label="View mode"
+              options={MODES}
+              value={mode}
+              onChange={setMode}
+            />
+            <ModeSwitch settings={settings} snapshot={snapshot} />
+          </div>
         )}
         <div className="ml-auto max-sm:hidden">
-          <Segmented
-            label="Zoom"
-            options={ZOOMS.map(({ value, label, key }) => ({
-              value,
-              label,
-              hint: key,
-            }))}
-            value={zoom}
-            onChange={setZoom}
-          />
+          <div className="rounded-control bg-surface-2 p-0.5">
+            <Segmented
+              label="Zoom"
+              options={ZOOMS}
+              value={zoom}
+              onChange={setZoom}
+            />
+          </div>
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto bg-canvas p-4">
@@ -201,28 +210,96 @@ function Dimensions({
   );
 }
 
-function ToggleButton({
-  pressed,
-  onClick,
+function modeSwitch(settings: ViewerSettings, snapshot: ViewerSnapshot) {
+  if (settings.mode === "side" && snapshot.diffImage !== null) {
+    return {
+      label: "Diff overlay",
+      key: "d",
+      on: settings.sideDiff,
+      toggle: () => settings.setSideDiff(!settings.sideDiff),
+    };
+  }
+  if (settings.mode === "diff" && snapshot.diffImage !== null) {
+    return {
+      label: "Diff only",
+      key: undefined,
+      on: settings.diffOnly,
+      toggle: () => settings.setDiffOnly(!settings.diffOnly),
+    };
+  }
+  if (settings.mode === "flip") {
+    return {
+      label: "Show baseline",
+      key: "space",
+      on: settings.showBaseline,
+      toggle: () => settings.setShowBaseline(!settings.showBaseline),
+    };
+  }
+  return null;
+}
+
+function ModeSwitch({
+  settings,
+  snapshot,
+}: {
+  settings: ViewerSettings;
+  snapshot: ViewerSnapshot;
+}) {
+  const option = modeSwitch(settings, snapshot);
+  if (option === null) {
+    return null;
+  }
+  return (
+    <>
+      <span className="mx-1 h-4 w-px bg-field-border/50 max-sm:hidden" />
+      <KeyTooltip label={option.label} keyName={option.key}>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={option.on}
+          onClick={option.toggle}
+          className={`flex h-7 items-center gap-2 rounded-[9px] px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
+            option.on ? "text-text" : "text-muted hover:text-text"
+          }`}
+        >
+          <span
+            className={`relative h-4 w-7 shrink-0 rounded-full transition-colors duration-100 ${option.on ? "bg-accent" : "bg-field-border/60"}`}
+          >
+            <span
+              className={`absolute top-0.5 size-3 rounded-full bg-surface transition-[left] duration-100 ${option.on ? "left-3.5" : "left-0.5"}`}
+            />
+          </span>
+          {option.label}
+          {option.key && <KeyChip keyName={option.key} />}
+        </button>
+      </KeyTooltip>
+    </>
+  );
+}
+
+function KeyChip({ keyName }: { keyName: string }) {
+  return (
+    <span className="max-lg:hidden">
+      <Kbd>{keyName}</Kbd>
+    </span>
+  );
+}
+
+function KeyTooltip({
+  label,
+  keyName,
   children,
 }: {
-  pressed: boolean;
-  onClick: () => void;
-  children: ReactNode;
+  label: string;
+  keyName?: string;
+  children: ReactElement<{ "aria-describedby"?: string }>;
 }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={pressed}
-      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-control px-2.5 text-sm font-medium transition-colors duration-100 ${
-        pressed
-          ? "bg-surface-2 text-text"
-          : "text-muted hover:bg-hover hover:text-text"
-      }`}
-      onClick={onClick}
-    >
+  return keyName === undefined ? (
+    children
+  ) : (
+    <Tooltip label={`${label}, press ${keyName}`} className="lg:hidden">
       {children}
-    </button>
+    </Tooltip>
   );
 }
 
@@ -435,47 +512,45 @@ function Segmented<Value extends string>({
     value: Value;
     label: string;
     shortLabel?: string;
-    hint?: string;
+    icon?: Icon;
+    key?: string;
   }[];
   value: Value;
   onChange: (value: Value) => void;
 }) {
   return (
-    <fieldset
-      aria-label={label}
-      className="flex shrink-0 rounded-control bg-surface-2 p-0.5"
-    >
+    <fieldset aria-label={label} className="flex min-w-0 flex-wrap">
       {options.map((option) => {
         const active = option.value === value;
+        const OptionIcon = option.icon;
         return (
-          <button
+          <KeyTooltip
             key={option.value}
-            type="button"
-            aria-pressed={active}
-            title={
-              option.hint ? `${option.label} (${option.hint})` : option.label
-            }
-            className={`group flex h-7 items-center gap-1.5 rounded-[9px] px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
-              active
-                ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
-                : "text-muted hover:text-text"
-            }`}
-            onClick={() => onChange(option.value)}
+            label={option.label}
+            keyName={option.key}
           >
-            {option.shortLabel !== undefined ? (
-              <>
-                <span className="max-sm:hidden">{option.label}</span>
-                <span className="sm:hidden">{option.shortLabel}</span>
-              </>
-            ) : (
-              option.label
-            )}
-            {option.hint !== undefined && (
-              <span className="font-mono text-2xs font-normal text-subtle max-lg:hidden">
-                {option.hint}
-              </span>
-            )}
-          </button>
+            <button
+              type="button"
+              aria-pressed={active}
+              className={`flex h-7 items-center gap-1.5 rounded-[9px] px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
+                active
+                  ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
+                  : "text-muted hover:text-text"
+              }`}
+              onClick={() => onChange(option.value)}
+            >
+              {OptionIcon && <OptionIcon size={16} />}
+              {option.shortLabel !== undefined ? (
+                <>
+                  <span className="max-sm:hidden">{option.label}</span>
+                  <span className="sm:hidden">{option.shortLabel}</span>
+                </>
+              ) : (
+                option.label
+              )}
+              {option.key !== undefined && <KeyChip keyName={option.key} />}
+            </button>
+          </KeyTooltip>
         );
       })}
     </fieldset>
