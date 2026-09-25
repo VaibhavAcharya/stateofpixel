@@ -25,6 +25,7 @@ export const SHORTCUT_GROUPS: { title: string; items: [string, string[]][] }[] =
       title: "View",
       items: [
         ["Side by side, Diff, Slider, Flip", ["1", "2", "3", "4"]],
+        ["Diff overlay in Side by side", ["d"]],
         ["Toggle image in Flip mode", ["space"]],
         ["Fit / 100% zoom", ["f", "0"]],
       ],

@@ -2,17 +2,18 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import {
   ArrowRightIcon,
   GithubLogoIcon,
-  LockSimpleIcon,
   PlusIcon,
 } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAction } from "convex/react";
 import { ConvexError } from "convex/values";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useCallback, useEffect, useState } from "react";
 import { AppHeader, accountAvatar } from "../components/AppHeader";
+import { ListToolbar, SearchField } from "../components/ListControls";
 import { Page, PageHeader } from "../components/Page";
+import { ProjectTable } from "../components/ProjectTable";
 import { RequireAuth } from "../components/RequireAuth";
 import {
   Avatar,
@@ -21,8 +22,13 @@ import {
   SkeletonRows,
   Spinner,
 } from "../components/ui";
+import { validateProjectSearch } from "../lib/projectSearch";
+import { useListKeys } from "../lib/useListKeys";
 
-export const Route = createFileRoute("/install")({ component: Install });
+export const Route = createFileRoute("/install")({
+  validateSearch: validateProjectSearch,
+  component: Install,
+});
 
 function Install() {
   return (
@@ -37,9 +43,12 @@ function Accounts() {
   const accounts = useQuery(api.me.accounts);
   const installUrl = useQuery(api.me.installUrl);
   const refreshAccounts = useAction(api.me.refreshAccounts);
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
   const { signOut } = useAuthActions();
   const [refreshing, setRefreshing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  useListKeys();
 
   const refresh = useCallback(() => {
     setRefreshing(true);
@@ -127,10 +136,24 @@ function Accounts() {
           test.
         </EmptyState>
       )}
+      {accounts !== undefined && accounts.length > 0 && (
+        <ListToolbar>
+          <SearchField
+            value={search.q ?? ""}
+            onChange={(q) =>
+              void navigate({
+                search: (prev) => ({ ...prev, q: q || undefined }),
+                replace: true,
+              })
+            }
+            placeholder="Search projects"
+          />
+        </ListToolbar>
+      )}
       <div className="flex flex-col gap-10">
         {accounts?.map((account) => (
           <section key={account.login}>
-            <div className="flex h-10 items-center gap-2.5 border-b border-border">
+            <div className="mb-2 flex h-8 items-center gap-2.5">
               <Avatar src={accountAvatar(account.login)} size={20} square />
               <h2 className="text-sm font-medium">{account.login}</h2>
               {!account.installed && (
@@ -145,40 +168,14 @@ function Accounts() {
                 <ArrowRightIcon size={12} />
               </Link>
             </div>
-            {account.projects.length === 0 ? (
-              <p className="py-3 text-sm text-muted">
-                No repositories selected for this account.
-              </p>
-            ) : (
-              <ul>
-                {account.projects.map((project) => (
-                  <li
-                    key={project.name}
-                    className="border-b border-border text-sm"
-                  >
-                    <Link
-                      to="/$owner/$repo"
-                      params={{ owner: project.owner, repo: project.name }}
-                      className="group flex h-11 items-center gap-2 px-3 transition-colors duration-100 hover:bg-hover"
-                    >
-                      <span className="text-muted">{project.owner} /</span>
-                      <span className="font-medium">{project.name}</span>
-                      {project.private && (
-                        <LockSimpleIcon
-                          size={12}
-                          aria-label="Private"
-                          className="text-muted"
-                        />
-                      )}
-                      <ArrowRightIcon
-                        size={14}
-                        className="ml-auto text-subtle opacity-0 transition-opacity duration-100 group-hover:opacity-100"
-                      />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ProjectTable
+              login={account.login}
+              search={search}
+              onSearchChange={(next) =>
+                void navigate({ search: next, replace: true })
+              }
+              empty="No repositories selected for this account."
+            />
           </section>
         ))}
       </div>

@@ -571,6 +571,11 @@ function BuildPage({
         case "u":
           review("undo", current);
           break;
+        case "d":
+          if (settings.mode === "side") {
+            settings.setSideDiff(!settings.sideDiff);
+          }
+          break;
         case " ":
           if (settings.mode === "flip") {
             event.preventDefault();
@@ -658,7 +663,11 @@ function BuildPage({
               },
             )}
             {!hasSnapshots && (
-              <p className="px-2 py-3 text-sm text-muted">No snapshots yet.</p>
+              <p className="px-2 py-3 text-sm text-muted">
+                {build.status === "pending"
+                  ? "No snapshots yet."
+                  : "No snapshots."}
+              </p>
             )}
           </nav>
         </aside>
@@ -736,11 +745,19 @@ function NoSelection({
   if (waiting && build.counts.changed + build.counts.added === 0) {
     return (
       <div className="flex flex-1 flex-col items-start gap-6 overflow-y-auto p-8 max-sm:p-4">
-        <LeadCopy title="Nothing to review.">
-          {build.counts.unchanged === 1
-            ? "The snapshot matches the baseline."
-            : `All ${formatCount(build.counts.unchanged)} snapshots match the baseline.`}
-        </LeadCopy>
+        {build.counts.unchanged === 0 ? (
+          <LeadCopy title="No snapshots.">
+            {build.status === "expired"
+              ? "The upload never finished, so there is nothing to compare."
+              : "This build finished without any screenshots."}
+          </LeadCopy>
+        ) : (
+          <LeadCopy title="Nothing to review.">
+            {build.counts.unchanged === 1
+              ? "The snapshot matches the baseline."
+              : `All ${formatCount(build.counts.unchanged)} snapshots match the baseline.`}
+          </LeadCopy>
+        )}
         <button
           type="button"
           className={`${buttonClass()} lg:hidden`}

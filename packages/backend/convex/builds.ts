@@ -188,7 +188,10 @@ async function createBuild(
       args.fallbackBaselineBuildId,
     ));
   const number = project.nextBuildNumber;
-  await ctx.db.patch("projects", project._id, { nextBuildNumber: number + 1 });
+  await ctx.db.patch("projects", project._id, {
+    nextBuildNumber: number + 1,
+    lastBuildAt: Date.now(),
+  });
 
   const buildId = await ctx.db.insert("builds", {
     projectId: project._id,
@@ -873,33 +876,88 @@ function toBuildSummary(build: Doc<"builds">): Infer<typeof buildSummary> {
   };
 }
 
+export const buildFilter = v.union(
+  v.literal("to_review"),
+  v.literal("approved"),
+  v.literal("rejected"),
+  v.literal("no_changes"),
+  v.literal("pending"),
+  v.literal("expired"),
+  v.literal("error"),
+);
+
+const FILTER_MATCH: Record<
+  Infer<typeof buildFilter>,
+  {
+    status: Infer<typeof buildStatus>;
+    conclusion?: Infer<typeof buildConclusion>;
+  }
+> = {
+  to_review: { status: "finalized", conclusion: "changes" },
+  approved: { status: "finalized", conclusion: "approved" },
+  rejected: { status: "finalized", conclusion: "rejected" },
+  no_changes: { status: "finalized", conclusion: "no_changes" },
+  pending: { status: "pending" },
+  expired: { status: "expired" },
+  error: { status: "error" },
+};
+
 export const list = query({
   args: {
     owner: v.string(),
     name: v.string(),
     branch: v.optional(v.string()),
+    prNumber: v.optional(v.number()),
+    state: v.optional(buildFilter),
+    order: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
     paginationOpts: paginationOptsValidator,
   },
   returns: paginationResultValidator(buildSummary),
-  handler: async (ctx, { owner, name, branch, paginationOpts }) => {
-    const project = await findReadableProject(ctx, owner, name);
+  handler: async (ctx, args) => {
+    const project = await findReadableProject(ctx, args.owner, args.name);
     if (project === null) {
       return { page: [], isDone: true, continueCursor: "" };
     }
     const projectId = project._id;
-    const builds =
-      branch === undefined
-        ? ctx.db
-            .query("builds")
-            .withIndex("by_projectId_and_number", (q) =>
-              q.eq("projectId", projectId),
-            )
-        : ctx.db
-            .query("builds")
-            .withIndex("by_projectId_and_branch", (q) =>
+    const { branch, prNumber } = args;
+    const match = args.state === undefined ? null : FILTER_MATCH[args.state];
+    const builds = ctx.db.query("builds");
+    const indexed =
+      prNumber !== undefined
+        ? builds.withIndex("by_projectId_and_prNumber", (q) =>
+            q.eq("projectId", projectId).eq("prNumber", prNumber),
+          )
+        : branch !== undefined
+          ? builds.withIndex("by_projectId_and_branch", (q) =>
               q.eq("projectId", projectId).eq("branch", branch),
-            );
-    const page = await builds.order("desc").paginate(paginationOpts);
+            )
+          : match !== null
+            ? builds.withIndex(
+                "by_projectId_and_status_and_conclusion",
+                (q) => {
+                  const range = q
+                    .eq("projectId", projectId)
+                    .eq("status", match.status);
+                  return match.conclusion === undefined
+                    ? range
+                    : range.eq("conclusion", match.conclusion);
+                },
+              )
+            : builds.withIndex("by_projectId_and_number", (q) =>
+                q.eq("projectId", projectId),
+              );
+    const filtered = indexed.filter((q) =>
+      q.and(
+        branch === undefined ? true : q.eq(q.field("branch"), branch),
+        match === null ? true : q.eq(q.field("status"), match.status),
+        match?.conclusion === undefined
+          ? true
+          : q.eq(q.field("conclusion"), match.conclusion),
+      ),
+    );
+    const page = await filtered
+      .order(args.order ?? "desc")
+      .paginate(args.paginationOpts);
     return { ...page, page: page.page.map(toBuildSummary) };
   },
 });

@@ -13,7 +13,6 @@ import { syncInstallation } from "./installations";
 import { GithubError, listUserInstallations } from "./lib/github";
 
 const MAX_ACCOUNTS = 100;
-const MAX_PROJECTS_PER_ACCOUNT = 100;
 
 export const accounts = query({
   args: {},
@@ -22,13 +21,6 @@ export const accounts = query({
       login: v.string(),
       type: v.union(v.literal("user"), v.literal("org")),
       installed: v.boolean(),
-      projects: v.array(
-        v.object({
-          owner: v.string(),
-          name: v.string(),
-          private: v.boolean(),
-        }),
-      ),
     }),
   ),
   handler: async (ctx) => {
@@ -47,22 +39,10 @@ export const accounts = query({
       if (account === null) {
         continue;
       }
-      const projects = await ctx.db
-        .query("projects")
-        .withIndex("by_accountId", (q) => q.eq("accountId", account._id))
-        .take(MAX_PROJECTS_PER_ACCOUNT);
       result.push({
         login: account.login,
         type: account.type,
         installed: account.installationId !== undefined,
-        projects: projects
-          .filter((project) => project.archivedAt === undefined)
-          .map((project) => ({
-            owner: project.owner,
-            name: project.name,
-            private: project.private,
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name)),
       });
     }
     return result.sort((a, b) => a.login.localeCompare(b.login));

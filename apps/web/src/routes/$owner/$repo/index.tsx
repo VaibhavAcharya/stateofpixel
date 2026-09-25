@@ -1,15 +1,22 @@
 import {
   ArrowUpRightIcon,
   GitBranchIcon,
-  XIcon,
+  GitPullRequestIcon,
 } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { UsePaginatedQueryReturnType } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { usePaginatedQuery } from "convex-helpers/react/cache/hooks";
+import { type ReactNode, useCallback, useMemo } from "react";
 import { AppHeader } from "../../../components/AppHeader";
 import { CodeBlock } from "../../../components/CodeBlock";
+import { columnHelper, DataTable } from "../../../components/DataTable";
+import {
+  FilterChip,
+  ListToolbar,
+  SelectMenu,
+} from "../../../components/ListControls";
 import { Page, PageHeader } from "../../../components/Page";
 import { RequireAuth } from "../../../components/RequireAuth";
 import {
@@ -17,6 +24,7 @@ import {
   buttonClass,
   EmptyState,
   LeadCopy,
+  listRowLinkClass,
   RelativeTime,
   SkeletonRows,
   Spinner,
@@ -24,16 +32,56 @@ import {
 } from "../../../components/ui";
 import { shortSha } from "../../../lib/format";
 import { prefetchBuild } from "../../../lib/prefetch";
+import { useListKeys } from "../../../lib/useListKeys";
 import { useProjectAccess } from "../../../lib/useProjectAccess";
 
-type Search = { branch?: string };
+type BuildFilter =
+  | "to_review"
+  | "approved"
+  | "rejected"
+  | "no_changes"
+  | "pending"
+  | "expired"
+  | "error";
+
+type Search = {
+  branch?: string;
+  pr?: number;
+  state?: BuildFilter;
+  order?: "asc";
+};
 type BuildRow = FunctionReturnType<typeof api.builds.list>["page"][number];
 
+const PAGE_SIZE = 50;
+
+const STATE_OPTIONS: { value: BuildFilter | undefined; label: string }[] = [
+  { value: undefined, label: "All" },
+  { value: "to_review", label: "To review" },
+  { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
+  { value: "no_changes", label: "No changes" },
+  { value: "pending", label: "Pending" },
+  { value: "expired", label: "Expired" },
+  { value: "error", label: "Error" },
+];
+
+const STATES = STATE_OPTIONS.flatMap((option) =>
+  option.value === undefined ? [] : [option.value],
+);
+
 export const Route = createFileRoute("/$owner/$repo/")({
-  validateSearch: (search: Record<string, unknown>): Search =>
-    typeof search.branch === "string" && search.branch !== ""
-      ? { branch: search.branch }
-      : {},
+  validateSearch: (search: Record<string, unknown>): Search => {
+    const pr = Number(search.pr);
+    return {
+      branch:
+        typeof search.branch === "string" && search.branch !== ""
+          ? search.branch
+          : undefined,
+      pr: Number.isInteger(pr) && pr > 0 ? pr : undefined,
+      state: STATES.find((state) => state === search.state),
+      order: search.order === "asc" ? "asc" : undefined,
+    };
+  },
   loader: ({ context, params }) => prefetchBuild(context.convex, params),
   component: ProjectPage,
 });
@@ -72,12 +120,19 @@ function ProjectPage() {
 }
 
 function ProjectBuilds({ owner, repo }: { owner: string; repo: string }) {
-  const { branch } = Route.useSearch();
+  const search = Route.useSearch();
   const result = useProjectAccess(owner, repo);
   const builds = usePaginatedQuery(
     api.builds.list,
-    { owner, name: repo, branch },
-    { initialNumItems: 50 },
+    {
+      owner,
+      name: repo,
+      branch: search.branch,
+      prNumber: search.pr,
+      state: search.state,
+      order: search.order,
+    },
+    { initialNumItems: PAGE_SIZE },
   );
   if (result.state === "loading") {
     return <SkeletonRows />;
@@ -93,6 +148,125 @@ function ProjectBuilds({ owner, repo }: { owner: string; repo: string }) {
   return <BuildsTable builds={builds} owner={owner} repo={repo} />;
 }
 
+const helper = columnHelper<BuildRow>();
+
+function useBuildColumns({
+  owner,
+  repo,
+  showBuildName,
+  onFilter,
+}: {
+  owner: string;
+  repo: string;
+  showBuildName: boolean;
+  onFilter: (search: Search) => void;
+}) {
+  return useMemo(
+    () =>
+      helper.columns([
+        helper.accessor("number", {
+          header: "Build",
+          sortDescFirst: true,
+          meta: { className: "w-24 font-medium tabular-nums" },
+          cell: ({ row }) => (
+            <Link
+              to="/$owner/$repo/builds/$number"
+              params={{ owner, repo, number: String(row.original.number) }}
+              data-list-row
+              className={listRowLinkClass}
+            >
+              <span className="text-muted">#</span>
+              {row.original.number}
+            </Link>
+          ),
+        }),
+        helper.display({
+          id: "status",
+          header: "Status",
+          meta: { className: "w-48" },
+          cell: ({ row }) => (
+            <span className="flex items-center gap-1.5">
+              <BuildStatePill
+                status={row.original.status}
+                conclusion={row.original.conclusion}
+                counts={row.original.counts}
+                shards={row.original.shards}
+              />
+              {row.original.superseded && <SupersededPill />}
+            </span>
+          ),
+        }),
+        helper.display({
+          id: "branch",
+          header: "Branch",
+          meta: { className: "w-52 max-lg:w-40" },
+          cell: ({ row }) => (
+            <FilterButton
+              title={`Show builds on ${row.original.branch}`}
+              onClick={() => onFilter({ branch: row.original.branch })}
+            >
+              <span className="mono truncate">
+                {row.original.branch || "(no branch)"}
+              </span>
+            </FilterButton>
+          ),
+        }),
+        helper.display({
+          id: "commit",
+          header: "Commit",
+          meta: { className: "max-md:hidden" },
+          cell: ({ row }) => (
+            <span className="flex min-w-0 items-baseline gap-2">
+              <span className="truncate">
+                {row.original.commitMessage || "No commit message"}
+              </span>
+              <span className="mono shrink-0 text-muted">
+                {shortSha(row.original.commitSha)}
+              </span>
+            </span>
+          ),
+        }),
+        ...(showBuildName
+          ? [
+              helper.display({
+                id: "name",
+                header: "Name",
+                meta: { className: "w-32 truncate text-muted max-lg:hidden" },
+                cell: ({ row }) => row.original.buildName,
+              }),
+            ]
+          : []),
+        helper.display({
+          id: "pr",
+          header: "PR",
+          meta: { className: "w-20 max-md:hidden" },
+          cell: ({ row }) => {
+            const pr = row.original.prNumber;
+            return (
+              pr !== null && (
+                <FilterButton
+                  title={`Show builds for pull request #${pr}`}
+                  onClick={() => onFilter({ pr })}
+                >
+                  <span className="tabular-nums">#{pr}</span>
+                </FilterButton>
+              )
+            );
+          },
+        }),
+        helper.display({
+          id: "created",
+          header: "Created",
+          meta: { className: "w-32 text-right text-muted" },
+          cell: ({ row }) => (
+            <RelativeTime timestamp={row.original.createdAt} />
+          ),
+        }),
+      ]),
+    [owner, repo, showBuildName, onFilter],
+  );
+}
+
 function BuildsTable({
   builds: { results, status, loadMore },
   owner,
@@ -102,110 +276,79 @@ function BuildsTable({
   owner: string;
   repo: string;
 }) {
-  const { branch } = Route.useSearch();
+  const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const showBuildName =
-    new Set(results.map((build) => build.buildName)).size > 1;
-  const filterBranch = (value: string) =>
-    void navigate({ search: { branch: value } });
+  useListKeys();
+  const update = useCallback(
+    (next: Search) =>
+      void navigate({ search: (prev) => ({ ...prev, ...next }) }),
+    [navigate],
+  );
+  const columns = useBuildColumns({
+    owner,
+    repo,
+    showBuildName: new Set(results.map((build) => build.buildName)).size > 1,
+    onFilter: update,
+  });
+  const filtered =
+    search.branch !== undefined ||
+    search.pr !== undefined ||
+    search.state !== undefined;
 
   if (status === "LoadingFirstPage") {
     return <SkeletonRows />;
   }
-  if (results.length === 0 && branch === undefined) {
+  if (results.length === 0 && !filtered) {
     return <SetupCard />;
   }
 
   return (
     <>
-      {branch !== undefined && (
-        <div className="mb-4 flex items-center gap-2">
-          <span className="inline-flex h-7 items-center gap-1.5 rounded-sm bg-surface pr-1 pl-2 text-xs shadow-[inset_0_0_0_1px_var(--color-border)]">
-            <GitBranchIcon size={14} className="text-muted" />
-            <span className="text-muted">Branch</span>
-            <span className="mono max-w-60 truncate">{branch}</span>
-            <button
-              type="button"
-              aria-label="Clear branch filter"
-              className={buttonClass("ghost", "icon-sm")}
-              onClick={() => void navigate({ search: {} })}
-            >
-              <XIcon size={12} />
-            </button>
-          </span>
-        </div>
-      )}
-      <table className="w-full table-fixed text-sm max-sm:hidden">
-        <thead>
-          <tr className="h-8 border-b border-border text-left text-2xs font-medium text-muted">
-            <th className="w-20 px-3 font-medium">Build</th>
-            <th className="w-48 px-3 font-medium">Status</th>
-            <th className="w-52 px-3 font-medium max-lg:w-40">Branch</th>
-            <th className="px-3 font-medium max-md:hidden">Commit</th>
-            {showBuildName && (
-              <th className="w-32 px-3 font-medium max-lg:hidden">Name</th>
-            )}
-            <th className="w-20 px-3 font-medium max-md:hidden">PR</th>
-            <th className="w-32 px-3 text-right font-medium">Created</th>
-          </tr>
-        </thead>
-        <tbody>
-          {results.map((build) => (
-            <tr
-              key={build.number}
-              className="relative h-11 border-b border-border transition-colors duration-100 hover:bg-hover"
-            >
-              <td className="px-3 font-medium tabular-nums">
-                <Link
-                  to="/$owner/$repo/builds/$number"
-                  params={{ owner, repo, number: String(build.number) }}
-                  className="after:absolute after:inset-0"
-                >
-                  #{build.number}
-                </Link>
-              </td>
-              <td className="px-3">
-                <span className="flex items-center gap-1.5">
-                  <BuildStatePill
-                    status={build.status}
-                    conclusion={build.conclusion}
-                    counts={build.counts}
-                    shards={build.shards}
-                  />
-                  {build.superseded && <SupersededPill />}
-                </span>
-              </td>
-              <td className="px-3">
-                <BranchButton
-                  branch={build.branch}
-                  onClick={() => filterBranch(build.branch)}
-                />
-              </td>
-              <td className="px-3 max-md:hidden">
-                <span className="flex min-w-0 items-baseline gap-2">
-                  <span className="truncate">
-                    {build.commitMessage || "No commit message"}
-                  </span>
-                  <span className="mono shrink-0 text-muted">
-                    {shortSha(build.commitSha)}
-                  </span>
-                </span>
-              </td>
-              {showBuildName && (
-                <td className="truncate px-3 text-muted max-lg:hidden">
-                  {build.buildName}
-                </td>
-              )}
-              <td className="px-3 max-md:hidden">
-                <PrLink owner={owner} repo={repo} prNumber={build.prNumber} />
-              </td>
-              <td className="px-3 text-right text-muted">
-                <RelativeTime timestamp={build.createdAt} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <ListToolbar>
+        <SelectMenu
+          label="State"
+          value={search.state}
+          options={STATE_OPTIONS}
+          onChange={(state) => update({ state })}
+        />
+        {search.branch !== undefined && (
+          <FilterChip
+            icon={<GitBranchIcon size={14} />}
+            label="Branch"
+            value={search.branch}
+            mono
+            onClear={() => update({ branch: undefined })}
+          />
+        )}
+        {search.pr !== undefined && (
+          <FilterChip
+            icon={<GitPullRequestIcon size={14} />}
+            label="Pull request"
+            value={`#${search.pr}`}
+            onClear={() => update({ pr: undefined })}
+          />
+        )}
+        {filtered && (
+          <button
+            type="button"
+            className={buttonClass("ghost")}
+            onClick={() => void navigate({ search: { order: search.order } })}
+          >
+            Clear filters
+          </button>
+        )}
+      </ListToolbar>
+      <div className="max-sm:hidden">
+        <DataTable
+          columns={columns}
+          data={results}
+          getRowId={(build) => String(build.number)}
+          sorting={[{ id: "number", desc: search.order !== "asc" }]}
+          onSortingChange={([next]) =>
+            update({ order: next?.desc === false ? "asc" : undefined })
+          }
+        />
+      </div>
       <ul className="border-t border-border sm:hidden">
         {results.map((build) => (
           <MobileBuildRow
@@ -217,14 +360,16 @@ function BuildsTable({
         ))}
       </ul>
       {results.length === 0 && (
-        <p className="py-6 text-sm text-muted">No builds on this branch.</p>
+        <p className="py-6 text-sm text-muted">
+          No builds match these filters.
+        </p>
       )}
       {status === "CanLoadMore" && (
         <div className="mt-6 flex justify-center">
           <button
             type="button"
             className={buttonClass()}
-            onClick={() => loadMore(50)}
+            onClick={() => loadMore(PAGE_SIZE)}
           >
             Load more
           </button>
@@ -239,44 +384,24 @@ function BuildsTable({
   );
 }
 
-function BranchButton({
-  branch,
+function FilterButton({
+  title,
   onClick,
+  children,
 }: {
-  branch: string;
+  title: string;
   onClick: () => void;
+  children: ReactNode;
 }) {
   return (
     <button
       type="button"
-      title={`Show builds on ${branch}`}
+      title={title}
       className="relative z-10 flex max-w-full items-center rounded-xs text-left hover:text-link"
       onClick={onClick}
     >
-      <span className="mono truncate">{branch || "(no branch)"}</span>
+      {children}
     </button>
-  );
-}
-
-function PrLink({
-  owner,
-  repo,
-  prNumber,
-}: {
-  owner: string;
-  repo: string;
-  prNumber: number | null;
-}) {
-  if (prNumber === null) {
-    return <span className="text-subtle">-</span>;
-  }
-  return (
-    <a
-      href={`https://github.com/${owner}/${repo}/pull/${prNumber}`}
-      className="relative z-10 tabular-nums hover:text-link"
-    >
-      #{prNumber}
-    </a>
   );
 }
 
@@ -294,6 +419,7 @@ function MobileBuildRow({
       <Link
         to="/$owner/$repo/builds/$number"
         params={{ owner, repo, number: String(build.number) }}
+        data-list-row
         className="flex flex-col gap-1.5 py-3 active:bg-hover"
       >
         <span className="flex items-center gap-2">

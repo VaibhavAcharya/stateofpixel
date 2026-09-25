@@ -104,9 +104,16 @@ export default defineSchema({
     diffIncludeAA: v.boolean(),
     prRetentionDays: v.number(),
     nextBuildNumber: v.number(),
+    lastBuildAt: v.optional(v.number()),
     archivedAt: v.optional(v.number()),
   })
     .index("by_accountId", ["accountId"])
+    .index("by_accountId_and_name", ["accountId", "name"])
+    .index("by_accountId_and_lastBuildAt", ["accountId", "lastBuildAt"])
+    .searchIndex("search_name", {
+      searchField: "name",
+      filterFields: ["accountId"],
+    })
     .index("by_githubRepoId", ["githubRepoId"])
     .index("by_owner_and_name", ["owner", "name"]),
 
@@ -172,6 +179,12 @@ export default defineSchema({
       "prNumber",
     ])
     .index("by_projectId_and_branch", ["projectId", "branch"])
+    .index("by_projectId_and_prNumber", ["projectId", "prNumber"])
+    .index("by_projectId_and_status_and_conclusion", [
+      "projectId",
+      "status",
+      "conclusion",
+    ])
     .index("by_checkOutOfSync", ["checkOutOfSync"]),
 
   snapshots: defineTable({

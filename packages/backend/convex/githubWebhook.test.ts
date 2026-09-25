@@ -254,10 +254,14 @@ it("links a signed-in user to their installations", async () => {
       login: "acme",
       type: "org",
       installed: true,
-      projects: [
-        { owner: "acme", name: "design-system", private: false },
-        { owner: "acme", name: "web-app", private: true },
-      ],
     },
+  ]);
+  const projects = await user.query(api.accounts.projects, {
+    login: "acme",
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  expect(projects.page).toMatchObject([
+    { owner: "acme", name: "design-system", private: false },
+    { owner: "acme", name: "web-app", private: true },
   ]);
 });

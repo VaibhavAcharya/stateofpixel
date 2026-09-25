@@ -90,10 +90,18 @@ export function Pill({
   );
 }
 
+const DIFF_LABELS: Record<DiffStatus, string> = {
+  unchanged: "Unchanged",
+  changed: "Changed",
+  added: "Added",
+  removed: "Removed",
+  failed: "Failed",
+};
+
 export function DiffStatusPill({ status }: { status: DiffStatus }) {
   return (
     <Pill tone={status} icon={DIFF_ICONS[status]}>
-      {status}
+      {DIFF_LABELS[status]}
     </Pill>
   );
 }
@@ -113,7 +121,7 @@ export function BuildStatePill({
     return (
       <Pill tone="unchanged" icon={Spinner}>
         {shards.total === null || shards.total === 1
-          ? "waiting"
+          ? "Waiting"
           : `${shards.done} of ${shards.total} shards`}
       </Pill>
     );
@@ -121,14 +129,14 @@ export function BuildStatePill({
   if (status === "expired") {
     return (
       <Pill tone="unchanged" icon={ClockIcon}>
-        expired
+        Expired
       </Pill>
     );
   }
   if (status === "error") {
     return (
       <Pill tone="failed" icon={WarningIcon}>
-        error
+        Error
       </Pill>
     );
   }
@@ -136,13 +144,13 @@ export function BuildStatePill({
     case "no_changes":
       return (
         <Pill tone="unchanged" icon={EqualsIcon}>
-          no changes
+          No changes
         </Pill>
       );
     case "approved":
       return (
         <Pill tone="approved" icon={CheckIcon}>
-          approved
+          Approved
         </Pill>
       );
     case "rejected":
@@ -163,7 +171,7 @@ export function BuildStatePill({
 export function SupersededPill() {
   return (
     <span className="inline-flex h-5 shrink-0 items-center rounded-xs px-1.5 text-2xs font-medium text-muted shadow-[inset_0_0_0_1px_var(--color-border)]">
-      superseded
+      Superseded
     </span>
   );
 }
@@ -387,3 +395,9 @@ export function SnapshotName({
     </span>
   );
 }
+
+export const listRowClass =
+  "relative border-b border-border transition-colors duration-100 hover:bg-hover has-[[data-list-row]:focus-visible]:bg-hover";
+
+export const listRowLinkClass =
+  "after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:shadow-[inset_0_0_0_2px_var(--color-focus)]";

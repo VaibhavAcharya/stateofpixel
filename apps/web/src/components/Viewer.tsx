@@ -64,6 +64,7 @@ function useStoredState<Value extends string>(
 
 const MODE_VALUES = MODES.map((mode) => mode.value);
 const ZOOM_VALUES = ZOOMS.map((zoom) => zoom.value);
+const SWITCH_VALUES: ("on" | "off")[] = ["on", "off"];
 
 export function useViewerSettings() {
   const [mode, setMode] = useStoredState<ViewerMode>(
@@ -76,9 +77,16 @@ export function useViewerSettings() {
     "fit",
     ZOOM_VALUES,
   );
+  const [sideDiff, setSideDiff] = useStoredState(
+    "viewer-side-diff",
+    "on",
+    SWITCH_VALUES,
+  );
   const [showBaseline, setShowBaseline] = useState(false);
   const [diffOnly, setDiffOnly] = useState(false);
   return {
+    sideDiff: sideDiff === "on",
+    setSideDiff: (next: boolean) => setSideDiff(next ? "on" : "off"),
     mode,
     setMode,
     zoom,
@@ -144,6 +152,15 @@ export function Viewer({
             value={mode}
             onChange={setMode}
           />
+        )}
+        {!single && mode === "side" && snapshot.diffImage !== null && (
+          <ToggleButton
+            pressed={settings.sideDiff}
+            onClick={() => settings.setSideDiff(!settings.sideDiff)}
+          >
+            Diff
+            <Kbd>d</Kbd>
+          </ToggleButton>
         )}
         {!single && mode === "diff" && snapshot.diffImage !== null && (
           <ToggleButton
@@ -266,13 +283,18 @@ function Compare({
   baselineLabel: string;
   newLabel: string;
 }) {
-  const { mode, zoom, showBaseline, diffOnly } = settings;
+  const { mode, zoom, showBaseline, diffOnly, sideDiff } = settings;
 
   if (mode === "side") {
     return (
       <div className="grid grid-cols-2 items-start gap-4 max-md:grid-cols-1">
         <Frame image={baselineImage} zoom={zoom} caption={baselineLabel} />
-        <Frame image={image} zoom={zoom} caption={newLabel} />
+        <Frame
+          image={image}
+          zoom={zoom}
+          caption={newLabel}
+          overlay={sideDiff ? snapshot.diffImage : null}
+        />
       </div>
     );
   }

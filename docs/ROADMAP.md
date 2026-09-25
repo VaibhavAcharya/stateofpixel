@@ -48,16 +48,20 @@ Group 2: speed
 - [x] One round trip for project access and the page data on first visit
 
 Group 3: lists and viewer
-- [ ] Polish every list: projects, builds, accounts, sidebar
-- [ ] Diff overlay toggle in Side by side, on by default
+- [x] Polish every list: projects, builds, accounts, sidebar
+- [x] Diff overlay toggle in Side by side, on by default
+- [x] Sentence case pill labels
+- [x] Server-side sort, filter and pagination for projects and builds, on TanStack Table
 
 Group 4: landing
 - [x] Drop Playfair Display, one sans and one mono only
 - [ ] More sections, built to convert
+- [x] Logo as the favicon
+
+Group 5: marketing pages
 - [ ] Comparison pages against the alternatives
 - [ ] Brand section with the logo and its usage
 - [ ] Open Graph image per page
-- [x] Logo as the favicon
 
 ## M2: real-world CI
 

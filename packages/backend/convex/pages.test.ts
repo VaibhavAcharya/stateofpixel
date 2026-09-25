@@ -256,12 +256,6 @@ it("shows the account home only to members", async () => {
     login: "acme",
     installationSettingsUrl:
       "https://github.com/organizations/acme/settings/installations/10",
-    projects: [
-      {
-        name: "web-app",
-        latestBuild: { number: 2, branch: "feature", conclusion: "changes" },
-      },
-    ],
   });
   const strangerId = await t.run((ctx) =>
     ctx.db.insert("users", {
@@ -276,6 +270,99 @@ it("shows the account home only to members", async () => {
       .withIdentity({ subject: `${strangerId}|s` })
       .query(api.accounts.home, { login: "acme" }),
   ).toBeNull();
+  expect(
+    (
+      await t
+        .withIdentity({ subject: `${strangerId}|s` })
+        .query(api.accounts.projects, {
+          login: "acme",
+          paginationOpts: firstPage,
+        })
+    ).page,
+  ).toEqual([]);
+});
+
+it("sorts and searches account projects", async () => {
+  const { t, user, projectId } = await setup();
+  await t.run(async (ctx) => {
+    const project = await ctx.db.get("projects", projectId);
+    if (project === null) {
+      return;
+    }
+    await ctx.db.patch("projects", projectId, { lastBuildAt: 10 });
+    const { _id, _creationTime, ...fields } = project;
+    await ctx.db.insert("projects", {
+      ...fields,
+      githubRepoId: 101,
+      name: "docs-site",
+      lastBuildAt: 5,
+    });
+    await ctx.db.insert("projects", {
+      ...fields,
+      githubRepoId: 102,
+      name: "archived-app",
+      archivedAt: 1,
+    });
+  });
+  const names = async (args: {
+    search?: string;
+    sort?: "name" | "updated";
+    order?: "asc" | "desc";
+  }) =>
+    (
+      await user.query(api.accounts.projects, {
+        login: "acme",
+        paginationOpts: firstPage,
+        ...args,
+      })
+    ).page.map((project) => project.name);
+
+  expect(await names({})).toEqual(["docs-site", "web-app"]);
+  expect(await names({ order: "desc" })).toEqual(["web-app", "docs-site"]);
+  expect(await names({ sort: "updated" })).toEqual(["web-app", "docs-site"]);
+  expect(await names({ sort: "updated", order: "asc" })).toEqual([
+    "docs-site",
+    "web-app",
+  ]);
+  expect(await names({ search: "docs" })).toEqual(["docs-site"]);
+  const [webApp] = (
+    await user.query(api.accounts.projects, {
+      login: "acme",
+      search: "web",
+      paginationOpts: firstPage,
+    })
+  ).page;
+  expect(webApp).toMatchObject({
+    name: "web-app",
+    latestBuild: { number: 2, branch: "feature", conclusion: "changes" },
+  });
+});
+
+it("filters builds by state and pull request, in either order", async () => {
+  const { user, grant } = await setup();
+  await grant("read");
+  const numbers = async (args: {
+    state?: "to_review" | "approved" | "pending";
+    prNumber?: number;
+    branch?: string;
+    order?: "asc" | "desc";
+  }) =>
+    (
+      await user.query(api.builds.list, {
+        ...repo,
+        paginationOpts: firstPage,
+        ...args,
+      })
+    ).page.map((build) => build.number);
+
+  expect(await numbers({})).toEqual([2, 1]);
+  expect(await numbers({ order: "asc" })).toEqual([1, 2]);
+  expect(await numbers({ state: "to_review" })).toEqual([2]);
+  expect(await numbers({ state: "approved" })).toEqual([1]);
+  expect(await numbers({ state: "pending" })).toEqual([]);
+  expect(await numbers({ prNumber: 7 })).toEqual([2]);
+  expect(await numbers({ prNumber: 7, state: "approved" })).toEqual([]);
+  expect(await numbers({ branch: "main", state: "approved" })).toEqual([1]);
 });
 
 async function buildState(
