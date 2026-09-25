@@ -90,6 +90,8 @@ const DEMO_SNAPSHOTS: DemoSnapshot[] = [
 
 const UNCHANGED_COUNT = 214;
 
+const FIRST_INDEX = DEMO_SNAPSHOTS.findIndex(({ id }) => id === "signin");
+
 function snapshotAt(index: number) {
   const snapshot = DEMO_SNAPSHOTS[index];
   if (snapshot === undefined) {
@@ -104,7 +106,7 @@ function useDemoReview() {
   const [reviews, setReviews] = useState<Record<string, Review>>(() =>
     Object.fromEntries(DEMO_SNAPSHOTS.map(({ id }) => [id, "pending"])),
   );
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(FIRST_INDEX);
   const current = snapshotAt(index);
   const counts = { pending: 0, approved: 0, rejected: 0 };
   for (const state of Object.values(reviews)) {
@@ -148,7 +150,7 @@ function useDemoReview() {
     setReviews(
       Object.fromEntries(DEMO_SNAPSHOTS.map(({ id }) => [id, "pending"])),
     );
-    setIndex(0);
+    setIndex(FIRST_INDEX);
   };
 
   return {

@@ -55,7 +55,7 @@ Group 3: lists and viewer
 
 Group 4: landing
 - [x] Drop Playfair Display, one sans and one mono only
-- [ ] More sections, built to convert
+- [x] More sections, built to convert
 - [x] Logo as the favicon
 
 Group 5: marketing pages
