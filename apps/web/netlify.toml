@@ -2,6 +2,18 @@
   command = "pnpm --filter @stateofpixel/backend exec convex deploy --cmd 'pnpm --filter @stateofpixel/web build' --cmd-url-env-var-name VITE_CONVEX_URL"
   publish = "apps/web/dist/client"
 
+[context.deploy-preview]
+  command = "pnpm --filter @stateofpixel/web build"
+
+[context.deploy-preview.environment]
+  VITE_CONVEX_URL = "https://graceful-dogfish-423.convex.cloud"
+
+[context.branch-deploy]
+  command = "pnpm --filter @stateofpixel/web build"
+
+[context.branch-deploy.environment]
+  VITE_CONVEX_URL = "https://graceful-dogfish-423.convex.cloud"
+
 [dev]
   command = "pnpm dev"
   targetPort = 3000

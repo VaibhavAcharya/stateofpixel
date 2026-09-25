@@ -48,6 +48,14 @@ STATEOFPIXEL_API_URL=http://127.0.0.1:3211/api/v1 STATEOFPIXEL_TOKEN=sop_... \
 
 `upload` uses the GitHub Actions OIDC token when `id-token: write` is granted, else `STATEOFPIXEL_TOKEN`. Without `STATEOFPIXEL_API_URL` it talks to production. Run `upload --help` for flags.
 
+## Dogfooding
+
+`.github/workflows/visual.yml` captures `examples/playground/pages` with Playwright and uploads them to production with the workspace CLI, as build name `playground`. It authenticates with the GitHub Actions OIDC token.
+
+`scripts/test-pr.sh <scenario>` opens a draft PR that changes the playground in a known way and states the expected check. Scenarios: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`. It needs `gh` signed in.
+
+Netlify deploy previews and branch deploys build only the web app against the production Convex URL. Only production builds run `convex deploy`.
+
 ## Checks
 
 ```sh
