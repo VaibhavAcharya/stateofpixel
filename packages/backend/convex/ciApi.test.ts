@@ -706,6 +706,32 @@ it("retries a check that GitHub rejected", async () => {
   });
 });
 
+it("does not retry a check that GitHub cannot accept", async () => {
+  const { t } = await setup();
+  vi.stubGlobal("fetch", async (input: string | URL) => {
+    const { pathname } = new URL(input);
+    if (pathname.endsWith("/access_tokens")) {
+      return Response.json({ token: "ghs_installation" });
+    }
+    checkCalls.push({ method: "POST", path: pathname, body: {} });
+    return new Response("No commit found", { status: 422 });
+  });
+  const { created } = await runBuild(t, {
+    commit: "not-on-github",
+    images: [{ name: "Header", content: "header-v1" }],
+  });
+  const build = await t.run((ctx) =>
+    ctx.db.get("builds", created.buildId as Id<"builds">),
+  );
+  expect(build?.checkOutOfSync).toBe(false);
+
+  checkCalls = [];
+  vi.advanceTimersByTime(10 * 60 * 1000);
+  await t.mutation(internal.checks.retryOutOfSync, {});
+  await runDueJobs(t);
+  expect(checkCalls).toEqual([]);
+});
+
 it("re-sends the check when GitHub asks for it", async () => {
   const { t } = await setup();
   const { created } = await runBuild(t, {

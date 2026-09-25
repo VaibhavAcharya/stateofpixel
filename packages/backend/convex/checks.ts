@@ -11,6 +11,7 @@ import {
   type CheckRunFields,
   createCheckRun,
   createInstallationToken,
+  GithubError,
   updateCheckRun,
 } from "./lib/github";
 import { buildUrl } from "./lib/urls";
@@ -66,9 +67,10 @@ export const sync = internalAction({
         }
       }
     } catch (error) {
+      const rejected = error instanceof GithubError && error.status === 422;
       await ctx.runMutation(internal.checks.markSynced, {
         buildId,
-        version: null,
+        version: rejected ? state.version : null,
         checkRunId,
       });
       throw error;
