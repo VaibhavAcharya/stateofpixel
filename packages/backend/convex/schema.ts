@@ -96,6 +96,7 @@ export default defineSchema({
     storageBytes: v.number(),
     overLimitSince: v.optional(v.number()),
     billingCustomerId: v.optional(v.string()),
+    billingSubscriptionId: v.optional(v.string()),
     deletedAt: v.optional(v.number()),
   })
     .index("by_githubAccountId", ["githubAccountId"])

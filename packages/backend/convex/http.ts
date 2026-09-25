@@ -1,5 +1,6 @@
 import { httpRouter } from "convex/server";
 import { auth } from "./auth";
+import { webhook as handleDodoWebhook } from "./billing";
 import {
   buildAction,
   createBuild,
@@ -17,6 +18,12 @@ http.route({
   path: "/github/webhook",
   method: "POST",
   handler: handleGithubWebhook,
+});
+
+http.route({
+  path: "/dodo/webhook",
+  method: "POST",
+  handler: handleDodoWebhook,
 });
 
 http.route({

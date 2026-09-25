@@ -19,6 +19,7 @@
     "@convex-dev/rate-limiter": "^0.4.0",
     "convex": "^1.46.0",
     "convex-helpers": "0.1.124",
+    "dodopayments": "^2.51.0",
     "jose": "^6.2.12"
   },
   "devDependencies": {

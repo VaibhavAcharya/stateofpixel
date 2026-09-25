@@ -1,8 +1,13 @@
 import { CheckIcon } from "@phosphor-icons/react/ssr";
+import { api } from "@stateofpixel/backend/api";
+import { useConvexAuth } from "convex/react";
+import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useState } from "react";
 import { SUPPORT_EMAIL } from "../../lib/supportEmail";
+import { type PaidPlan, useBilling } from "../../lib/useBilling";
+import { Menu, MenuLabel, menuItemClass, useCloseMenu } from "../Menu";
 import { AuthButton } from "../SignIn";
-import { LeadCopy } from "../ui";
+import { Avatar, accountAvatar, buttonClass, LeadCopy } from "../ui";
 
 const SECTION = "mx-auto max-w-[1448px] px-6 py-24 max-sm:px-4 max-sm:py-12";
 
@@ -12,18 +17,22 @@ const YEARLY_DISCOUNT = 0.1;
 const FREE_GIGABYTES = 10;
 const LARGEST_GIGABYTES = 500;
 
-type Tier = { gigabytes: number; monthly: number };
+export type Tier = {
+  plan: "free" | PaidPlan;
+  gigabytes: number;
+  monthly: number;
+};
 
-const TIERS: Tier[] = [
-  { gigabytes: FREE_GIGABYTES, monthly: 0 },
-  { gigabytes: 25, monthly: 15 },
-  { gigabytes: 100, monthly: 100 },
-  { gigabytes: LARGEST_GIGABYTES, monthly: 500 },
+export const TIERS: Tier[] = [
+  { plan: "free", gigabytes: FREE_GIGABYTES, monthly: 0 },
+  { plan: "25gb", gigabytes: 25, monthly: 15 },
+  { plan: "100gb", gigabytes: 100, monthly: 100 },
+  { plan: "500gb", gigabytes: LARGEST_GIGABYTES, monthly: 500 },
 ];
 
-type Billing = "monthly" | "yearly";
+export type Billing = "monthly" | "yearly";
 
-function monthlyPrice(tier: Tier, billing: Billing) {
+export function monthlyPrice(tier: Tier, billing: Billing) {
   return billing === "yearly"
     ? tier.monthly * (1 - YEARLY_DISCOUNT)
     : tier.monthly;
@@ -183,7 +192,7 @@ function Range({
   );
 }
 
-function formatPrice(value: number) {
+export function formatPrice(value: number) {
   return Number.isInteger(value)
     ? money.format(value)
     : exactMoney.format(value);
@@ -282,14 +291,14 @@ function Comparison({
   );
 }
 
-function Footnote() {
+function Footnote({ available }: { available: boolean }) {
   return (
     <p className="mt-8 max-w-[90ch] text-xs text-muted">
       Chromatic and Argos monthly list prices from their pricing pages on 25
       September 2026, before tax. Their TurboSnap and Storybook rates can lower
       the count. Stored size counts each changed screenshot and its diff once;
-      re-runs of the same pull request upload nothing new. Paid plans are coming
-      soon.
+      re-runs of the same pull request upload nothing new.
+      {!available && " Paid plans are coming soon."}
     </p>
   );
 }
@@ -344,10 +353,12 @@ function TierCard({
   tier,
   billing,
   highlighted,
+  available,
 }: {
   tier: Tier;
   billing: Billing;
   highlighted: boolean;
+  available: boolean;
 }) {
   const free = tier.monthly === 0;
   const price = monthlyPrice(tier, billing);
@@ -357,7 +368,7 @@ function TierCard({
     >
       <p className="text-base font-semibold">
         {free ? "Free" : `${tier.gigabytes} GB`}
-        {!free && (
+        {!free && !available && (
           <span className="ml-2 text-xs font-medium opacity-70">
             Coming soon
           </span>
@@ -392,18 +403,95 @@ function TierCard({
           </li>
         ))}
       </ul>
-      {free && (
+      {free ? (
         <div className="mt-auto pt-6">
           <AuthButton label="Install the GitHub App" />
         </div>
+      ) : (
+        available &&
+        tier.plan !== "free" && (
+          <ChooseAccount
+            plan={tier.plan}
+            gigabytes={tier.gigabytes}
+            billing={billing}
+          />
+        )
       )}
     </div>
+  );
+}
+
+function ChooseAccount({
+  plan,
+  gigabytes,
+  billing,
+}: {
+  plan: PaidPlan;
+  gigabytes: number;
+  billing: Billing;
+}) {
+  const { isAuthenticated } = useConvexAuth();
+  const accounts = useQuery(api.me.accounts, isAuthenticated ? {} : "skip");
+  const checkout = useBilling();
+  const installed = accounts?.filter((account) => account.installed) ?? [];
+  if (installed.length === 0) {
+    return null;
+  }
+  return (
+    <div className="mt-auto pt-6">
+      <Menu
+        label={`Choose ${gigabytes} GB`}
+        triggerClassName={`${buttonClass()} w-full`}
+        trigger={
+          checkout.pending ? "Opening checkout" : `Choose ${gigabytes} GB`
+        }
+      >
+        <MenuLabel>For account</MenuLabel>
+        {installed.map((account) => (
+          <AccountItem
+            key={account.login}
+            login={account.login}
+            onChoose={() =>
+              void checkout.checkout(account.login, plan, billing)
+            }
+          />
+        ))}
+      </Menu>
+      {checkout.error !== null && (
+        <p className="mt-2 text-xs text-failed">{checkout.error}</p>
+      )}
+    </div>
+  );
+}
+
+function AccountItem({
+  login,
+  onChoose,
+}: {
+  login: string;
+  onChoose: () => void;
+}) {
+  const close = useCloseMenu();
+  return (
+    <button
+      type="button"
+      className={menuItemClass}
+      data-umami-event="Checkout"
+      onClick={() => {
+        close();
+        onChoose();
+      }}
+    >
+      <Avatar src={accountAvatar(login)} size={16} square />
+      {login}
+    </button>
   );
 }
 
 export function PricingPlans() {
   const { numbers, sliders } = usePricing();
   const [billing, setBilling] = useState<Billing>("monthly");
+  const available = useQuery(api.billing.available);
   return (
     <section id="pricing" className={`${SECTION} scroll-mt-16`}>
       <LeadCopy
@@ -422,6 +510,7 @@ export function PricingPlans() {
               tier={tier}
               billing={billing}
               highlighted={tier === (numbers.tier ?? null)}
+              available={available === true}
             />
           ))}
         </div>
@@ -444,7 +533,7 @@ export function PricingPlans() {
           <Comparison numbers={numbers} billing={billing} />
         </div>
       </div>
-      <Footnote />
+      <Footnote available={available === true} />
     </section>
   );
 }

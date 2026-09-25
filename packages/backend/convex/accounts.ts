@@ -91,6 +91,8 @@ export const home = query({
       type: v.union(v.literal("user"), v.literal("org")),
       installationSettingsUrl: v.union(v.string(), v.null()),
       storage: storageUsage,
+      subscribed: v.boolean(),
+      billingCustomer: v.boolean(),
     }),
   ),
   handler: async (ctx, { login }) => {
@@ -108,6 +110,8 @@ export const home = query({
             ? `https://github.com/organizations/${account.login}/settings/installations/${account.installationId}`
             : `https://github.com/settings/installations/${account.installationId}`,
       storage: toStorageUsage(account),
+      subscribed: account.billingSubscriptionId !== undefined,
+      billingCustomer: account.billingCustomerId !== undefined,
     };
   },
 });
@@ -145,18 +149,32 @@ export const setPlan = internalMutation({
     if (storageLimitBytes === undefined) {
       throw new Error("A custom plan needs storageLimitBytes");
     }
-    await ctx.db.patch("accounts", account._id, {
-      plan: args.plan,
-      storageLimitBytes,
-      ...withStorageBytes(
-        { ...account, storageLimitBytes },
-        account.storageBytes,
-        Date.now(),
-      ),
-    });
+    await ctx.db.patch(
+      "accounts",
+      account._id,
+      planFields(account, args.plan, storageLimitBytes),
+    );
     return null;
   },
 });
+
+export function planFields(
+  account: Doc<"accounts">,
+  plan: Doc<"accounts">["plan"],
+  storageLimitBytes: number = PLAN_STORAGE_LIMIT_BYTES[
+    plan as keyof typeof PLAN_STORAGE_LIMIT_BYTES
+  ],
+) {
+  return {
+    plan,
+    storageLimitBytes,
+    ...withStorageBytes(
+      { ...account, storageLimitBytes },
+      account.storageBytes,
+      Date.now(),
+    ),
+  };
+}
 
 export const projects = query({
   args: {

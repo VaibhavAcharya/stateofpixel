@@ -2,7 +2,7 @@
 
 Visual regression testing that runs in your CI. This README is for working on the repo. CLI usage is in [packages/cli/README.md](packages/cli/README.md).
 
-- [docs/PLAN.md](docs/PLAN.md): why we build it and how it works
+- [docs/PLAN.md](docs/PLAN.md): why we build it, the stack, costs and risks
 - [docs/SPEC.md](docs/SPEC.md): pages, tables, API, CLI and states in detail
 - [docs/DESIGN.md](docs/DESIGN.md): the design system
 - [docs/ROADMAP.md](docs/ROADMAP.md): what is done and what is next
@@ -31,18 +31,21 @@ pnpm dev
 
 | | Dev | Production |
 |---|---|---|
-| Convex deployment | your local deployment (`packages/backend/.env.local`) | `graceful-dogfish-423` |
+| Convex deployment | your cloud dev deployment (`packages/backend/.env.local`, pick it with `npx convex dev --configure`) | `graceful-dogfish-423` |
 | Web app | http://localhost:3000 | https://stateofpixel.com |
-| GitHub App callback URL | `http://127.0.0.1:3211/api/auth/callback/github` | `https://graceful-dogfish-423.convex.site/api/auth/callback/github` |
+| GitHub App callback URL | `https://<dev deployment>.convex.site/api/auth/callback/github` | `https://graceful-dogfish-423.convex.site/api/auth/callback/github` |
 | `SITE_URL` | `http://localhost:3000` | `https://stateofpixel.com` |
-| GitHub App webhook URL | not reachable from GitHub | `https://graceful-dogfish-423.convex.site/github/webhook` |
+| GitHub App webhook URL | not set, the app has one webhook URL | `https://graceful-dogfish-423.convex.site/github/webhook` |
 | GitHub App setup URL | | `https://stateofpixel.com/install` |
+| Dodo Payments | test mode, webhook `https://<dev deployment>.convex.site/dodo/webhook` | live mode, webhook `https://graceful-dogfish-423.convex.site/dodo/webhook` (not set up yet) |
 
 Both deployments need the same Convex env vars: `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`, `JWT_PRIVATE_KEY`, `JWKS`, `SITE_URL`, `GITHUB_APP_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_PRIVATE_KEY` (PKCS#8) and `GITHUB_WEBHOOK_SECRET`. Each deployment has its own JWT key pair. The `GITHUB_*` vars are declared in `convex/convex.config.ts`, so a push fails while any of them is missing. Compare them with `npx convex env list --names-only` and `npx convex env list --names-only --prod` in `packages/backend`.
 
 Production code deploys from Netlify: its build runs `convex deploy` with `CONVEX_DEPLOY_KEY`, then builds the web app.
 
-Until billing ships, change an account's plan from `packages/backend`:
+Paid plans come from Dodo Payments (SPEC section 8, Billing). Each deployment needs `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_SECRET` (the signing secret of its Dodo webhook) and `DODO_PAYMENTS_ENVIRONMENT` (`test_mode` or `live_mode`). These vars are optional in `convex.config.ts`, so a deployment without them still pushes; the pricing section then shows paid plans as coming soon, and billing throws `billing_not_configured`.
+
+To set a plan by hand, for example `custom`, run from `packages/backend`:
 
 ```sh
 npx convex run --prod accounts:setPlan '{"login":"acme","plan":"25gb"}'
@@ -63,7 +66,7 @@ Without `STATEOFPIXEL_API_URL` it talks to production.
 
 ## Dogfooding
 
-`.github/workflows/visual.yml` uploads three builds to production with the workspace CLI, authenticated with the GitHub Actions OIDC token:
+`.github/workflows/visual.yml` runs on every PR and uploads three builds to production with the workspace CLI, authenticated with the GitHub Actions OIDC token. So every PR also tests the CLI it changes, and a PR that changes the backend is tested by the old production backend, which keeps the CI API backward compatible:
 
 - `playground`: `examples/playground/pages`, captured by `pnpm --filter @stateofpixel/playground capture`
 - `storybook`: the playground stories, built with `pnpm --filter @stateofpixel/playground build-storybook` and captured with `stateofpixel storybook`

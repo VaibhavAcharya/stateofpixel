@@ -1,6 +1,6 @@
 # stateofpixel: product spec
 
-Companion to [PLAN.md](./PLAN.md). PLAN.md says why and how; this file says exactly what: pages, tables, API, CLI, states and flows. Items marked (proposal) are defaults that are not final. Items marked (unverified) need a check against GitHub or Convex docs before we build on them.
+Companion to [PLAN.md](./PLAN.md). PLAN.md says why; this file says exactly what: pages, tables, API, CLI, states and flows. Items marked (proposal) are defaults that are not final. Items marked (unverified) need a check against GitHub or Convex docs before we build on them.
 
 Stack: pnpm monorepo, TanStack Start on Netlify, Convex for database, auth (Convex Auth) and file storage. See the [README](../README.md) for the repo layout and dogfooding.
 
@@ -206,7 +206,7 @@ A re-run of a failed CI job gets a new `GITHUB_RUN_ATTEMPT`, so it creates a fre
 1. Account reaches 80% of its storage limit. Account and project pages show a yellow banner to members with write access. The CLI prints a warning line.
 2. At 100%, a 14-day grace period starts and `overLimitSince` is set. Everything keeps working, banner turns red and names the date grace ends.
 3. After grace, new builds get `storageBlocked`. They still hash-compare, but `POST /builds` returns no upload URLs for new hashes and no baseline URLs, so the CLI neither uploads nor diffs. Snapshots that match the baseline are `unchanged` as usual. Changed and added snapshots get a row with no image and review state `none`. The build finalizes as `changes`, is never a baseline, cannot be reviewed, and the check is neutral, "Storage limit reached, not compared". CI never fails because of us.
-4. Freeing space (shorter retention, deleting projects) or upgrading ends the state as soon as `storageBytes` drops under the limit. Until billing ships, `accounts.setPlan` (an internal mutation run from the Convex dashboard) changes an account's plan.
+4. Freeing space (shorter retention, deleting projects) or upgrading ends the state as soon as `storageBytes` drops under the limit. Upgrading goes through Dodo Payments (section 8, Billing). `accounts.setPlan` (an internal mutation run from the Convex dashboard) still sets a plan by hand, for example `custom`.
 
 ### 4.11 Removing access
 
@@ -231,6 +231,8 @@ URL scheme mirrors GitHub: `/{owner}/{repo}`. Public pages (5.1) are server-rend
 | `/` | Landing. One-sentence pitch, the "how it works" diagram, a 3-line CI snippet, pricing block, Sign in button. |
 | `/brand` | Logo files to download, usage rules, colors and type. |
 | `/privacy`, `/terms`, `/refunds` | Legal pages. Support email `hello@stateofpixel.com`. |
+
+When billing is available (`billing.available`), each paid plan in the pricing block shows a "Choose {n} GB" menu to a signed-in user, listing their installed accounts; picking one opens checkout for the chosen period. Otherwise paid plans show "Coming soon".
 
 These paths shadow GitHub accounts with the same login. Docs pages are not built yet.
 
@@ -261,6 +263,7 @@ Shown when the signed-in user has no installations. One button to the GitHub App
 - Storage meter links to the Usage page (owners only; others see no meter). It ships with the Usage page (M3).
 - Storage banner from 80% of the limit (4.10). The same banner shows on project pages to users with write access.
 - "Configure access on GitHub" links to the installation settings.
+- Plan box above the projects: plan name and storage used. When billing is available, it shows an Upgrade menu (paid plans, monthly and yearly) while the account has no subscription, and Manage billing once it has a billing customer. Both buttons show to every member; the actions check for an owner and the box shows the error.
 
 ### 5.4 Project page (`/{owner}/{repo}`)
 
@@ -438,7 +441,8 @@ The GitHub provider uses the GitHub App's own client ID and secret, so the user 
 | storageLimitBytes | number | From plan. |
 | storageBytes | number | Added at upload confirm, subtracted by `collectImages`. |
 | overLimitSince | number, optional | Start of grace period. Set when `storageBytes` reaches the limit, cleared when it drops under. |
-| billingCustomerId | string, optional | Payment provider id (M3). |
+| billingCustomerId | string, optional | Dodo Payments customer id, set by the first active subscription. |
+| billingSubscriptionId | string, optional | The Dodo Payments subscription that sets the plan. Cleared when it ends. |
 | deletedAt | number, optional | |
 
 ### accountMembers
@@ -757,7 +761,7 @@ In one internal query:
 
 ### 7.7 Errors
 
-`{ "error": { "code": "baseline_branch_unknown", "message": "..." } }` with HTTP status. The CLI prints the message and exits 1 for 4xx caused by config, and exits 0 with a warning for 5xx (proposal: our outage should not break their CI). A 429 from a rate limit is handled the same way: the CLI prints the message and exits 0. `--strict` makes 5xx and 429 exit 1. HTTP actions are not retried by Convex, so the CLI retries 5xx and network errors 3 times with backoff; every endpoint is idempotent by nonce, shard index and hash.
+`{ "error": { "code": "too_many_snapshots", "message": "..." } }` with HTTP status. The CLI prints the message and exits 1 for 4xx caused by config, and exits 0 with a warning for 5xx (proposal: our outage should not break their CI). A 429 from a rate limit is handled the same way: the CLI prints the message and exits 0. `--strict` makes 5xx and 429 exit 1. HTTP actions are not retried by Convex, so the CLI retries 5xx and network errors 3 times with backoff; every endpoint is idempotent by nonce, shard index and hash.
 
 ## 8. App functions
 
@@ -777,8 +781,8 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 | `me.refreshAccounts` | action | signed in | `GET /user/installations` with the user token, links the user to accounts. Runs at sign-in and from "Refresh" on the Install page. |
 | `permissions.refresh` | action | signed in | See above. Writes `none` when GitHub answers 404. `orgOwner` comes from the org membership role, or from the login for a user account. |
 | `projects.access` | query | signed in | Project id, cached permission, whether it is fresh, `canRead` and `canWrite`, and the account's storage usage when the user can write. The page calls `permissions.refresh` while it is not fresh. |
-| `accounts.home` | query | account member | The account, its installation settings URL and its storage usage (plan, bytes, limit, `overLimitSince`). The page works out the storage state with the clock, since queries do not read it. |
-| `accounts.setPlan` | internal mutation | Convex dashboard or `npx convex run` | Sets `plan` and `storageLimitBytes`. A `custom` plan takes the limit as an argument. Until billing ships, this is how an account changes plan. |
+| `accounts.home` | query | account member | The account, its installation settings URL, its storage usage (plan, bytes, limit, `overLimitSince`), and whether it has a subscription and a billing customer. The page works out the storage state with the clock, since queries do not read it. |
+| `accounts.setPlan` | internal mutation | Convex dashboard or `npx convex run` | Sets `plan` and `storageLimitBytes`. A `custom` plan takes the limit as an argument. For plans set by hand; paid plans come from billing. |
 | `accounts.projects` | query | account member | Paginated projects with their latest build, searchable, sorted by name or last build. |
 | `builds.list` | query | read | Paginated with `.paginate()`, filters branch, pull request and a list of states. |
 | `builds.get` | query | read | Build and counts by number. |
@@ -795,8 +799,25 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 | `tokens.revoke` | mutation | admin | |
 | `projects.remove` | mutation | admin | Checks the typed name, deletes the project, schedules chunked deletion of its data. |
 | `usage.get` | query | org owner | Usage page data. Not built yet. |
+| `billing.available` | query | anyone | Whether this deployment has a Dodo API key and products for its environment. |
+| `billing.checkout` | action | org owner | `{ login, plan, interval }`. Returns a Dodo Payments checkout URL for a paid plan, monthly or yearly. Throws `already_subscribed` when the account has a subscription. |
+| `billing.portal` | action | org owner | Returns a Dodo Payments customer portal link for payment method, invoices and cancelling. Throws `not_subscribed` without a customer. |
 
 `reviews.apply` on superseded, pending, expired or storage-blocked builds throws a `ConvexError` with code `build_not_reviewable`. `approve` and `reject` apply to snapshots with review state `pending`, `approved` or `rejected`; `undo` sets them back to `pending` and removes the `approvedImages` rows of that image on the PR. `"all"` only touches `pending` snapshots, runs 500 per scheduled mutation (changed first, then added), and cannot undo. Every call recomputes the conclusion and bumps the GitHub check.
+
+### Billing
+
+Paid plans are Dodo Payments subscriptions, one product per plan and interval. The product ids per environment are in `convex/lib/billing.ts`. For a user account the owner is the user; for an org it is an org owner, checked against GitHub like `permissions.refresh`. Checkout puts the account id in the subscription metadata and returns to `/{owner}`.
+
+Dodo sends subscription events to the HTTP action `POST /dodo/webhook`. It verifies the Standard Webhooks signature with `DODO_PAYMENTS_WEBHOOK_SECRET` and reads the subscription in the payload, which is its latest state, so order and duplicates do not matter:
+
+| Subscription status | Action |
+|---|---|
+| `active` | Set the plan of its product, `billingCustomerId` and `billingSubscriptionId`. |
+| `cancelled`, `expired`, `failed` | If it is the account's `billingSubscriptionId`, move to `free` and clear it. |
+| other (`on_hold`, `past_due`, `paused`, `pending`) | No change. |
+
+Moving to `free` can put the account over its limit, which starts the grace period of section 4.10.
 
 ## 9. GitHub integration
 

@@ -11,6 +11,7 @@
 import type * as accounts from "../accounts.js";
 import type * as auth from "../auth.js";
 import type * as baselines from "../baselines.js";
+import type * as billing from "../billing.js";
 import type * as blobs from "../blobs.js";
 import type * as builds from "../builds.js";
 import type * as checks from "../checks.js";
@@ -20,6 +21,7 @@ import type * as crons from "../crons.js";
 import type * as githubWebhook from "../githubWebhook.js";
 import type * as http from "../http.js";
 import type * as installations from "../installations.js";
+import type * as lib_billing from "../lib/billing.js";
 import type * as lib_ciErrors from "../lib/ciErrors.js";
 import type * as lib_ciRequests from "../lib/ciRequests.js";
 import type * as lib_conclude from "../lib/conclude.js";
@@ -51,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   accounts: typeof accounts;
   auth: typeof auth;
   baselines: typeof baselines;
+  billing: typeof billing;
   blobs: typeof blobs;
   builds: typeof builds;
   checks: typeof checks;
@@ -60,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   githubWebhook: typeof githubWebhook;
   http: typeof http;
   installations: typeof installations;
+  "lib/billing": typeof lib_billing;
   "lib/ciErrors": typeof lib_ciErrors;
   "lib/ciRequests": typeof lib_ciRequests;
   "lib/conclude": typeof lib_conclude;

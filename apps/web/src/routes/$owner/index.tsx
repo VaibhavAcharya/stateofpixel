@@ -5,6 +5,7 @@ import { useQuery } from "convex-helpers/react/cache/hooks";
 import { AppHeader } from "../../components/AppHeader";
 import { ListToolbar, SearchField } from "../../components/ListControls";
 import { Page, PageHeader } from "../../components/Page";
+import { PlanBox } from "../../components/PlanBox";
 import { ProjectTable } from "../../components/ProjectTable";
 import { RequireAuth } from "../../components/RequireAuth";
 import { StorageBanner } from "../../components/StorageBanner";
@@ -79,7 +80,17 @@ function AccountHome({ owner }: { owner: string }) {
           )
         }
       />
-      {home !== undefined && <StorageBanner storage={home.storage} />}
+      {home !== undefined && (
+        <>
+          <StorageBanner storage={home.storage} />
+          <PlanBox
+            login={owner}
+            storage={home.storage}
+            subscribed={home.subscribed}
+            billingCustomer={home.billingCustomer}
+          />
+        </>
+      )}
       <ListToolbar>
         <SearchField
           value={search.q ?? ""}
