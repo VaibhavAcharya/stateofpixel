@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "type": "module",
   "bin": {
-    "stateofpixel": "./dist/index.mjs"
+    "stateofpixel": "dist/index.mjs"
   },
   "files": [
     "dist"
