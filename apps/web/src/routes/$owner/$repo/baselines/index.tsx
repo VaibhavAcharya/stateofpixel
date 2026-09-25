@@ -21,15 +21,20 @@ import {
 import { shortSha } from "../../../../lib/format";
 import { useProjectAccess } from "../../../../lib/useProjectAccess";
 
-type Search = { build?: string; prefix?: string };
+type Search = { suite?: string; prefix?: string };
+
+type Suite = {
+  buildName: string;
+  build: { number: number; commitSha: string } | null;
+};
 
 const PAGE_SIZE = 60;
 
 export const Route = createFileRoute("/$owner/$repo/baselines/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
-    build:
-      typeof search.build === "string" && search.build !== ""
-        ? search.build
+    suite:
+      typeof search.suite === "string" && search.suite !== ""
+        ? search.suite
         : undefined,
     prefix:
       typeof search.prefix === "string" && search.prefix !== ""
@@ -53,13 +58,8 @@ function BaselinesRoute() {
 }
 
 function BaselinesAccess({ owner, repo }: { owner: string; repo: string }) {
-  const search = Route.useSearch();
   const result = useProjectAccess(owner, repo);
-  const current = useQuery(api.baselines.current, {
-    owner,
-    name: repo,
-    buildName: search.build,
-  });
+  const suites = useQuery(api.baselines.current, { owner, name: repo });
   if (result.state === "not_found") {
     return (
       <EmptyState title="Project not found.">
@@ -68,10 +68,10 @@ function BaselinesAccess({ owner, repo }: { owner: string; repo: string }) {
       </EmptyState>
     );
   }
-  if (result.state === "loading" || !current) {
+  if (result.state === "loading" || !suites) {
     return <SkeletonRows />;
   }
-  if (current.build === null) {
+  if (suites.every((suite) => suite.build === null)) {
     return (
       <EmptyState title="No baseline yet.">
         Baselines come from approved builds on{" "}
@@ -84,9 +84,8 @@ function BaselinesAccess({ owner, repo }: { owner: string; repo: string }) {
     <Baselines
       owner={owner}
       repo={repo}
-      buildNames={current.buildNames}
-      buildName={current.buildName}
-      build={current.build}
+      suites={suites}
+      defaultBranch={result.access.defaultBranch}
     />
   );
 }
@@ -94,23 +93,20 @@ function BaselinesAccess({ owner, repo }: { owner: string; repo: string }) {
 function Baselines({
   owner,
   repo,
-  buildNames,
-  buildName,
-  build,
+  suites,
+  defaultBranch,
 }: {
   owner: string;
   repo: string;
-  buildNames: string[];
-  buildName: string;
-  build: { number: number; commitSha: string };
+  suites: Suite[];
+  defaultBranch: string;
 }) {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const { results, status, loadMore } = usePaginatedQuery(
-    api.baselines.list,
-    { owner, name: repo, buildName, prefix: search.prefix },
-    { initialNumItems: PAGE_SIZE },
-  );
+  const shown =
+    search.suite === undefined
+      ? suites.filter((suite) => suite.build !== null)
+      : suites.filter((suite) => suite.buildName === search.suite);
 
   return (
     <>
@@ -124,17 +120,74 @@ function Baselines({
             })
           }
         />
-        {buildNames.length > 1 && (
+        {suites.length > 1 && (
           <SelectMenu
-            label="Build"
-            value={buildName}
-            options={buildNames.map((name) => ({ value: name, label: name }))}
-            onChange={(next) =>
-              void navigate({ search: (prev) => ({ ...prev, build: next }) })
+            label="Suite"
+            value={search.suite}
+            options={[
+              { value: undefined, label: "All" },
+              ...suites.map((suite) => ({
+                value: suite.buildName,
+                label: suite.buildName,
+              })),
+            ]}
+            onChange={(suite) =>
+              void navigate({ search: (prev) => ({ ...prev, suite }) })
             }
           />
         )}
-        <p className="ml-auto text-xs text-muted">
+      </ListToolbar>
+      <div className="flex flex-col gap-8">
+        {shown.map((suite) =>
+          suite.build === null ? (
+            <p key={suite.buildName} className="py-6 text-sm text-muted">
+              No baseline yet for{" "}
+              <span className="mono">{suite.buildName}</span> on{" "}
+              <span className="mono">{defaultBranch}</span>.
+            </p>
+          ) : (
+            <SuiteBaselines
+              key={suite.buildName}
+              owner={owner}
+              repo={repo}
+              buildName={suite.buildName}
+              build={suite.build}
+              prefix={search.prefix}
+              showName={suites.length > 1}
+            />
+          ),
+        )}
+      </div>
+    </>
+  );
+}
+
+function SuiteBaselines({
+  owner,
+  repo,
+  buildName,
+  build,
+  prefix,
+  showName,
+}: {
+  owner: string;
+  repo: string;
+  buildName: string;
+  build: { number: number; commitSha: string };
+  prefix: string | undefined;
+  showName: boolean;
+}) {
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.baselines.list,
+    { owner, name: repo, buildName, prefix },
+    { initialNumItems: PAGE_SIZE },
+  );
+
+  return (
+    <section>
+      <div className="mb-3 flex items-baseline gap-3">
+        {showName && <h2 className="text-sm font-medium">{buildName}</h2>}
+        <p className="text-xs text-muted">
           From build{" "}
           <Link
             to="/$owner/$repo/builds/$number"
@@ -145,7 +198,7 @@ function Baselines({
           </Link>{" "}
           at <span className="mono">{shortSha(build.commitSha)}</span>
         </p>
-      </ListToolbar>
+      </div>
       {status === "LoadingFirstPage" ? (
         <Grid>
           {Array.from({ length: 8 }, (_, index) => `tile-${index}`).map(
@@ -165,7 +218,7 @@ function Baselines({
               <Link
                 to="/$owner/$repo/baselines/$"
                 params={{ owner, repo, _splat: snapshot.name }}
-                search={{ build: buildName }}
+                search={{ suite: buildName }}
                 title={snapshot.name}
                 className="group flex flex-col gap-2"
               >
@@ -212,7 +265,7 @@ function Baselines({
           <Spinner size={16} />
         </div>
       )}
-    </>
+    </section>
   );
 }
 

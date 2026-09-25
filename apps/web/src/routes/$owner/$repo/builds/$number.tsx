@@ -1403,7 +1403,7 @@ function SnapshotDetail({
             to="/$owner/$repo/baselines/$"
             params={{ owner, repo, _splat: snapshot.name }}
             search={{
-              build:
+              suite:
                 build.buildName === "default" ? undefined : build.buildName,
             }}
             className="hover:text-text"

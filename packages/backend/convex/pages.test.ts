@@ -637,11 +637,9 @@ it("lists the current baselines and the history of one snapshot", async () => {
     buildName: "default",
     paginationOpts: firstPage,
   });
-  expect(await user.query(api.baselines.current, repo)).toEqual({
-    buildNames: ["default"],
-    buildName: "default",
-    build: { number: 1, commitSha: "c1" },
-  });
+  expect(await user.query(api.baselines.current, repo)).toEqual([
+    { buildName: "default", build: { number: 1, commitSha: "c1" } },
+  ]);
   expect(all.page.map((snapshot) => snapshot.name)).toEqual([
     "components/Button",
     "components/Card",

@@ -27,7 +27,7 @@ Stack: pnpm monorepo, TanStack Start on Netlify, Convex for database, auth (Conv
 | Account | A GitHub user or org that installed the GitHub App. Billing and storage usage live here. |
 | Project | One GitHub repository. Created when the app gets access to the repo. |
 | Build | One visual test run for one commit and one build name. A PR push creates one build per build name. |
-| Build name | Lets one repo run separate suites, like `storybook` and `e2e`. Default is `default`. Each build name has its own baselines and its own GitHub check. |
+| Build name | Lets one repo run separate suites, like `storybook` and `e2e`. Default is `default`. Each build name has its own baselines and its own GitHub check. The web app calls it "Suite". |
 | Shard | One CI job uploading part of a build. A build has 1 or more shards. |
 | Snapshot | One named screenshot inside a build. |
 | Snapshot name | Unique inside a build. The client puts the mode in the name, for example `Button/Primary [chromium 1280]`. Same name across builds means same snapshot. |
@@ -280,7 +280,7 @@ Builds tab:
 +------------------------------------------------------------------+
 ```
 
-- Columns: build number, conclusion pill with counts, branch, commit message (first line) and short SHA, PR number linking to GitHub, build name if the project has more than one, relative time with absolute time on hover.
+- Columns: build number, conclusion pill with counts, branch, commit message (first line) and short SHA, PR number linking to GitHub, build name as the Suite column if the project has more than one, relative time with absolute time on hover.
 - Filters are in the URL query so they can be shared. M1 has the branch filter (`?branch=`, through `by_projectId_and_branch`); status and build name filters come later.
 - 50 rows per page, "Load more" by cursor.
 - Pending builds show a spinner and shard progress, updated live.
@@ -363,9 +363,9 @@ Review actions are optimistic in the UI and send one request each. If a request 
 
 Browse what is approved on the default branch now.
 
-- Build name selector if there are several.
+- Suite selector (`?suite=`) if there are several build names. The default, All, shows one section per build name.
 - Filter by name prefix, like `components/`.
-- Grid of snapshots from the newest approved build on the default branch: image scaled down by the browser, name under it. Lazy loaded, 60 per page.
+- Grid of snapshots from the newest approved build of each build name on the default branch: image scaled down by the browser, name under it. Lazy loaded, 60 per page.
 - Clicking one opens Snapshot history.
 
 ### 5.7 Snapshot history (`/{owner}/{repo}/baselines/{snapshot_name}`)

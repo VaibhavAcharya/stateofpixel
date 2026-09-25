@@ -76,6 +76,11 @@ function parseStates(value: string | undefined): BuildFilter[] {
   );
 }
 
+function filterStates(value: string | undefined): BuildFilter[] | undefined {
+  const states = parseStates(value);
+  return states.length === STATE_OPTIONS.length ? undefined : states;
+}
+
 function formatStates(states: BuildFilter[]): string | undefined {
   const value = parseStates(states.join(",")).join(",");
   return value === DEFAULT_STATES.join(",") ? undefined : value;
@@ -124,7 +129,7 @@ function ProjectBuilds({ owner, repo }: { owner: string; repo: string }) {
       name: repo,
       branch: search.branch,
       prNumber: search.pr,
-      states: parseStates(search.state),
+      states: filterStates(search.state),
       order: search.order,
     },
     { initialNumItems: PAGE_SIZE },
@@ -227,8 +232,8 @@ function useBuildColumns({
         ...(showBuildName
           ? [
               helper.display({
-                id: "name",
-                header: "Name",
+                id: "suite",
+                header: "Suite",
                 meta: { className: "w-32 truncate text-muted max-lg:hidden" },
                 cell: ({ row }) => row.original.buildName,
               }),

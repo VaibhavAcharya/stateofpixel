@@ -189,10 +189,11 @@ export function MultiSelectMenu<Value extends string>({
   const isDefault =
     values.length === defaultValues.length &&
     defaultValues.every((value) => values.includes(value));
+  const isAll = values.length === options.length;
   const selectedLabels = labels(values);
   const summary = isDefault
     ? "Default"
-    : selectedLabels.length === options.length
+    : isAll
       ? "All"
       : selectedLabels.length <= 4
         ? selectedLabels.join(", ")
@@ -221,6 +222,16 @@ export function MultiSelectMenu<Value extends string>({
       >
         <span className="min-w-0 flex-1 truncate">{defaultLabel}</span>
         {isDefault && <CheckIcon size={14} className="shrink-0 text-muted" />}
+      </button>
+      <button
+        type="button"
+        role="menuitemradio"
+        aria-checked={isAll}
+        className={menuItemClass}
+        onClick={() => onChange(options.map((option) => option.value))}
+      >
+        <span className="flex-1">All</span>
+        {isAll && <CheckIcon size={14} className="text-muted" />}
       </button>
       <MenuSeparator />
       {options.map((option) => {

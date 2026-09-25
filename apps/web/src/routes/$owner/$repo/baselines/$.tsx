@@ -23,10 +23,10 @@ type Entry = NonNullable<
 >["entries"][number];
 
 export const Route = createFileRoute("/$owner/$repo/baselines/$")({
-  validateSearch: (search: Record<string, unknown>): { build?: string } => ({
-    build:
-      typeof search.build === "string" && search.build !== ""
-        ? search.build
+  validateSearch: (search: Record<string, unknown>): { suite?: string } => ({
+    suite:
+      typeof search.suite === "string" && search.suite !== ""
+        ? search.suite
         : undefined,
   }),
   component: HistoryRoute,
@@ -55,12 +55,12 @@ function HistoryAccess({
   repo: string;
   snapshotName: string;
 }) {
-  const { build } = Route.useSearch();
+  const { suite } = Route.useSearch();
   const result = useProjectAccess(owner, repo);
   const history = useQuery(api.baselines.history, {
     owner,
     name: repo,
-    buildName: build,
+    buildName: suite,
     snapshotName,
   });
   if (result.state === "not_found") {

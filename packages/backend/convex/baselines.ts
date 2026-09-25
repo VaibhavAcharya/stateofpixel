@@ -49,21 +49,18 @@ async function findBaseline(
 }
 
 export const current = query({
-  args: {
-    owner: v.string(),
-    name: v.string(),
-    buildName: v.optional(v.string()),
-  },
+  args: { owner: v.string(), name: v.string() },
   returns: v.union(
     v.null(),
-    v.object({
-      buildNames: v.array(v.string()),
-      buildName: v.string(),
-      build: v.union(
-        v.null(),
-        v.object({ number: v.number(), commitSha: v.string() }),
-      ),
-    }),
+    v.array(
+      v.object({
+        buildName: v.string(),
+        build: v.union(
+          v.null(),
+          v.object({ number: v.number(), commitSha: v.string() }),
+        ),
+      }),
+    ),
   ),
   handler: async (ctx, args) => {
     const project = await findReadableProject(ctx, args.owner, args.name);
@@ -71,18 +68,19 @@ export const current = query({
       return null;
     }
     const builds = await recentBuilds(ctx, project, project.defaultBranch);
-    const { buildNames, buildName } = pickBuildName(builds, args.buildName);
-    const baseline = builds.find(
-      (build) => build.buildName === buildName && isBaselineCandidate(build),
-    );
-    return {
-      buildNames,
-      buildName,
-      build:
-        baseline === undefined
-          ? null
-          : { number: baseline.number, commitSha: baseline.commitSha },
-    };
+    const { buildNames } = pickBuildName(builds, undefined);
+    return buildNames.map((buildName) => {
+      const baseline = builds.find(
+        (build) => build.buildName === buildName && isBaselineCandidate(build),
+      );
+      return {
+        buildName,
+        build:
+          baseline === undefined
+            ? null
+            : { number: baseline.number, commitSha: baseline.commitSha },
+      };
+    });
   },
 });
 

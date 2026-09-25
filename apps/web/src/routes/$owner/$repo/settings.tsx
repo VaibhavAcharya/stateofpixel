@@ -137,7 +137,7 @@ function SettingsForm({
       <Section title="Checks">
         <Field
           label="Check name"
-          hint="Other build names get their own check, like stateofpixel/storybook."
+          hint="Other suites get their own check, like stateofpixel/storybook."
         >
           {() => (
             <p className="mono flex h-8 items-center text-sm">stateofpixel</p>
