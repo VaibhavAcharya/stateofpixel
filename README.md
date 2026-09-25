@@ -60,7 +60,9 @@ Without `STATEOFPIXEL_API_URL` it talks to production.
 
 - `playground`: `examples/playground/pages`, captured by `pnpm --filter @stateofpixel/playground capture`
 - `storybook`: the playground stories, built with `pnpm --filter @stateofpixel/playground build-storybook` and captured with `stateofpixel storybook`
-- `web`: the landing page, captured by `pnpm --filter @stateofpixel/web visual` through the Playwright reporter. The reporter uploads on CI only, so a local run only writes screenshots.
+- `web`: the public pages and the build page, captured by `pnpm --filter @stateofpixel/web visual` through the Playwright reporter. The reporter uploads on CI only, so a local run only writes screenshots.
+
+The build page is captured from fixtures, so it needs no sign-in or seeded Convex data. In dev, `/lab.stateofpixel/web/builds/1` renders the real build page from the fixture builds in `apps/web/src/components/build/LabBuild.tsx`: build 1 has changes to review, build 2 is storage-blocked. Reviews there change local state only. GitHub logins cannot contain a dot, so the path never matches a real account, and production builds leave the fixtures out.
 
 `scripts/test-pr.sh <scenario>` opens a draft PR that changes the playground in a known way and prints the expected check for `playground` and `storybook`. Scenarios: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`, `add-story`, `remove-story`. It needs `gh` signed in.
 

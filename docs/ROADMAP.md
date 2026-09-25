@@ -70,10 +70,10 @@ Group 4: landing
 
 ## Dogfooding
 
-See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (static pages), `storybook` (playground stories) and `web` (the landing page).
+See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (static pages), `storybook` (playground stories) and `web` (the public pages and the fixture build pages).
 
 - [x] Playwright suite for the public web pages (landing) through `stateofpixel/playwright`
-- [ ] A seeded build page that renders without GitHub sign-in, captured in the same suite
+- [x] A seeded build page that renders without GitHub sign-in, captured in the same suite
 - [x] Storybook stories in `examples/playground`, captured with `stateofpixel storybook`
 - [x] `scripts/test-pr.sh` scenarios with an expected check result each
 - [ ] Merge scenarios (squash, rebase, merge commit) against a separate test repo

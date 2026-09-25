@@ -928,6 +928,7 @@ const buildSummary = v.object({
   status: buildStatus,
   conclusion: v.union(buildConclusion, v.null()),
   counts: buildCounts,
+  storageBlocked: v.boolean(),
   superseded: v.boolean(),
   shards: v.object({
     done: v.number(),
@@ -947,6 +948,7 @@ function toBuildSummary(build: Doc<"builds">): Infer<typeof buildSummary> {
     status: build.status,
     conclusion: build.conclusion ?? null,
     counts: build.counts,
+    storageBlocked: build.storageBlocked,
     superseded: build.supersededById !== undefined,
     shards: {
       done: build.doneShardIndexes.length,
@@ -1060,7 +1062,6 @@ export const get = query({
       buildId: v.id("builds"),
       baselineBranch: v.string(),
       autoApproved: v.boolean(),
-      storageBlocked: v.boolean(),
       finalizedAt: v.union(v.number(), v.null()),
       ciRunUrl: v.union(v.string(), v.null()),
       baseline: v.union(
@@ -1095,7 +1096,6 @@ export const get = query({
       buildId: build._id,
       baselineBranch: build.baselineBranch,
       autoApproved: build.autoApproved,
-      storageBlocked: build.storageBlocked,
       finalizedAt: build.finalizedAt ?? null,
       ciRunUrl: build.ciRunUrl ?? null,
       baseline:

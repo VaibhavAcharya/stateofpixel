@@ -7,18 +7,18 @@ import {
   XIcon,
 } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
-import { conclude } from "@stateofpixel/backend/conclude";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import {
   createFileRoute,
   useNavigate,
   useParams,
 } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
-import { usePaginatedQuery, useQuery } from "convex-helpers/react/cache/hooks";
+import { useQuery } from "convex-helpers/react/cache/hooks";
 import {
   createContext,
+  lazy,
   type RefObject,
+  Suspense,
   useContext,
   useEffect,
   useRef,
@@ -27,6 +27,10 @@ import {
 import { AppHeader } from "../../../../components/AppHeader";
 import { Banners, BuildHeader } from "../../../../components/build/BuildHeader";
 import { BuildNotFound } from "../../../../components/build/BuildNotFound";
+import {
+  type ReviewAction,
+  useBuildData,
+} from "../../../../components/build/buildData";
 import { SnapshotDetail } from "../../../../components/build/SnapshotDetail";
 import { SnapshotGroup } from "../../../../components/build/SnapshotGroup";
 import type { Build, SnapshotRow } from "../../../../components/build/types";
@@ -38,7 +42,6 @@ import {
   type DiffStatus,
   Kbd,
   LeadCopy,
-  type ReviewState,
   Skeleton,
   Spinner,
 } from "../../../../components/ui";
@@ -46,15 +49,19 @@ import { MODES, useViewerSettings } from "../../../../components/Viewer";
 import { track } from "../../../../lib/analytics";
 import { errorCode } from "../../../../lib/errorCode";
 import { formatCount } from "../../../../lib/format";
+import { isLab } from "../../../../lib/lab";
 import { prefetchBuild } from "../../../../lib/prefetch";
 import { useProjectAccess } from "../../../../lib/useProjectAccess";
 
 export const Route = createFileRoute("/$owner/$repo/builds/$number")({
-  loader: ({ context, params }) => prefetchBuild(context.convex, params),
+  loader: ({ context, params }) =>
+    isLab(params.owner) ? undefined : prefetchBuild(context.convex, params),
   component: BuildRoute,
 });
 
-type ReviewAction = "approve" | "reject" | "undo";
+const LabBuild = import.meta.env.DEV
+  ? lazy(() => import("../../../../components/build/LabBuild"))
+  : null;
 
 const GROUPS: { status: DiffStatus; label: string }[] = [
   { status: "changed", label: "Changed" },
@@ -63,12 +70,6 @@ const GROUPS: { status: DiffStatus; label: string }[] = [
   { status: "failed", label: "Failed" },
   { status: "unchanged", label: "Unchanged" },
 ];
-
-const NEXT_STATE: Record<ReviewAction, Exclude<ReviewState, "none">> = {
-  approve: "approved",
-  reject: "rejected",
-  undo: "pending",
-};
 
 const ACTION_VERBS: Record<ReviewAction, string> = {
   approve: "approve",
@@ -84,34 +85,50 @@ const ShortcutsContext = createContext<{
 function BuildRoute() {
   const { owner, repo, number } = Route.useParams();
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  return (
-    <RequireAuth redirectTo={`/${owner}/${repo}/builds/${number}`}>
-      <ShortcutsContext.Provider
-        value={{ open: shortcutsOpen, setOpen: setShortcutsOpen }}
-      >
-        <div className="flex h-dvh flex-col">
-          <AppHeader
-            owner={owner}
-            repo={repo}
-            actions={
-              <button
-                type="button"
-                aria-label="Keyboard shortcuts"
-                title="Keyboard shortcuts (?)"
-                className={buttonClass("ghost", "icon")}
-                onClick={() => setShortcutsOpen(true)}
-              >
-                <KeyboardIcon size={18} />
-              </button>
-            }
-          />
-          <BuildAccess owner={owner} repo={repo} number={Number(number)} />
-        </div>
-        <ShortcutsDialog
-          open={shortcutsOpen}
-          onClose={() => setShortcutsOpen(false)}
+  const lab = isLab(owner) && LabBuild !== null;
+  const page = (
+    <ShortcutsContext.Provider
+      value={{ open: shortcutsOpen, setOpen: setShortcutsOpen }}
+    >
+      <div className="flex h-dvh flex-col">
+        <AppHeader
+          owner={owner}
+          repo={repo}
+          actions={
+            <button
+              type="button"
+              aria-label="Keyboard shortcuts"
+              title="Keyboard shortcuts (?)"
+              className={buttonClass("ghost", "icon")}
+              onClick={() => setShortcutsOpen(true)}
+            >
+              <KeyboardIcon size={18} />
+            </button>
+          }
         />
-      </ShortcutsContext.Provider>
+        {lab ? (
+          <Suspense fallback={<BuildSkeleton />}>
+            <LabBuild number={Number(number)}>
+              {(build) => (
+                <BuildPage build={build} canWrite owner={owner} repo={repo} />
+              )}
+            </LabBuild>
+          </Suspense>
+        ) : (
+          <BuildAccess owner={owner} repo={repo} number={Number(number)} />
+        )}
+      </div>
+      <ShortcutsDialog
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
+    </ShortcutsContext.Provider>
+  );
+  return lab ? (
+    page
+  ) : (
+    <RequireAuth redirectTo={`/${owner}/${repo}/builds/${number}`}>
+      {page}
     </RequireAuth>
   );
 }
@@ -188,129 +205,6 @@ function BuildSkeleton() {
   );
 }
 
-function useSnapshotGroups(
-  buildId: Id<"builds">,
-  counts: Build["counts"],
-  unchangedOpen: boolean,
-) {
-  const options = { initialNumItems: 200 };
-  const args = (diffStatus: DiffStatus, enabled: boolean) =>
-    enabled ? { buildId, diffStatus } : ("skip" as const);
-  return {
-    changed: usePaginatedQuery(
-      api.snapshots.list,
-      args("changed", counts.changed > 0),
-      options,
-    ),
-    added: usePaginatedQuery(
-      api.snapshots.list,
-      args("added", counts.added > 0),
-      options,
-    ),
-    removed: usePaginatedQuery(
-      api.snapshots.list,
-      args("removed", counts.removed > 0),
-      options,
-    ),
-    failed: usePaginatedQuery(
-      api.snapshots.list,
-      args("failed", counts.failed > 0),
-      options,
-    ),
-    unchanged: usePaginatedQuery(
-      api.snapshots.list,
-      args("unchanged", unchangedOpen && counts.unchanged > 0),
-      options,
-    ),
-  };
-}
-
-function useApplyReview() {
-  return useMutation(api.reviews.apply).withOptimisticUpdate((store, args) => {
-    const next = NEXT_STATE[args.action];
-    const ids =
-      args.snapshotIds === "all" ? null : new Set<string>(args.snapshotIds);
-    const previous = new Map<string, Exclude<ReviewState, "none">>();
-    const review = <Row extends { id: string; reviewState: ReviewState }>(
-      row: Row,
-    ): Row => {
-      const current = row.reviewState;
-      if (
-        current === "none" ||
-        current === next ||
-        (ids === null ? current !== "pending" : !ids.has(row.id))
-      ) {
-        return row;
-      }
-      previous.set(row.id, current);
-      return { ...row, reviewState: next };
-    };
-
-    for (const { args: queryArgs, value } of store.getAllQueries(
-      api.snapshots.list,
-    )) {
-      if (value !== undefined && queryArgs.buildId === args.buildId) {
-        store.setQuery(api.snapshots.list, queryArgs, {
-          ...value,
-          page: value.page.map(review),
-        });
-      }
-    }
-    for (const { args: queryArgs, value } of store.getAllQueries(
-      api.snapshots.get,
-    )) {
-      if (value?.buildId === args.buildId) {
-        store.setQuery(api.snapshots.get, queryArgs, review(value));
-      }
-    }
-
-    const reviewCounts = (counts: Build["counts"]) => {
-      const result = { ...counts };
-      if (ids === null) {
-        result[next] += result.pending;
-        result.pending = 0;
-      } else {
-        for (const state of previous.values()) {
-          result[state]--;
-          result[next]++;
-        }
-      }
-      return result;
-    };
-    const updated = new Map<string, number>();
-    for (const { args: queryArgs, value } of store.getAllQueries(
-      api.builds.get,
-    )) {
-      if (value?.buildId === args.buildId) {
-        const counts = reviewCounts(value.counts);
-        store.setQuery(api.builds.get, queryArgs, {
-          ...value,
-          counts,
-          conclusion: conclude(counts),
-        });
-        updated.set(`${queryArgs.owner}/${queryArgs.name}`, value.number);
-      }
-    }
-    for (const { args: queryArgs, value } of store.getAllQueries(
-      api.builds.list,
-    )) {
-      const number = updated.get(`${queryArgs.owner}/${queryArgs.name}`);
-      if (value !== undefined && number !== undefined) {
-        store.setQuery(api.builds.list, queryArgs, {
-          ...value,
-          page: value.page.map((row) => {
-            if (row.number !== number) {
-              return row;
-            }
-            const counts = reviewCounts(row.counts);
-            return { ...row, counts, conclusion: conclude(counts) };
-          }),
-        });
-      }
-    }
-  });
-}
-
 function PrefetchSnapshot({
   owner,
   repo,
@@ -322,7 +216,7 @@ function PrefetchSnapshot({
   number: number;
   snapshotId: Id<"snapshots">;
 }) {
-  const snapshot = useQuery(api.snapshots.get, {
+  const snapshot = useBuildData().useSnapshot({
     owner,
     name: repo,
     number,
@@ -366,8 +260,9 @@ function BuildPage({
   const filterInput = useRef<HTMLInputElement>(null);
   const settings = useViewerSettings();
   const { toasts, show, dismiss } = useToasts();
-  const applyReview = useApplyReview();
-  const groups = useSnapshotGroups(
+  const data = useBuildData();
+  const applyReview = data.useApplyReview();
+  const groups = data.useSnapshotGroups(
     build.buildId,
     build.counts,
     !collapsed.has("unchanged"),

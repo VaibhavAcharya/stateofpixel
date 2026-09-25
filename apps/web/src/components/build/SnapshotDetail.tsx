@@ -3,10 +3,8 @@ import {
   CaretDownIcon,
   CaretRightIcon,
 } from "@phosphor-icons/react/ssr";
-import { api } from "@stateofpixel/backend/api";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
   buttonClass,
@@ -18,6 +16,7 @@ import {
 } from "../ui";
 import { Viewer, type ViewerSettings } from "../Viewer";
 import { BuildNotFound } from "./BuildNotFound";
+import { useBuildData } from "./buildData";
 import type { Build, Snapshot } from "./types";
 
 export function SnapshotDetail({
@@ -51,7 +50,7 @@ export function SnapshotDetail({
   onUndo: () => void;
   navigation: ReactNode;
 }) {
-  const snapshot = useQuery(api.snapshots.get, {
+  const snapshot = useBuildData().useSnapshot({
     owner,
     name: repo,
     number: build.number,
@@ -165,7 +164,11 @@ function ReviewStatus({ snapshot }: { snapshot: Snapshot }) {
   if (snapshot.reviewState === "none") {
     return (
       <span className="text-xs text-muted">
-        Matches the baseline, no review needed
+        {snapshot.diffStatus === "removed"
+          ? "Not in this build, no review needed"
+          : snapshot.image === null
+            ? "Not stored, the account was over its storage limit"
+            : "Matches the baseline, no review needed"}
       </span>
     );
   }

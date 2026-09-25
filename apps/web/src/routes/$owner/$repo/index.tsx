@@ -185,6 +185,7 @@ function useBuildColumns({
                 conclusion={row.original.conclusion}
                 counts={row.original.counts}
                 shards={row.original.shards}
+                storageBlocked={row.original.storageBlocked}
               />
               {row.original.superseded && <SupersededPill />}
             </span>
@@ -421,6 +422,7 @@ function MobileBuildRow({
             conclusion={build.conclusion}
             counts={build.counts}
             shards={build.shards}
+            storageBlocked={build.storageBlocked}
           />
           {build.superseded && <SupersededPill />}
           <span className="ml-auto text-xs text-muted">

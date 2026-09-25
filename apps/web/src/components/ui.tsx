@@ -103,11 +103,13 @@ export function BuildStatePill({
   conclusion,
   counts,
   shards,
+  storageBlocked,
 }: {
   status: BuildStatus;
   conclusion: BuildConclusion | null;
   counts: { pending: number; changed: number; added: number; rejected: number };
   shards: { done: number; total: number | null };
+  storageBlocked: boolean;
 }) {
   if (status === "pending") {
     return (
@@ -129,6 +131,13 @@ export function BuildStatePill({
     return (
       <Pill tone="failed" icon={WarningIcon}>
         Error
+      </Pill>
+    );
+  }
+  if (storageBlocked && conclusion !== "no_changes") {
+    return (
+      <Pill tone="failed" icon={WarningIcon}>
+        Not compared
       </Pill>
     );
   }

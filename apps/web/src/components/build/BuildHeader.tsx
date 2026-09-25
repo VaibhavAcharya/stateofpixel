@@ -74,6 +74,7 @@ export function BuildHeader({
             conclusion={build.conclusion}
             counts={build.counts}
             shards={build.shards}
+            storageBlocked={build.storageBlocked}
           />
           {build.superseded && <SupersededPill />}
         </div>

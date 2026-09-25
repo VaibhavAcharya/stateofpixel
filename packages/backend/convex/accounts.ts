@@ -27,6 +27,7 @@ const projectRow = v.object({
       status: buildStatus,
       conclusion: v.union(buildConclusion, v.null()),
       counts: buildCounts,
+      storageBlocked: v.boolean(),
       createdAt: v.number(),
     }),
   ),
@@ -54,6 +55,7 @@ async function toProjectRow(
             status: build.status,
             conclusion: build.conclusion ?? null,
             counts: build.counts,
+            storageBlocked: build.storageBlocked,
             createdAt: build._creationTime,
           },
   };

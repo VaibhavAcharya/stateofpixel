@@ -63,6 +63,7 @@ const columns = helper.columns([
             conclusion={build.conclusion}
             counts={build.counts}
             shards={{ done: 0, total: null }}
+            storageBlocked={build.storageBlocked}
           />
         </span>
       );
