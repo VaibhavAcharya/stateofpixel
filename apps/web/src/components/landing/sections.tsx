@@ -435,10 +435,10 @@ const SHIPPED = [
   "Baselines from git history, auto-approve on main",
   "Review page with four views and keyboard shortcuts",
   "GitHub check runs",
+  "Sharding and a finalize command",
 ];
 
 const NEXT = [
-  "Sharding and a finalize command",
   "Approval carry-over across rebases",
   "Storybook capture command and Playwright reporter",
   "Retention settings and a usage page",
