@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
+import { highlightSnippets } from "./highlightSnippets";
 
 export default defineConfig(({ mode }) => {
   const backendEnv = loadEnv(mode, "../../packages/backend", "CONVEX_URL");
@@ -12,6 +13,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       netlify({ dev: { edgeFunctions: { enabled: false } } }),
       tailwindcss(),
+      highlightSnippets(),
       tanstackStart(),
       viteReact(),
     ],

@@ -100,15 +100,15 @@ See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (sta
 
 Needed before applying for a payment gateway.
 
-- [ ] Privacy policy page
-- [ ] Terms and conditions page
-- [ ] Refund policy page
-- [ ] Links to all three in the site footer
+- [x] Privacy policy page
+- [x] Terms and conditions page
+- [x] Refund policy page
+- [x] Links to all three in the site footer
 
 ## Marketing pages
 
 - [ ] Comparison pages against the alternatives
-- [ ] Brand section with the logo and its usage
+- [x] Brand page with the logo, its usage and downloads
 - [ ] Open Graph image per page
 
 ## Later

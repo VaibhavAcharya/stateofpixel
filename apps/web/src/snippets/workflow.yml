@@ -1,0 +1,6 @@
+permissions:
+  id-token: write
+
+steps:
+  - run: npx playwright test
+  - run: npx stateofpixel upload screenshots

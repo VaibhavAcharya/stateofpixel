@@ -5,11 +5,10 @@ import {
   DemoSection,
   FaqList,
   FinalWithSnippet,
-  Footer,
-  HeaderNav,
   HeroDescriptive,
   HowFlow,
   HowSteps,
+  PublicPage,
   StatusSection,
   WhatWeDont,
 } from "../components/landing/sections";
@@ -29,20 +28,16 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   return (
-    <div className="min-h-dvh bg-surface">
-      <HeaderNav />
-      <main>
-        <HeroDescriptive art={<HeroChecks />} />
-        <DemoSection />
-        <HowFlow />
-        <HowSteps />
-        <PricingPlans />
-        <WhatWeDont />
-        <FaqList />
-        <StatusSection />
-        <FinalWithSnippet />
-      </main>
-      <Footer />
-    </div>
+    <PublicPage>
+      <HeroDescriptive art={<HeroChecks />} />
+      <DemoSection />
+      <HowFlow />
+      <HowSteps />
+      <PricingPlans />
+      <WhatWeDont />
+      <FaqList />
+      <StatusSection />
+      <FinalWithSnippet />
+    </PublicPage>
   );
 }

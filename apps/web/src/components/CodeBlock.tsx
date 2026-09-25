@@ -2,12 +2,23 @@ import { CheckIcon, CopyIcon } from "@phosphor-icons/react/ssr";
 import { useEffect, useState } from "react";
 import { buttonClass } from "./ui";
 
+export type Snippet = {
+  code: string;
+  lines: {
+    content: string;
+    offset: number;
+    style?: Record<string, string>;
+  }[][];
+};
+
 export function CodeBlock({
   fileName,
   code,
+  lines,
 }: {
   fileName: string;
   code: string;
+  lines?: Snippet["lines"];
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -37,7 +48,22 @@ export function CodeBlock({
         </button>
       </figcaption>
       <pre className="overflow-x-auto p-4 font-mono text-xs leading-[1.8]">
-        <code>{code}</code>
+        <code>
+          {lines === undefined
+            ? code
+            : lines.flatMap((line, index) => [
+                ...(index > 0 ? ["\n"] : []),
+                ...line.map((token) => (
+                  <span
+                    key={token.offset}
+                    className="syntax"
+                    style={token.style}
+                  >
+                    {token.content}
+                  </span>
+                )),
+              ])}
+        </code>
       </pre>
     </figure>
   );

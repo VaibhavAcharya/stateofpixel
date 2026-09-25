@@ -1,13 +1,37 @@
 import { CheckIcon } from "@phosphor-icons/react/ssr";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
+import { SUPPORT_EMAIL } from "../../lib/supportEmail";
 import { AuthButton } from "../SignIn";
 import { LeadCopy } from "../ui";
 
 const SECTION = "mx-auto max-w-[1448px] px-6 py-24 max-sm:px-4 max-sm:py-12";
 
-const FREE_GIGABYTES = 10;
 const RETENTION_DAYS = 60;
-const PRICE_PER_GIGABYTE = 1;
+const YEARLY_DISCOUNT = 0.1;
+
+const FREE_GIGABYTES = 10;
+const LARGEST_GIGABYTES = 500;
+
+type Tier = { gigabytes: number; monthly: number };
+
+const TIERS: Tier[] = [
+  { gigabytes: FREE_GIGABYTES, monthly: 0 },
+  { gigabytes: 25, monthly: 15 },
+  { gigabytes: 100, monthly: 100 },
+  { gigabytes: LARGEST_GIGABYTES, monthly: 500 },
+];
+
+type Billing = "monthly" | "yearly";
+
+function monthlyPrice(tier: Tier, billing: Billing) {
+  return billing === "yearly"
+    ? tier.monthly * (1 - YEARLY_DISCOUNT)
+    : tier.monthly;
+}
+
+function fittingTier(gigabytes: number) {
+  return TIERS.find((tier) => gigabytes <= tier.gigabytes) ?? null;
+}
 
 type Plan = { price: number; included: number; extra: number | null };
 
@@ -39,6 +63,11 @@ const money = new Intl.NumberFormat("en-US", {
   currency: "USD",
   maximumFractionDigits: 0,
 });
+const exactMoney = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+});
 const count = new Intl.NumberFormat("en-US");
 
 function gigabytes(value: number) {
@@ -60,7 +89,7 @@ function usePricing() {
   const numbers = {
     snapshots,
     stored,
-    fits: stored <= FREE_GIGABYTES,
+    tier: fittingTier(stored),
     chromatic: cheapest(CHROMATIC, snapshots),
     argos: cheapest(ARGOS, snapshots),
   };
@@ -154,8 +183,16 @@ function Range({
   );
 }
 
-function Meter({ numbers }: { numbers: Numbers }) {
-  const share = Math.min(numbers.stored / FREE_GIGABYTES, 1);
+function formatPrice(value: number) {
+  return Number.isInteger(value)
+    ? money.format(value)
+    : exactMoney.format(value);
+}
+
+function Meter({ numbers, billing }: { numbers: Numbers; billing: Billing }) {
+  const { tier } = numbers;
+  const limit = tier?.gigabytes ?? LARGEST_GIGABYTES;
+  const share = Math.min(numbers.stored / limit, 1);
   return (
     <div>
       <div className="flex items-baseline justify-between text-sm">
@@ -163,163 +200,238 @@ function Meter({ numbers }: { numbers: Numbers }) {
           {gigabytes(numbers.stored)} stored
         </span>
         <span className="text-muted tabular-nums">
-          {FREE_GIGABYTES} GB free
+          {tier === null
+            ? `Over ${LARGEST_GIGABYTES} GB`
+            : `${tier.gigabytes} GB ${tier.monthly === 0 ? "free" : "plan"}`}
         </span>
       </div>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-2 ring-1 ring-border ring-inset">
         <div
-          className={`h-full rounded-full ${numbers.fits ? "bg-accent" : "bg-pending"}`}
+          className={`h-full rounded-full ${tier?.monthly === 0 ? "bg-accent" : "bg-pending"}`}
           style={{ width: `${Math.max(share * 100, 1)}%` }}
         />
       </div>
       <p className="mt-2 text-xs text-muted">
-        {numbers.fits
-          ? `With ${RETENTION_DAYS}-day retention for pull request images. Fits in the free tier.`
-          : `With ${RETENTION_DAYS}-day retention for pull request images. ${gigabytes(numbers.stored - FREE_GIGABYTES)} over the free tier, about ${money.format(Math.ceil((numbers.stored - FREE_GIGABYTES) * PRICE_PER_GIGABYTE))} a month. Paid plans are coming soon.`}
+        With {RETENTION_DAYS}-day retention for pull request images.{" "}
+        {tier === null ? (
+          <>
+            More than our largest plan,{" "}
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="text-link">
+              write to us
+            </a>
+            .
+          </>
+        ) : tier.monthly === 0 ? (
+          "Fits in the free tier."
+        ) : (
+          `Fits in the ${tier.gigabytes} GB plan, ${formatPrice(monthlyPrice(tier, billing))} a month.`
+        )}
       </p>
     </div>
   );
 }
 
-function Struck({ numbers }: { numbers: Numbers }) {
+function Comparison({
+  numbers,
+  billing,
+}: {
+  numbers: Numbers;
+  billing: Billing;
+}) {
+  const ours =
+    numbers.tier === null ? null : monthlyPrice(numbers.tier, billing);
   return (
-    <dl className="flex flex-col border-t border-dotted border-field-border/50 text-subtle">
-      {[
-        ["Chromatic", numbers.chromatic],
-        ["Argos", numbers.argos],
-      ].map(([name, cost]) => (
-        <div
-          key={name}
-          className="flex items-baseline justify-between border-b border-dotted border-field-border/50 py-3 text-sm"
-        >
-          <dt>{name}</dt>
-          <dd className="tabular-nums line-through decoration-field-border/60">
-            {money.format(Number(cost))} /mo
+    <div>
+      <p className="text-xs text-subtle">
+        {count.format(numbers.snapshots)} snapshots a month on per-snapshot
+        pricing
+      </p>
+      <dl className="mt-2 flex flex-col border-t border-dotted border-field-border/50">
+        <div className="flex items-baseline justify-between border-b border-dotted border-field-border/50 py-3 text-sm font-medium">
+          <dt>stateofpixel</dt>
+          <dd className="tabular-nums">
+            {ours === null ? "Contact us" : `${formatPrice(ours)} /mo`}
           </dd>
         </div>
-      ))}
-    </dl>
+        {[
+          ["Chromatic", numbers.chromatic],
+          ["Argos", numbers.argos],
+        ].map(([name, cost]) => (
+          <div
+            key={name}
+            className="flex items-baseline justify-between border-b border-dotted border-field-border/50 py-3 text-sm text-subtle"
+          >
+            <dt>{name}</dt>
+            <dd className="tabular-nums line-through decoration-field-border/60">
+              {money.format(Number(cost))} /mo
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {ours !== null && (
+        <p className="mt-3 text-sm font-medium">
+          {money.format(numbers.argos - ours)} a month less than Argos,{" "}
+          {money.format(numbers.chromatic - ours)} less than Chromatic.
+        </p>
+      )}
+    </div>
   );
 }
 
-function Footnote({ children }: { children?: ReactNode }) {
+function Footnote() {
   return (
     <p className="mt-8 max-w-[90ch] text-xs text-muted">
       Chromatic and Argos monthly list prices from their pricing pages on 25
       September 2026, before tax. Their TurboSnap and Storybook rates can lower
       the count. Stored size counts each changed screenshot and its diff once;
-      re-runs of the same pull request upload nothing new. {children}
+      re-runs of the same pull request upload nothing new. Paid plans are coming
+      soon.
     </p>
   );
 }
 
 const FREE_FEATURES = [
-  `${FREE_GIGABYTES} GB of stored screenshots`,
   "Unlimited snapshots, builds and projects",
   "Everyone with write access can review",
   `Pull request images kept ${RETENTION_DAYS} days`,
 ];
 
-const PAID_FEATURES = [
-  "Everything in Free",
-  `$${PRICE_PER_GIGABYTE} per GB a month above ${FREE_GIGABYTES} GB`,
-  "Billed on the monthly average",
-  "Longer retention",
-];
+const PAID_FEATURES = ["Everything in Free", "Longer retention"];
 
-function PlanCards({ fits }: { fits: boolean | null }) {
+function BillingSwitch({
+  billing,
+  onChange,
+}: {
+  billing: Billing;
+  onChange: (billing: Billing) => void;
+}) {
   return (
-    <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
-      <div
-        className={`rounded-lg p-6 ${fits === false ? "bg-surface ring-1 ring-border" : "bg-accent text-accent-fg"}`}
-      >
-        <div className="flex items-baseline justify-between">
-          <p className="text-base font-semibold">Free</p>
-          <p className="text-[40px] leading-none font-semibold tracking-[-0.04em]">
-            $0
-          </p>
+    <fieldset
+      aria-label="Billing period"
+      className="flex gap-1 self-start rounded-control bg-surface-2 p-0.5"
+    >
+      {(
+        [
+          ["monthly", "Monthly"],
+          ["yearly", `Yearly, save ${YEARLY_DISCOUNT * 100}%`],
+        ] as const
+      ).map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          aria-pressed={billing === value}
+          onClick={() => onChange(value)}
+          className={`h-7 rounded-sm px-3 text-xs font-medium transition-colors duration-100 ${
+            billing === value
+              ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
+              : "text-muted hover:text-text"
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </fieldset>
+  );
+}
+
+function TierCard({
+  tier,
+  billing,
+  highlighted,
+}: {
+  tier: Tier;
+  billing: Billing;
+  highlighted: boolean;
+}) {
+  const free = tier.monthly === 0;
+  const price = monthlyPrice(tier, billing);
+  return (
+    <div
+      className={`flex flex-col rounded-lg bg-surface p-6 ${free ? "pixel-texture col-span-2 max-lg:col-span-3 max-sm:col-span-1" : ""} ${highlighted ? "ring-2 ring-accent" : "ring-1 ring-border"}`}
+    >
+      <p className="text-base font-semibold">
+        {free ? "Free" : `${tier.gigabytes} GB`}
+        {!free && (
+          <span className="ml-2 text-xs font-medium opacity-70">
+            Coming soon
+          </span>
+        )}
+      </p>
+      <p className="mt-4 text-[40px] leading-none font-semibold tracking-[-0.04em] tabular-nums">
+        {formatPrice(price)}
+        <span className="text-sm font-normal tracking-normal opacity-70">
+          {" "}
+          /mo
+        </span>
+      </p>
+      <p className="mt-2 h-4 text-xs opacity-70">
+        {free
+          ? "No card needed. Enough for most teams."
+          : billing === "yearly"
+            ? `${money.format(price * 12)} billed yearly`
+            : "Billed monthly"}
+      </p>
+      <ul className="mt-6 flex flex-col gap-2 text-sm">
+        {[
+          `${tier.gigabytes} GB of stored screenshots`,
+          ...(free ? FREE_FEATURES : PAID_FEATURES),
+        ].map((item) => (
+          <li key={item} className="flex items-center gap-2">
+            <CheckIcon
+              size={14}
+              weight="bold"
+              className="shrink-0 opacity-70"
+            />
+            {item}
+          </li>
+        ))}
+      </ul>
+      {free && (
+        <div className="mt-auto pt-6">
+          <AuthButton label="Install the GitHub App" />
         </div>
-        <ul className="mt-6 flex flex-col gap-2 text-sm">
-          {FREE_FEATURES.map((item) => (
-            <li key={item} className="flex items-center gap-2">
-              <CheckIcon
-                size={14}
-                weight="bold"
-                className="shrink-0 opacity-70"
-              />
-              {item}
-            </li>
-          ))}
-        </ul>
-        <div className="mt-6">
-          <AuthButton
-            label="Install the GitHub App"
-            className={fits === false ? "" : "bg-accent-fg! text-accent!"}
-          />
-        </div>
-      </div>
-      <div
-        className={`rounded-lg p-6 ${fits === false ? "bg-accent text-accent-fg" : "bg-surface-2 text-muted"}`}
-      >
-        <div className="flex items-baseline justify-between">
-          <p className="text-base font-semibold">
-            Paid
-            <span className="ml-2 text-xs font-medium opacity-70">
-              Coming soon
-            </span>
-          </p>
-          <p className="text-[40px] leading-none font-semibold tracking-[-0.04em]">
-            ${PRICE_PER_GIGABYTE}
-            <span className="text-sm font-normal tracking-normal opacity-70">
-              {" "}
-              /GB
-            </span>
-          </p>
-        </div>
-        <ul className="mt-6 flex flex-col gap-2 text-sm">
-          {PAID_FEATURES.map((item) => (
-            <li key={item} className="flex items-center gap-2">
-              <CheckIcon
-                size={14}
-                weight="bold"
-                className="shrink-0 opacity-70"
-              />
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
+      )}
     </div>
   );
 }
 
 export function PricingPlans() {
   const { numbers, sliders } = usePricing();
+  const [billing, setBilling] = useState<Billing>("monthly");
   return (
     <section id="pricing" className={`${SECTION} scroll-mt-16`}>
       <LeadCopy
         title="Pay for storage, nothing else."
         className="max-w-[760px]"
       >
-        Every plan has unlimited snapshots, seats and builds. The only thing
-        that grows is the storage you keep.
+        Every plan has unlimited snapshots, seats and builds. {FREE_GIGABYTES}{" "}
+        GB is free, which covers most teams. Move the sliders to check yours.
       </LeadCopy>
-      <div className="mt-12">
-        <PlanCards fits={numbers.fits} />
+      <div className="mt-12 flex flex-col gap-4">
+        <BillingSwitch billing={billing} onChange={setBilling} />
+        <div className="grid grid-cols-5 gap-3 max-lg:grid-cols-3 max-sm:grid-cols-1">
+          {TIERS.map((tier) => (
+            <TierCard
+              key={tier.gigabytes}
+              tier={tier}
+              billing={billing}
+              highlighted={tier === (numbers.tier ?? null)}
+            />
+          ))}
+        </div>
+        <p className="text-sm text-muted">
+          Need more than {LARGEST_GIGABYTES} GB?{" "}
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-link">
+            Write to {SUPPORT_EMAIL}
+          </a>
+          .
+        </p>
       </div>
       <div className="mt-12 grid grid-cols-[1fr_1.1fr] gap-12 border-t border-dotted border-field-border/50 pt-12 max-lg:grid-cols-1">
         {sliders}
         <div className="flex flex-col gap-8">
-          <Meter numbers={numbers} />
-          <div>
-            <p className="text-xs text-subtle">
-              {count.format(numbers.snapshots)} snapshots a month on
-              per-snapshot pricing
-            </p>
-            <div className="mt-2">
-              <Struck numbers={numbers} />
-            </div>
-          </div>
+          <Meter numbers={numbers} billing={billing} />
+          <Comparison numbers={numbers} billing={billing} />
         </div>
       </div>
       <Footnote />

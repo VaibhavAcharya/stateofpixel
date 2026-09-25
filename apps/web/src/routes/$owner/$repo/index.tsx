@@ -31,6 +31,7 @@ import { shortSha } from "../../../lib/format";
 import { prefetchBuild } from "../../../lib/prefetch";
 import { useListKeys } from "../../../lib/useListKeys";
 import { useProjectAccess } from "../../../lib/useProjectAccess";
+import setup from "../../../snippets/setup.yml?highlight";
 
 type BuildFilter = NonNullable<
   FunctionArgs<typeof api.builds.list>["states"]
@@ -435,12 +436,6 @@ function MobileBuildRow({
   );
 }
 
-const SETUP_SNIPPET = `permissions:
-  id-token: write
-
-steps:
-  - run: npx stateofpixel upload screenshots`;
-
 function SetupCard({ owner, repo }: { owner: string; repo: string }) {
   return (
     <section className="flex max-w-[720px] flex-col gap-6 rounded-md border border-dotted border-field-border/60 bg-surface p-6 max-sm:p-4">
@@ -456,7 +451,7 @@ function SetupCard({ owner, repo }: { owner: string; repo: string }) {
         </Link>
         .
       </LeadCopy>
-      <CodeBlock fileName=".github/workflows/visual.yml" code={SETUP_SNIPPET} />
+      <CodeBlock fileName=".github/workflows/visual.yml" {...setup} />
       <p className="flex items-center gap-2 text-sm text-muted">
         <Spinner size={14} />
         Waiting for the first build. This page updates by itself.

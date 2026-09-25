@@ -394,7 +394,7 @@ Every change is saved on blur with a small "Saved" note. No save button.
 - Split: baselines vs PR-only images vs diff images.
 - Table per project: storage, share of total, retention setting, link to its settings.
 - Chart: daily storage for the last 90 days, from `usageDaily`.
-- Plan box: current plan, price per GB above the free tier, payment method, invoices (M3).
+- Plan box: current plan (Free, 25 GB, 100 GB or 500 GB), billing period, payment method, invoices (M3).
 
 ### 5.10 User menu
 

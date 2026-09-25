@@ -210,3 +210,39 @@
     background-size: 16px 16px;
   }
 }
+
+@utility syntax {
+  color: var(--shiki-light);
+
+  [data-theme="dark"] & {
+    color: var(--shiki-dark);
+  }
+}
+
+@layer components {
+  .pixel-texture {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+  .pixel-texture::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: url("/pricing-pixels.png") right center / auto 100%;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    mask-image: radial-gradient(
+      ellipse 45% 100% at 100% 50%,
+      #000 10%,
+      transparent 100%
+    );
+    opacity: 0.5;
+
+    @media (width < 40rem) {
+      opacity: 0.2;
+    }
+  }
+}

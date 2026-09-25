@@ -203,7 +203,7 @@ Convex prices, Starter plan pay-as-you-go ([pricing](https://www.convex.dev/pric
 
 So a mid-size team costs about $3 a month on Convex, and most of it is egress. With R2 the same team costs cents. That is fine while we have few users. Egress is the number to watch; move bytes to R2 when egress becomes the biggest line on the Convex bill.
 
-Pricing: a free tier of 10 GB stored per account, then pay only for storage. No per-snapshot, per-build or per-seat fees, so the whole team can review. Storage is the only cost that grows for us, so it is the only thing we bill. PR-only images are kept 60 days by default. Above the free tier storage costs $1 per GB a month, billed on the monthly average. Paid plans show as coming soon until billing ships. Over the limit we warn and soft-fail, we do not block CI.
+Pricing: a free tier of 10 GB stored per account, then pay only for storage. No per-snapshot, per-build or per-seat fees, so the whole team can review. Storage is the only cost that grows for us, so it is the only thing we bill. PR-only images are kept 60 days by default. Paid plans are storage tiers: 25 GB for $15 a month, 100 GB for $100 and 500 GB for $500, billed monthly or yearly, with yearly 10% cheaper. Above 500 GB, customers contact us. Paid plans show as coming soon until billing ships. Over the limit we warn and soft-fail, we do not block CI.
 
 Storage-only billing means retention is a product feature. Show each project its stored GB, and let users set how long PR-only images are kept.
 

@@ -1,6 +1,10 @@
 import { ArrowRightIcon, CaretDownIcon } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
+import { SUPPORT_EMAIL } from "../../lib/supportEmail";
+import local from "../../snippets/local.sh?highlight";
+import otherCi from "../../snippets/other-ci.sh?highlight";
+import workflow from "../../snippets/workflow.yml?highlight";
 import { CodeBlock } from "../CodeBlock";
 import { AuthButton } from "../SignIn";
 import { buttonClass, Kbd, LeadCopy, Wordmark } from "../ui";
@@ -13,24 +17,6 @@ const LEAD =
 const DISPLAY =
   "text-[clamp(40px,4.6vw,66px)] leading-[1.1] font-semibold tracking-[-0.045em] text-balance";
 
-const WORKFLOW = `permissions:
-  id-token: write
-
-steps:
-  - run: npx playwright test
-  - run: npx stateofpixel upload screenshots`;
-
-const OTHER_CI = `# Any CI: create a project token in the project settings
-export STATEOFPIXEL_TOKEN=sop_...
-
-npx playwright test
-npx stateofpixel upload screenshots`;
-
-const LOCAL = `# No account needed: compare two folders on your machine
-npx stateofpixel compare screenshots baseline
-
-# Writes stateofpixel-report/index.html`;
-
 const CLI_OUTPUT = `$ npx stateofpixel upload screenshots
 stateofpixel  build #412  pricing-cards vs main (#409)
   219 snapshots  214 unchanged  4 changed  1 added  0 removed
@@ -40,10 +26,10 @@ stateofpixel  build #412  pricing-cards vs main (#409)
 /* Header */
 
 const NAV = [
-  ["Demo", "#demo"],
-  ["How it works", "#how"],
-  ["Pricing", "#pricing"],
-  ["FAQ", "#faq"],
+  ["Demo", "/#demo"],
+  ["How it works", "/#how"],
+  ["Pricing", "/#pricing"],
+  ["FAQ", "/#faq"],
 ] as const;
 
 export function HeaderNav() {
@@ -230,7 +216,7 @@ export function HowFlow() {
 
 export function HowSteps() {
   const [tab, setTab] = useState<"actions" | "other" | "local">("actions");
-  const code = { actions: WORKFLOW, other: OTHER_CI, local: LOCAL }[tab];
+  const snippet = { actions: workflow, other: otherCi, local }[tab];
   const file = {
     actions: ".github/workflows/visual.yml",
     other: "ci.sh",
@@ -303,7 +289,7 @@ export function HowSteps() {
               </button>
             ))}
           </div>
-          <CodeBlock fileName={file} code={code} />
+          <CodeBlock fileName={file} {...snippet} />
         </div>
       </div>
     </section>
@@ -499,19 +485,48 @@ export function FinalWithSnippet() {
             </a>
           </div>
         </div>
-        <CodeBlock fileName=".github/workflows/visual.yml" code={WORKFLOW} />
+        <CodeBlock fileName=".github/workflows/visual.yml" {...workflow} />
       </div>
     </section>
   );
 }
 
+const FOOTER_LINKS = [
+  ["Brand", "/brand"],
+  ["Privacy", "/privacy"],
+  ["Terms", "/terms"],
+  ["Refunds", "/refunds"],
+] as const;
+
 export function Footer() {
   return (
     <footer className="border-t border-dotted border-field-border/50">
-      <div className="mx-auto flex h-16 max-w-[1448px] items-center px-6 text-xs text-muted max-sm:px-4">
+      <div className="mx-auto flex min-h-16 max-w-[1448px] flex-wrap items-center gap-x-6 gap-y-3 px-6 py-4 text-xs text-muted max-sm:px-4">
         <Wordmark />
-        <span className="ml-auto">Visual regression testing for GitHub</span>
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {FOOTER_LINKS.map(([label, to]) => (
+            <Link key={to} to={to} className="hover:text-text">
+              {label}
+            </Link>
+          ))}
+        </nav>
+        <a
+          href={`mailto:${SUPPORT_EMAIL}`}
+          className="ml-auto hover:text-text max-sm:ml-0"
+        >
+          {SUPPORT_EMAIL}
+        </a>
       </div>
     </footer>
+  );
+}
+
+export function PublicPage({ children }: { children: ReactNode }) {
+  return (
+    <div className="min-h-dvh bg-surface">
+      <HeaderNav />
+      <main>{children}</main>
+      <Footer />
+    </div>
   );
 }

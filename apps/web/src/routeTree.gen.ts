@@ -10,7 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BrandRouteImport } from './routes/brand'
 import { Route as InstallRouteImport } from './routes/install'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as RefundsRouteImport } from './routes/refunds'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as OwnerIndexRouteImport } from './routes/$owner/index'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner/$repo/index'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner/$repo/settings'
@@ -25,9 +29,29 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BrandRoute = BrandRouteImport.update({
+  id: '/brand',
+  path: '/brand',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InstallRoute = InstallRouteImport.update({
   id: '/install',
   path: '/install',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundsRoute = RefundsRouteImport.update({
+  id: '/refunds',
+  path: '/refunds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OwnerIndexRoute = OwnerIndexRouteImport.update({
@@ -75,7 +99,11 @@ const OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/brand': typeof BrandRoute
   '/install': typeof InstallRoute
+  '/privacy': typeof PrivacyRoute
+  '/refunds': typeof RefundsRoute
+  '/terms': typeof TermsRoute
   '/$owner/': typeof OwnerIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
@@ -87,7 +115,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/brand': typeof BrandRoute
   '/install': typeof InstallRoute
+  '/privacy': typeof PrivacyRoute
+  '/refunds': typeof RefundsRoute
+  '/terms': typeof TermsRoute
   '/$owner': typeof OwnerIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo': typeof OwnerRepoIndexRoute
@@ -99,7 +131,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/brand': typeof BrandRoute
   '/install': typeof InstallRoute
+  '/privacy': typeof PrivacyRoute
+  '/refunds': typeof RefundsRoute
+  '/terms': typeof TermsRoute
   '/$owner/': typeof OwnerIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
@@ -113,7 +149,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/brand'
     | '/install'
+    | '/privacy'
+    | '/refunds'
+    | '/terms'
     | '/$owner/'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/'
@@ -125,7 +165,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/brand'
     | '/install'
+    | '/privacy'
+    | '/refunds'
+    | '/terms'
     | '/$owner'
     | '/$owner/$repo/settings'
     | '/$owner/$repo'
@@ -136,7 +180,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/brand'
     | '/install'
+    | '/privacy'
+    | '/refunds'
+    | '/terms'
     | '/$owner/'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/'
@@ -149,7 +197,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BrandRoute: typeof BrandRoute
   InstallRoute: typeof InstallRoute
+  PrivacyRoute: typeof PrivacyRoute
+  RefundsRoute: typeof RefundsRoute
+  TermsRoute: typeof TermsRoute
   OwnerIndexRoute: typeof OwnerIndexRoute
   OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRoute
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
@@ -167,11 +219,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/brand': {
+      id: '/brand'
+      path: '/brand'
+      fullPath: '/brand'
+      preLoaderRoute: typeof BrandRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/install': {
       id: '/install'
       path: '/install'
       fullPath: '/install'
       preLoaderRoute: typeof InstallRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refunds': {
+      id: '/refunds'
+      path: '/refunds'
+      fullPath: '/refunds'
+      preLoaderRoute: typeof RefundsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$owner/': {
@@ -251,7 +331,11 @@ const OwnerRepoBuildsNumberRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BrandRoute: BrandRoute,
   InstallRoute: InstallRoute,
+  PrivacyRoute: PrivacyRoute,
+  RefundsRoute: RefundsRoute,
+  TermsRoute: TermsRoute,
   OwnerIndexRoute: OwnerIndexRoute,
   OwnerRepoSettingsRoute: OwnerRepoSettingsRoute,
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,
