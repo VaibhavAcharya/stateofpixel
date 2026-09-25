@@ -39,7 +39,7 @@ export function prefetchAccount(convex: ConvexReactClient, owner: string) {
   void prefetch(convex, api.accounts.home, { login: owner });
 }
 
-export async function prefetchBuild(
+export function prefetchBuild(
   convex: ConvexReactClient,
   {
     owner,
@@ -48,21 +48,16 @@ export async function prefetchBuild(
     snapshotId,
   }: { owner: string; repo: string; number?: string; snapshotId?: string },
 ) {
-  const access = await prefetch(convex, api.projects.access, {
-    owner,
-    name: repo,
-  });
+  void prefetch(convex, api.projects.access, { owner, name: repo });
   const buildNumber = Number(number);
-  if (!access?.canRead || !Number.isInteger(buildNumber)) {
+  if (!Number.isInteger(buildNumber)) {
     return;
   }
-  const build = await prefetch(convex, api.builds.get, {
-    projectId: access.projectId,
-    number: buildNumber,
-  });
-  if (build && snapshotId !== undefined) {
+  const build = { owner, name: repo, number: buildNumber };
+  void prefetch(convex, api.builds.get, build);
+  if (snapshotId !== undefined) {
     void prefetch(convex, api.snapshots.get, {
-      buildId: build.buildId,
+      ...build,
       snapshotId: snapshotId as Id<"snapshots">,
     });
   }

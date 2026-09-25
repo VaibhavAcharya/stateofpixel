@@ -57,6 +57,49 @@ export function allows(
   );
 }
 
+export async function findProject(
+  ctx: QueryCtx,
+  owner: string,
+  name: string,
+): Promise<Doc<"projects"> | null> {
+  const project = await ctx.db
+    .query("projects")
+    .withIndex("by_owner_and_name", (q) =>
+      q.eq("owner", owner).eq("name", name),
+    )
+    .first();
+  return project === null || project.archivedAt !== undefined ? null : project;
+}
+
+export async function findReadableProject(
+  ctx: QueryCtx,
+  owner: string,
+  name: string,
+): Promise<Doc<"projects"> | null> {
+  const project = await findProject(ctx, owner, name);
+  if (project === null) {
+    return null;
+  }
+  const access = await readAccess(ctx, project._id);
+  return allows(project, access, "read") ? project : null;
+}
+
+export async function findReadableBuild(
+  ctx: QueryCtx,
+  { owner, name, number }: { owner: string; name: string; number: number },
+): Promise<Doc<"builds"> | null> {
+  const project = await findReadableProject(ctx, owner, name);
+  if (project === null) {
+    return null;
+  }
+  return await ctx.db
+    .query("builds")
+    .withIndex("by_projectId_and_number", (q) =>
+      q.eq("projectId", project._id).eq("number", number),
+    )
+    .unique();
+}
+
 export async function requirePermission(
   ctx: QueryCtx,
   projectId: Id<"projects">,

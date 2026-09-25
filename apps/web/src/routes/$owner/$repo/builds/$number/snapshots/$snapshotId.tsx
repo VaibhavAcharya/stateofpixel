@@ -4,8 +4,6 @@ import { prefetchBuild } from "../../../../../../lib/prefetch";
 export const Route = createFileRoute(
   "/$owner/$repo/builds/$number/snapshots/$snapshotId",
 )({
-  loader: ({ context, params }) => {
-    void prefetchBuild(context.convex, params);
-  },
+  loader: ({ context, params }) => prefetchBuild(context.convex, params),
   component: () => null,
 });

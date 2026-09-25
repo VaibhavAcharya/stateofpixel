@@ -17,7 +17,7 @@ import { touchCheck } from "./checks";
 import { ciError } from "./lib/ciErrors";
 import { snapshotResult, upload } from "./lib/ciRequests";
 import { conclude } from "./lib/conclude";
-import { requirePermission } from "./lib/permissions";
+import { findReadableBuild, findReadableProject } from "./lib/permissions";
 import { buildUrl } from "./lib/urls";
 import { buildConclusion, buildCounts, buildStatus } from "./schema";
 
@@ -875,13 +875,18 @@ function toBuildSummary(build: Doc<"builds">): Infer<typeof buildSummary> {
 
 export const list = query({
   args: {
-    projectId: v.id("projects"),
+    owner: v.string(),
+    name: v.string(),
     branch: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
   returns: paginationResultValidator(buildSummary),
-  handler: async (ctx, { projectId, branch, paginationOpts }) => {
-    await requirePermission(ctx, projectId, "read");
+  handler: async (ctx, { owner, name, branch, paginationOpts }) => {
+    const project = await findReadableProject(ctx, owner, name);
+    if (project === null) {
+      return { page: [], isDone: true, continueCursor: "" };
+    }
+    const projectId = project._id;
     const builds =
       branch === undefined
         ? ctx.db
@@ -900,7 +905,7 @@ export const list = query({
 });
 
 export const get = query({
-  args: { projectId: v.id("projects"), number: v.number() },
+  args: { owner: v.string(), name: v.string(), number: v.number() },
   returns: v.union(
     v.null(),
     v.object({
@@ -917,14 +922,8 @@ export const get = query({
       supersededBy: v.union(v.number(), v.null()),
     }),
   ),
-  handler: async (ctx, { projectId, number }) => {
-    await requirePermission(ctx, projectId, "read");
-    const build = await ctx.db
-      .query("builds")
-      .withIndex("by_projectId_and_number", (q) =>
-        q.eq("projectId", projectId).eq("number", number),
-      )
-      .unique();
+  handler: async (ctx, args) => {
+    const build = await findReadableBuild(ctx, args);
     if (build === null) {
       return null;
     }

@@ -139,6 +139,7 @@ async function setup({ private: isPrivate = true } = {}) {
 }
 
 const firstPage = { numItems: 50, cursor: null };
+const repo = { owner: "acme", name: "web-app" };
 
 it("asks for a permission check before showing a private project", async () => {
   const { user, grant, projectId } = await setup();
@@ -149,9 +150,10 @@ it("asks for a permission check before showing a private project", async () => {
     fresh: false,
     canRead: false,
   });
-  await expect(
-    user.query(api.builds.list, { projectId, paginationOpts: firstPage }),
-  ).rejects.toThrow(/permission_unknown/);
+  expect(
+    (await user.query(api.builds.list, { ...repo, paginationOpts: firstPage }))
+      .page,
+  ).toEqual([]);
 
   await grant("write");
   expect(
@@ -163,42 +165,38 @@ it("asks for a permission check before showing a private project", async () => {
   });
 });
 
-it("treats a stale permission as unknown and none as not found", async () => {
-  const { user, grant, projectId } = await setup();
+it("hides builds while a permission is stale or none", async () => {
+  const { user, grant } = await setup();
   await grant("read", Date.now() - 10 * 60 * 1000);
-  await expect(
-    user.query(api.builds.list, { projectId, paginationOpts: firstPage }),
-  ).rejects.toThrow(/permission_unknown/);
+  expect(
+    (await user.query(api.builds.list, { ...repo, paginationOpts: firstPage }))
+      .page,
+  ).toEqual([]);
+  expect(await user.query(api.builds.get, { ...repo, number: 2 })).toBeNull();
 
-  const {
-    user: other,
-    grant: grantNone,
-    projectId: otherProject,
-  } = await setup();
+  const { user: other, grant: grantNone } = await setup();
   await grantNone("none");
-  await expect(
-    other.query(api.builds.list, {
-      projectId: otherProject,
-      paginationOpts: firstPage,
-    }),
-  ).rejects.toThrow(/not_found/);
+  expect(
+    (await other.query(api.builds.list, { ...repo, paginationOpts: firstPage }))
+      .page,
+  ).toEqual([]);
 });
 
 it("lets anyone read a public project", async () => {
-  const { t, projectId } = await setup({ private: false });
+  const { t } = await setup({ private: false });
   const page = await t.query(api.builds.list, {
-    projectId,
+    ...repo,
     paginationOpts: firstPage,
   });
   expect(page.page.map((build) => build.number)).toEqual([2, 1]);
 });
 
 it("lists builds by branch and returns build and snapshot details", async () => {
-  const { user, grant, projectId, buildId, snapshotId } = await setup();
+  const { user, grant, buildId, snapshotId } = await setup();
   await grant("read");
 
   const feature = await user.query(api.builds.list, {
-    projectId,
+    ...repo,
     branch: "feature",
     paginationOpts: firstPage,
   });
@@ -212,13 +210,13 @@ it("lists builds by branch and returns build and snapshot details", async () => 
   ]);
 
   expect(
-    await user.query(api.builds.get, { projectId, number: 2 }),
+    await user.query(api.builds.get, { ...repo, number: 2 }),
   ).toMatchObject({
     buildId,
     baseline: { number: 1, branch: "main" },
     supersededBy: null,
   });
-  expect(await user.query(api.builds.get, { projectId, number: 9 })).toBeNull();
+  expect(await user.query(api.builds.get, { ...repo, number: 9 })).toBeNull();
 
   const changed = await user.query(api.snapshots.list, {
     buildId,
@@ -235,7 +233,11 @@ it("lists builds by branch and returns build and snapshot details", async () => 
     },
   ]);
 
-  const detail = await user.query(api.snapshots.get, { buildId, snapshotId });
+  const detail = await user.query(api.snapshots.get, {
+    ...repo,
+    number: 2,
+    snapshotId,
+  });
   expect(detail).toMatchObject({
     name: "Header",
     diffPixels: 12,
@@ -321,7 +323,11 @@ it("approves, rejects and undoes a snapshot and updates the build", async () => 
   expect(
     await t.run((ctx) => ctx.db.query("approvedImages").collect()),
   ).toHaveLength(0);
-  const detail = await user.query(api.snapshots.get, { buildId, snapshotId });
+  const detail = await user.query(api.snapshots.get, {
+    ...repo,
+    number: 2,
+    snapshotId,
+  });
   expect(detail?.lastReview).toMatchObject({
     action: "reject",
     login: "octocat",

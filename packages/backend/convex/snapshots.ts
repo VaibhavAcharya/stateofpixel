@@ -6,7 +6,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
 import { getUrl } from "./blobs";
-import { requirePermission } from "./lib/permissions";
+import { findReadableBuild, requirePermission } from "./lib/permissions";
 import { diffStatus, reviewState } from "./schema";
 
 async function requireBuild(ctx: QueryCtx, buildId: Id<"builds">) {
@@ -75,11 +75,17 @@ async function toImageInfo(ctx: QueryCtx, imageId: Id<"images"> | undefined) {
 }
 
 export const get = query({
-  args: { buildId: v.id("builds"), snapshotId: v.id("snapshots") },
+  args: {
+    owner: v.string(),
+    name: v.string(),
+    number: v.number(),
+    snapshotId: v.id("snapshots"),
+  },
   returns: v.union(
     v.null(),
     v.object({
       id: v.id("snapshots"),
+      buildId: v.id("builds"),
       name: v.string(),
       diffStatus,
       reviewState,
@@ -105,10 +111,10 @@ export const get = query({
       ),
     }),
   ),
-  handler: async (ctx, { buildId, snapshotId }) => {
-    const build = await requireBuild(ctx, buildId);
+  handler: async (ctx, { snapshotId, ...buildArgs }) => {
+    const build = await findReadableBuild(ctx, buildArgs);
     const snapshot = await ctx.db.get("snapshots", snapshotId);
-    if (build === null || snapshot === null || snapshot.buildId !== buildId) {
+    if (build === null || snapshot === null || snapshot.buildId !== build._id) {
       return null;
     }
     const review = await ctx.db
@@ -118,6 +124,7 @@ export const get = query({
       .first();
     return {
       id: snapshot._id,
+      buildId: build._id,
       name: snapshot.name,
       diffStatus: snapshot.diffStatus,
       reviewState: snapshot.reviewState,

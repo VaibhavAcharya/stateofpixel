@@ -4,8 +4,8 @@ import {
   XIcon,
 } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
-import type { Id } from "@stateofpixel/backend/dataModel";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import type { UsePaginatedQueryReturnType } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { usePaginatedQuery } from "convex-helpers/react/cache/hooks";
 import { AppHeader } from "../../../components/AppHeader";
@@ -34,9 +34,7 @@ export const Route = createFileRoute("/$owner/$repo/")({
     typeof search.branch === "string" && search.branch !== ""
       ? { branch: search.branch }
       : {},
-  loader: ({ context, params }) => {
-    void prefetchBuild(context.convex, params);
-  },
+  loader: ({ context, params }) => prefetchBuild(context.convex, params),
   component: ProjectPage,
 });
 
@@ -74,7 +72,13 @@ function ProjectPage() {
 }
 
 function ProjectBuilds({ owner, repo }: { owner: string; repo: string }) {
+  const { branch } = Route.useSearch();
   const result = useProjectAccess(owner, repo);
+  const builds = usePaginatedQuery(
+    api.builds.list,
+    { owner, name: repo, branch },
+    { initialNumItems: 50 },
+  );
   if (result.state === "loading") {
     return <SkeletonRows />;
   }
@@ -86,31 +90,20 @@ function ProjectBuilds({ owner, repo }: { owner: string; repo: string }) {
       </EmptyState>
     );
   }
-  return (
-    <BuildsTable
-      projectId={result.access.projectId}
-      owner={owner}
-      repo={repo}
-    />
-  );
+  return <BuildsTable builds={builds} owner={owner} repo={repo} />;
 }
 
 function BuildsTable({
-  projectId,
+  builds: { results, status, loadMore },
   owner,
   repo,
 }: {
-  projectId: Id<"projects">;
+  builds: UsePaginatedQueryReturnType<typeof api.builds.list>;
   owner: string;
   repo: string;
 }) {
   const { branch } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const { results, status, loadMore } = usePaginatedQuery(
-    api.builds.list,
-    { projectId, branch },
-    { initialNumItems: 50 },
-  );
   const showBuildName =
     new Set(results.map((build) => build.buildName)).size > 1;
   const filterBranch = (value: string) =>

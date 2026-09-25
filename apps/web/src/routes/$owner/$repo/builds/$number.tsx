@@ -69,9 +69,7 @@ import { prefetchBuild } from "../../../../lib/prefetch";
 import { useProjectAccess } from "../../../../lib/useProjectAccess";
 
 export const Route = createFileRoute("/$owner/$repo/builds/$number")({
-  loader: ({ context, params }) => {
-    void prefetchBuild(context.convex, params);
-  },
+  loader: ({ context, params }) => prefetchBuild(context.convex, params),
   component: BuildRoute,
 });
 
@@ -151,20 +149,41 @@ function BuildAccess({
   repo: string;
   number: number;
 }) {
+  const { snapshotId } = useParams({ strict: false });
   const result = useProjectAccess(owner, repo);
-  if (result.state === "loading") {
-    return <BuildSkeleton />;
+  const valid = Number.isInteger(number);
+  const build = useQuery(
+    api.builds.get,
+    valid ? { owner, name: repo, number } : "skip",
+  );
+  const prefetch = valid && snapshotId !== undefined && (
+    <PrefetchSnapshot
+      owner={owner}
+      repo={repo}
+      number={number}
+      snapshotId={snapshotId as Id<"snapshots">}
+    />
+  );
+  if (result.state === "loading" || (build === undefined && valid)) {
+    return (
+      <>
+        {prefetch}
+        <BuildSkeleton />
+      </>
+    );
   }
   if (result.state === "not_found") {
     return <NotFound title="Project not found." />;
   }
+  if (!build) {
+    return <NotFound title="Build not found." />;
+  }
   return (
-    <BuildLoader
-      projectId={result.access.projectId}
+    <BuildPage
+      build={build}
       canWrite={result.access.canWrite}
       owner={owner}
       repo={repo}
-      number={number}
     />
   );
 }
@@ -200,34 +219,6 @@ function NotFound({ title }: { title: string }) {
         It may not exist, or you do not have access to the repository on GitHub.
       </EmptyState>
     </div>
-  );
-}
-
-function BuildLoader({
-  projectId,
-  canWrite,
-  owner,
-  repo,
-  number,
-}: {
-  projectId: Id<"projects">;
-  canWrite: boolean;
-  owner: string;
-  repo: string;
-  number: number;
-}) {
-  const build = useQuery(
-    api.builds.get,
-    Number.isInteger(number) ? { projectId, number } : "skip",
-  );
-  if (build === undefined && Number.isInteger(number)) {
-    return <BuildSkeleton />;
-  }
-  if (!build) {
-    return <NotFound title="Build not found." />;
-  }
-  return (
-    <BuildPage build={build} canWrite={canWrite} owner={owner} repo={repo} />
   );
 }
 
@@ -302,7 +293,7 @@ function useApplyReview() {
     for (const { args: queryArgs, value } of store.getAllQueries(
       api.snapshots.get,
     )) {
-      if (value && queryArgs.buildId === args.buildId) {
+      if (value?.buildId === args.buildId) {
         store.setQuery(api.snapshots.get, queryArgs, review(value));
       }
     }
@@ -331,13 +322,13 @@ function useApplyReview() {
           counts,
           conclusion: conclude(counts),
         });
-        updated.set(queryArgs.projectId, value.number);
+        updated.set(`${queryArgs.owner}/${queryArgs.name}`, value.number);
       }
     }
     for (const { args: queryArgs, value } of store.getAllQueries(
       api.builds.list,
     )) {
-      const number = updated.get(queryArgs.projectId);
+      const number = updated.get(`${queryArgs.owner}/${queryArgs.name}`);
       if (value !== undefined && number !== undefined) {
         store.setQuery(api.builds.list, queryArgs, {
           ...value,
@@ -355,13 +346,22 @@ function useApplyReview() {
 }
 
 function PrefetchSnapshot({
-  buildId,
+  owner,
+  repo,
+  number,
   snapshotId,
 }: {
-  buildId: Id<"builds">;
+  owner: string;
+  repo: string;
+  number: number;
   snapshotId: Id<"snapshots">;
 }) {
-  const snapshot = useQuery(api.snapshots.get, { buildId, snapshotId });
+  const snapshot = useQuery(api.snapshots.get, {
+    owner,
+    name: repo,
+    number,
+    snapshotId,
+  });
   useEffect(() => {
     for (const image of [
       snapshot?.image,
@@ -671,6 +671,8 @@ function BuildPage({
             />
           ) : (
             <SnapshotDetail
+              owner={owner}
+              repo={repo}
               build={build}
               snapshotId={snapshotId as Id<"snapshots">}
               settings={settings}
@@ -699,7 +701,13 @@ function BuildPage({
         </section>
       </div>
       {[...neighbours].map((id) => (
-        <PrefetchSnapshot key={id} buildId={build.buildId} snapshotId={id} />
+        <PrefetchSnapshot
+          key={id}
+          owner={owner}
+          repo={repo}
+          number={build.number}
+          snapshotId={id}
+        />
       ))}
       <Toasts toasts={toasts} dismiss={dismiss} />
     </>
@@ -1227,6 +1235,8 @@ function SnapshotRowLink({
 }
 
 function SnapshotDetail({
+  owner,
+  repo,
   build,
   snapshotId,
   settings,
@@ -1240,6 +1250,8 @@ function SnapshotDetail({
   onUndo,
   navigation,
 }: {
+  owner: string;
+  repo: string;
   build: Build;
   snapshotId: Id<"snapshots">;
   settings: ViewerSettings;
@@ -1254,7 +1266,9 @@ function SnapshotDetail({
   navigation: ReactNode;
 }) {
   const snapshot = useQuery(api.snapshots.get, {
-    buildId: build.buildId,
+    owner,
+    name: repo,
+    number: build.number,
     snapshotId,
   });
   if (snapshot === undefined) {

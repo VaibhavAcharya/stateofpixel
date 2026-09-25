@@ -45,7 +45,7 @@ Group 2: speed
 - [x] Measure where page and navigation time goes
 - [x] Keep query results across navigation, prefetch neighbours, render cached permissions while they refresh
 - [x] Optimistic updates for build counts, conclusion and Approve all
-- [ ] One round trip for project access and the page data on first visit
+- [x] One round trip for project access and the page data on first visit
 
 Group 3: lists and viewer
 - [ ] Polish every list: projects, builds, accounts, sidebar

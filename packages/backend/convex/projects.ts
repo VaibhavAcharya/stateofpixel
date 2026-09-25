@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import { allows, readAccess } from "./lib/permissions";
+import { allows, findProject, readAccess } from "./lib/permissions";
 import { repoPermission } from "./schema";
 
 export const access = query({
@@ -20,13 +20,8 @@ export const access = query({
     }),
   ),
   handler: async (ctx, { owner, name }) => {
-    const project = await ctx.db
-      .query("projects")
-      .withIndex("by_owner_and_name", (q) =>
-        q.eq("owner", owner).eq("name", name),
-      )
-      .first();
-    if (project === null || project.archivedAt !== undefined) {
+    const project = await findProject(ctx, owner, name);
+    if (project === null) {
       return null;
     }
     const access = await readAccess(ctx, project._id);
