@@ -37,13 +37,21 @@ pnpm dev
 | `SITE_URL` | `http://localhost:3000` | `https://stateofpixel.com` |
 | GitHub App webhook URL | not set, the app has one webhook URL | `https://graceful-dogfish-423.convex.site/github/webhook` |
 | GitHub App setup URL | | `https://stateofpixel.com/install` |
-| Dodo Payments | test mode, webhook `https://<dev deployment>.convex.site/dodo/webhook` | live mode, webhook `https://graceful-dogfish-423.convex.site/dodo/webhook` (not set up yet) |
+| Dodo Payments | test mode, webhook `https://<dev deployment>.convex.site/dodo/webhook` | live mode, webhook `https://graceful-dogfish-423.convex.site/dodo/webhook` |
 
 Both deployments need the same Convex env vars: `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`, `JWT_PRIVATE_KEY`, `JWKS`, `SITE_URL`, `GITHUB_APP_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_PRIVATE_KEY` (PKCS#8) and `GITHUB_WEBHOOK_SECRET`. Each deployment has its own JWT key pair. The `GITHUB_*` vars are declared in `convex/convex.config.ts`, so a push fails while any of them is missing. Compare them with `npx convex env list --names-only` and `npx convex env list --names-only --prod` in `packages/backend`.
 
 Production code deploys from Netlify: its build runs `convex deploy` with `CONVEX_DEPLOY_KEY`, then builds the web app.
 
 Paid plans come from Dodo Payments (SPEC section 8, Billing). Each deployment needs `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_SECRET` (the signing secret of its Dodo webhook) and `DODO_PAYMENTS_ENVIRONMENT` (`test_mode` or `live_mode`). These vars are optional in `convex.config.ts`, so a deployment without them still pushes; the pricing section then shows paid plans as coming soon, and billing throws `billing_not_configured`.
+
+To test billing on dev, check out in test mode with a Dodo test card. On production, a 100% discount code entered on checkout gives a real subscription at $0; cancel it afterwards from Manage billing. "Cancel now" moves the account to Free right away, "cancel at next billing date" keeps the plan until then.
+
+To copy env vars from one deployment to another without printing them, run from `packages/backend`:
+
+```sh
+npx convex env list --deployment <from> > /tmp/from.env && npx convex env set --deployment <to> --from-file /tmp/from.env; rm -f /tmp/from.env
+```
 
 To set a plan by hand, for example `custom`, run from `packages/backend`:
 
@@ -54,11 +62,11 @@ npx convex run --prod accounts:setPlan '{"login":"acme","plan":"custom","storage
 
 ## CLI
 
-Build the workspace CLI and point it at your local deployment with a project token from the local project settings:
+Build the workspace CLI and point it at your dev deployment with a project token from its project settings:
 
 ```sh
 pnpm --filter stateofpixel build
-STATEOFPIXEL_API_URL=http://127.0.0.1:3211/api/v1 STATEOFPIXEL_TOKEN=sop_... \
+STATEOFPIXEL_API_URL=https://<dev deployment>.convex.site/api/v1 STATEOFPIXEL_TOKEN=sop_... \
   node packages/cli/dist/index.mjs upload <dir>
 ```
 

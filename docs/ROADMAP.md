@@ -85,7 +85,10 @@ See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (sta
 - [x] Plan box on the account home, with payment result and failed renewal notices
 - [x] Upgrade hints in the account switcher and the storage banner
 - [x] Dodo Payments live mode on production: live products, webhook and env vars
-- [ ] Show when a cancelled subscription ends
+- [ ] Show when a cancelled subscription ends, from `cancel_at_next_billing_date` and `next_billing_date`
+- [ ] Change between paid plans without cancelling first; `billing.checkout` refuses with `already_subscribed` today
+- [ ] Show Upgrade and Manage billing only to owners; other members see them and get `not_owner`
+- [ ] Plan box details from SPEC 5.9: billing period, payment method and invoices
 - [ ] Usage page
 - [ ] PR comment summary
 - [ ] Tokenless auth for fork PRs

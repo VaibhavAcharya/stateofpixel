@@ -820,6 +820,8 @@ Dodo sends subscription events to the HTTP action `POST /dodo/webhook`. It verif
 | `cancelled`, `expired`, `failed` | If it is the account's `billingSubscriptionId`, move to `free` and clear it. |
 | other (`on_hold`, `past_due`, `paused`, `pending`) | If it is the account's `billingSubscriptionId`, set `billingStatus`. The plan stays. |
 
+The customer portal offers two ways to cancel. "Cancel now" ends the subscription at once, so the account moves to `free` on that event. "Cancel at next billing date" keeps the subscription `active` with `cancel_at_next_billing_date` until the period ends, so the plan stays until then; the plan box does not show that date yet.
+
 Moving to `free` can put the account over its limit, which starts the grace period of section 4.10.
 
 ## 9. GitHub integration
