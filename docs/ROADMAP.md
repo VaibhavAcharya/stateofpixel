@@ -52,12 +52,12 @@ Group 3: lists and viewer
 - [ ] Diff overlay toggle in Side by side, on by default
 
 Group 4: landing
-- [ ] Drop Playfair Display, one sans and one mono only
+- [x] Drop Playfair Display, one sans and one mono only
 - [ ] More sections, built to convert
 - [ ] Comparison pages against the alternatives
 - [ ] Brand section with the logo and its usage
 - [ ] Open Graph image per page
-- [ ] Logo as the favicon
+- [x] Logo as the favicon
 
 ## M2: real-world CI
 

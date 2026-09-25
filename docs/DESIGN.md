@@ -68,7 +68,7 @@ The diff PNG is made by the CLI. The CLI must render diff pixels as pure red on 
 
 ### Typography
 
-UI font: IBM Plex Sans (SIL OFL 1.1). Mono: Lilex (OFL 1.1), a programming font built on IBM Plex Mono, so it matches the sans. Landing display only: Playfair Display (OFL 1.1). Onkeiki uses Geist for headings and body copy, Inter for controls, and Playfair Display for one display headline; we use IBM Plex Sans everywhere instead, by the owner's choice. Install with `@fontsource-variable/ibm-plex-sans` and `@fontsource-variable/lilex` (both 5.3.0, OFL-1.1, checked with `npm view`), which self-host the files the way onkeiki does. Family names are `IBM Plex Sans Variable` and `Lilex Variable`. Load `@fontsource-variable/playfair-display` (5.3.0, OFL-1.1) on the landing route only. The tracking values below were taken from onkeiki's Geist settings; recheck them against Plex Sans when the first pages exist.
+UI font: IBM Plex Sans (SIL OFL 1.1). Mono: Lilex (OFL 1.1), a programming font built on IBM Plex Mono, so it matches the sans. Onkeiki uses Geist for headings and body copy, Inter for controls, and Playfair Display for one display headline; we use IBM Plex Sans everywhere instead, by the owner's choice. Install with `@fontsource-variable/ibm-plex-sans` and `@fontsource-variable/lilex` (both 5.3.0, OFL-1.1, checked with `npm view`), which self-host the files the way onkeiki does. Family names are `IBM Plex Sans Variable` and `Lilex Variable`. There is no third font: the landing display line is IBM Plex Sans too. The tracking values below were taken from onkeiki's Geist settings; recheck them against Plex Sans when the first pages exist.
 
 | Token | Size / line height | Weight | Tracking | Use |
 |---|---|---|---|---|
@@ -79,7 +79,7 @@ UI font: IBM Plex Sans (SIL OFL 1.1). Mono: Lilex (OFL 1.1), a programming font 
 | `text-lg` | 16 / 24 | 600 | -0.01em | Section titles, dialog titles |
 | `text-xl` | 20 / 28 | 600 | -0.025em | Page title (`acme / web-app`, `#411`) |
 | `text-2xl` | 24 / 34 | 450 and 600 | -0.035em | Empty-state and landing lead copy |
-| `text-display` | clamp(40px, 4.6vw, 66px) / 1.13 | 400 | -0.05em | Landing only, Playfair Display |
+| `text-display` | clamp(40px, 4.6vw, 66px) / 1.1 | 600 | -0.045em | Landing only |
 
 Rules. Numbers (counts, diff percent, sizes, build numbers) use `font-variant-numeric: tabular-nums`. Hashes, branch names and file paths use Lilex through the `mono` utility, which sets it at 0.925em of the text around it: Lilex at the same pixel size reads larger than Plex Sans and pushes rows wider. Snapshot names use Plex Sans: the parent path in `muted`, the last segment in `text`, and the viewport suffix (`[1280]`) as a separate `mono` `muted` label that never truncates. Max prose width is 65ch (docs, empty states). Headings use `text-wrap: balance`.
 
@@ -138,7 +138,6 @@ Paste into `apps/web/src/styles.css` after `@import "tailwindcss";`. Light value
 @theme {
   --font-sans: "IBM Plex Sans Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Lilex Variable", ui-monospace, "SF Mono", monospace;
-  --font-display: "Playfair Display Variable", Georgia, serif;
 
   --text-2xs: 11px;  --text-2xs--line-height: 16px;
   --text-xs: 12px;   --text-xs--line-height: 16px;
@@ -293,7 +292,7 @@ Slider handle: 2px vertical line in `link`, with a 24px round grip (`surface` fi
 
 ## Layout
 
-Breakpoints: 640, 768, 1024, 1280. App header is 48px, `surface`, bottom border. Left: the logo mark (a 20px ink square with two pixel cut-outs, linking to all projects), a slash, the account switcher (account avatar, login, up-down caret; the menu lists accounts and "Add GitHub account"), and on project pages a slash and the repo name. Right: the user avatar, which opens a menu with name and login, a System, Light, Dark icon switch, and Sign out. Public pages use a 64px header and a 1448px max width with a 24px gutter (onkeiki's `--keiki-site-width` and `--site-nav-height`).
+Breakpoints: 640, 768, 1024, 1280. App header is 48px, `surface`, bottom border. Left: the logo mark (a 20px ink square with two pixel cut-outs, linking to all projects), a slash, the account switcher (account avatar, login, up-down caret; the menu lists accounts and "Add GitHub account"), and on project pages a slash and the repo name. Right: the user avatar, which opens a menu with name and login, a System, Light, Dark icon switch, and Sign out. The favicon is the same mark, `apps/web/public/favicon.svg`, which follows the system color scheme, with a 180px `apple-touch-icon.png` on ink. Public pages use a 64px header and a 1448px max width with a 24px gutter (onkeiki's `--keiki-site-width` and `--site-nav-height`).
 
 Account home and project pages. Content max width 1200px, centered, 32px top padding (24px below 640px). A left-aligned column on a 1440px screen left a wide empty band on the right, so the column is centered like onkeiki's site width. Page title row: optional leading avatar (40px, `radius-xs`), `text-xl` title with a `text-xs muted` meta line under it, and a secondary button on the right ("Configure on GitHub", "Repository"). Filters are a row of 28px ghost-style select buttons above the table, 8px apart.
 
@@ -326,7 +325,7 @@ Baselines grid: `repeat(auto-fill, minmax(220px, 1fr))`, gap 16px. Each tile is 
 
 Settings: one column, 640px max width, sections separated by 48px and a dotted `border` line, label above field.
 
-Landing (`/`): 64px sticky header on `surface` with the wordmark and one primary button (Sign in, or Open dashboard when signed in), 1448px max width. Sections top to bottom: centered lead-copy hero with Get started and a ghost "How it works" anchor; the product art, a static HTML mock of the build page on a checkerboard inside a `radius-xl` frame; three steps in a 3-column grid; the CI snippet next to its lead copy on a `bg` band with hairlines above and below; the pricing lead copy over three facts split by dotted lines; one Playfair display line; a dotted footer. The page follows the theme setting.
+Landing (`/`): 64px sticky header on `surface` with the wordmark and one primary button (Sign in, or Open dashboard when signed in), 1448px max width. Sections top to bottom: centered lead-copy hero with Get started and a ghost "How it works" anchor; the product art, a static HTML mock of the build page on a checkerboard inside a `radius-xl` frame; three steps in a 3-column grid; the CI snippet next to its lead copy on a `bg` band with hairlines above and below; the pricing lead copy over three facts split by dotted lines; one display line; a dotted footer. The page follows the theme setting.
 
 Sign-in (any signed-in page while signed out): centered 360px column, 32px logo, `text-xl` title, one `text-sm muted` line, and a full-width primary "Continue with GitHub" button. While auth loads, the page shows a skeleton of the 48px app header only.
 

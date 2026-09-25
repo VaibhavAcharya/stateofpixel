@@ -1,4 +1,3 @@
-import playfairCss from "@fontsource-variable/playfair-display/index.css?url";
 import {
   CameraIcon,
   CheckCircleIcon,
@@ -26,7 +25,6 @@ export const Route = createFileRoute("/")({
           "Visual regression testing that runs in your CI. Review pixel diffs, set GitHub checks, pay only for storage.",
       },
     ],
-    links: [{ rel: "stylesheet", href: playfairCss }],
   }),
   component: Home,
 });
@@ -156,10 +154,10 @@ function Home() {
         </section>
 
         <section className="mx-auto max-w-[1448px] px-6 pt-12 pb-24 max-sm:px-4 max-sm:pb-12">
-          <p className="font-display text-[clamp(40px,4.6vw,66px)] leading-[1.13] tracking-[-0.05em] text-balance">
+          <p className="text-[clamp(40px,4.6vw,66px)] leading-[1.1] font-semibold tracking-[-0.045em] text-balance">
             Every pixel, reviewed.
             <br />
-            <span className="text-[#85877f]">Nothing ships by surprise.</span>
+            <span className="text-muted">Nothing ships by surprise.</span>
           </p>
           <div className="mt-10">
             <AuthButton label="Get started with GitHub" />
