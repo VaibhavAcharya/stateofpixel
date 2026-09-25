@@ -42,6 +42,13 @@ Both deployments need the same Convex env vars: `AUTH_GITHUB_ID`, `AUTH_GITHUB_S
 
 Production code deploys from Netlify: its build runs `convex deploy` with `CONVEX_DEPLOY_KEY`, then builds the web app.
 
+Until billing ships, change an account's plan from `packages/backend`:
+
+```sh
+npx convex run --prod accounts:setPlan '{"login":"acme","plan":"25gb"}'
+npx convex run --prod accounts:setPlan '{"login":"acme","plan":"custom","storageLimitBytes":1099511627776}'
+```
+
 ## CLI
 
 Build the workspace CLI and point it at your local deployment with a project token from the local project settings:

@@ -54,7 +54,7 @@ Review state.
 | `approved` (carried over) | same as approved | same as approved | check with a small link badge |
 | `rejected` | `#cb2a2f` / `#fff0f0` | `#ff6166` / `#2a1314` | cross |
 
-Build conclusion pills reuse these: `no_changes` uses unchanged, `changes` uses pending ("12 to review"), `approved`, `rejected`, `error` uses failed, `pending` and `expired` use unchanged with a spinner or clock icon. `superseded` is an outline pill (`border` 1px, `muted` text, no fill) shown next to the conclusion. Pill labels use sentence case ("Approved", "No changes", "Changed"); a label that starts with a count stays as is ("12 to review", "1 rejected").
+Build conclusion pills reuse these: `no_changes` uses unchanged, `changes` uses pending ("12 to review"), `approved`, `rejected`, `error` uses failed, `pending` and `expired` use unchanged with a spinner or clock icon. A storage-blocked build shows "Not compared" in failed colors with a warning icon. `superseded` is an outline pill (`border` 1px, `muted` text, no fill) shown next to the conclusion. Pill labels use sentence case ("Approved", "No changes", "Changed"); a label that starts with a count stays as is ("12 to review", "1 rejected").
 
 Image viewer.
 
@@ -151,7 +151,7 @@ Segmented control (viewer modes, zoom). A `surface-2` track with radius `radius-
 
 Toasts. Bottom center, 16px from the bottom edge (above the sticky review bar on mobile). Width up to 420px, padding 10px 12px, radius `radius-md`, `surface` fill, 1px `border`, `shadow-menu`, `text-sm`. Icon colored by type, message, optional action ("Retry", "Undo"). Enter is 250ms `ease-out-strong` from 8px below with opacity; exit is a 100ms fade. Auto-dismiss after 5 seconds, paused on hover and focus. Failed review requests use the failed icon and say what failed: "Could not approve Header/Default [1280]. Your change was undone." Toasts use `role="status"`; errors use `role="alert"`.
 
-Banners (build page states in SPEC 5.5). Full width of the main column, directly under the build header. Min height 36px, padding 8px 12px, radius `radius-md`, status fill, text in `text` color with a status-colored icon, one sentence and one link. Superseded and expired use the unchanged colors, pending uses added colors with a spinner, error and storage limit use failed colors, "From PR #123" uses unchanged. At most two banners stack; the rest collapse into "and 1 more".
+Banners (build page states in SPEC 5.5). Full width of the main column, directly under the build header. Min height 36px, padding 8px 12px, radius `radius-md`, status fill, text in `text` color with a status-colored icon, one sentence and one link. Superseded and expired use the unchanged colors, pending uses added colors with a spinner, error and storage limit use failed colors, "From PR #123" uses unchanged. Banners stack in that order. The account and project pages use the same banner for storage: changed colors from 80% of the limit, failed colors once the limit is reached.
 
 Keyboard hint chips (kbd). Height 20px, min width 20px, padding 0 5px, radius `radius-xs`, 1px `border`, `surface` fill, `text-2xs` Lilex, `muted`. Modifier keys print as words (`shift`), not symbols, matching SPEC. The `?` overlay is a dialog 560px wide, radius `radius-lg`, `shadow-menu`, listing SPEC's shortcut table as two columns: action in `text-sm`, keys as chips right-aligned.
 

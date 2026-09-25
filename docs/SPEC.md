@@ -229,8 +229,12 @@ URL scheme mirrors GitHub: `/{owner}/{repo}`. Public pages (5.1) are server-rend
 | Path | Content |
 |---|---|
 | `/` | Landing. One-sentence pitch, the "how it works" diagram, a 3-line CI snippet, pricing block, Sign in button. |
+| `/brand` | Logo files to download, usage rules, colors and type. |
+| `/privacy`, `/terms`, `/refunds` | Legal pages. Support email `hello@stateofpixel.com`. |
 
-Docs pages are not built yet.
+These paths shadow GitHub accounts with the same login. Docs pages are not built yet.
+
+In dev only, `/lab.stateofpixel/web/builds/{1,2}` renders the build page from fixtures for the visual suite (README, Dogfooding). GitHub logins cannot contain a dot, so it never shadows an account.
 
 ### 5.2 Install (`/install`)
 
@@ -255,6 +259,7 @@ Shown when the signed-in user has no installations. One button to the GitHub App
 - Account switcher for users in several orgs.
 - One row per project: name, latest build number, branch, conclusion pill, relative time.
 - Storage meter links to the Usage page (owners only; others see no meter). It ships with the Usage page (M3).
+- Storage banner from 80% of the limit (4.10). The same banner shows on project pages to users with write access.
 - "Configure access on GitHub" links to the installation settings.
 
 ### 5.4 Project page (`/{owner}/{repo}`)
@@ -771,12 +776,13 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 | `me.installUrl` | query | signed in | The GitHub App install URL. |
 | `me.refreshAccounts` | action | signed in | `GET /user/installations` with the user token, links the user to accounts. Runs at sign-in and from "Refresh" on the Install page. |
 | `permissions.refresh` | action | signed in | See above. Writes `none` when GitHub answers 404. `orgOwner` comes from the org membership role, or from the login for a user account. |
-| `projects.access` | query | signed in | Project id, cached permission, whether it is fresh, `canRead` and `canWrite`. The page calls `permissions.refresh` while it is not fresh. |
-| `accounts.home` | query | account member | The account and its installation settings URL. |
+| `projects.access` | query | signed in | Project id, cached permission, whether it is fresh, `canRead` and `canWrite`, and the account's storage usage when the user can write. The page calls `permissions.refresh` while it is not fresh. |
+| `accounts.home` | query | account member | The account, its installation settings URL and its storage usage (plan, bytes, limit, `overLimitSince`). The page works out the storage state with the clock, since queries do not read it. |
+| `accounts.setPlan` | internal mutation | Convex dashboard or `npx convex run` | Sets `plan` and `storageLimitBytes`. A `custom` plan takes the limit as an argument. Until billing ships, this is how an account changes plan. |
 | `accounts.projects` | query | account member | Paginated projects with their latest build, searchable, sorted by name or last build. |
 | `builds.list` | query | read | Paginated with `.paginate()`, filters branch, pull request and a list of states. |
 | `builds.get` | query | read | Build and counts by number. |
-| `snapshots.list` | query | read | Paginated sidebar list by `by_buildId_and_diffStatus_and_name`. Includes image URLs from `blobs.getUrl`. |
+| `snapshots.list` | query | read | Paginated sidebar list by `by_buildId_and_diffStatus_and_name`: name, statuses and diff ratio, no image URLs. |
 | `snapshots.get` | query | read | One snapshot with metadata, review info and history. |
 | `reviews.apply` | mutation | write | `{ buildId, snapshotIds or "all", action, comment }`. "all" runs in chunks of 1,000 through scheduled mutations; the UI shows progress from `counts`. |
 | `baselines.current` | query | read | Every build name seen on the default branch, each with its newest full approved build. |
@@ -788,7 +794,7 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 | `tokens.create` | action | admin | Generates the token, stores the hash through an internal mutation, returns the token once. |
 | `tokens.revoke` | mutation | admin | |
 | `projects.remove` | mutation | admin | Checks the typed name, deletes the project, schedules chunked deletion of its data. |
-| `usage.get` | query | org owner | Usage page data. |
+| `usage.get` | query | org owner | Usage page data. Not built yet. |
 
 `reviews.apply` on superseded, pending, expired or storage-blocked builds throws a `ConvexError` with code `build_not_reviewable`. `approve` and `reject` apply to snapshots with review state `pending`, `approved` or `rejected`; `undo` sets them back to `pending` and removes the `approvedImages` rows of that image on the PR. `"all"` only touches `pending` snapshots, runs 500 per scheduled mutation (changed first, then added), and cannot undo. Every call recomputes the conclusion and bumps the GitHub check.
 
@@ -846,7 +852,7 @@ Package `stateofpixel`, closed source, published unminified with source maps. No
 | `--baseline-branch` | `STATEOFPIXEL_BASELINE_BRANCH` | PR base, else default branch |
 | `--subset` | | off. Use when only some snapshots ran, so missing ones are not `removed`. |
 | `--threshold` | | from project settings |
-| `--strict` | | off |
+| `--strict` | | off. Exit 1 on 5xx and rate limits (429) instead of warning and exiting 0. |
 | `--dry-run` | | off. Hash and print the plan, upload nothing. |
 | | `STATEOFPIXEL_TOKEN` | OIDC on GitHub Actions |
 

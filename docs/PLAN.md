@@ -175,7 +175,9 @@ stateofpixel/
 - CLI: Node 20+, published to npm, odiff-bin as optional dependency, pixelmatch as fallback.
 - GitHub App with `checks: write`, `pull_requests: write`, `contents: read`, `actions: read`.
 - Deploys: production builds on Netlify run `convex deploy` with a production deploy key, then build the web app ([docs](https://docs.convex.dev/production/hosting/netlify)). Deploy previews and branch deploys build only the web app, against the production Convex URL.
-- Tests: Vitest for the CLI, `convex-test` for backend functions.
+- Rate limits: the `@convex-dev/rate-limiter` component, for requests per token, builds per account and bytes uploaded per account.
+- Analytics: Umami Cloud on the web app, cookieless. A before-send hook replaces account, repo, build and snapshot names in URLs with placeholders.
+- Tests: Vitest for the CLI, `convex-test` for backend functions, Playwright captures of the web app through our own reporter.
 
 Convex limits shape the backend code ([limits](https://docs.convex.dev/production/state/limits)). A query or mutation has 1 s, 4,096 index ranges, 32,000 documents scanned and 16,000 written. HTTP action bodies are capped at 20 MiB. So every bulk path works in chunks of about 1,000 snapshots: the HTTP action takes the full manifest, then runs internal queries and mutations per chunk.
 

@@ -66,6 +66,15 @@ When the count is not known, each job runs `stateofpixel upload screenshots --sh
 
 ## Service errors
 
-When the service is down, `upload` and `finalize` print a warning and exit 0, so our outage does not break your CI. Pass `--strict` to fail instead.
+When the service is down, or a rate limit is hit, `upload` and `finalize` print a warning and exit 0, so our outage does not break your CI. Pass `--strict` to fail instead.
+
+## Limits
+
+- 20,000 snapshots and 256 shards per build.
+- 20 MB and 10,000 x 50,000 px per image. Bigger images are rejected, their snapshots fail and `upload` exits 1.
+- 512 characters per snapshot name, 4 KB of metadata per snapshot.
+- 2,000 builds and 20 GB of uploads per account per day, 600 requests per minute per token.
+
+When an account passes 80% of its storage, the CLI prints a warning. After 14 days over the limit, new images are not stored and the check is neutral, so CI keeps passing.
 
 Requires Node 20 or newer.
