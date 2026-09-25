@@ -69,6 +69,23 @@ it("uses the PR head, not the merge commit, on pull_request runs", async () => {
   await rm(eventPath);
 });
 
+it("ignores empty GitHub env values on push runs", async () => {
+  const info = await readGitInfo(
+    {
+      GITHUB_SHA: commits[0],
+      GITHUB_HEAD_REF: "",
+      GITHUB_REF_NAME: "main",
+      GITHUB_BASE_REF: "",
+    },
+    repo,
+  );
+  expect(info).toMatchObject({
+    commit: commits[0],
+    branch: "main",
+    baselineBranch: "main",
+  });
+});
+
 it("builds the nonce from the GitHub run", () => {
   expect(defaultNonce({ GITHUB_RUN_ID: "123", GITHUB_RUN_ATTEMPT: "2" })).toBe(
     "123-2",

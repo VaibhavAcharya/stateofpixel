@@ -38,23 +38,23 @@ export async function readGitInfo(
   const event = await readGithubEvent(env);
   const pullRequest = event?.pull_request;
   const commit =
-    pullRequest?.head.sha ??
-    env.GITHUB_SHA ??
+    pullRequest?.head.sha ||
+    env.GITHUB_SHA ||
     (await git(cwd, "rev-parse", "HEAD"));
   if (commit === null) {
     throw new Error("Could not find the commit. Run inside a git checkout.");
   }
   const branch =
-    pullRequest?.head.ref ??
-    env.GITHUB_HEAD_REF ??
-    env.GITHUB_REF_NAME ??
-    (await git(cwd, "rev-parse", "--abbrev-ref", "HEAD")) ??
+    pullRequest?.head.ref ||
+    env.GITHUB_HEAD_REF ||
+    env.GITHUB_REF_NAME ||
+    (await git(cwd, "rev-parse", "--abbrev-ref", "HEAD")) ||
     "HEAD";
   const baselineBranch =
-    baselineBranchOverride ??
-    pullRequest?.base.ref ??
-    event?.repository?.default_branch ??
-    (await defaultBranch(cwd)) ??
+    baselineBranchOverride ||
+    pullRequest?.base.ref ||
+    event?.repository?.default_branch ||
+    (await defaultBranch(cwd)) ||
     "main";
 
   return {
