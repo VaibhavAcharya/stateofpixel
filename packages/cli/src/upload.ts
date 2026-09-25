@@ -43,6 +43,8 @@ export type ShardResult = {
   diffPixels?: number;
 };
 
+export type Shard = { index: number | null; total: number | null };
+
 export type UploadInput = {
   dir: string;
   workDir: string;
@@ -50,7 +52,7 @@ export type UploadInput = {
   engine: DiffEngine;
   buildName: string;
   nonce: string;
-  shard: { index: number; total: number | null };
+  shard: Shard;
   subset: boolean;
   threshold?: number;
   git: GitInfo;
@@ -221,7 +223,7 @@ export async function uploadDirectory(
 
   const { rejectedUploads } = await input.api.request<{
     rejectedUploads: string[];
-  }>("POST", `/builds/${build.buildId}/shards/${input.shard.index}/complete`, {
+  }>("POST", `/builds/${build.buildId}/shards/${build.shardIndex}/complete`, {
     uploads,
     results,
   });
@@ -233,19 +235,20 @@ export async function uploadDirectory(
     uploadedImages: uploads.length,
     uploadedBytes,
     failedUploads,
-    final: await waitForFinalize(input.api, build.buildId),
+    final: await waitForFinalize(input.api, build.buildId, false),
   };
 }
 
-async function waitForFinalize(
+export async function waitForFinalize(
   api: ApiClient,
   buildId: string,
+  finalizeRequested: boolean,
 ): Promise<BuildResponse | null> {
   for (let poll = 0; poll < FINALIZE_POLLS; poll++) {
     const build = await api.request<BuildResponse>("GET", `/builds/${buildId}`);
     const lastShardDone =
       build.shards.total !== null && build.shards.done >= build.shards.total;
-    if (build.status !== "pending" || !lastShardDone) {
+    if (build.status !== "pending" || !(finalizeRequested || lastShardDone)) {
       return build.status === "finalized" ? build : null;
     }
     await new Promise((resolve) => setTimeout(resolve, FINALIZE_POLL_MS));

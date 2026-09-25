@@ -4,17 +4,23 @@ import path from "node:path";
 import { InvalidArgumentError } from "commander";
 import {
   ApiError,
+  type BuildCounts,
   createApiClient,
   DEFAULT_API_URL,
   isServerError,
 } from "../api";
 import { defaultNonce, readCiInfo, readGitInfo, resolveToken } from "../ci-env";
 import { createDiffEngine } from "../diff/engine";
-import { readSnapshots, type UploadOutput, uploadDirectory } from "../upload";
+import {
+  readSnapshots,
+  type Shard,
+  type UploadOutput,
+  uploadDirectory,
+} from "../upload";
 
 export type UploadCommandOptions = {
   buildName?: string;
-  shard?: { index: number; total: number };
+  shard?: Shard;
   nonce?: string;
   baselineBranch?: string;
   subset: boolean;
@@ -36,7 +42,7 @@ export async function uploadCommand(
   const buildName =
     options.buildName ?? env.STATEOFPIXEL_BUILD_NAME ?? "default";
   const nonce = options.nonce ?? env.STATEOFPIXEL_NONCE ?? defaultNonce(env);
-  if (nonce === null && shard.total > 1) {
+  if (nonce === null && shard.total !== 1) {
     throw new Error("Set --nonce so every shard joins the same build.");
   }
   const git = await readGitInfo(
@@ -52,7 +58,7 @@ export async function uploadCommand(
     );
     console.log(`  ${formatCount(snapshots.length)} snapshots in ${dir}`);
     console.log(
-      `  build ${buildName}, shard ${shard.index}/${shard.total}, commit ${git.commit.slice(0, 7)}, ${git.ancestors.length} ancestors`,
+      `  build ${buildName}, shard ${shard.total === null ? "auto" : `${shard.index}/${shard.total}`}, commit ${git.commit.slice(0, 7)}, ${git.ancestors.length} ancestors`,
     );
     return;
   }
@@ -113,9 +119,7 @@ function printSummary(
   console.log(
     `stateofpixel  build #${build.buildNumber}  ${branch} vs ${baselineBranch} (${baseline})`,
   );
-  console.log(
-    `  ${formatCount(results.length)} snapshots  ${formatCount(counts.unchanged)} unchanged  ${formatCount(counts.changed)} changed  ${formatCount(counts.added)} added  ${formatCount(counts.removed)} removed${counts.failed > 0 ? `  ${formatCount(counts.failed)} failed` : ""}`,
-  );
+  console.log(formatCounts(results.length, counts));
   console.log(
     `  uploaded ${formatCount(output.uploadedImages)} images (${megabytes} MB) in ${seconds} s`,
   );
@@ -123,6 +127,16 @@ function printSummary(
     console.log(`  warning: ${warning}`);
   }
   console.log(`  review: ${build.url}`);
+}
+
+export function formatCounts(
+  total: number,
+  counts: Pick<
+    BuildCounts,
+    "unchanged" | "changed" | "added" | "removed" | "failed"
+  >,
+): string {
+  return `  ${formatCount(total)} snapshots  ${formatCount(counts.unchanged)} unchanged  ${formatCount(counts.changed)} changed  ${formatCount(counts.added)} added  ${formatCount(counts.removed)} removed${counts.failed > 0 ? `  ${formatCount(counts.failed)} failed` : ""}`;
 }
 
 function countResults(results: UploadOutput["results"]) {
@@ -133,16 +147,19 @@ function countResults(results: UploadOutput["results"]) {
   return counts;
 }
 
-export function parseShard(value: string): { index: number; total: number } {
+export function parseShard(value: string): Shard {
+  if (value === "auto") {
+    return { index: null, total: null };
+  }
   const match = /^(\d+)\/(\d+)$/.exec(value);
   const index = Number(match?.[1]);
   const total = Number(match?.[2]);
   if (!match || index < 1 || total < 1 || index > total) {
-    throw new InvalidArgumentError("Must look like 1/4.");
+    throw new InvalidArgumentError("Must look like 1/4, or auto.");
   }
   return { index, total };
 }
 
-function formatCount(count: number): string {
+export function formatCount(count: number): string {
   return count.toLocaleString("en-US");
 }

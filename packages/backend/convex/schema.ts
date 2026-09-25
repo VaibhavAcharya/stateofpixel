@@ -144,6 +144,7 @@ export default defineSchema({
     nonce: v.string(),
     shardsTotal: v.optional(v.number()),
     doneShardIndexes: v.array(v.number()),
+    shardsJoined: v.optional(v.number()),
     subset: v.boolean(),
     status: buildStatus,
     conclusion: v.optional(buildConclusion),

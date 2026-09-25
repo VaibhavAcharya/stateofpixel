@@ -2,6 +2,7 @@
 import { Command } from "commander";
 import packageJson from "../package.json" with { type: "json" };
 import { compareCommand, parseThreshold } from "./commands/compare";
+import { finalizeCommand } from "./commands/finalize";
 import { parseShard, uploadCommand } from "./commands/upload";
 
 const program = new Command()
@@ -34,7 +35,11 @@ program
     "--build-name <name>",
     "separate builds of one project, like storybook",
   )
-  .option("--shard <i/n>", "this shard and the shard count", parseShard)
+  .option(
+    "--shard <i/n>",
+    "this shard and the shard count, or auto with a finalize step",
+    parseShard,
+  )
   .option("--nonce <id>", "shared by every shard of one build")
   .option("--baseline-branch <branch>", "branch to compare against")
   .option(
@@ -50,6 +55,23 @@ program
   .option("--strict", "fail when the service is not reachable", false)
   .option("--dry-run", "hash and print the plan, upload nothing", false)
   .action(uploadCommand);
+
+program
+  .command("finalize")
+  .description("Finish a build whose shards ran with --shard auto")
+  .option("--build-name <name>", "the build name the shards used")
+  .option("--nonce <id>", "the nonce the shards used")
+  .option(
+    "--baseline-branch <branch>",
+    "branch to compare against, for --skip-if-empty",
+  )
+  .option(
+    "--skip-if-empty",
+    "create a build with no changes when no shard ran",
+    false,
+  )
+  .option("--strict", "fail when the service is not reachable", false)
+  .action(finalizeCommand);
 
 try {
   await program.parseAsync();

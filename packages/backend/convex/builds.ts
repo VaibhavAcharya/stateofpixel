@@ -47,7 +47,7 @@ export const createOrJoin = internalMutation({
     projectId: v.id("projects"),
     buildName: v.string(),
     nonce: v.string(),
-    shardIndex: v.number(),
+    shardIndex: v.union(v.number(), v.null()),
     shardsTotal: v.union(v.number(), v.null()),
     subset: v.boolean(),
     git: v.object({
@@ -66,6 +66,7 @@ export const createOrJoin = internalMutation({
   returns: v.object({
     buildId: v.id("builds"),
     number: v.number(),
+    shardIndex: v.number(),
     url: v.string(),
     accountId: v.id("accounts"),
     baselineBuildId: v.union(v.id("builds"), v.null()),
@@ -95,6 +96,10 @@ export const createOrJoin = internalMutation({
       existing === null
         ? await createBuild(ctx, project, args)
         : checkJoin(existing, args.shardsTotal);
+    const shardIndex = args.shardIndex ?? (build.shardsJoined ?? 0) + 1;
+    if (args.shardIndex === null) {
+      await ctx.db.patch("builds", build._id, { shardsJoined: shardIndex });
+    }
 
     const baseline =
       build.baselineBuildId === undefined
@@ -103,6 +108,7 @@ export const createOrJoin = internalMutation({
     return {
       buildId: build._id,
       number: build.number,
+      shardIndex,
       url: buildUrl(project, build.number),
       accountId: project.accountId,
       baselineBuildId: baseline?._id ?? null,
@@ -118,13 +124,15 @@ export const createOrJoin = internalMutation({
   },
 });
 
-function validateShard(shardIndex: number, shardsTotal: number | null) {
+function validateShard(shardIndex: number | null, shardsTotal: number | null) {
   const validTotal =
     shardsTotal === null || (Number.isInteger(shardsTotal) && shardsTotal >= 1);
   const validIndex =
-    Number.isInteger(shardIndex) &&
-    shardIndex >= 1 &&
-    (shardsTotal === null || shardIndex <= shardsTotal);
+    shardIndex === null
+      ? shardsTotal === null
+      : Number.isInteger(shardIndex) &&
+        shardIndex >= 1 &&
+        (shardsTotal === null || shardIndex <= shardsTotal);
   if (!validTotal || !validIndex) {
     throw ciError(
       400,
@@ -215,7 +223,7 @@ async function createBuild(
         project.autoApproveBranches.some((pattern) =>
           matchesBranch(pattern, args.git.branch),
         )),
-    fullRows: true,
+    fullRows: !args.subset,
     baselineBuildId: baseline?._id,
     counts: EMPTY_COUNTS,
     storageBlocked: false,

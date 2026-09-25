@@ -58,24 +58,9 @@ Group 4: landing
 - [x] More sections, built to convert
 - [x] Logo as the favicon
 
-Group 5: marketing pages
-- [ ] Comparison pages against the alternatives
-- [ ] Brand section with the logo and its usage
-- [ ] Open Graph image per page
-
-## Free tier and limits
-
-- [ ] Free tier of 10 GB stored per account
-- [ ] Retention crons: PR-only images kept 60 days, unreferenced images deleted
-- [ ] Storage warning at 80%, 14-day grace at 100%, then new images are not stored
-- [ ] Rate limits for builds per account, requests per token and bytes uploaded per day
-- [ ] Enforce the limits in SPEC section 12
-- [ ] Per-account egress tracking
-- [ ] Landing and FAQ copy for the free tier
-
 ## M2: real-world CI
 
-- [ ] Sharding and `stateofpixel finalize`
+- [x] Sharding and `stateofpixel finalize`
 - [ ] Squash and rebase merge handling
 - [ ] Approval carry-over
 - [ ] `stateofpixel storybook` capture command
@@ -90,6 +75,22 @@ Group 5: marketing pages
 - [ ] Tokenless auth for fork PRs
 - [ ] Flaky snapshot detection
 - [ ] Move image bytes to R2 when egress cost calls for it
+
+## Free tier and limits
+
+- [ ] Free tier of 10 GB stored per account
+- [ ] Retention crons: PR-only images kept 60 days, unreferenced images deleted
+- [ ] Storage warning at 80%, 14-day grace at 100%, then new images are not stored
+- [ ] Rate limits for builds per account, requests per token and bytes uploaded per day
+- [ ] Enforce the limits in SPEC section 12
+- [ ] Per-account egress tracking
+- [ ] Landing and FAQ copy for the free tier
+
+## Marketing pages
+
+- [ ] Comparison pages against the alternatives
+- [ ] Brand section with the logo and its usage
+- [ ] Open Graph image per page
 
 ## Later
 

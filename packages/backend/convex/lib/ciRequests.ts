@@ -2,26 +2,33 @@ import { type Infer, v } from "convex/values";
 
 const sha256Hex = v.string();
 
+const gitInfo = v.object({
+  commit: v.string(),
+  commitMessage: v.optional(v.string()),
+  branch: v.string(),
+  baselineBranch: v.string(),
+  prNumber: v.optional(v.union(v.number(), v.null())),
+  mergeBase: v.optional(v.union(v.string(), v.null())),
+  ancestors: v.array(v.string()),
+});
+
+export type GitInfo = Infer<typeof gitInfo>;
+
+const ciInfo = v.object({
+  provider: v.optional(v.string()),
+  runUrl: v.optional(v.string()),
+});
+
 export const createBuildRequest = v.object({
   buildName: v.optional(v.string()),
   nonce: v.string(),
-  shard: v.object({ index: v.number(), total: v.union(v.number(), v.null()) }),
-  subset: v.optional(v.boolean()),
-  git: v.object({
-    commit: v.string(),
-    commitMessage: v.optional(v.string()),
-    branch: v.string(),
-    baselineBranch: v.string(),
-    prNumber: v.optional(v.union(v.number(), v.null())),
-    mergeBase: v.optional(v.union(v.string(), v.null())),
-    ancestors: v.array(v.string()),
+  shard: v.object({
+    index: v.union(v.number(), v.null()),
+    total: v.union(v.number(), v.null()),
   }),
-  ci: v.optional(
-    v.object({
-      provider: v.optional(v.string()),
-      runUrl: v.optional(v.string()),
-    }),
-  ),
+  subset: v.optional(v.boolean()),
+  git: gitInfo,
+  ci: v.optional(ciInfo),
   snapshots: v.array(
     v.object({
       name: v.string(),
@@ -72,4 +79,9 @@ export const uploadUrlsRequest = v.object({ hashes: v.array(sha256Hex) });
 export const finalizeRequest = v.object({
   buildName: v.optional(v.string()),
   nonce: v.string(),
+  skipIfEmpty: v.optional(v.boolean()),
+  git: v.optional(gitInfo),
+  ci: v.optional(ciInfo),
 });
+
+export type FinalizeRequest = Infer<typeof finalizeRequest>;

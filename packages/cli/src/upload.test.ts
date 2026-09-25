@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import type { ApiClient, CreateBuildResponse } from "./api";
+import { parseShard } from "./commands/upload";
 import { createPixelmatchEngine } from "./diff/pixelmatch";
 import { sha256 } from "./png";
 import { blackSquare, encodePng, writeFixture } from "./test/png-fixtures";
@@ -22,7 +23,7 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-function fakeApi(lookups: CreateBuildResponse["snapshots"]) {
+function fakeApi(lookups: CreateBuildResponse["snapshots"], shardIndex = 1) {
   const calls: { method: string; path: string; body: unknown }[] = [];
   const uploaded: Buffer[] = [];
   const api: ApiClient = {
@@ -32,6 +33,7 @@ function fakeApi(lookups: CreateBuildResponse["snapshots"]) {
         "POST /builds": {
           buildId: "b1",
           buildNumber: 2,
+          shardIndex,
           url: "https://stateofpixel.test/acme/web/builds/2",
           diff: { threshold: 0.1, includeAA: false },
           baseline: { buildNumber: 1, commit: "c1" },
@@ -46,7 +48,9 @@ function fakeApi(lookups: CreateBuildResponse["snapshots"]) {
             }),
           ),
         },
-        "POST /builds/b1/shards/1/complete": { rejectedUploads: [] },
+        [`POST /builds/b1/shards/${shardIndex}/complete`]: {
+          rejectedUploads: [],
+        },
         "GET /builds/b1": {
           status: "finalized",
           shards: { done: 1, total: 1 },
@@ -154,5 +158,38 @@ it("uploads missing images once and diffs changed snapshots", async () => {
     changedResult?.diffHash,
   );
   expect(output.final?.status).toBe("finalized");
+  expect(output.failedUploads).toEqual([]);
+});
+
+it("completes the shard index the server assigned in auto mode", async () => {
+  const dir = path.join(root, "shots");
+  await writeFixture(dir, "same", white);
+  const { api, calls } = fakeApi([{ name: "same", status: "unchanged" }], 3);
+
+  const output = await uploadDirectory({
+    dir,
+    workDir: root,
+    api,
+    engine: createPixelmatchEngine(),
+    buildName: "default",
+    nonce: "run-1",
+    shard: parseShard("auto"),
+    subset: false,
+    git: {
+      commit: "c2",
+      commitMessage: "Change",
+      branch: "feature",
+      baselineBranch: "main",
+      prNumber: 7,
+      mergeBase: null,
+      ancestors: ["c1"],
+    },
+    ci: {},
+  });
+
+  expect(calls[0]?.body).toMatchObject({ shard: { index: null, total: null } });
+  expect(calls.map((call) => call.path)).toContain(
+    "/builds/b1/shards/3/complete",
+  );
   expect(output.failedUploads).toEqual([]);
 });

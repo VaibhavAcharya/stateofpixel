@@ -10,7 +10,9 @@ import {
   type CreateBuildRequest,
   completeShardRequest,
   createBuildRequest,
+  type FinalizeRequest,
   finalizeRequest,
+  type GitInfo,
   uploadUrlsRequest,
 } from "./lib/ciRequests";
 import { createInstallationToken, isAncestor } from "./lib/github";
@@ -131,7 +133,7 @@ function checkMetadata(items: { name: string; metadata?: unknown }[]) {
   }
 }
 
-function checkOidcCommit(auth: CiAuth, git: CreateBuildRequest["git"]) {
+function checkOidcCommit(auth: CiAuth, git: GitInfo) {
   if (auth.method !== "oidc" || auth.claims.sha === git.commit) {
     return;
   }
@@ -146,6 +148,18 @@ function checkOidcCommit(auth: CiAuth, git: CreateBuildRequest["git"]) {
       "git.commit does not match the commit of this GitHub Actions run.",
     );
   }
+}
+
+function toBuildGit(git: GitInfo) {
+  return {
+    commit: git.commit,
+    commitMessage: (git.commitMessage ?? "").split("\n")[0] ?? "",
+    branch: git.branch,
+    baselineBranch: git.baselineBranch,
+    prNumber: git.prNumber ?? undefined,
+    mergeBase: git.mergeBase ?? undefined,
+    ancestors: git.ancestors,
+  };
 }
 
 function chunk<T>(items: T[]): T[][] {
@@ -175,15 +189,7 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
     shardIndex: body.shard.index,
     shardsTotal: body.shard.total,
     subset: body.subset ?? false,
-    git: {
-      commit: body.git.commit,
-      commitMessage: (body.git.commitMessage ?? "").split("\n")[0] ?? "",
-      branch: body.git.branch,
-      baselineBranch: body.git.baselineBranch,
-      prNumber: body.git.prNumber ?? undefined,
-      mergeBase: body.git.mergeBase ?? undefined,
-      ancestors: body.git.ancestors,
-    },
+    git: toBuildGit(body.git),
     ciProvider: body.ci?.provider,
     ciRunUrl: body.ci?.runUrl,
     fallbackBaselineBuildId: await findFallbackBaseline(
@@ -220,6 +226,7 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
   return Response.json({
     buildId: build.buildId,
     buildNumber: build.number,
+    shardIndex: build.shardIndex,
     url: build.url,
     diff: build.diff,
     baseline: build.baseline,
@@ -394,18 +401,44 @@ export const buildAction = ciRoute(async (ctx, request, auth) => {
 
 export const finalizeBuild = ciRoute(async (ctx, request, auth) => {
   const body = await readBody(request, finalizeRequest);
-  const buildId = await ctx.runQuery(internal.builds.buildIdByNonce, {
-    projectId: auth.project.id,
-    buildName: body.buildName ?? "default",
-    nonce: body.nonce,
-  });
-  if (buildId === null) {
-    throw ciError(404, "build_not_found", "No build with this nonce.");
-  }
+  const buildName = body.buildName ?? "default";
+  const buildId =
+    (await ctx.runQuery(internal.builds.buildIdByNonce, {
+      projectId: auth.project.id,
+      buildName,
+      nonce: body.nonce,
+    })) ?? (await createEmptyBuild(ctx, auth, buildName, body));
   await ctx.runMutation(internal.builds.requestFinalize, { buildId });
   const build = await getBuildForCi(ctx, auth, buildId);
   return Response.json({ buildId, buildNumber: build.number, url: build.url });
 });
+
+async function createEmptyBuild(
+  ctx: ActionCtx,
+  auth: CiAuth,
+  buildName: string,
+  body: FinalizeRequest,
+): Promise<Id<"builds">> {
+  if (!body.skipIfEmpty) {
+    throw ciError(404, "build_not_found", "No build with this nonce.");
+  }
+  if (body.git === undefined) {
+    throw ciError(400, "invalid_request", "skipIfEmpty needs git.");
+  }
+  checkOidcCommit(auth, body.git);
+  const build = await ctx.runMutation(internal.builds.createOrJoin, {
+    projectId: auth.project.id,
+    buildName,
+    nonce: body.nonce,
+    shardIndex: null,
+    shardsTotal: null,
+    subset: true,
+    git: toBuildGit(body.git),
+    ciProvider: body.ci?.provider,
+    ciRunUrl: body.ci?.runUrl,
+  });
+  return build.buildId;
+}
 
 export const getBuild = ciRoute(async (ctx, request, auth) => {
   const { pathname } = new URL(request.url);

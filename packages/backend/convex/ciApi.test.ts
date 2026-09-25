@@ -416,6 +416,101 @@ it("joins shards by nonce and finalizes after the last one", async () => {
   expect(late.body.error.code).toBe("build_not_pending");
 });
 
+it("numbers auto shards and finalizes with the shards that arrived", async () => {
+  const { t } = await setup();
+  const git = {
+    commit: "c1",
+    branch: "main",
+    baselineBranch: "main",
+    ancestors: [],
+  };
+  const [header] = await snapshotsOf([
+    { name: "Header", content: "header-v1" },
+  ]);
+  const shard = () =>
+    api(t, "POST", "/builds", {
+      nonce: "auto-run",
+      shard: { index: null, total: null },
+      git,
+      snapshots: [header],
+    });
+  const first = await shard();
+  const second = await shard();
+  expect(first.body.shardIndex).toBe(1);
+  expect(second.body.shardIndex).toBe(2);
+  expect(second.body.buildId).toBe(first.body.buildId);
+
+  await api(t, "POST", `/builds/${first.body.buildId}/shards/1/complete`, {
+    uploads: [
+      {
+        hash: header?.hash,
+        storageId: await store(t, "header-v1"),
+        kind: "screenshot",
+        width: 10,
+        height: 10,
+      },
+    ],
+    results: [{ name: "Header", hash: header?.hash, status: "added" }],
+  });
+  expect(
+    (await api(t, "GET", `/builds/${first.body.buildId}`)).body.status,
+  ).toBe("pending");
+  await api(t, "POST", "/builds/finalize", { nonce: "auto-run" });
+  expect(
+    (await api(t, "GET", `/builds/${first.body.buildId}`)).body,
+  ).toMatchObject({
+    status: "finalized",
+    counts: { added: 1 },
+    shards: { done: 1, total: null },
+  });
+
+  const fixed = await api(t, "POST", "/builds", {
+    nonce: "fixed-run",
+    shard: { index: null, total: 2 },
+    git,
+    snapshots: [],
+  });
+  expect(fixed.status).toBe(400);
+  expect(fixed.body.error.code).toBe("invalid_shard");
+});
+
+it("creates an empty build on finalize only with skipIfEmpty", async () => {
+  const { t } = await setup();
+  const git = {
+    commit: "c1",
+    branch: "feat/header",
+    baselineBranch: "main",
+    prNumber: 7,
+    ancestors: [],
+  };
+  const missing = await api(t, "POST", "/builds/finalize", { nonce: "none" });
+  expect(missing.status).toBe(404);
+  expect(missing.body.error.code).toBe("build_not_found");
+  const noGit = await api(t, "POST", "/builds/finalize", {
+    nonce: "none",
+    skipIfEmpty: true,
+  });
+  expect(noGit.status).toBe(400);
+
+  const empty = await api(t, "POST", "/builds/finalize", {
+    nonce: "none",
+    skipIfEmpty: true,
+    git,
+  });
+  expect(empty.status).toBe(200);
+  expect(
+    (await api(t, "GET", `/builds/${empty.body.buildId}`)).body,
+  ).toMatchObject({ status: "finalized", conclusion: "no_changes" });
+  const build = await t.run((ctx) =>
+    ctx.db.get("builds", empty.body.buildId as Id<"builds">),
+  );
+  expect(build).toMatchObject({ prNumber: 7, subset: true, fullRows: false });
+  expect(lastCheck()).toMatchObject({
+    conclusion: "success",
+    title: "No visual changes",
+  });
+});
+
 it("marks a snapshot failed when the uploaded bytes do not match the hash", async () => {
   const { t } = await setup();
   const [header] = await snapshotsOf([

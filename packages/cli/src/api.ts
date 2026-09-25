@@ -21,6 +21,7 @@ export type SnapshotLookup = {
 export type CreateBuildResponse = {
   buildId: string;
   buildNumber: number;
+  shardIndex: number;
   url: string;
   diff: { threshold: number; includeAA: boolean };
   baseline: { buildNumber: number; commit: string } | null;

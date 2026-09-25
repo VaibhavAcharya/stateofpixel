@@ -491,12 +491,13 @@ Which signed-in users can see which account. `me.refreshAccounts` rewrites a use
 | mergedPrNumber | number, optional | For squash-merged main builds. |
 | nonce | string | |
 | shardsTotal | number, optional | Missing in finalize mode. |
+| shardsJoined | number, optional | Shards numbered by the server in `--shard auto` mode. |
 | doneShardIndexes | number[] | Shard indexes that called complete. A retried complete does not count twice. |
 | subset | boolean | True with `--subset`, disables `removed`. |
 | status | `"pending"`, `"finalized"`, `"expired"`, `"error"` | |
 | conclusion | `"no_changes"`, `"changes"`, `"approved"`, `"rejected"`, optional | |
 | autoApproved | boolean | |
-| fullRows | boolean | True while every snapshot has a row, including unchanged ones. GC sets it false when it prunes unchanged rows. Only full builds can be baselines. |
+| fullRows | boolean | True while every snapshot has a row, including unchanged ones. False from the start for subset builds. GC sets it false when it prunes unchanged rows. Only full builds can be baselines. |
 | baselineBuildId | Id<"builds">, optional | Missing for orphans. |
 | supersededById | Id<"builds">, optional | |
 | counts | object | `{unchanged, changed, added, removed, failed, pending, approved, rejected}`. Kept in sync by every mutation that changes a snapshot, so pages never count rows. |
@@ -652,7 +653,7 @@ Request:
 }
 ```
 
-`shard.total` is `null` in finalize mode. `ancestors` is up to 100 SHAs, and may be empty for shallow checkouts.
+`shard.total` is `null` in finalize mode. With `--shard auto` the CLI also sends `shard.index` as `null`, and the server numbers joining shards 1, 2, 3 in order and returns the number as `shardIndex`. `ancestors` is up to 100 SHAs, and may be empty for shallow checkouts.
 
 What the action does:
 
@@ -668,6 +669,7 @@ Response:
 {
   "buildId": "k17...",
   "buildNumber": 411,
+  "shardIndex": 1,
   "url": "https://.../acme/web-app/builds/411",
   "diff": { "threshold": 0.1, "includeAA": false },
   "baseline": { "buildNumber": 405, "commit": "0a1b2c..." },
@@ -727,7 +729,7 @@ Finalize, in chunked mutations:
 
 ### 7.4 POST /builds/finalize
 
-For finalize mode. Body `{ "buildName": "default", "nonce": "..." }`. Finalizes with whatever shards arrived, and returns 404 `build_not_found` when no shard created the build. `--skip-if-empty` (create a `no_changes` build when no shard ran) comes with the M2 sharding item.
+For finalize mode. Body `{ "buildName": "default", "nonce": "...", "skipIfEmpty": false, "git": {...}, "ci": {...} }`, with `git` and `ci` shaped as in 7.2. Finalizes with whatever shards arrived, and returns 404 `build_not_found` when no shard created the build. With `skipIfEmpty` it creates an empty subset build from `git` instead, which finalizes as `no_changes` and is never a baseline.
 
 ### 7.5 GET /builds/{id}
 
@@ -840,7 +842,7 @@ Package `stateofpixel`, closed source, published unminified with source maps. No
 
 Snapshot name from a folder upload is the path relative to `<dir>` without `.png`, like `components/Button/primary`.
 
-M1 ships `--build-name`, `--shard i/n`, `--nonce`, `--baseline-branch`, `--subset`, `--threshold`, `--strict` and `--dry-run`. `--shard auto`, `--baseline-commit`, `--ignore` and the config file come later. Git info comes from the GitHub Actions env and event payload (the PR head SHA, not the merge SHA) and from local git; `ancestors` is `git rev-list` of the commit, or of `HEAD` without the merge commit when the PR head is not in a shallow checkout. The API base URL is `STATEOFPIXEL_API_URL`, default `https://graceful-dogfish-423.convex.site/api/v1` until a custom domain exists.
+M1 ships `--build-name`, `--shard i/n`, `--nonce`, `--baseline-branch`, `--subset`, `--threshold`, `--strict` and `--dry-run`. M2 adds `--shard auto` and `finalize` with `--build-name`, `--nonce`, `--baseline-branch`, `--skip-if-empty` and `--strict`. `--baseline-commit`, `--ignore` and the config file come later. Git info comes from the GitHub Actions env and event payload (the PR head SHA, not the merge SHA) and from local git; `ancestors` is `git rev-list` of the commit, or of `HEAD` without the merge commit when the PR head is not in a shallow checkout. The API base URL is `STATEOFPIXEL_API_URL`, default `https://graceful-dogfish-423.convex.site/api/v1` until a custom domain exists.
 
 ### Config file
 
