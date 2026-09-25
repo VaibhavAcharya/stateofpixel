@@ -63,6 +63,16 @@ Group 5: marketing pages
 - [ ] Brand section with the logo and its usage
 - [ ] Open Graph image per page
 
+## Free tier and limits
+
+- [ ] Free tier of 10 GB stored per account
+- [ ] Retention crons: PR-only images kept 60 days, unreferenced images deleted
+- [ ] Storage warning at 80%, 14-day grace at 100%, then new images are not stored
+- [ ] Rate limits for builds per account, requests per token and bytes uploaded per day
+- [ ] Enforce the limits in SPEC section 12
+- [ ] Per-account egress tracking
+- [ ] Landing and FAQ copy for the free tier
+
 ## M2: real-world CI
 
 - [ ] Sharding and `stateofpixel finalize`
@@ -70,14 +80,12 @@ Group 5: marketing pages
 - [ ] Approval carry-over
 - [ ] `stateofpixel storybook` capture command
 - [ ] Playwright reporter and `snapshot()` helper
-- [ ] Retention crons and image cleanup
 - [ ] Baselines tab and snapshot history
 - [ ] Project settings page
 
 ## M3: growth
 
 - [ ] Usage page and storage billing
-- [ ] Storage limit warnings and grace period
 - [ ] PR comment summary
 - [ ] Tokenless auth for fork PRs
 - [ ] Flaky snapshot detection

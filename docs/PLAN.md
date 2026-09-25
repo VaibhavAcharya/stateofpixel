@@ -204,7 +204,7 @@ Convex prices, Starter plan pay-as-you-go ([pricing](https://www.convex.dev/pric
 
 So a mid-size team costs about $3 a month on Convex, and most of it is egress. With R2 the same team costs cents. That is fine while we have few users. Egress is the number to watch; move bytes to R2 when egress becomes the biggest line on the Convex bill.
 
-Pricing: a very generous free tier, then pay only for storage. No per-snapshot, per-build or per-seat fees, so the whole team can review. Storage is the only cost that grows for us, so it is the only thing we bill. The free storage amount is still to be decided after we see real usage; the example workload above stays under 12 GB in its first year. Over the limit we warn and soft-fail, we do not block CI.
+Pricing: a free tier of 10 GB stored per account, then pay only for storage. No per-snapshot, per-build or per-seat fees, so the whole team can review. Storage is the only cost that grows for us, so it is the only thing we bill. The free tier is 10 GB stored per account, and PR-only images are kept 60 days by default. Above the free tier storage costs $1 per GB a month, billed on the monthly average. Over the limit we warn and soft-fail, we do not block CI.
 
 Storage-only billing means retention is a product feature. Show each project its stored GB, and let users set how long PR-only images are kept.
 
@@ -236,7 +236,8 @@ Later: open-source the CLI and the server together.
 ## Decisions
 
 - Source: the CLI and the server are closed source for now. Opening both is a later plan. The CLI ships to npm unminified with source maps, under a short license that allows free use with stateofpixel, and the docs list every request it sends.
-- Pricing: a very generous free tier, then pay for storage only.
+- Pricing: a free tier of 10 GB stored per account, then $1 per GB a month above it, billed on the monthly average stored. Paid plans show as coming soon until billing ships.
+- Retention: PR-only images are kept 60 days by default.
 - Git hosts: GitHub only. No GitLab planned.
 - Repo: one pnpm monorepo with the CLI and the app.
 - Stack: TanStack Start on Netlify, Convex for database, auth and file storage.

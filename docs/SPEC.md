@@ -243,7 +243,7 @@ Shown when the signed-in user has no installations. One button to the GitHub App
 +--------------------------------------------------------------+
 | stateofpixel      acme v                         [avatar]    |
 +--------------------------------------------------------------+
-| Projects                                 Storage 3.1 / 25 GB |
+| Projects                                 Storage 3.1 / 10 GB |
 |                                                              |
 | web-app        #412  main   no changes     2 min ago         |
 | design-system  #88   feat/x 12 to review   1 h ago           |
@@ -383,7 +383,7 @@ Browse what is approved on the default branch now.
 | Diff | Threshold | 0.1 | Passed to the CLI in the build response, so config lives in one place. The CLI config overrides it. |
 | Diff | Include anti-aliasing | off | |
 | Checks | Check name | `stateofpixel` | With several build names: `stateofpixel / {build name}`. |
-| Retention | Keep PR-only images for | 30 days | 7 to 365. Shows the storage this setting uses now. |
+| Retention | Keep PR-only images for | 60 days | 7 to 365. Shows the storage this setting uses now. |
 | Tokens | Project tokens | none | Create, name, last used time, revoke. Token shown once. |
 | Danger | Delete project | | Type the repo name to confirm. |
 
@@ -391,7 +391,7 @@ Every change is saved on blur with a small "Saved" note. No save button.
 
 ### 5.9 Usage and billing (`/{owner}/settings/usage`, org owner only)
 
-- Big number: storage used and limit, like `3.1 GB of 25 GB`.
+- Big number: storage used and limit, like `3.1 GB of 10 GB`.
 - Split: baselines vs PR-only images vs diff images.
 - Table per project: storage, share of total, retention setting, link to its settings.
 - Chart: daily storage for the last 90 days, from `usageDaily`.
@@ -458,7 +458,7 @@ Which signed-in users can see which account. `me.refreshAccounts` rewrites a use
 | autoApproveBranches | string[] | Glob patterns. |
 | diffThreshold | number | Default 0.1. |
 | diffIncludeAA | boolean | Default false. |
-| prRetentionDays | number | Default 30. |
+| prRetentionDays | number | Default 60. |
 | nextBuildNumber | number | Read and incremented in the mutation that creates a build. Convex mutations are serializable, so numbers never collide. |
 | archivedAt | number, optional | Set when access is removed. |
 

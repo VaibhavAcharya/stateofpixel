@@ -14,7 +14,7 @@ import {
   toRepositoryFields,
 } from "./lib/github";
 
-const FREE_STORAGE_LIMIT_BYTES = 25 * 1024 ** 3;
+const FREE_STORAGE_LIMIT_BYTES = 10 * 1024 ** 3;
 const PROJECT_CHUNK_SIZE = 200;
 
 const repositoryFields = v.object({
@@ -150,7 +150,7 @@ export const upsertProjects = internalMutation({
         autoApproveBranches: [repository.defaultBranch],
         diffThreshold: 0.1,
         diffIncludeAA: false,
-        prRetentionDays: 30,
+        prRetentionDays: 60,
         nextBuildNumber: 1,
       });
     }
