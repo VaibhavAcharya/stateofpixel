@@ -7,7 +7,7 @@ Progress tracker for [PLAN.md](./PLAN.md). Details for each item are in [SPEC.md
 - [x] pnpm monorepo with `apps/web`, `packages/backend`, `packages/cli`
 - [x] Biome, TypeScript, Vitest, GitHub Actions CI
 - [x] Convex project linked
-- [x] Netlify deploy at https://stateofpixel.netlify.app
+- [x] Netlify deploy at https://stateofpixel.com
 - [x] Design system in `docs/DESIGN.md`
 
 ## M0: local compare

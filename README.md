@@ -22,11 +22,11 @@ pnpm dev
 | | Dev | Production |
 |---|---|---|
 | Convex deployment | your local deployment (`packages/backend/.env.local`) | `graceful-dogfish-423` |
-| Web app | http://localhost:3000 | https://stateofpixel.netlify.app |
+| Web app | http://localhost:3000 | https://stateofpixel.com |
 | GitHub App callback URL | `http://127.0.0.1:3211/api/auth/callback/github` | `https://graceful-dogfish-423.convex.site/api/auth/callback/github` |
-| `SITE_URL` | `http://localhost:3000` | `https://stateofpixel.netlify.app` |
+| `SITE_URL` | `http://localhost:3000` | `https://stateofpixel.com` |
 | GitHub App webhook URL | not reachable from GitHub | `https://graceful-dogfish-423.convex.site/github/webhook` |
-| GitHub App setup URL | | `https://stateofpixel.netlify.app/install` |
+| GitHub App setup URL | | `https://stateofpixel.com/install` |
 
 Both deployments need the same Convex env vars: `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`, `JWT_PRIVATE_KEY`, `JWKS`, `SITE_URL`, `GITHUB_APP_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_PRIVATE_KEY` (PKCS#8) and `GITHUB_WEBHOOK_SECRET`. Each deployment has its own JWT key pair. The `GITHUB_*` vars are declared in `convex/convex.config.ts`, so a push fails while any of them is missing. Compare them with `npx convex env list --names-only` and `npx convex env list --names-only --prod` in `packages/backend`.
 

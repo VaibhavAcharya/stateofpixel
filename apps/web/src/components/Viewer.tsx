@@ -1,5 +1,5 @@
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react/ssr";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { formatCount, formatPercent } from "../lib/format";
 import { type DiffStatus, DiffStatusPill, Kbd, SnapshotName } from "./ui";
 
@@ -36,57 +36,15 @@ const ZOOMS: { value: ViewerZoom; label: string; key?: string }[] = [
   { value: "200", label: "200%" },
 ];
 
-function useStoredState<Value extends string>(
-  key: string,
-  initial: Value,
-  allowed: Value[],
-) {
-  const [value, setValue] = useState<Value>(initial);
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(key) as Value | null;
-      if (stored !== null && allowed.includes(stored)) {
-        setValue(stored);
-      }
-    } catch {}
-  }, [key, allowed]);
-  const update = useCallback(
-    (next: Value) => {
-      setValue(next);
-      try {
-        localStorage.setItem(key, next);
-      } catch {}
-    },
-    [key],
-  );
-  return [value, update] as const;
-}
-
-const MODE_VALUES = MODES.map((mode) => mode.value);
-const ZOOM_VALUES = ZOOMS.map((zoom) => zoom.value);
-const SWITCH_VALUES: ("on" | "off")[] = ["on", "off"];
-
 export function useViewerSettings() {
-  const [mode, setMode] = useStoredState<ViewerMode>(
-    "viewer-mode",
-    "side",
-    MODE_VALUES,
-  );
-  const [zoom, setZoom] = useStoredState<ViewerZoom>(
-    "viewer-zoom",
-    "fit",
-    ZOOM_VALUES,
-  );
-  const [sideDiff, setSideDiff] = useStoredState(
-    "viewer-side-diff",
-    "on",
-    SWITCH_VALUES,
-  );
+  const [mode, setMode] = useState<ViewerMode>("side");
+  const [zoom, setZoom] = useState<ViewerZoom>("fit");
+  const [sideDiff, setSideDiff] = useState(true);
   const [showBaseline, setShowBaseline] = useState(false);
   const [diffOnly, setDiffOnly] = useState(false);
   return {
-    sideDiff: sideDiff === "on",
-    setSideDiff: (next: boolean) => setSideDiff(next ? "on" : "off"),
+    sideDiff,
+    setSideDiff,
     mode,
     setMode,
     zoom,
