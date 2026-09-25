@@ -13,6 +13,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as InstallRouteImport } from './routes/install'
 import { Route as OwnerIndexRouteImport } from './routes/$owner/index'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner/$repo/index'
+import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner/$repo/settings'
+import { Route as OwnerRepoBaselinesIndexRouteImport } from './routes/$owner/$repo/baselines/index'
+import { Route as OwnerRepoBaselinesSplatRouteImport } from './routes/$owner/$repo/baselines/$'
 import { Route as OwnerRepoBuildsNumberRouteImport } from './routes/$owner/$repo/builds/$number'
 import { Route as OwnerRepoBuildsNumberIndexRouteImport } from './routes/$owner/$repo/builds/$number/index'
 import { Route as OwnerRepoBuildsNumberSnapshotsSnapshotIdRouteImport } from './routes/$owner/$repo/builds/$number/snapshots/$snapshotId'
@@ -37,6 +40,21 @@ const OwnerRepoIndexRoute = OwnerRepoIndexRouteImport.update({
   path: '/$owner/$repo/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OwnerRepoSettingsRoute = OwnerRepoSettingsRouteImport.update({
+  id: '/$owner/$repo/settings',
+  path: '/$owner/$repo/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerRepoBaselinesIndexRoute = OwnerRepoBaselinesIndexRouteImport.update({
+  id: '/$owner/$repo/baselines/',
+  path: '/$owner/$repo/baselines/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerRepoBaselinesSplatRoute = OwnerRepoBaselinesSplatRouteImport.update({
+  id: '/$owner/$repo/baselines/$',
+  path: '/$owner/$repo/baselines/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OwnerRepoBuildsNumberRoute = OwnerRepoBuildsNumberRouteImport.update({
   id: '/$owner/$repo/builds/$number',
   path: '/$owner/$repo/builds/$number',
@@ -59,8 +77,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/install': typeof InstallRoute
   '/$owner/': typeof OwnerIndexRoute
+  '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
+  '/$owner/$repo/baselines/$': typeof OwnerRepoBaselinesSplatRoute
   '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberRouteWithChildren
+  '/$owner/$repo/baselines/': typeof OwnerRepoBaselinesIndexRoute
   '/$owner/$repo/builds/$number/': typeof OwnerRepoBuildsNumberIndexRoute
   '/$owner/$repo/builds/$number/snapshots/$snapshotId': typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute
 }
@@ -68,7 +89,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/install': typeof InstallRoute
   '/$owner': typeof OwnerIndexRoute
+  '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo': typeof OwnerRepoIndexRoute
+  '/$owner/$repo/baselines/$': typeof OwnerRepoBaselinesSplatRoute
+  '/$owner/$repo/baselines': typeof OwnerRepoBaselinesIndexRoute
   '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberIndexRoute
   '/$owner/$repo/builds/$number/snapshots/$snapshotId': typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute
 }
@@ -77,8 +101,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/install': typeof InstallRoute
   '/$owner/': typeof OwnerIndexRoute
+  '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
+  '/$owner/$repo/baselines/$': typeof OwnerRepoBaselinesSplatRoute
   '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberRouteWithChildren
+  '/$owner/$repo/baselines/': typeof OwnerRepoBaselinesIndexRoute
   '/$owner/$repo/builds/$number/': typeof OwnerRepoBuildsNumberIndexRoute
   '/$owner/$repo/builds/$number/snapshots/$snapshotId': typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute
 }
@@ -88,8 +115,11 @@ export interface FileRouteTypes {
     | '/'
     | '/install'
     | '/$owner/'
+    | '/$owner/$repo/settings'
     | '/$owner/$repo/'
+    | '/$owner/$repo/baselines/$'
     | '/$owner/$repo/builds/$number'
+    | '/$owner/$repo/baselines/'
     | '/$owner/$repo/builds/$number/'
     | '/$owner/$repo/builds/$number/snapshots/$snapshotId'
   fileRoutesByTo: FileRoutesByTo
@@ -97,7 +127,10 @@ export interface FileRouteTypes {
     | '/'
     | '/install'
     | '/$owner'
+    | '/$owner/$repo/settings'
     | '/$owner/$repo'
+    | '/$owner/$repo/baselines/$'
+    | '/$owner/$repo/baselines'
     | '/$owner/$repo/builds/$number'
     | '/$owner/$repo/builds/$number/snapshots/$snapshotId'
   id:
@@ -105,8 +138,11 @@ export interface FileRouteTypes {
     | '/'
     | '/install'
     | '/$owner/'
+    | '/$owner/$repo/settings'
     | '/$owner/$repo/'
+    | '/$owner/$repo/baselines/$'
     | '/$owner/$repo/builds/$number'
+    | '/$owner/$repo/baselines/'
     | '/$owner/$repo/builds/$number/'
     | '/$owner/$repo/builds/$number/snapshots/$snapshotId'
   fileRoutesById: FileRoutesById
@@ -115,8 +151,11 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   InstallRoute: typeof InstallRoute
   OwnerIndexRoute: typeof OwnerIndexRoute
+  OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRoute
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
+  OwnerRepoBaselinesSplatRoute: typeof OwnerRepoBaselinesSplatRoute
   OwnerRepoBuildsNumberRoute: typeof OwnerRepoBuildsNumberRouteWithChildren
+  OwnerRepoBaselinesIndexRoute: typeof OwnerRepoBaselinesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -147,6 +186,27 @@ declare module '@tanstack/react-router' {
       path: '/$owner/$repo'
       fullPath: '/$owner/$repo/'
       preLoaderRoute: typeof OwnerRepoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$owner/$repo/settings': {
+      id: '/$owner/$repo/settings'
+      path: '/$owner/$repo/settings'
+      fullPath: '/$owner/$repo/settings'
+      preLoaderRoute: typeof OwnerRepoSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$owner/$repo/baselines/': {
+      id: '/$owner/$repo/baselines/'
+      path: '/$owner/$repo/baselines'
+      fullPath: '/$owner/$repo/baselines/'
+      preLoaderRoute: typeof OwnerRepoBaselinesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$owner/$repo/baselines/$': {
+      id: '/$owner/$repo/baselines/$'
+      path: '/$owner/$repo/baselines/$'
+      fullPath: '/$owner/$repo/baselines/$'
+      preLoaderRoute: typeof OwnerRepoBaselinesSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$owner/$repo/builds/$number': {
@@ -193,8 +253,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   InstallRoute: InstallRoute,
   OwnerIndexRoute: OwnerIndexRoute,
+  OwnerRepoSettingsRoute: OwnerRepoSettingsRoute,
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,
+  OwnerRepoBaselinesSplatRoute: OwnerRepoBaselinesSplatRoute,
   OwnerRepoBuildsNumberRoute: OwnerRepoBuildsNumberRouteWithChildren,
+  OwnerRepoBaselinesIndexRoute: OwnerRepoBaselinesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

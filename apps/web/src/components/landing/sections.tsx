@@ -36,7 +36,7 @@ steps:
   - run: npx playwright test
   - run: npx stateofpixel upload screenshots`;
 
-const OTHER_CI = `# Any CI: set a project token from the project page
+const OTHER_CI = `# Any CI: create a project token in the project settings
 export STATEOFPIXEL_TOKEN=sop_...
 
 npx playwright test
@@ -436,13 +436,15 @@ const SHIPPED = [
   "Review page with four views and keyboard shortcuts",
   "GitHub check runs",
   "Sharding and a finalize command",
+  "Approval carry-over across rebases",
+  "Storybook capture command and Playwright reporter",
 ];
 
 const NEXT = [
-  "Approval carry-over across rebases",
-  "Storybook capture command and Playwright reporter",
-  "Retention settings and a usage page",
+  "Retention and a usage page",
   "PR comment summary",
+  "Tokenless auth for fork PRs",
+  "Flaky snapshot detection",
 ];
 
 export function StatusSection() {

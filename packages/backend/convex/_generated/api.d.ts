@@ -10,6 +10,7 @@
 
 import type * as accounts from "../accounts.js";
 import type * as auth from "../auth.js";
+import type * as baselines from "../baselines.js";
 import type * as blobs from "../blobs.js";
 import type * as builds from "../builds.js";
 import type * as checks from "../checks.js";
@@ -23,6 +24,8 @@ import type * as lib_ciErrors from "../lib/ciErrors.js";
 import type * as lib_ciRequests from "../lib/ciRequests.js";
 import type * as lib_conclude from "../lib/conclude.js";
 import type * as lib_github from "../lib/github.js";
+import type * as lib_history from "../lib/history.js";
+import type * as lib_images from "../lib/images.js";
 import type * as lib_permissions from "../lib/permissions.js";
 import type * as lib_projectTokens from "../lib/projectTokens.js";
 import type * as lib_urls from "../lib/urls.js";
@@ -43,6 +46,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   accounts: typeof accounts;
   auth: typeof auth;
+  baselines: typeof baselines;
   blobs: typeof blobs;
   builds: typeof builds;
   checks: typeof checks;
@@ -56,6 +60,8 @@ declare const fullApi: ApiFromModules<{
   "lib/ciRequests": typeof lib_ciRequests;
   "lib/conclude": typeof lib_conclude;
   "lib/github": typeof lib_github;
+  "lib/history": typeof lib_history;
+  "lib/images": typeof lib_images;
   "lib/permissions": typeof lib_permissions;
   "lib/projectTokens": typeof lib_projectTokens;
   "lib/urls": typeof lib_urls;

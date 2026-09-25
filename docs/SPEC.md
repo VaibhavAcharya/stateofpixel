@@ -170,19 +170,19 @@ For CI other than GitHub Actions, a link opens the Tokens section of settings.
 ### 4.6 New push on a PR with approved changes (carry-over)
 
 1. Developer rebases or pushes an unrelated fix.
-2. New build. For each `changed` or `added` snapshot, the server looks for an approved snapshot in any earlier build of the same PR and build name with the same image hash. If found, it is approved by carry-over.
+2. New build. As each shard's snapshots are inserted, the server looks up every pending `changed` or `added` snapshot in `approvedImages` for the same PR and build name. If that image was approved in an earlier build, the snapshot is approved by carry-over, with a `reviews` row of source `carry_over` that points at the original approval.
 3. If all changes carry over, conclusion is `approved` right at finalize and the check is green without anyone opening the page.
 4. On the build page, carried-over snapshots show "Approved in build #41 by @alice".
 
-Rejections do not carry over (proposal). A rejected image showing up again is shown as pending with a note "Rejected in build #41", so the reviewer sees it but a stale rejection does not block forever.
+Rejections do not carry over. A rejected image showing up again is shown as pending with a note "rejected in build #41", so the reviewer sees it but a stale rejection does not block forever. Undoing or rejecting a carried-over approval removes every approval of that image on the PR, so the next push does not carry it over again.
 
 ### 4.7 Merge to the default branch
 
 1. Merge creates a push on `main`. CI runs `stateofpixel upload`.
 2. `main` matches the auto-approve pattern, so the build is approved and becomes the newest baseline. A build is auto-approved when it has no PR number and its branch matches one of `autoApproveBranches` (`*` matches within one path segment, `**` across segments). Its changed and added snapshots are inserted as approved with a `reviews` row of source `auto_branch`.
-3. For squash and rebase merges, the new commit is not a descendant of the PR head. The server calls `GET /repos/{o}/{r}/commits/{sha}/pulls`. If it finds a merged PR, the build page shows "From PR #123" and links the PR's last build.
+3. For squash and rebase merges, the new commit is not a descendant of the PR head. When a new build has no PR number, `POST /builds` calls `GET /repos/{o}/{r}/commits/{sha}/pulls` and stores the number of a merged PR whose base is the build's branch as `mergedPrNumber`. The build page shows "From PR #123" and links the PR's last build. A GitHub error skips the lookup and never fails the build.
 
-Auto-approve on main means anything that lands on main is the truth. If a change was not reviewed on the PR (check not required), it still becomes the baseline. The build page for that main build marks such snapshots "Not reviewed on PR" so it is visible.
+Auto-approve on main means anything that lands on main is the truth. If a change was not reviewed on the PR (check not required), it still becomes the baseline. The build page for that main build marks a changed or added snapshot "not reviewed on PR" when its image has no `approvedImages` row for the merged PR.
 
 ### 4.8 Sharded CI
 
@@ -364,13 +364,13 @@ Review actions are optimistic in the UI and send one request each. If a request 
 Browse what is approved on the default branch now.
 
 - Build name selector if there are several.
-- Search by name.
+- Filter by name prefix, like `components/`.
 - Grid of snapshots from the newest approved build on the default branch: image scaled down by the browser, name under it. Lazy loaded, 60 per page.
 - Clicking one opens Snapshot history.
 
 ### 5.7 Snapshot history (`/{owner}/{repo}/baselines/{snapshot_name}`)
 
-- Timeline of builds on the default branch where this name's image hash changed, newest first.
+- Timeline of builds on the default branch where this name's image hash changed, newest first. The query scans the newest 100 builds on the branch and returns up to 50 entries.
 - Each entry: build number, commit, date, who approved on the PR if known, a thumbnail.
 - Clicking two entries compares them in the same viewer as the build page.
 
@@ -383,9 +383,9 @@ Browse what is approved on the default branch now.
 | Diff | Threshold | 0.1 | Passed to the CLI in the build response, so config lives in one place. The CLI config overrides it. |
 | Diff | Include anti-aliasing | off | |
 | Checks | Check name | `stateofpixel` | With several build names: `stateofpixel / {build name}`. |
-| Retention | Keep PR-only images for | 60 days | 7 to 365. Shows the storage this setting uses now. |
+| Retention | Keep PR-only images for | 60 days | 7 to 365. Showing the storage this setting uses comes with the usage page. |
 | Tokens | Project tokens | none | Create, name, last used time, revoke. Token shown once. |
-| Danger | Delete project | | Type the repo name to confirm. |
+| Danger | Delete project | | Type the repo name to confirm. Deletes the project row right away and its builds, snapshots, reviews, approvals and tokens in chunks. A repository still in the installation comes back as an empty project on the next sync. |
 
 Every change is saved on blur with a small "Saved" note. No save button.
 
@@ -719,13 +719,12 @@ Confirming uploads, per chunk of 1,000:
 3. If an image with that hash already exists for the account (two shards uploaded the same PNG at once), delete the new file and point to the existing image.
 4. Otherwise insert the `images` row.
 
-Then insert snapshot rows in chunks of 1,000, increment `shardsDone`, and when it reaches `shardsTotal`, schedule the finalize mutation with `runAfter(0)`.
+Then insert snapshot rows in chunks of 1,000, carrying over approvals through `approvedImages` as they are inserted (4.6), increment `shardsDone`, and when it reaches `shardsTotal`, schedule the finalize mutation with `runAfter(0)`.
 
 Finalize, in chunked mutations:
 1. Compute `removed` (baseline names missing from this build), unless `subset`.
-2. Carry over approvals through `approvedImages`.
-3. Set counts and conclusion, mark earlier builds on the same PR as superseded, cancel the expiry job.
-4. Schedule the action that updates the GitHub check.
+2. Set counts and conclusion, mark earlier builds on the same PR as superseded, cancel the expiry job.
+3. Schedule the action that updates the GitHub check.
 
 ### 7.4 POST /builds/finalize
 
@@ -770,16 +769,19 @@ Functions that need a permission throw a `ConvexError` with code `permission_unk
 | `snapshots.list` | query | read | Paginated sidebar list by `by_buildId_and_diffStatus_and_name`. Includes image URLs from `blobs.getUrl`. |
 | `snapshots.get` | query | read | One snapshot with metadata, review info and history. |
 | `reviews.apply` | mutation | write | `{ buildId, snapshotIds or "all", action, comment }`. "all" runs in chunks of 1,000 through scheduled mutations; the UI shows progress from `counts`. |
-| `baselines.list` | query | read | Paginated snapshots of the newest full approved build on the default branch. |
+| `baselines.buildNames` | query | read | Build names seen on the default branch. |
+| `baselines.current` | query | read | The newest full approved build on the default branch for a build name. |
+| `baselines.list` | query | read | Paginated snapshots of that build, with an optional name prefix. |
 | `baselines.history` | query | read | Changed rows for one name on the default branch. |
+| `projects.settings` | query | admin | The settings page fields. |
 | `projects.updateSettings` | mutation | admin | Partial update. |
 | `tokens.list` | query | admin | Tokens that are not revoked: name, created time, last used time. |
 | `tokens.create` | action | admin | Generates the token, stores the hash through an internal mutation, returns the token once. |
 | `tokens.revoke` | mutation | admin | |
-| `projects.delete` | mutation | admin | Marks deleted, schedules chunked deletion. |
+| `projects.remove` | mutation | admin | Checks the typed name, deletes the project, schedules chunked deletion of its data. |
 | `usage.get` | query | org owner | Usage page data. |
 
-`reviews.apply` on superseded, pending, expired or storage-blocked builds throws a `ConvexError` with code `build_not_reviewable`. `approve` and `reject` apply to snapshots with review state `pending`, `approved` or `rejected`; `undo` sets them back to `pending` and removes their `approvedImages` rows. `"all"` only touches `pending` snapshots, runs 500 per scheduled mutation (changed first, then added), and cannot undo. Every call recomputes the conclusion and bumps the GitHub check.
+`reviews.apply` on superseded, pending, expired or storage-blocked builds throws a `ConvexError` with code `build_not_reviewable`. `approve` and `reject` apply to snapshots with review state `pending`, `approved` or `rejected`; `undo` sets them back to `pending` and removes the `approvedImages` rows of that image on the PR. `"all"` only touches `pending` snapshots, runs 500 per scheduled mutation (changed first, then added), and cannot undo. Every call recomputes the conclusion and bumps the GitHub check.
 
 ## 9. GitHub integration
 
@@ -821,7 +823,7 @@ Package `stateofpixel`, closed source, published unminified with source maps. No
 |---|---|
 | `stateofpixel upload <dir>` | Hash, upload, diff, complete a shard. The main command. |
 | `stateofpixel finalize` | Finish a build in finalize mode. |
-| `stateofpixel storybook <static-dir>` | Capture every story from a built Storybook with Playwright, then upload. |
+| `stateofpixel storybook <static-dir>` | Capture every story from a built Storybook with Playwright, then upload. Takes the `upload` flags plus `--viewports` (default `1280`), `--include` and `--exclude` globs on `title/name`, `--wait-for-selector` (default `#storybook-root > *`) and `--delay`. |
 | `stateofpixel compare <dir> <baseline-dir>` | Local only (M0). Writes `stateofpixel-report/index.html`. |
 
 `upload` flags:
@@ -842,7 +844,7 @@ Package `stateofpixel`, closed source, published unminified with source maps. No
 
 Snapshot name from a folder upload is the path relative to `<dir>` without `.png`, like `components/Button/primary`.
 
-M1 ships `--build-name`, `--shard i/n`, `--nonce`, `--baseline-branch`, `--subset`, `--threshold`, `--strict` and `--dry-run`. M2 adds `--shard auto` and `finalize` with `--build-name`, `--nonce`, `--baseline-branch`, `--skip-if-empty` and `--strict`. `--baseline-commit`, `--ignore` and the config file come later. Git info comes from the GitHub Actions env and event payload (the PR head SHA, not the merge SHA) and from local git; `ancestors` is `git rev-list` of the commit, or of `HEAD` without the merge commit when the PR head is not in a shallow checkout. The API base URL is `STATEOFPIXEL_API_URL`, default `https://graceful-dogfish-423.convex.site/api/v1` until a custom domain exists.
+M1 ships `--build-name`, `--shard i/n`, `--nonce`, `--baseline-branch`, `--subset`, `--threshold`, `--strict` and `--dry-run`. M2 adds `--shard auto`, `finalize` with `--build-name`, `--nonce`, `--baseline-branch`, `--skip-if-empty` and `--strict`, `storybook`, and the Playwright reporter. A `<name>.meta.json` file next to `<name>.png` is sent as that snapshot's metadata. `--baseline-commit`, `--ignore` and the config file come later. Git info comes from the GitHub Actions env and event payload (the PR head SHA, not the merge SHA) and from local git; `ancestors` is `git rev-list` of the commit, or of `HEAD` without the merge commit when the PR head is not in a shallow checkout. The API base URL is `STATEOFPIXEL_API_URL`, default `https://graceful-dogfish-423.convex.site/api/v1` until a custom domain exists.
 
 ### Config file
 
@@ -877,7 +879,7 @@ import { snapshot } from "stateofpixel/playwright";
 await snapshot(page, "Checkout/Empty cart");
 ```
 
-`snapshot` applies the flakiness defaults (animations disabled, caret hidden, fonts loaded), appends `[browser width]` to the name, saves the PNG and records metadata. The reporter runs the upload once the test run ends, or per shard when Playwright sharding is on.
+`snapshot` applies the flakiness defaults (animations disabled, caret hidden, fonts loaded), appends `[browser width]` to the name, saves a full-page PNG into `stateofpixel-screenshots` (or `STATEOFPIXEL_DIR`) and writes metadata next to it. The reporter clears that folder when the run begins and uploads it once the run ends, per shard when Playwright sharding is on. It uploads only when `CI` is set, unless the reporter option `uploadOutsideCi` is true, and marks the upload as a subset when the run did not pass. Reporter options: `buildName`, `nonce`, `baselineBranch`, `subset`, `threshold`, `strict`, `uploadOutsideCi`. Storybook captures and the Playwright helper use the Playwright the project installs, an optional peer dependency.
 
 ### Output
 

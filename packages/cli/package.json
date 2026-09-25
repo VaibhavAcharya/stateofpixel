@@ -8,6 +8,10 @@
   "bin": {
     "stateofpixel": "dist/index.mjs"
   },
+  "exports": {
+    "./playwright": "./dist/playwright.mjs",
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist"
   ],
@@ -25,8 +29,22 @@
     "pixelmatch": "^7.2.0",
     "pngjs": "^7.0.0"
   },
+  "peerDependencies": {
+    "@playwright/test": "*",
+    "playwright": "*"
+  },
+  "peerDependenciesMeta": {
+    "@playwright/test": {
+      "optional": true
+    },
+    "playwright": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/pngjs": "^6.0.5",
+    "playwright": "^1.63.0",
     "tsdown": "^0.23.0"
   },
   "optionalDependencies": {

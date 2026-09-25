@@ -3,6 +3,11 @@ import { Command } from "commander";
 import packageJson from "../package.json" with { type: "json" };
 import { compareCommand, parseThreshold } from "./commands/compare";
 import { finalizeCommand } from "./commands/finalize";
+import {
+  parseDelay,
+  parseViewports,
+  storybookCommand,
+} from "./commands/storybook";
 import { parseShard, uploadCommand } from "./commands/upload";
 
 const program = new Command()
@@ -55,6 +60,54 @@ program
   .option("--strict", "fail when the service is not reachable", false)
   .option("--dry-run", "hash and print the plan, upload nothing", false)
   .action(uploadCommand);
+
+program
+  .command("storybook")
+  .description("Capture every story of a built Storybook, then upload")
+  .argument("<static-dir>", "the output of storybook build")
+  .option(
+    "--viewports <widths>",
+    "comma separated viewport widths",
+    parseViewports,
+    [1280],
+  )
+  .option("--include <glob>", "only stories whose title/name match")
+  .option("--exclude <glob>", "skip stories whose title/name match")
+  .option(
+    "--wait-for-selector <selector>",
+    "wait for this before each screenshot",
+    "#storybook-root > *",
+  )
+  .option(
+    "--delay <ms>",
+    "wait this long before each screenshot",
+    parseDelay,
+    0,
+  )
+  .option(
+    "--build-name <name>",
+    "separate builds of one project, like storybook",
+  )
+  .option(
+    "--shard <i/n>",
+    "this shard and the shard count, or auto with a finalize step",
+    parseShard,
+  )
+  .option("--nonce <id>", "shared by every shard of one build")
+  .option("--baseline-branch <branch>", "branch to compare against")
+  .option(
+    "--subset",
+    "only some snapshots ran, do not mark others removed",
+    false,
+  )
+  .option(
+    "--threshold <number>",
+    "color difference threshold, 0 to 1, overrides project settings",
+    parseThreshold,
+  )
+  .option("--strict", "fail when the service is not reachable", false)
+  .option("--dry-run", "capture and print the plan, upload nothing", false)
+  .action(storybookCommand);
 
 program
   .command("finalize")

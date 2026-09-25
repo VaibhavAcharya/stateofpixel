@@ -61,12 +61,12 @@ Group 4: landing
 ## M2: real-world CI
 
 - [x] Sharding and `stateofpixel finalize`
-- [ ] Squash and rebase merge handling
-- [ ] Approval carry-over
-- [ ] `stateofpixel storybook` capture command
-- [ ] Playwright reporter and `snapshot()` helper
-- [ ] Baselines tab and snapshot history
-- [ ] Project settings page
+- [x] Squash and rebase merge handling
+- [x] Approval carry-over
+- [x] `stateofpixel storybook` capture command
+- [x] Playwright reporter and `snapshot()` helper
+- [x] Baselines tab and snapshot history
+- [x] Project settings page
 
 ## M3: growth
 

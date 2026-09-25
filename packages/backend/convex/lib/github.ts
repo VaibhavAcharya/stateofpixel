@@ -240,6 +240,22 @@ export async function isAncestor(
   }
 }
 
+export async function findMergedPullRequest(
+  installationToken: string,
+  owner: string,
+  name: string,
+  commitSha: string,
+  baseBranch: string,
+): Promise<number | null> {
+  const pulls = await githubRequest<
+    { number: number; merged_at: string | null; base: { ref: string } }[]
+  >(installationToken, `/repos/${owner}/${name}/commits/${commitSha}/pulls`);
+  const merged = pulls.find(
+    (pull) => pull.merged_at !== null && pull.base.ref === baseBranch,
+  );
+  return merged?.number ?? null;
+}
+
 export type CheckRunFields = {
   status: "in_progress" | "completed";
   conclusion?:

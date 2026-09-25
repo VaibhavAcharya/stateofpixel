@@ -508,3 +508,126 @@ it("approves every pending snapshot with approve all", async () => {
     "approve_all",
   ]);
 });
+
+it("saves settings for admins only and checks the values", async () => {
+  const writer = await setup();
+  await writer.grant("write");
+  await expect(
+    writer.user.query(api.projects.settings, {
+      projectId: writer.projectId,
+    }),
+  ).rejects.toThrow(/forbidden/);
+
+  const { user, grant, projectId } = await setup();
+  await grant("admin");
+  await user.mutation(api.projects.updateSettings, {
+    projectId,
+    autoApproveBranches: [" main ", "release/*", ""],
+    diffThreshold: 0.2,
+  });
+  expect(await user.query(api.projects.settings, { projectId })).toEqual({
+    defaultBranch: "main",
+    autoApproveBranches: ["main", "release/*"],
+    diffThreshold: 0.2,
+    diffIncludeAA: false,
+    prRetentionDays: 30,
+  });
+  await expect(
+    user.mutation(api.projects.updateSettings, {
+      projectId,
+      prRetentionDays: 3,
+    }),
+  ).rejects.toThrow(/invalid_retention/);
+  await expect(
+    user.mutation(api.projects.updateSettings, {
+      projectId,
+      diffThreshold: 2,
+    }),
+  ).rejects.toThrow(/invalid_threshold/);
+});
+
+it("deletes a project and its builds after the name is confirmed", async () => {
+  const { t, user, grant, projectId } = await setup();
+  await grant("admin");
+  await expect(
+    user.mutation(api.projects.remove, { projectId, confirmName: "web" }),
+  ).rejects.toThrow(/confirm_name_mismatch/);
+
+  vi.useFakeTimers();
+  await user.mutation(api.projects.remove, {
+    projectId,
+    confirmName: "web-app",
+  });
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+  vi.useRealTimers();
+
+  const left = await t.run(async (ctx) => ({
+    projects: (await ctx.db.query("projects").collect()).length,
+    builds: (await ctx.db.query("builds").collect()).length,
+    snapshots: (await ctx.db.query("snapshots").collect()).length,
+  }));
+  expect(left).toEqual({ projects: 0, builds: 0, snapshots: 0 });
+});
+
+it("lists the current baselines and the history of one snapshot", async () => {
+  const { t, user, grant } = await setup();
+  await grant("read");
+  await t.run(async (ctx) => {
+    const baseline = await ctx.db
+      .query("builds")
+      .withIndex("by_projectId_and_number", (q) => q)
+      .first();
+    const image = await ctx.db.query("images").first();
+    if (baseline === null || image === null) {
+      throw new Error("setup missing");
+    }
+    for (const [name, diffStatus] of [
+      ["components/Button", "added"],
+      ["components/Card", "added"],
+      ["pages/Home", "added"],
+      ["pages/Old", "removed"],
+    ] as const) {
+      await ctx.db.insert("snapshots", {
+        buildId: baseline._id,
+        shardIndex: 1,
+        name,
+        imageId: diffStatus === "removed" ? undefined : image._id,
+        diffStatus,
+        reviewState: diffStatus === "removed" ? "none" : "approved",
+        metadata: {},
+      });
+    }
+  });
+
+  expect(await user.query(api.baselines.buildNames, repo)).toEqual(["default"]);
+  const all = await user.query(api.baselines.list, {
+    ...repo,
+    buildName: "default",
+    paginationOpts: firstPage,
+  });
+  expect(
+    await user.query(api.baselines.current, { ...repo, buildName: "default" }),
+  ).toEqual({ number: 1, commitSha: "c1" });
+  expect(all.page.map((snapshot) => snapshot.name)).toEqual([
+    "components/Button",
+    "components/Card",
+    "pages/Home",
+  ]);
+  const components = await user.query(api.baselines.list, {
+    ...repo,
+    buildName: "default",
+    prefix: "components/",
+    paginationOpts: firstPage,
+  });
+  expect(components.page).toHaveLength(2);
+
+  const history = await user.query(api.baselines.history, {
+    ...repo,
+    buildName: "default",
+    snapshotName: "pages/Home",
+  });
+  expect(history).toMatchObject([
+    { buildNumber: 1, commitSha: "c1", diffStatus: "added" },
+  ]);
+  expect(history[0]?.image?.url).toEqual(expect.any(String));
+});

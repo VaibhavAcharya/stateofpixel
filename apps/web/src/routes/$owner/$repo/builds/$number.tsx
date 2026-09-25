@@ -1057,6 +1057,42 @@ function Banners({
       ),
     });
   }
+  if (build.mergedPr !== null) {
+    const { mergedPr } = build;
+    banners.push({
+      key: "merged-pr",
+      tone: "bg-unchanged-bg",
+      icon: <GitPullRequestIcon size={16} className="text-unchanged" />,
+      content: (
+        <>
+          From PR{" "}
+          <a
+            href={`https://github.com/${owner}/${repo}/pull/${mergedPr.number}`}
+            className="font-medium text-link"
+          >
+            #{mergedPr.number}
+          </a>
+          {mergedPr.lastBuildNumber !== null && (
+            <>
+              . Its last build is{" "}
+              <Link
+                to="/$owner/$repo/builds/$number"
+                params={{
+                  owner,
+                  repo,
+                  number: String(mergedPr.lastBuildNumber),
+                }}
+                className="font-medium text-link"
+              >
+                #{mergedPr.lastBuildNumber}
+              </Link>
+            </>
+          )}
+          .
+        </>
+      ),
+    });
+  }
   if (build.status === "pending") {
     banners.push({
       key: "pending",
@@ -1361,6 +1397,31 @@ function SnapshotDetail({
           </>
         )}
       </div>
+      {snapshot.history.length > 0 && (
+        <p className="flex shrink-0 flex-wrap items-center gap-x-2 border-t border-border px-4 py-2 text-xs text-muted">
+          <Link
+            to="/$owner/$repo/baselines/$"
+            params={{ owner, repo, _splat: snapshot.name }}
+            search={{
+              build:
+                build.buildName === "default" ? undefined : build.buildName,
+            }}
+            className="hover:text-text"
+          >
+            History
+          </Link>
+          {snapshot.history.map((number) => (
+            <Link
+              key={number}
+              to="/$owner/$repo/builds/$number"
+              params={{ owner, repo, number: String(number) }}
+              className="text-link tabular-nums"
+            >
+              #{number}
+            </Link>
+          ))}
+        </p>
+      )}
       <Details metadata={snapshot.metadata} />
     </>
   );
@@ -1380,6 +1441,8 @@ function ReviewStatus({ snapshot }: { snapshot: Snapshot }) {
       <span className="flex items-center gap-1.5 text-xs text-muted">
         <REVIEW_ICONS.pending size={14} className="text-pending" />
         Waiting for review
+        {snapshot.rejectedIn !== null &&
+          `, rejected in build #${snapshot.rejectedIn}`}
       </span>
     );
   }
@@ -1390,12 +1453,15 @@ function ReviewStatus({ snapshot }: { snapshot: Snapshot }) {
       : review.action === "reject"
         ? "Rejected"
         : "Review undone";
+  const carriedFrom = review.carriedFrom;
   const who =
-    review.source === "orphan"
-      ? "as the first baseline"
-      : review.login === null
-        ? "automatically"
-        : `by @${review.login}`;
+    carriedFrom !== null
+      ? `in build #${carriedFrom.buildNumber}${carriedFrom.login === null ? "" : ` by @${carriedFrom.login}`} (carried over)`
+      : review.source === "orphan"
+        ? "as the first baseline"
+        : review.login === null
+          ? "automatically"
+          : `by @${review.login}`;
   return (
     <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted">
       <Icon
@@ -1407,6 +1473,9 @@ function ReviewStatus({ snapshot }: { snapshot: Snapshot }) {
         {verb} {who} <RelativeTime timestamp={review.createdAt} />
         {review.comment && (
           <span className="text-text">: {review.comment}</span>
+        )}
+        {snapshot.notReviewedOnPr && (
+          <span className="text-pending">, not reviewed on PR</span>
         )}
       </span>
     </span>

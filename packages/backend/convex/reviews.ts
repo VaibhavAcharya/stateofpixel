@@ -253,10 +253,7 @@ async function removeApprovals(
     )
     .take(100);
   for (const approval of approvals) {
-    const approvalReview = await ctx.db.get("reviews", approval.reviewId);
-    if (approvalReview?.snapshotId === snapshot._id) {
-      await ctx.db.delete("approvedImages", approval._id);
-    }
+    await ctx.db.delete("approvedImages", approval._id);
   }
 }
 

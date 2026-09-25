@@ -1,8 +1,4 @@
-import {
-  ArrowUpRightIcon,
-  GitBranchIcon,
-  GitPullRequestIcon,
-} from "@phosphor-icons/react/ssr";
+import { GitBranchIcon, GitPullRequestIcon } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { UsePaginatedQueryReturnType } from "convex/react";
@@ -17,7 +13,8 @@ import {
   ListToolbar,
   SelectMenu,
 } from "../../../components/ListControls";
-import { Page, PageHeader } from "../../../components/Page";
+import { Page } from "../../../components/Page";
+import { ProjectHeader } from "../../../components/ProjectHeader";
 import { RequireAuth } from "../../../components/RequireAuth";
 import {
   BuildStatePill,
@@ -92,27 +89,7 @@ function ProjectPage() {
     <RequireAuth redirectTo={`/${owner}/${repo}`}>
       <AppHeader owner={owner} repo={repo} />
       <Page>
-        <PageHeader
-          title={repo}
-          meta={
-            <>
-              <Link to="/$owner" params={{ owner }} className="hover:text-text">
-                {owner}
-              </Link>
-              <span aria-hidden>/</span>
-              <span>Builds</span>
-            </>
-          }
-          actions={
-            <a
-              href={`https://github.com/${owner}/${repo}`}
-              className={buttonClass()}
-            >
-              Repository
-              <ArrowUpRightIcon size={14} className="text-muted" />
-            </a>
-          }
-        />
+        <ProjectHeader owner={owner} repo={repo} tab="builds" />
         <ProjectBuilds owner={owner} repo={repo} />
       </Page>
     </RequireAuth>
@@ -299,7 +276,7 @@ function BuildsTable({
     return <SkeletonRows />;
   }
   if (results.length === 0 && !filtered) {
-    return <SetupCard />;
+    return <SetupCard owner={owner} repo={repo} />;
   }
 
   return (
@@ -450,11 +427,20 @@ const SETUP_SNIPPET = `permissions:
 steps:
   - run: npx stateofpixel upload screenshots`;
 
-function SetupCard() {
+function SetupCard({ owner, repo }: { owner: string; repo: string }) {
   return (
     <section className="flex max-w-[720px] flex-col gap-6 rounded-md border border-dotted border-field-border/60 bg-surface p-6 max-sm:p-4">
       <LeadCopy title="No builds yet.">
         Add the upload step to your GitHub Actions workflow and push a commit.
+        On other CI, create a project token in{" "}
+        <Link
+          to="/$owner/$repo/settings"
+          params={{ owner, repo }}
+          className="text-link"
+        >
+          settings
+        </Link>
+        .
       </LeadCopy>
       <CodeBlock fileName=".github/workflows/visual.yml" code={SETUP_SNIPPET} />
       <p className="flex items-center gap-2 text-sm text-muted">

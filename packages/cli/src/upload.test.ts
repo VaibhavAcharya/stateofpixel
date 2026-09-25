@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, expect, it } from "vitest";
@@ -192,4 +192,53 @@ it("completes the shard index the server assigned in auto mode", async () => {
     "/builds/b1/shards/3/complete",
   );
   expect(output.failedUploads).toEqual([]);
+});
+
+it("sends metadata from a sidecar file with the result", async () => {
+  const dir = path.join(root, "shots");
+  await writeFixture(dir, "same", white);
+  await writeFixture(dir, "plain", white);
+  await writeFile(
+    path.join(dir, "same.meta.json"),
+    JSON.stringify({ browser: "chromium", viewport: 1280 }),
+  );
+  const { api, calls } = fakeApi([
+    { name: "plain", status: "unchanged" },
+    { name: "same", status: "unchanged" },
+  ]);
+
+  await uploadDirectory({
+    dir,
+    workDir: root,
+    api,
+    engine: createPixelmatchEngine(),
+    buildName: "default",
+    nonce: "run-1",
+    shard: { index: 1, total: 1 },
+    subset: false,
+    git: {
+      commit: "c2",
+      commitMessage: "Change",
+      branch: "feature",
+      baselineBranch: "main",
+      prNumber: 7,
+      mergeBase: null,
+      ancestors: ["c1"],
+    },
+    ci: {},
+  });
+
+  const complete = calls.find((call) => call.path.endsWith("/complete"))
+    ?.body as { results: object[] };
+  expect(complete).toMatchObject({
+    results: [
+      { name: "plain", status: "unchanged" },
+      {
+        name: "same",
+        status: "unchanged",
+        metadata: { browser: "chromium", viewport: 1280 },
+      },
+    ],
+  });
+  expect(complete.results[0]).not.toHaveProperty("metadata");
 });

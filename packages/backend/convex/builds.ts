@@ -62,6 +62,7 @@ export const createOrJoin = internalMutation({
     ciProvider: v.optional(v.string()),
     ciRunUrl: v.optional(v.string()),
     fallbackBaselineBuildId: v.optional(v.id("builds")),
+    mergedPrNumber: v.optional(v.number()),
   },
   returns: v.object({
     buildId: v.id("builds"),
@@ -180,6 +181,7 @@ async function createBuild(
     ciProvider?: string;
     ciRunUrl?: string;
     fallbackBaselineBuildId?: Id<"builds">;
+    mergedPrNumber?: number;
   },
 ): Promise<Doc<"builds">> {
   const baseline =
@@ -212,6 +214,7 @@ async function createBuild(
     mergeBaseSha: args.git.mergeBase,
     ancestors: args.git.ancestors.slice(0, MAX_ANCESTORS),
     prNumber: args.git.prNumber,
+    mergedPrNumber: args.mergedPrNumber,
     nonce: args.nonce,
     shardsTotal: args.shardsTotal ?? undefined,
     doneShardIndexes: [],
@@ -375,7 +378,7 @@ export function matchesBranch(pattern: string, branch: string): boolean {
   return new RegExp(`^${source}$`).test(branch);
 }
 
-function isBaselineCandidate(build: Doc<"builds">): boolean {
+export function isBaselineCandidate(build: Doc<"builds">): boolean {
   return (
     build.status === "finalized" &&
     (build.conclusion === "approved" || build.conclusion === "no_changes") &&
@@ -593,8 +596,13 @@ export const insertSnapshots = internalMutation({
         continue;
       }
       const compared = await toSnapshot(ctx, build, accountId, result);
+      const carriedApproval =
+        compared.reviewState === "pending" && !build.autoApproved
+          ? await findCarriedApproval(ctx, build, compared.imageId)
+          : null;
       const snapshot =
-        build.autoApproved && compared.reviewState === "pending"
+        compared.reviewState === "pending" &&
+        (build.autoApproved || carriedApproval !== null)
           ? { ...compared, reviewState: "approved" as const }
           : compared;
       const snapshotId = await ctx.db.insert("snapshots", {
@@ -608,7 +616,15 @@ export const insertSnapshots = internalMutation({
       if (snapshot.reviewState !== "none") {
         counts[snapshot.reviewState]++;
       }
-      if (snapshot.reviewState === "approved" && snapshot.imageId) {
+      if (carriedApproval !== null) {
+        await ctx.db.insert("reviews", {
+          snapshotId,
+          buildId,
+          action: "approve",
+          source: "carry_over",
+          sourceReviewId: carriedApproval.reviewId,
+        });
+      } else if (snapshot.reviewState === "approved" && snapshot.imageId) {
         await recordApproval(ctx, build, snapshotId, snapshot.imageId);
       }
     }
@@ -670,6 +686,27 @@ async function toSnapshot(
     diffPixels: result.diffPixels,
     reviewState: "pending",
   };
+}
+
+async function findCarriedApproval(
+  ctx: QueryCtx,
+  build: Doc<"builds">,
+  imageId: Id<"images"> | undefined,
+): Promise<Doc<"approvedImages"> | null> {
+  const { prNumber } = build;
+  if (prNumber === undefined || imageId === undefined) {
+    return null;
+  }
+  return ctx.db
+    .query("approvedImages")
+    .withIndex("by_projectId_and_buildName_and_prNumber_and_imageId", (q) =>
+      q
+        .eq("projectId", build.projectId)
+        .eq("buildName", build.buildName)
+        .eq("prNumber", prNumber)
+        .eq("imageId", imageId),
+    )
+    .first();
 }
 
 async function recordApproval(
@@ -986,6 +1023,13 @@ export const get = query({
         v.object({ number: v.number(), branch: v.string() }),
       ),
       supersededBy: v.union(v.number(), v.null()),
+      mergedPr: v.union(
+        v.null(),
+        v.object({
+          number: v.number(),
+          lastBuildNumber: v.union(v.number(), v.null()),
+        }),
+      ),
     }),
   ),
   handler: async (ctx, args) => {
@@ -1013,6 +1057,32 @@ export const get = query({
           ? null
           : { number: baseline.number, branch: baseline.branch },
       supersededBy: supersededBy?.number ?? null,
+      mergedPr:
+        build.mergedPrNumber === undefined
+          ? null
+          : {
+              number: build.mergedPrNumber,
+              lastBuildNumber:
+                (await findLastPrBuild(ctx, build, build.mergedPrNumber))
+                  ?.number ?? null,
+            },
     };
   },
 });
+
+async function findLastPrBuild(
+  ctx: QueryCtx,
+  build: Doc<"builds">,
+  prNumber: number,
+): Promise<Doc<"builds"> | null> {
+  return ctx.db
+    .query("builds")
+    .withIndex("by_projectId_and_buildName_and_prNumber", (q) =>
+      q
+        .eq("projectId", build.projectId)
+        .eq("buildName", build.buildName)
+        .eq("prNumber", prNumber),
+    )
+    .order("desc")
+    .first();
+}

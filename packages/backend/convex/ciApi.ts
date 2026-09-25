@@ -15,7 +15,12 @@ import {
   type GitInfo,
   uploadUrlsRequest,
 } from "./lib/ciRequests";
-import { createInstallationToken, isAncestor } from "./lib/github";
+import {
+  createInstallationToken,
+  findMergedPullRequest,
+  GithubError,
+  isAncestor,
+} from "./lib/github";
 
 const CHUNK_SIZE = 1000;
 const MAX_METADATA_BYTES = 4096;
@@ -181,6 +186,12 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
   checkMetadata(body.snapshots);
   checkOidcCommit(auth, body.git);
   const buildName = body.buildName ?? "default";
+  const joining =
+    (await ctx.runQuery(internal.builds.buildIdByNonce, {
+      projectId: auth.project.id,
+      buildName,
+      nonce: body.nonce,
+    })) !== null;
 
   const build = await ctx.runMutation(internal.builds.createOrJoin, {
     projectId: auth.project.id,
@@ -192,12 +203,13 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
     git: toBuildGit(body.git),
     ciProvider: body.ci?.provider,
     ciRunUrl: body.ci?.runUrl,
-    fallbackBaselineBuildId: await findFallbackBaseline(
-      ctx,
-      auth,
-      buildName,
-      body,
-    ),
+    fallbackBaselineBuildId: joining
+      ? undefined
+      : await findFallbackBaseline(ctx, auth, buildName, body),
+    mergedPrNumber:
+      joining || typeof body.git.prNumber === "number"
+        ? undefined
+        : await findMergedPr(ctx, auth, body.git),
   });
 
   const lookups = (
@@ -278,6 +290,34 @@ async function findFallbackBaseline(
     }
   }
   return undefined;
+}
+
+async function findMergedPr(
+  ctx: ActionCtx,
+  auth: CiAuth,
+  git: GitInfo,
+): Promise<number | undefined> {
+  const repository = await ctx.runQuery(internal.builds.githubRepository, {
+    projectId: auth.project.id,
+  });
+  if (repository === null) {
+    return undefined;
+  }
+  try {
+    const prNumber = await findMergedPullRequest(
+      await createInstallationToken(repository.installationId),
+      repository.owner,
+      repository.name,
+      git.commit,
+      git.branch,
+    );
+    return prNumber ?? undefined;
+  } catch (error) {
+    if (error instanceof GithubError) {
+      return undefined;
+    }
+    throw error;
+  }
 }
 
 async function createUploadUrls(

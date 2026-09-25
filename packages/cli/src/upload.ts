@@ -24,6 +24,7 @@ export type LocalSnapshot = {
   bytes: number;
   width: number;
   height: number;
+  metadata?: Record<string, unknown>;
 };
 
 type Upload = {
@@ -41,6 +42,7 @@ export type ShardResult = {
   diffHash?: string;
   diffRatio?: number;
   diffPixels?: number;
+  metadata?: Record<string, unknown>;
 };
 
 export type Shard = { index: number | null; total: number | null };
@@ -75,15 +77,30 @@ export async function readSnapshots(dir: string): Promise<LocalSnapshot[]> {
     availableParallelism(),
     async ([name, file]) => {
       const bytes = await readFile(file);
+      const metadata = await readMetadata(file);
       return {
         name,
         file,
         hash: sha256(bytes),
         bytes: bytes.length,
         ...readPngSize(bytes),
+        ...(metadata === undefined ? {} : { metadata }),
       };
     },
   );
+}
+
+export function metadataFile(pngFile: string): string {
+  return `${pngFile.slice(0, -".png".length)}.meta.json`;
+}
+
+async function readMetadata(
+  pngFile: string,
+): Promise<Record<string, unknown> | undefined> {
+  const text = await readFile(metadataFile(pngFile), "utf8").catch(
+    () => undefined,
+  );
+  return text === undefined ? undefined : JSON.parse(text);
 }
 
 export async function uploadDirectory(
@@ -150,7 +167,13 @@ export async function uploadDirectory(
     availableParallelism(),
     async (snapshot, index): Promise<ShardResult> => {
       const lookup = lookups.get(snapshot.name) as SnapshotLookup;
-      const base = { name: snapshot.name, hash: snapshot.hash };
+      const base = {
+        name: snapshot.name,
+        hash: snapshot.hash,
+        ...(snapshot.metadata === undefined
+          ? {}
+          : { metadata: snapshot.metadata }),
+      };
       if (failedScreenshots.has(snapshot.hash)) {
         return { ...base, status: "failed" };
       }

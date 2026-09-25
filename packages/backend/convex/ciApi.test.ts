@@ -2,7 +2,7 @@
 import { convexTest } from "convex-test";
 import { exportPKCS8, generateKeyPair } from "jose";
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
-import { internal } from "./_generated/api";
+import { api as functions, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { hashProjectToken } from "./lib/projectTokens";
 import schema from "./schema";
@@ -14,6 +14,10 @@ type Test = ReturnType<typeof convexTest>;
 
 let compareStatus = "ahead";
 let compareCalls: string[] = [];
+let commitPulls: Record<
+  string,
+  { number: number; merged_at: string | null; base: { ref: string } }[]
+> = {};
 let checkCalls: {
   method: string;
   path: string;
@@ -31,6 +35,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   compareStatus = "ahead";
   compareCalls = [];
+  commitPulls = {};
   checkCalls = [];
   vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
     const { pathname } = new URL(input);
@@ -49,6 +54,12 @@ beforeEach(() => {
     if (compare?.[1] !== undefined) {
       compareCalls.push(compare[1]);
       return Response.json({ status: compareStatus });
+    }
+    const pulls = /^\/repos\/acme\/web-app\/commits\/(.+)\/pulls$/.exec(
+      pathname,
+    );
+    if (pulls?.[1] !== undefined && commitPulls[pulls[1]] !== undefined) {
+      return Response.json(commitPulls[pulls[1]]);
     }
     return new Response("not found", { status: 404 });
   });
@@ -774,4 +785,161 @@ it("auto-approves builds on the default branch", async () => {
     images: [{ name: "Header", content: "header-v2" }],
   });
   expect(next.created.baseline).toEqual({ buildNumber: 2, commit: "c2" });
+});
+
+async function reviewer(t: Test) {
+  const userId = await t.run(async (ctx) => {
+    const user = await ctx.db.query("users").first();
+    const project = await ctx.db.query("projects").first();
+    if (user === null || project === null) {
+      throw new Error("setup missing");
+    }
+    await ctx.db.insert("repoPermissions", {
+      userId: user._id,
+      projectId: project._id,
+      permission: "write",
+      orgOwner: false,
+      checkedAt: Date.now(),
+    });
+    return user._id;
+  });
+  const user = t.withIdentity({ subject: `${userId}|session` });
+  const snapshot = async (buildNumber: number, name: string) => {
+    const row = await t.run(async (ctx) => {
+      const build = (await ctx.db.query("builds").collect()).find(
+        (item) => item.number === buildNumber,
+      );
+      return (await ctx.db.query("snapshots").collect()).find(
+        (item) => item.buildId === build?._id && item.name === name,
+      );
+    });
+    if (row === undefined) {
+      throw new Error(`No snapshot ${name} in build ${buildNumber}`);
+    }
+    return user.query(functions.snapshots.get, {
+      owner: "acme",
+      name: "web-app",
+      number: buildNumber,
+      snapshotId: row._id,
+    });
+  };
+  const review = async (
+    buildNumber: number,
+    name: string,
+    action: "approve" | "reject" | "undo",
+  ) => {
+    const target = await snapshot(buildNumber, name);
+    if (target === null) {
+      throw new Error("snapshot not readable");
+    }
+    await user.mutation(functions.reviews.apply, {
+      buildId: target.buildId,
+      snapshotIds: [target.id],
+      action,
+    });
+    await runDueJobs(t);
+  };
+  return { user, snapshot, review };
+}
+
+it("carries approvals over to new builds of the same PR", async () => {
+  const { t } = await setup();
+  await runBuild(t, {
+    commit: "c1",
+    images: [
+      { name: "Header", content: "header-v1" },
+      { name: "Footer", content: "footer-v1" },
+    ],
+  });
+  const images = [
+    { name: "Header", content: "header-v2" },
+    { name: "Footer", content: "footer-v2" },
+  ];
+  const changed = ["Header", "Footer"];
+  const first = await runBuild(t, {
+    commit: "c2",
+    ancestors: ["c1"],
+    prNumber: 7,
+    images,
+    changed,
+  });
+  expect(first.build.counts).toMatchObject({ pending: 2, approved: 0 });
+  const { snapshot, review } = await reviewer(t);
+  await review(2, "Header", "approve");
+  await review(2, "Footer", "reject");
+
+  const second = await runBuild(t, {
+    commit: "c3",
+    ancestors: ["c2", "c1"],
+    prNumber: 7,
+    images,
+    changed,
+  });
+  expect(second.build).toMatchObject({
+    conclusion: "changes",
+    counts: { pending: 1, approved: 1, rejected: 0 },
+  });
+  expect(await snapshot(3, "Header")).toMatchObject({
+    reviewState: "approved",
+    lastReview: {
+      source: "carry_over",
+      carriedFrom: { buildNumber: 2, login: "octocat" },
+    },
+  });
+  expect(await snapshot(3, "Footer")).toMatchObject({
+    reviewState: "pending",
+    rejectedIn: 2,
+  });
+
+  await review(3, "Header", "undo");
+  const third = await runBuild(t, {
+    commit: "c4",
+    ancestors: ["c3", "c2", "c1"],
+    prNumber: 7,
+    images,
+    changed,
+  });
+  expect(third.build.counts).toMatchObject({ pending: 2, approved: 0 });
+});
+
+it("links a squash-merged main build to its PR", async () => {
+  const { t } = await setup();
+  await runBuild(t, {
+    commit: "c1",
+    images: [{ name: "Header", content: "header-v1" }],
+  });
+  const images = [
+    { name: "Header", content: "header-v2" },
+    { name: "Promo", content: "promo-v1" },
+  ];
+  await runBuild(t, {
+    commit: "c2",
+    ancestors: ["c1"],
+    prNumber: 7,
+    images,
+    changed: ["Header"],
+  });
+  const { user, snapshot, review } = await reviewer(t);
+  await review(2, "Header", "approve");
+
+  commitPulls.s1 = [
+    { number: 7, merged_at: "2026-09-25T10:00:00Z", base: { ref: "main" } },
+  ];
+  const main = await runBuild(t, {
+    commit: "s1",
+    ancestors: ["s1", "c1"],
+    images,
+    changed: ["Header"],
+  });
+  expect(main.build.conclusion).toBe("approved");
+  const build = await user.query(functions.builds.get, {
+    owner: "acme",
+    name: "web-app",
+    number: 3,
+  });
+  expect(build?.mergedPr).toEqual({ number: 7, lastBuildNumber: 2 });
+  expect(await snapshot(3, "Header")).toMatchObject({
+    notReviewedOnPr: false,
+  });
+  expect(await snapshot(3, "Promo")).toMatchObject({ notReviewedOnPr: true });
 });
