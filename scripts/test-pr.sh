@@ -2,17 +2,19 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: scripts/test-pr.sh <no-change|color-change|layout-shift|add-page|remove-page>" >&2
+  echo "Usage: scripts/test-pr.sh <no-change|color-change|layout-shift|add-page|remove-page|add-story|remove-story>" >&2
   exit 1
 }
 
 scenario="${1:-}"
 case "$scenario" in
-  no-change) expected="success, No visual changes" ;;
-  color-change) expected="action_required, 1 change to review (buttons)" ;;
-  layout-shift) expected="action_required, 2 changes to review (buttons, card)" ;;
-  add-page) expected="action_required, 1 change to review (badge added)" ;;
-  remove-page) expected="success, No visual changes (card removed)" ;;
+  no-change) expected="playground and storybook: success, No visual changes" ;;
+  color-change) expected="playground: action_required, 1 change to review (buttons). storybook: action_required, 1 change to review (Button/Primary)" ;;
+  layout-shift) expected="playground: action_required, 2 changes to review (buttons, card). storybook: action_required, 4 changes to review (every story)" ;;
+  add-page) expected="playground: action_required, 1 change to review (badge added). storybook: success, No visual changes" ;;
+  remove-page) expected="playground: success, No visual changes (card removed). storybook: success, No visual changes" ;;
+  add-story) expected="playground: success, No visual changes. storybook: action_required, 1 change to review (Badge/Default added)" ;;
+  remove-story) expected="playground: success, No visual changes. storybook: success, No visual changes (Card/Default removed)" ;;
   *) usage ;;
 esac
 
@@ -24,6 +26,7 @@ trap 'git -C "$repo_root" worktree remove --force "$worktree" >/dev/null 2>&1 ||
 git -C "$repo_root" fetch --quiet origin main
 git -C "$repo_root" worktree add --quiet -b "$branch" "$worktree" origin/main
 pages="$worktree/examples/playground/pages"
+stories="$worktree/examples/playground/stories"
 
 case "$scenario" in
   no-change)
@@ -52,6 +55,20 @@ HTML
   remove-page)
     rm "$pages/card.html"
     ;;
+  add-story)
+    cat > "$stories/Badge.stories.js" <<'JS'
+export default {
+  title: "Badge",
+  render: ({ label }) =>
+    `<span class="button primary" style="display: inline-flex; align-items: center">${label}</span>`,
+};
+
+export const Default = { args: { label: "New" } };
+JS
+    ;;
+  remove-story)
+    rm "$stories/Card.stories.js"
+    ;;
 esac
 rm -f "$pages"/*.bak
 
@@ -60,4 +77,4 @@ git -C "$worktree" commit --quiet -m "test: ${scenario} scenario"
 git -C "$worktree" push --quiet -u origin "$branch"
 gh pr create --draft --head "$branch" --base main \
   --title "test: ${scenario} scenario" \
-  --body "Scripted dogfooding PR from \`scripts/test-pr.sh ${scenario}\`. Expected \`stateofpixel/playground\` check: ${expected}."
+  --body "Scripted dogfooding PR from \`scripts/test-pr.sh ${scenario}\`. Expected checks: ${expected}."

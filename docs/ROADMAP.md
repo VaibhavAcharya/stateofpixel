@@ -70,12 +70,12 @@ Group 4: landing
 
 ## Dogfooding
 
-See PLAN.md, Dogfooding. Today `visual.yml` uploads only the three static pages in `examples/playground`.
+See PLAN.md, Dogfooding. `visual.yml` uploads three builds: `playground` (static pages), `storybook` (playground stories) and `web` (the landing page).
 
-- [ ] Playwright suite for the public web pages (landing, pricing) through `stateofpixel/playwright`
+- [x] Playwright suite for the public web pages (landing, pricing) through `stateofpixel/playwright`
 - [ ] A seeded build page that renders without GitHub sign-in, captured in the same suite
-- [ ] Storybook stories in `examples/playground`, captured with `stateofpixel storybook`
-- [ ] `scripts/test-pr.sh` scenarios with an expected check result each
+- [x] Storybook stories in `examples/playground`, captured with `stateofpixel storybook`
+- [x] `scripts/test-pr.sh` scenarios with an expected check result each
 - [ ] Merge scenarios (squash, rebase, merge commit) against a separate test repo
 
 ## M3: growth
@@ -89,7 +89,7 @@ See PLAN.md, Dogfooding. Today `visual.yml` uploads only the three static pages 
 ## Free tier and limits
 
 - [ ] Free tier of 10 GB stored per account
-- [ ] Retention crons: PR-only images kept 60 days, unreferenced images deleted
+- [x] Retention crons: PR-only images kept 60 days, unreferenced images deleted
 - [ ] Storage warning at 80%, 14-day grace at 100%, then new images are not stored
 - [ ] Rate limits for builds per account, requests per token and bytes uploaded per day
 - [ ] Enforce the limits in SPEC section 12

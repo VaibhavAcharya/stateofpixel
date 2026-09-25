@@ -6,17 +6,23 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 
+const TOUCH_AFTER_MS = 12 * 60 * 60 * 1000;
+
 export const createUploadTargets = internalMutation({
   args: { accountId: v.id("accounts"), hashes: v.array(v.string()) },
   returns: v.array(v.object({ hash: v.string(), uploadUrl: v.string() })),
   handler: async (ctx, { accountId, hashes }) => {
     const targets = [];
+    const now = Date.now();
     for (const hash of new Set(hashes)) {
-      if ((await findImage(ctx, accountId, hash)) === null) {
+      const image = await findImage(ctx, accountId, hash);
+      if (image === null) {
         targets.push({
           hash,
           uploadUrl: await ctx.storage.generateUploadUrl(),
         });
+      } else if (now - image.lastReferencedAt > TOUCH_AFTER_MS) {
+        await ctx.db.patch("images", image._id, { lastReferencedAt: now });
       }
     }
     return targets;
@@ -113,4 +119,11 @@ function normalizeSha256(value: string): string | null {
   } catch {
     return null;
   }
+}
+
+export async function deleteImage(ctx: MutationCtx, image: Doc<"images">) {
+  if (image.storageId !== undefined) {
+    await ctx.storage.delete(image.storageId);
+  }
+  await ctx.db.delete("images", image._id);
 }

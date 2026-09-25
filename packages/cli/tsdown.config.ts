@@ -6,4 +6,5 @@ export default defineConfig({
   platform: "node",
   minify: false,
   sourcemap: true,
+  dts: true,
 });

@@ -187,7 +187,7 @@ stateofpixel tests itself from the first milestone that has a server.
 - `visual.yml` runs on every PR in this repo. It builds the CLI from the workspace, not from npm, so every PR also tests the CLI it changes.
 - It captures two sources: the web app's own pages (landing, pricing, a seeded build page) with Playwright, and `examples/playground` with a mix of static pages and Storybook stories.
 - It uploads to the production stateofpixel instance, as a project for this repo. A PR that changes the backend is tested by the old production backend. That forces the CI API to stay backward compatible, which the CLI needs anyway since users upgrade on their own schedule.
-- Test PRs: `scripts/test-pr.sh <scenario>` creates a branch that changes the playground in a known way, pushes it and opens a draft PR. Scenarios: `no-change`, `color-change`, `layout-shift`, `add-story`, `remove-story`, `flaky` (an animation left on), `many-changes`, `sharded`. Each one has an expected check result, so a quick look at the PR list shows whether the service behaves.
+- Test PRs: `scripts/test-pr.sh <scenario>` creates a branch that changes the playground in a known way, pushes it and opens a draft PR. Scenarios today: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`, `add-story`, `remove-story`. Planned: `flaky` (an animation left on), `many-changes`, `sharded`. Each one has an expected check result, so a quick look at the PR list shows whether the service behaves.
 - Scenarios for merges (squash, rebase, merge commit) run against a separate test repo, so they do not pollute this repo's history.
 
 ## Cost model

@@ -221,7 +221,6 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
         })),
       ).map((snapshots) =>
         ctx.runQuery(internal.builds.lookupSnapshots, {
-          accountId: build.accountId,
           baselineBuildId: build.baselineBuildId,
           snapshots,
         }),
@@ -232,7 +231,7 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
   const uploadUrls = await createUploadUrls(
     ctx,
     build.accountId,
-    lookups.filter((lookup) => !lookup.uploaded).map((lookup) => lookup.hash),
+    lookups.map((lookup) => lookup.hash),
   );
 
   return Response.json({
@@ -242,9 +241,11 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
     url: build.url,
     diff: build.diff,
     baseline: build.baseline,
-    snapshots: lookups.map(({ hash, uploaded: _, ...snapshot }) => ({
+    snapshots: lookups.map((snapshot) => ({
       ...snapshot,
-      ...(uploadUrls.has(hash) ? { uploadUrl: uploadUrls.get(hash) } : {}),
+      ...(uploadUrls.has(snapshot.hash)
+        ? { uploadUrl: uploadUrls.get(snapshot.hash) }
+        : {}),
     })),
     warnings: [],
   });

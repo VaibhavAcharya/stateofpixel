@@ -388,7 +388,6 @@ export function isBaselineCandidate(build: Doc<"builds">): boolean {
 
 export const lookupSnapshots = internalQuery({
   args: {
-    accountId: v.id("accounts"),
     baselineBuildId: v.union(v.id("builds"), v.null()),
     snapshots: v.array(v.object({ name: v.string(), hash: v.string() })),
   },
@@ -402,29 +401,26 @@ export const lookupSnapshots = internalQuery({
         v.literal("added"),
       ),
       baselineUrl: v.optional(v.string()),
-      uploaded: v.boolean(),
     }),
   ),
-  handler: async (ctx, { accountId, baselineBuildId, snapshots }) => {
+  handler: async (ctx, { baselineBuildId, snapshots }) => {
     return Promise.all(
       snapshots.map(async ({ name, hash }) => {
-        const uploaded = (await findImage(ctx, accountId, hash)) !== null;
         const baselineImage =
           baselineBuildId === null
             ? null
             : await findBaselineImage(ctx, baselineBuildId, name);
         if (baselineImage === null) {
-          return { name, hash, status: "added" as const, uploaded };
+          return { name, hash, status: "added" as const };
         }
         if (baselineImage.hash === hash) {
-          return { name, hash, status: "unchanged" as const, uploaded };
+          return { name, hash, status: "unchanged" as const };
         }
         const baselineUrl = await getUrl(ctx, baselineImage);
         return {
           name,
           hash,
           status: "changed" as const,
-          uploaded,
           ...(baselineUrl === null ? {} : { baselineUrl }),
         };
       }),

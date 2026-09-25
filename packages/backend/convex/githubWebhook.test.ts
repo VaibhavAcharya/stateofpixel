@@ -265,3 +265,57 @@ it("links a signed-in user to their installations", async () => {
     { owner: "acme", name: "web-app", private: true },
   ]);
 });
+
+it("starts the retention clock when a PR closes", async () => {
+  const t = convexTest(schema, modules);
+  await deliver(t, "installation", {
+    action: "created",
+    installation: { id: 10 },
+  });
+  const buildId = await t.run(async (ctx) => {
+    const project = await ctx.db.query("projects").first();
+    if (project === null) {
+      throw new Error("No project");
+    }
+    return ctx.db.insert("builds", {
+      projectId: project._id,
+      number: 1,
+      buildName: "default",
+      commitSha: "c1",
+      commitMessage: "Commit",
+      branch: "feature",
+      baselineBranch: "main",
+      ancestors: [],
+      prNumber: 7,
+      nonce: "n1",
+      doneShardIndexes: [],
+      subset: false,
+      status: "finalized",
+      autoApproved: false,
+      fullRows: true,
+      counts: {
+        unchanged: 0,
+        changed: 0,
+        added: 0,
+        removed: 0,
+        failed: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+      },
+      storageBlocked: false,
+      checkVersion: 0,
+      checkOutOfSync: false,
+    });
+  });
+
+  await deliver(t, "pull_request", {
+    action: "closed",
+    installation: { id: 10 },
+    repository: toGithubRepository({ id: 100, name: "web-app" }),
+    pull_request: { number: 7 },
+  });
+
+  const build = await t.run((ctx) => ctx.db.get("builds", buildId));
+  expect(build?.prClosedAt).toBe(Date.now());
+});

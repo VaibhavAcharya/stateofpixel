@@ -11,6 +11,8 @@ const INSTALLATION_ACTIONS_TO_SYNC = new Set([
   "unsuspend",
 ]);
 
+const PULL_REQUEST_ACTIONS = new Set(["closed", "reopened"]);
+
 const REPOSITORY_ACTIONS_TO_UPDATE = new Set([
   "edited",
   "renamed",
@@ -48,6 +50,7 @@ export const handle = httpAction(async (ctx, request) => {
     installationId: readInstallationId(payload),
     repository: readRepository(payload),
     checkRunExternalId: readCheckRunExternalId(payload),
+    pullRequestNumber: readPullRequestNumber(payload),
   });
   return new Response(null, { status: 204 });
 });
@@ -69,6 +72,7 @@ export const receive = internalMutation({
       v.null(),
     ),
     checkRunExternalId: v.optional(v.union(v.string(), v.null())),
+    pullRequestNumber: v.optional(v.union(v.number(), v.null())),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -115,6 +119,17 @@ export const receive = internalMutation({
       await ctx.runMutation(internal.installations.updateRepository, {
         repository: args.repository,
       });
+    } else if (
+      args.event === "pull_request" &&
+      PULL_REQUEST_ACTIONS.has(args.action ?? "") &&
+      args.repository !== null &&
+      typeof args.pullRequestNumber === "number"
+    ) {
+      await ctx.runMutation(internal.retention.setPrClosed, {
+        githubRepoId: args.repository.githubRepoId,
+        prNumber: args.pullRequestNumber,
+        closed: args.action === "closed",
+      });
     }
     return null;
   },
@@ -124,6 +139,13 @@ function readCheckRunExternalId(payload: Record<string, unknown>) {
   const checkRun = payload.check_run;
   return isObject(checkRun) && typeof checkRun.external_id === "string"
     ? checkRun.external_id
+    : null;
+}
+
+function readPullRequestNumber(payload: Record<string, unknown>) {
+  const pullRequest = payload.pull_request;
+  return isObject(pullRequest) && typeof pullRequest.number === "number"
+    ? pullRequest.number
     : null;
 }
 

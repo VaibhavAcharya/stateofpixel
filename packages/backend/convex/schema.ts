@@ -186,7 +186,8 @@ export default defineSchema({
       "status",
       "conclusion",
     ])
-    .index("by_checkOutOfSync", ["checkOutOfSync"]),
+    .index("by_checkOutOfSync", ["checkOutOfSync"])
+    .index("by_baselineBuildId", ["baselineBuildId"]),
 
   snapshots: defineTable({
     buildId: v.id("builds"),
@@ -208,7 +209,9 @@ export default defineSchema({
       "diffStatus",
       "name",
     ])
-    .index("by_imageId", ["imageId"]),
+    .index("by_imageId", ["imageId"])
+    .index("by_baselineImageId", ["baselineImageId"])
+    .index("by_diffImageId", ["diffImageId"]),
 
   reviews: defineTable({
     snapshotId: v.id("snapshots"),

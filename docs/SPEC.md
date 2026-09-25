@@ -487,7 +487,7 @@ Which signed-in users can see which account. `me.refreshAccounts` rewrites a use
 | mergeBaseSha | string, optional | From the client or the compare API. |
 | ancestors | string[] | Up to 100 SHAs from the client. Cleared at finalize. |
 | prNumber | number, optional | |
-| prClosedAt | number, optional | Set by the `pull_request` webhook. Starts the retention clock. |
+| prClosedAt | number, optional | Set by the `pull_request` closed webhook, cleared on reopened. Starts the retention clock. |
 | mergedPrNumber | number, optional | For squash-merged main builds. |
 | nonce | string | |
 | shardsTotal | number, optional | Missing in finalize mode. |
@@ -515,7 +515,8 @@ Indexes:
 - `by_projectId_and_buildName_and_nonce` on `[projectId, buildName, nonce]`, for shards joining a build.
 - `by_projectId_and_buildName_and_commitSha` on `[projectId, buildName, commitSha]`, for baseline lookup.
 - `by_projectId_and_buildName_and_prNumber` on `[projectId, buildName, prNumber]`, for carry-over and superseding.
-- `by_projectId_and_branch` on `[projectId, branch]`, for the branch filter.
+- `by_projectId_and_branch` on `[projectId, branch]`, for the branch filter and branch activity in `deleteOldBuilds`.
+- `by_baselineBuildId` on `[baselineBuildId]`, so `deleteOldBuilds` keeps builds that are another build's baseline.
 - The builds list uses `by_projectId_and_number` in descending order.
 
 ### snapshots
@@ -539,6 +540,7 @@ Indexes:
 - `by_buildId_and_name` on `[buildId, name]`. Name is unique in a build; the create mutation checks it.
 - `by_buildId_and_diffStatus_and_name` on `[buildId, diffStatus, name]`, for the sidebar groups, sorted by name.
 - `by_imageId` on `[imageId]`, for GC reference checks and snapshot history.
+- `by_baselineImageId` and `by_diffImageId`, for GC reference checks.
 
 Row pruning (the daily cron):
 - PR builds: delete unchanged rows once the PR is closed.
@@ -572,7 +574,7 @@ For carry-over lookups there is also `by_projectId_and_buildName_and_prNumber_an
 | store | `"convex"` or `"r2"` | Which store holds the bytes. Only `"convex"` in v1. |
 | storageId | Id<"_storage">, optional | Set when `store` is `"convex"` and the upload is confirmed. |
 | r2Key | string, optional | For later. |
-| lastReferencedAt | number | |
+| lastReferencedAt | number | Set at confirm. `createUploadTargets` moves it forward when a build reuses the image and it is over 12 hours old, so `collectImages` never deletes an image a pending build relies on. |
 
 Index `by_accountId_and_hash` on `[accountId, hash]`, unique by code. The same PNG in two accounts is stored twice.
 
@@ -805,7 +807,7 @@ Webhooks go to the HTTP action `POST /github/webhook`. It reads the raw body, ve
 | `installation_repositories` added, removed | Create or archive projects. |
 | `repository` renamed, transferred, edited | Update owner, name, default branch, private flag. |
 | `check_run` rerequested | Re-send the current check state. Does not re-run CI. |
-| `pull_request` closed | Set `prClosedAt` on that PR's builds, which starts their retention clock. |
+| `pull_request` closed, reopened | Set or clear `prClosedAt` on that PR's builds. Closing starts their retention clock. The GitHub App must subscribe to the Pull request event. |
 
 GitHub API calls (check runs, compare, PR lookup) run in actions with an installation token made from the app's private key. Octokit uses Web Crypto and probably runs in the default Convex runtime (unverified); if not, those actions move to a `"use node"` file. Scheduled actions run at most once and are not retried ([docs](https://docs.convex.dev/scheduling/scheduled-functions)), so every state change bumps `checkVersion` and schedules `checks.sync` unless one is already scheduled. The sync creates the check run (`external_id` is the build id) or updates it, then clears `checkOutOfSync` only when the version it sent is still current; otherwise it runs again. A cron every 5 minutes retries builds that are still out of sync. The check name is `stateofpixel`, or `stateofpixel/<buildName>` for other build names, on the build's head commit.
 
@@ -921,11 +923,11 @@ In `packages/backend/convex/crons.ts` ([docs](https://docs.convex.dev/scheduling
 |---|---|---|
 | `expireBuilds` | none, per build | Scheduled at build creation for 60 min later. Sets `expired` if still pending. |
 | `syncChecks` | every 5 min | Retries GitHub check updates that did not land. |
-| `pruneRows` | daily 03:00 UTC | Row pruning rules from the snapshots table. |
-| `deleteOldBuilds` | daily 03:30 UTC | Deletes builds of closed PRs older than `prRetentionDays`, and builds of branches with no activity for that long. |
-| `collectImages` | daily 04:00 UTC | Deletes images with no snapshot referencing them (checked through `by_imageId`) and not referenced for 24 hours, and their stored files. |
-| `usage` | daily 05:00 UTC | Writes `usageDaily`, sets `accounts.storageBytes`, sets or clears `overLimitSince`. |
-| `cleanupEvents` | daily | Deletes `githubEvents` older than 7 days. |
+| `pruneRows` | daily 03:00 UTC | Row pruning rules from the snapshots table. Not built yet. |
+| `deleteOldBuilds` | daily 03:30 UTC | Deletes builds of PRs closed longer than `prRetentionDays` ago, and builds of branches with no new build for that long. Never deletes pending builds, builds on the default branch or an auto-approve branch, or a build that another build uses as its baseline. Deletes the build row first, then its snapshots and reviews in chunks, then the PR's `approvedImages` once no build of that PR is left. |
+| `collectImages` | daily 04:00 UTC | Deletes images with no snapshot referencing them (checked through `by_imageId`, `by_baselineImageId` and `by_diffImageId`) and `lastReferencedAt` over 24 hours ago, and their stored files. Subtracts the bytes from `accounts.storageBytes`. |
+| `usage` | daily 05:00 UTC, not built yet | Writes `usageDaily`, sets `accounts.storageBytes`, sets or clears `overLimitSince`. |
+| `cleanupEvents` | daily 04:30 UTC | Deletes `githubEvents` older than 7 days. |
 
 Storage billed is the sum of `images.bytes` per account. Every image counts once, however many builds reference it.
 
