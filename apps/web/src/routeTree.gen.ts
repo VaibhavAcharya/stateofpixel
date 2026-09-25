@@ -11,6 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InstallRouteImport } from './routes/install'
+import { Route as OwnerIndexRouteImport } from './routes/$owner/index'
+import { Route as OwnerRepoIndexRouteImport } from './routes/$owner/$repo/index'
+import { Route as OwnerRepoBuildsNumberRouteImport } from './routes/$owner/$repo/builds/$number'
+import { Route as OwnerRepoBuildsNumberIndexRouteImport } from './routes/$owner/$repo/builds/$number/index'
+import { Route as OwnerRepoBuildsNumberSnapshotsSnapshotIdRouteImport } from './routes/$owner/$repo/builds/$number/snapshots/$snapshotId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +27,96 @@ const InstallRoute = InstallRouteImport.update({
   path: '/install',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OwnerIndexRoute = OwnerIndexRouteImport.update({
+  id: '/$owner/',
+  path: '/$owner/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerRepoIndexRoute = OwnerRepoIndexRouteImport.update({
+  id: '/$owner/$repo/',
+  path: '/$owner/$repo/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerRepoBuildsNumberRoute = OwnerRepoBuildsNumberRouteImport.update({
+  id: '/$owner/$repo/builds/$number',
+  path: '/$owner/$repo/builds/$number',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerRepoBuildsNumberIndexRoute =
+  OwnerRepoBuildsNumberIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => OwnerRepoBuildsNumberRoute,
+  } as any)
+const OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute =
+  OwnerRepoBuildsNumberSnapshotsSnapshotIdRouteImport.update({
+    id: '/snapshots/$snapshotId',
+    path: '/snapshots/$snapshotId',
+    getParentRoute: () => OwnerRepoBuildsNumberRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/install': typeof InstallRoute
+  '/$owner/': typeof OwnerIndexRoute
+  '/$owner/$repo/': typeof OwnerRepoIndexRoute
+  '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberRouteWithChildren
+  '/$owner/$repo/builds/$number/': typeof OwnerRepoBuildsNumberIndexRoute
+  '/$owner/$repo/builds/$number/snapshots/$snapshotId': typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/install': typeof InstallRoute
+  '/$owner': typeof OwnerIndexRoute
+  '/$owner/$repo': typeof OwnerRepoIndexRoute
+  '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberIndexRoute
+  '/$owner/$repo/builds/$number/snapshots/$snapshotId': typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/install': typeof InstallRoute
+  '/$owner/': typeof OwnerIndexRoute
+  '/$owner/$repo/': typeof OwnerRepoIndexRoute
+  '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberRouteWithChildren
+  '/$owner/$repo/builds/$number/': typeof OwnerRepoBuildsNumberIndexRoute
+  '/$owner/$repo/builds/$number/snapshots/$snapshotId': typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/install'
+  fullPaths:
+    | '/'
+    | '/install'
+    | '/$owner/'
+    | '/$owner/$repo/'
+    | '/$owner/$repo/builds/$number'
+    | '/$owner/$repo/builds/$number/'
+    | '/$owner/$repo/builds/$number/snapshots/$snapshotId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/install'
-  id: '__root__' | '/' | '/install'
+  to:
+    | '/'
+    | '/install'
+    | '/$owner'
+    | '/$owner/$repo'
+    | '/$owner/$repo/builds/$number'
+    | '/$owner/$repo/builds/$number/snapshots/$snapshotId'
+  id:
+    | '__root__'
+    | '/'
+    | '/install'
+    | '/$owner/'
+    | '/$owner/$repo/'
+    | '/$owner/$repo/builds/$number'
+    | '/$owner/$repo/builds/$number/'
+    | '/$owner/$repo/builds/$number/snapshots/$snapshotId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   InstallRoute: typeof InstallRoute
+  OwnerIndexRoute: typeof OwnerIndexRoute
+  OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
+  OwnerRepoBuildsNumberRoute: typeof OwnerRepoBuildsNumberRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +135,66 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InstallRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$owner/': {
+      id: '/$owner/'
+      path: '/$owner'
+      fullPath: '/$owner/'
+      preLoaderRoute: typeof OwnerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$owner/$repo/': {
+      id: '/$owner/$repo/'
+      path: '/$owner/$repo'
+      fullPath: '/$owner/$repo/'
+      preLoaderRoute: typeof OwnerRepoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$owner/$repo/builds/$number': {
+      id: '/$owner/$repo/builds/$number'
+      path: '/$owner/$repo/builds/$number'
+      fullPath: '/$owner/$repo/builds/$number'
+      preLoaderRoute: typeof OwnerRepoBuildsNumberRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$owner/$repo/builds/$number/': {
+      id: '/$owner/$repo/builds/$number/'
+      path: '/'
+      fullPath: '/$owner/$repo/builds/$number/'
+      preLoaderRoute: typeof OwnerRepoBuildsNumberIndexRouteImport
+      parentRoute: typeof OwnerRepoBuildsNumberRoute
+    }
+    '/$owner/$repo/builds/$number/snapshots/$snapshotId': {
+      id: '/$owner/$repo/builds/$number/snapshots/$snapshotId'
+      path: '/snapshots/$snapshotId'
+      fullPath: '/$owner/$repo/builds/$number/snapshots/$snapshotId'
+      preLoaderRoute: typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRouteImport
+      parentRoute: typeof OwnerRepoBuildsNumberRoute
+    }
   }
 }
+
+interface OwnerRepoBuildsNumberRouteChildren {
+  OwnerRepoBuildsNumberIndexRoute: typeof OwnerRepoBuildsNumberIndexRoute
+  OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute: typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute
+}
+
+const OwnerRepoBuildsNumberRouteChildren: OwnerRepoBuildsNumberRouteChildren = {
+  OwnerRepoBuildsNumberIndexRoute: OwnerRepoBuildsNumberIndexRoute,
+  OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute:
+    OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute,
+}
+
+const OwnerRepoBuildsNumberRouteWithChildren =
+  OwnerRepoBuildsNumberRoute._addFileChildren(
+    OwnerRepoBuildsNumberRouteChildren,
+  )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   InstallRoute: InstallRoute,
+  OwnerIndexRoute: OwnerIndexRoute,
+  OwnerRepoIndexRoute: OwnerRepoIndexRoute,
+  OwnerRepoBuildsNumberRoute: OwnerRepoBuildsNumberRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

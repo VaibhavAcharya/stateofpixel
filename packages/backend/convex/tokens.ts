@@ -57,6 +57,9 @@ export const insert = internalMutation({
   returns: v.id("projectTokens"),
   handler: async (ctx, { projectId, name, tokenHash }) => {
     const { userId } = await requirePermission(ctx, projectId, "admin");
+    if (userId === null) {
+      throw new ConvexError({ code: "not_signed_in" });
+    }
     const trimmedName = name.trim();
     if (trimmedName === "" || trimmedName.length > MAX_NAME_LENGTH) {
       throw new ConvexError({ code: "invalid_name" });

@@ -255,7 +255,7 @@ Shown when the signed-in user has no installations. One button to the GitHub App
 
 - Account switcher for users in several orgs.
 - One row per project: name, latest build number, branch, conclusion pill, relative time.
-- Storage meter links to the Usage page (owners only; others see no meter).
+- Storage meter links to the Usage page (owners only; others see no meter). It ships with the Usage page (M3).
 - "Configure access on GitHub" links to the installation settings.
 
 ### 5.4 Project page (`/{owner}/{repo}`)
@@ -281,7 +281,7 @@ Builds tab:
 ```
 
 - Columns: build number, conclusion pill with counts, branch, commit message (first line) and short SHA, PR number linking to GitHub, build name if the project has more than one, relative time with absolute time on hover.
-- Filters are in the URL query so they can be shared.
+- Filters are in the URL query so they can be shared. M1 has the branch filter (`?branch=`, through `by_projectId_and_branch`); status and build name filters come later.
 - 50 rows per page, "Load more" by cursor.
 - Pending builds show a spinner and shard progress, updated live.
 - Empty project shows the Setup card (4.2) instead.
@@ -336,7 +336,7 @@ Viewer:
 - Chosen mode and zoom are remembered in localStorage per user.
 
 Detail footer:
-- History: last 10 builds on the baseline branch where this snapshot's hash changed, as links.
+- History: last 10 builds on the baseline branch where this snapshot's hash changed, as links. Ships with snapshot history (M2).
 - Metadata: browser, viewport, OS, test file and line, anything else the client sent.
 - Review info: "Approved by @alice 3 min ago", "Approved in build #410 by @alice (carried over)", or the reject comment.
 
@@ -761,6 +761,8 @@ Functions that need a permission throw a `ConvexError` with code `permission_unk
 | `me.get` | query | signed in | User and the accounts they can see. |
 | `me.refreshAccounts` | action | signed in | `GET /user/installations` with the user token, links the user to accounts. Runs at sign-in and from "Refresh" on the Install page. |
 | `permissions.refresh` | action | signed in | See above. Writes `none` when GitHub answers 404. `orgOwner` comes from the org membership role, or from the login for a user account. |
+| `projects.access` | query | signed in | Project id, cached permission, whether it is fresh, `canRead` and `canWrite`. The page calls `permissions.refresh` while it is not fresh. |
+| `accounts.home` | query | account member | Projects of an account with their latest build. |
 | `builds.list` | query | read | Paginated with `.paginate()`, filters branch, status, build name. |
 | `builds.get` | query | read | Build and counts by number. |
 | `snapshots.list` | query | read | Paginated sidebar list by `by_buildId_and_diffStatus_and_name`. Includes image URLs from `blobs.getUrl`. |

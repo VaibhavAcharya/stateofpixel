@@ -15,18 +15,19 @@ const RANK: Record<RepoPermission, number> = {
   admin: 3,
 };
 
-export async function requirePermission(
+export type Access = {
+  userId: Id<"users"> | null;
+  permission: RepoPermission | null;
+  fresh: boolean;
+};
+
+export async function readAccess(
   ctx: QueryCtx,
   projectId: Id<"projects">,
-  needed: Exclude<RepoPermission, "none">,
-): Promise<{ userId: Id<"users">; project: Doc<"projects"> }> {
+): Promise<Access> {
   const userId = await getAuthUserId(ctx);
   if (userId === null) {
-    throw new ConvexError({ code: "not_signed_in" });
-  }
-  const project = await ctx.db.get("projects", projectId);
-  if (project === null) {
-    throw new ConvexError({ code: "not_found" });
+    return { userId, permission: null, fresh: false };
   }
   const row = await ctx.db
     .query("repoPermissions")
@@ -34,13 +35,51 @@ export async function requirePermission(
       q.eq("userId", userId).eq("projectId", projectId),
     )
     .unique();
-  if (row === null || Date.now() - row.checkedAt > PERMISSION_TTL_MS) {
+  return {
+    userId,
+    permission: row?.permission ?? null,
+    fresh: row !== null && Date.now() - row.checkedAt <= PERMISSION_TTL_MS,
+  };
+}
+
+export function allows(
+  project: Doc<"projects">,
+  access: Access,
+  needed: Exclude<RepoPermission, "none">,
+): boolean {
+  if (needed === "read" && !project.private) {
+    return true;
+  }
+  return (
+    access.fresh &&
+    access.permission !== null &&
+    RANK[access.permission] >= RANK[needed]
+  );
+}
+
+export async function requirePermission(
+  ctx: QueryCtx,
+  projectId: Id<"projects">,
+  needed: Exclude<RepoPermission, "none">,
+): Promise<{ userId: Id<"users"> | null; project: Doc<"projects"> }> {
+  const project = await ctx.db.get("projects", projectId);
+  if (project === null) {
+    throw new ConvexError({ code: "not_found" });
+  }
+  const access = await readAccess(ctx, projectId);
+  if (allows(project, access, needed)) {
+    return { userId: access.userId, project };
+  }
+  if (access.userId === null) {
+    throw new ConvexError({ code: "not_signed_in" });
+  }
+  if (!access.fresh) {
     throw new ConvexError({ code: "permission_unknown" });
   }
-  if (RANK[row.permission] < RANK[needed]) {
-    throw new ConvexError({
-      code: row.permission === "none" ? "not_found" : "forbidden",
-    });
-  }
-  return { userId, project };
+  throw new ConvexError({
+    code:
+      access.permission === "none" || access.permission === null
+        ? "not_found"
+        : "forbidden",
+  });
 }

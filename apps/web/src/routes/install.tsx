@@ -1,29 +1,24 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "@stateofpixel/backend/api";
-import { createFileRoute } from "@tanstack/react-router";
-import {
-  Authenticated,
-  Unauthenticated,
-  useAction,
-  useQuery,
-} from "convex/react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useAction, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import { useEffect, useState } from "react";
-import { SignIn } from "../components/SignIn";
+import { AppHeader } from "../components/AppHeader";
+import { RequireAuth } from "../components/RequireAuth";
+import { buttonClass, LeadCopy } from "../components/ui";
 
 export const Route = createFileRoute("/install")({ component: Install });
 
 function Install() {
   return (
-    <main className="p-8">
-      <h1 className="text-xl font-semibold">Projects</h1>
-      <Unauthenticated>
-        <SignIn redirectTo="/install" />
-      </Unauthenticated>
-      <Authenticated>
+    <RequireAuth redirectTo="/install">
+      <AppHeader />
+      <main className="max-w-[1200px] px-6 pt-6 pb-12 max-sm:px-4">
+        <h1 className="text-xl font-semibold tracking-[-0.025em]">Projects</h1>
         <Accounts />
-      </Authenticated>
-    </main>
+      </main>
+    </RequireAuth>
   );
 }
 
@@ -52,44 +47,50 @@ function Accounts() {
 
   return (
     <div className="mt-6 max-w-2xl">
-      {error !== null && <p className="text-sm text-red-700">{error}</p>}
+      {error !== null && <p className="text-sm text-failed">{error}</p>}
       {accounts?.length === 0 && !refreshing && (
-        <p className="text-2xl leading-[34px] text-neutral-500">
-          <strong className="font-semibold text-neutral-900">
-            No projects yet.
-          </strong>{" "}
+        <LeadCopy title="No projects yet.">
           Install the GitHub App on an account and pick the repositories to
           test.
-        </p>
+        </LeadCopy>
       )}
       {accounts?.map((account) => (
         <section key={account.login} className="mt-6">
-          <h2 className="text-sm font-medium text-neutral-500">
-            {account.login}
+          <h2 className="text-sm font-medium text-muted">
+            <Link
+              to="/$owner"
+              params={{ owner: account.login }}
+              className="hover:text-text"
+            >
+              {account.login}
+            </Link>
             {!account.installed && " (app not installed)"}
           </h2>
-          <ul className="mt-2 divide-y divide-neutral-200 border-y border-neutral-200">
+          <ul className="mt-2 divide-y divide-border border-y border-border">
             {account.projects.map((project) => (
-              <li key={project.name} className="py-2 text-sm">
-                {project.owner}/{project.name}
-                {project.private && (
-                  <span className="ml-2 text-xs text-neutral-500">private</span>
-                )}
+              <li key={project.name} className="text-sm">
+                <Link
+                  to="/$owner/$repo"
+                  params={{ owner: project.owner, repo: project.name }}
+                  className="flex h-10 items-center px-3 hover:bg-hover"
+                >
+                  {project.owner}/{project.name}
+                  {project.private && (
+                    <span className="ml-2 text-xs text-muted">private</span>
+                  )}
+                </Link>
               </li>
             ))}
           </ul>
         </section>
       ))}
       {refreshing && (
-        <p className="mt-6 text-sm text-neutral-500">
+        <p className="mt-6 text-sm text-muted">
           Checking your GitHub installations...
         </p>
       )}
       {installUrl !== undefined && (
-        <a
-          href={installUrl}
-          className="mt-6 inline-flex h-8 items-center rounded-[11px] bg-neutral-900 px-3 text-sm font-medium text-white"
-        >
+        <a href={installUrl} className={`mt-6 ${buttonClass("primary")}`}>
           Install on GitHub
         </a>
       )}

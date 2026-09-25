@@ -1,3 +1,7 @@
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -6,11 +10,13 @@ import {
   internalQuery,
   type MutationCtx,
   type QueryCtx,
+  query,
 } from "./_generated/server";
 import { confirmUpload, findImage, getUrl } from "./blobs";
 import { touchCheck } from "./checks";
 import { ciError } from "./lib/ciErrors";
 import { snapshotResult, upload } from "./lib/ciRequests";
+import { requirePermission } from "./lib/permissions";
 import { buildUrl } from "./lib/urls";
 import { buildConclusion, buildCounts, buildStatus } from "./schema";
 
@@ -815,5 +821,122 @@ export const requestFinalize = internalMutation({
       cursor: null,
     });
     return null;
+  },
+});
+
+const buildSummary = v.object({
+  number: v.number(),
+  buildName: v.string(),
+  branch: v.string(),
+  commitSha: v.string(),
+  commitMessage: v.string(),
+  prNumber: v.union(v.number(), v.null()),
+  status: buildStatus,
+  conclusion: v.union(buildConclusion, v.null()),
+  counts: buildCounts,
+  superseded: v.boolean(),
+  shards: v.object({
+    done: v.number(),
+    total: v.union(v.number(), v.null()),
+  }),
+  createdAt: v.number(),
+});
+
+function toBuildSummary(build: Doc<"builds">): Infer<typeof buildSummary> {
+  return {
+    number: build.number,
+    buildName: build.buildName,
+    branch: build.branch,
+    commitSha: build.commitSha,
+    commitMessage: build.commitMessage,
+    prNumber: build.prNumber ?? null,
+    status: build.status,
+    conclusion: build.conclusion ?? null,
+    counts: build.counts,
+    superseded: build.supersededById !== undefined,
+    shards: {
+      done: build.doneShardIndexes.length,
+      total: build.shardsTotal ?? null,
+    },
+    createdAt: build._creationTime,
+  };
+}
+
+export const list = query({
+  args: {
+    projectId: v.id("projects"),
+    branch: v.optional(v.string()),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(buildSummary),
+  handler: async (ctx, { projectId, branch, paginationOpts }) => {
+    await requirePermission(ctx, projectId, "read");
+    const builds =
+      branch === undefined
+        ? ctx.db
+            .query("builds")
+            .withIndex("by_projectId_and_number", (q) =>
+              q.eq("projectId", projectId),
+            )
+        : ctx.db
+            .query("builds")
+            .withIndex("by_projectId_and_branch", (q) =>
+              q.eq("projectId", projectId).eq("branch", branch),
+            );
+    const page = await builds.order("desc").paginate(paginationOpts);
+    return { ...page, page: page.page.map(toBuildSummary) };
+  },
+});
+
+export const get = query({
+  args: { projectId: v.id("projects"), number: v.number() },
+  returns: v.union(
+    v.null(),
+    v.object({
+      ...buildSummary.fields,
+      buildId: v.id("builds"),
+      baselineBranch: v.string(),
+      autoApproved: v.boolean(),
+      finalizedAt: v.union(v.number(), v.null()),
+      ciRunUrl: v.union(v.string(), v.null()),
+      baseline: v.union(
+        v.null(),
+        v.object({ number: v.number(), branch: v.string() }),
+      ),
+      supersededBy: v.union(v.number(), v.null()),
+    }),
+  ),
+  handler: async (ctx, { projectId, number }) => {
+    await requirePermission(ctx, projectId, "read");
+    const build = await ctx.db
+      .query("builds")
+      .withIndex("by_projectId_and_number", (q) =>
+        q.eq("projectId", projectId).eq("number", number),
+      )
+      .unique();
+    if (build === null) {
+      return null;
+    }
+    const baseline =
+      build.baselineBuildId === undefined
+        ? null
+        : await ctx.db.get("builds", build.baselineBuildId);
+    const supersededBy =
+      build.supersededById === undefined
+        ? null
+        : await ctx.db.get("builds", build.supersededById);
+    return {
+      ...toBuildSummary(build),
+      buildId: build._id,
+      baselineBranch: build.baselineBranch,
+      autoApproved: build.autoApproved,
+      finalizedAt: build.finalizedAt ?? null,
+      ciRunUrl: build.ciRunUrl ?? null,
+      baseline:
+        baseline === null
+          ? null
+          : { number: baseline.number, branch: baseline.branch },
+      supersededBy: supersededBy?.number ?? null,
+    };
   },
 });

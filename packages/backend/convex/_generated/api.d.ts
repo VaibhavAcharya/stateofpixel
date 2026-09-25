@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as accounts from "../accounts.js";
 import type * as auth from "../auth.js";
 import type * as blobs from "../blobs.js";
 import type * as builds from "../builds.js";
@@ -26,6 +27,8 @@ import type * as lib_projectTokens from "../lib/projectTokens.js";
 import type * as lib_urls from "../lib/urls.js";
 import type * as me from "../me.js";
 import type * as permissions from "../permissions.js";
+import type * as projects from "../projects.js";
+import type * as snapshots from "../snapshots.js";
 import type * as tokens from "../tokens.js";
 import type * as users from "../users.js";
 
@@ -36,6 +39,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accounts: typeof accounts;
   auth: typeof auth;
   blobs: typeof blobs;
   builds: typeof builds;
@@ -54,6 +58,8 @@ declare const fullApi: ApiFromModules<{
   "lib/urls": typeof lib_urls;
   me: typeof me;
   permissions: typeof permissions;
+  projects: typeof projects;
+  snapshots: typeof snapshots;
   tokens: typeof tokens;
   users: typeof users;
 }>;
