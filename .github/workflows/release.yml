@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -20,10 +21,11 @@ jobs:
 
   publish-cli:
     needs: release-please
-    if: needs.release-please.outputs.cli-released == 'true'
+    if: needs.release-please.outputs.cli-released == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -37,5 +39,3 @@ jobs:
       - run: pnpm --filter stateofpixel build
       - run: npm publish --access public
         working-directory: packages/cli
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
