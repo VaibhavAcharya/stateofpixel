@@ -1,6 +1,6 @@
 # stateofpixel: plan
 
-Pages, tables, API and flows in detail are in [SPEC.md](./SPEC.md), and progress is in [ROADMAP.md](./ROADMAP.md). Sources are linked inline. Items marked (unverified) came from secondhand sources or memory and need a check before we depend on them.
+Why we build stateofpixel and the decisions behind it. Pages, tables, API and flows are in [SPEC.md](./SPEC.md), and progress is in [ROADMAP.md](./ROADMAP.md). Sources are linked inline. Items marked (unverified) came from secondhand sources or memory and need a check before we depend on them.
 
 ## Why we are building it
 
@@ -73,57 +73,6 @@ Argos is the real competitor. It already does BYO CI and hash dedupe. The gaps w
 
 Reviewer opens the link, approves or rejects, and the server flips the check. Image bytes go straight from CI to Convex File Storage through upload URLs, so no function handles them ([docs](https://docs.convex.dev/file-storage/upload-files)). Convex computes a SHA-256 for every stored file ([docs](https://docs.convex.dev/file-storage/file-metadata)), so the server can check the client's claimed hash without decoding anything.
 
-## Flows
-
-### Onboarding
-
-1. Sign in with GitHub on the web app.
-2. Install the GitHub App on a repo. That creates the project.
-3. Add one step to CI. On GitHub Actions, auth is OIDC, so no secret to copy. Elsewhere, copy a project token.
-
-```yaml
-permissions:
-  id-token: write
-steps:
-  - run: npx playwright test
-  - run: npx stateofpixel upload ./screenshots
-```
-
-### CI build
-
-As in the diagram above. Details that matter:
-
-- On GitHub `pull_request` events, `GITHUB_SHA` is a synthetic merge commit. Read `pull_request.head.sha` and `base.sha` from `$GITHUB_EVENT_PATH`.
-- File SHA-256 is the storage key. If two files differ in bytes but not pixels (PNG metadata, zlib settings), the 0-threshold local diff catches it and the snapshot counts as unchanged.
-- Snapshot identity is `name + browser + viewport`. Keep baselines per `os+browser` so a macOS run never compares to a Linux baseline.
-
-### Sharded CI
-
-Each shard uploads with the same nonce (`STATEOFPIXEL_NONCE`, default to the CI run id and attempt) and a shard index. The build completes either when `total` shards arrive or when `stateofpixel finalize` runs. Same model as Argos ([docs](https://argos-ci.com/docs/learn/how-to-guides/ci-pipelines/parallel-testing-sharding.md)).
-
-### Review
-
-One page per build. Lists changed, new and removed snapshots, unchanged hidden by default. Views: side by side, overlay slider, diff highlight. Actions: approve all, approve one, reject one. Any rejection keeps the check failing. Keyboard first (j/k to move, a to approve).
-
-### Merge
-
-A build on the default branch is auto-approved and becomes the baseline. For squash and rebase merges, the main build may run before anything links it to the PR. Use `GET /repos/{o}/{r}/commits/{sha}/pulls` ([docs](https://docs.github.com/en/rest/commits/commits)) to find the PR and treat its last approved build as the source of approvals, the same rule Chromatic documents ([docs](https://www.chromatic.com/docs/branching-and-baselines/)).
-
-### Approval carry-over
-
-If a snapshot in a new build has the same hash as one already approved on this PR, it is approved. Rebasing a PR with approved changes produces zero review work. This falls out of content addressing for free.
-
-## Baseline selection
-
-Adapted from Argos ([docs](https://argos-ci.com/docs/learn/platform-fundamentals/baseline-build.md)), with fewer rules.
-
-1. Baseline branch is the PR base branch, or the default branch for pushes.
-2. The client computes `merge-base(head, baseline branch)` and sends it with up to 100 ancestor SHAs (`git rev-list`). If the checkout is shallow, the server uses the GitHub compare API instead.
-3. Pick the newest build that is finalized, approved, same build name, and whose commit is in that ancestor list.
-4. Per snapshot name, the baseline is that build's image. Missing name means new.
-
-Override the baseline branch with `--baseline-branch <branch>`.
-
 ## Diff engine
 
 Client side, two engines ([odiff](https://github.com/dmtrKovalenko/odiff), [pixelmatch](https://github.com/mapbox/pixelmatch)):
@@ -144,28 +93,9 @@ This is the user's problem technically, and our problem in practice, because the
 - Ignore regions and masks passed through to odiff.
 - Later: flag snapshots whose hash flips back and forth across builds of the same commit as flaky.
 
-## Integrations for v1
-
-- Playwright: a reporter that collects screenshots from tests, plus a `snapshot(page, name)` helper.
-- Storybook: `stateofpixel storybook ./storybook-static` builds the list from `index.json` and captures each story with Playwright in the user's CI, at every width in `--viewports`.
-- Anything else: `stateofpixel upload <dir>`, where file path is the name. This covers Cypress, BackstopJS output, native app screenshots.
-
 ## Stack
 
-One pnpm monorepo:
-
-```
-stateofpixel/
-  apps/web/              TanStack Start app, deployed on Netlify
-  packages/backend/      convex/ folder: schema, queries, mutations,
-                         http.ts (CI API, GitHub webhooks), crons.ts
-  packages/cli/          `stateofpixel` npm package, closed source
-  examples/playground/   small pages and stories we break on purpose
-                         for dogfooding test PRs
-  scripts/test-pr.sh     opens the dogfooding test PRs
-  .github/workflows/     ci.yml (lint, types, tests), visual.yml (dogfood),
-                         release.yml (CLI releases)
-```
+One pnpm monorepo. The layout is in the [README](../README.md).
 
 - Web app: TanStack Start (`@tanstack/react-start`, docs still say Release Candidate, [docs](https://tanstack.com/start/latest/docs/framework/react/overview)) on Netlify with `@netlify/vite-plugin-tanstack-start` ([docs](https://docs.netlify.com/build/frameworks/framework-setup-guides/tanstack-start/)). Convex data through `@convex-dev/react-query` ([docs](https://docs.convex.dev/client/tanstack/tanstack-start/)). Public pages render on the server. Signed-in pages render on the client, because Convex Auth has no TanStack Start SSR support yet.
 - Backend: Convex for database, file storage, scheduled functions and crons. The CI API and GitHub webhooks are Convex HTTP actions ([docs](https://docs.convex.dev/functions/http-actions)). Live queries mean the build page updates by itself while shards arrive, with no polling.
@@ -180,16 +110,6 @@ stateofpixel/
 - Tests: Vitest for the CLI, `convex-test` for backend functions, Playwright captures of the web app through our own reporter.
 
 Convex limits shape the backend code ([limits](https://docs.convex.dev/production/state/limits)). A query or mutation has 1 s, 4,096 index ranges, 32,000 documents scanned and 16,000 written. HTTP action bodies are capped at 20 MiB. So every bulk path works in chunks of about 1,000 snapshots: the HTTP action takes the full manifest, then runs internal queries and mutations per chunk.
-
-## Dogfooding
-
-stateofpixel tests itself from the first milestone that has a server.
-
-- `visual.yml` runs on every PR in this repo. It builds the CLI from the workspace, not from npm, so every PR also tests the CLI it changes.
-- It uploads three builds: `playground` (static pages in `examples/playground`), `storybook` (the playground stories) and `web` (the public pages and fixture build pages, through the Playwright reporter).
-- It uploads to the production stateofpixel instance, as a project for this repo. A PR that changes the backend is tested by the old production backend. That forces the CI API to stay backward compatible, which the CLI needs anyway since users upgrade on their own schedule.
-- Test PRs: `scripts/test-pr.sh <scenario>` creates a branch that changes the playground in a known way, pushes it and opens a draft PR. Scenarios today: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`, `add-story`, `remove-story`. Planned: `flaky` (an animation left on), `many-changes`, `sharded`. Each one has an expected check result, so a quick look at the PR list shows whether the service behaves.
-- Scenarios for merges (squash, rebase, merge commit) run against a separate test repo, so they do not pollute this repo's history.
 
 ## Cost model
 
@@ -217,7 +137,5 @@ Storage-only billing means retention is a product feature. Show each project its
 - GitHub App permissions scare some orgs. Keep the permission list minimal and documented.
 - Convex egress is $0.12 to $0.13/GB, and review pages are mostly image downloads. Keep the storage module small so the move to R2 stays a contained change.
 - Convex File Storage `getUrl` returns a signed URL (Convex guidelines in `packages/backend/convex/_generated/ai/guidelines.md`). Anyone holding it can open a private repo's screenshot, and how long it stays valid is not documented there (unverified).
-- Convex Auth is beta and has no TanStack Start SSR adapter. Signed-in pages render on the client for now.
-- TanStack Start docs still call it a Release Candidate.
 - The Convex free plan returns errors when over limits. Run production on Starter with a card on file from day one.
 - Concurrency on Starter may be 16 queries and 16 mutations at once (unverified). Many CI shards uploading at once could queue. Move to Pro when that shows up.
