@@ -126,7 +126,7 @@ Needed before applying for a payment gateway.
 
 ## Marketing pages
 
-- [ ] Comparison pages against the alternatives
+- [x] Comparison pages against the alternatives
 - [x] Docs pages at `/docs`, linked from the header, footer and user menu
 - [x] Brand page with the logo, its usage and downloads
 - [x] Open Graph image per page
