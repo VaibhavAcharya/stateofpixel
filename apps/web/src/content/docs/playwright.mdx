@@ -68,7 +68,7 @@ When a test fails, the upload is marked as a subset. Snapshots of tests that did
 | `baselineBranch` | Branch to compare against. |
 | `threshold` | Color difference threshold from 0 to 1. Overrides the project setting. |
 | `subset` | Always mark the upload as a subset, so missing snapshots are never removed. |
-| `strict` | Fail the run when stateofpixel cannot be reached. |
+| `strict` | Fail the run instead of skipping the upload on an outage, a rate limit or a pull request from a fork. |
 | `uploadOutsideCi` | Upload from your machine too. Needs `STATEOFPIXEL_TOKEN`. |
 | `nonce` | Id shared by every shard of one build. |
 

@@ -5,7 +5,13 @@ import {
   isRateLimited,
   isServerError,
 } from "../api";
-import { defaultNonce, readCiInfo, readGitInfo, resolveToken } from "../ci-env";
+import {
+  defaultNonce,
+  ForkPullRequestError,
+  readCiInfo,
+  readGitInfo,
+  resolveToken,
+} from "../ci-env";
 import { formatCounts } from "../format";
 import { ENV } from "../reference";
 import { waitForFinalize } from "../upload";
@@ -35,13 +41,13 @@ export async function finalizeCommand(
       )
     : undefined;
 
-  const api = createApiClient({
-    baseUrl: env.STATEOFPIXEL_API_URL ?? DEFAULT_API_URL,
-    token: await resolveToken(env),
-  });
   let build: { buildId: string; buildNumber: number; url: string };
   let final: Awaited<ReturnType<typeof waitForFinalize>>;
   try {
+    const api = createApiClient({
+      baseUrl: env.STATEOFPIXEL_API_URL ?? DEFAULT_API_URL,
+      token: await resolveToken(env),
+    });
     build = await api.request("POST", "/builds/finalize", {
       buildName,
       nonce,
@@ -51,6 +57,12 @@ export async function finalizeCommand(
     });
     final = await waitForFinalize(api, build.buildId, true);
   } catch (error) {
+    if (error instanceof ForkPullRequestError && !options.strict) {
+      console.warn(
+        `stateofpixel: skipped, ${error.message} Use --strict to fail instead.`,
+      );
+      return;
+    }
     if (isRateLimited(error) && !options.strict) {
       console.warn(
         `stateofpixel: skipped, ${error.message} Use --strict to fail instead.`,

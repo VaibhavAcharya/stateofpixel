@@ -67,19 +67,8 @@ export function createApiClient({
   retries = 3,
   retryDelayMs = 1000,
 }: ApiClientOptions) {
-  async function withRetries<Result>(
-    fn: () => Promise<Result>,
-  ): Promise<Result> {
-    for (let attempt = 0; ; attempt++) {
-      try {
-        return await fn();
-      } catch (error) {
-        if (attempt >= retries || !isServerError(error)) {
-          throw error;
-        }
-        await sleep(retryDelayMs * 2 ** attempt);
-      }
-    }
+  function withRetries<Result>(fn: () => Promise<Result>): Promise<Result> {
+    return retryServerErrors(fn, retries, retryDelayMs);
   }
 
   function request<Result>(
@@ -129,6 +118,23 @@ export function createApiClient({
   }
 
   return { request, upload, download };
+}
+
+export async function retryServerErrors<Result>(
+  fn: () => Promise<Result>,
+  retries = 3,
+  retryDelayMs = 1000,
+): Promise<Result> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (attempt >= retries || !isServerError(error)) {
+        throw error;
+      }
+      await sleep(retryDelayMs * 2 ** attempt);
+    }
+  }
 }
 
 async function toApiError(response: Response): Promise<ApiError> {

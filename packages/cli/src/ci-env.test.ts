@@ -3,7 +3,13 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, expect, it } from "vitest";
-import { defaultNonce, readGitInfo, resolveToken } from "./ci-env";
+import { isServerError } from "./api";
+import {
+  defaultNonce,
+  ForkPullRequestError,
+  readGitInfo,
+  resolveToken,
+} from "./ci-env";
 
 let repo: string;
 let commits: string[];
@@ -110,4 +116,60 @@ it("requests a GitHub Actions OIDC token for the stateofpixel audience", async (
   expect(requested?.searchParams.get("audience")).toBe("stateofpixel");
   expect(requested?.searchParams.get("api-version")).toBe("2.0");
   expect(await resolveToken({ STATEOFPIXEL_TOKEN: "sop_x" })).toBe("sop_x");
+});
+
+it("tells a pull request from a fork apart from a missing permission", async () => {
+  const eventFor = async (headRepo: string) => {
+    const eventPath = path.join(
+      repo,
+      `event-${headRepo.replace("/", "-")}.json`,
+    );
+    await writeFile(
+      eventPath,
+      JSON.stringify({
+        pull_request: {
+          number: 7,
+          head: { sha: "abc", ref: "patch-1", repo: { full_name: headRepo } },
+          base: { ref: "main" },
+        },
+        repository: { full_name: "acme/web" },
+      }),
+    );
+    return { GITHUB_EVENT_PATH: eventPath };
+  };
+  await expect(resolveToken(await eventFor("octocat/web"))).rejects.toThrow(
+    ForkPullRequestError,
+  );
+  const sameRepo = resolveToken(await eventFor("acme/web"));
+  await expect(sameRepo).rejects.toThrow("id-token: write");
+  await expect(sameRepo).rejects.not.toThrow(ForkPullRequestError);
+});
+
+it("retries a failed OIDC token request, then treats it as a server error", async () => {
+  const env = {
+    ACTIONS_ID_TOKEN_REQUEST_URL: "https://actions.test/token",
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: "request-token",
+  };
+  let requests = 0;
+  const error = await resolveToken(
+    env,
+    async () => {
+      requests++;
+      return new Response(null, { status: 503 });
+    },
+    0,
+  ).catch((error: unknown) => error);
+  expect(isServerError(error)).toBe(true);
+  expect(requests).toBe(4);
+
+  requests = 0;
+  const token = await resolveToken(
+    env,
+    async () =>
+      ++requests === 1
+        ? new Response(null, { status: 503 })
+        : Response.json({ value: "oidc-jwt" }),
+    0,
+  );
+  expect(token).toBe("oidc-jwt");
 });

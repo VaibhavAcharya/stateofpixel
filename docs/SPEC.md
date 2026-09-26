@@ -790,7 +790,7 @@ In one internal query:
 
 ### 7.7 Errors
 
-`{ "error": { "code": "too_many_snapshots", "message": "..." } }` with HTTP status. The CLI prints the message and exits 1 for 4xx caused by config, and exits 0 with a warning for 5xx (proposal: our outage should not break their CI). A 429 from a rate limit is handled the same way: the CLI prints the message and exits 0. `--strict` makes 5xx and 429 exit 1. HTTP actions are not retried by Convex, so the CLI retries 5xx and network errors 3 times with backoff; every endpoint is idempotent by nonce, shard index and hash.
+`{ "error": { "code": "too_many_snapshots", "message": "..." } }` with HTTP status. The CLI prints the message and exits 1 for 4xx caused by config, and exits 0 with a warning for 5xx (proposal: our outage should not break their CI). A 429 from a rate limit is handled the same way: the CLI prints the message and exits 0. A 5xx or network error from the GitHub Actions OIDC token request is retried and handled the same way. On a `pull_request` run from a fork (the head repository differs from `repository.full_name` in the event payload) GitHub sets no OIDC request variables, so the CLI prints a warning and exits 0. `--strict` makes 5xx, 429 and fork skips exit 1. HTTP actions are not retried by Convex, so the CLI retries 5xx and network errors 3 times with backoff; every endpoint is idempotent by nonce, shard index and hash.
 
 ## 8. App functions
 
