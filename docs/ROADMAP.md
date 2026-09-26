@@ -136,3 +136,4 @@ Needed before applying for a payment gateway.
 ## Later
 
 - [ ] Open-source the CLI and the server
+- [ ] Optional: make builds of closed pull requests read-only, with a line that the pull request is closed
