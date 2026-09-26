@@ -1,0 +1,4 @@
+steps:
+  - run: npx percy exec -- npx playwright test
+    env:
+      PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}

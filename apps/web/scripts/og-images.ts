@@ -5,6 +5,7 @@ import { Resvg } from "@resvg/resvg-js";
 import satori from "satori";
 import { createServer } from "vite";
 import type { DOCS_NAV as DocsNav } from "../src/components/docs/DocsLayout";
+import type * as Compare from "../src/content/compare";
 import type { findDoc as FindDoc } from "../src/content/docs";
 import type { PageMeta } from "../src/lib/pageMeta";
 
@@ -36,7 +37,7 @@ async function loadPages() {
     logLevel: "error",
   });
   try {
-    const { PAGES, ogImagePath } = (await server.ssrLoadModule(
+    const { PAGES, SITE_URL, ogImagePath } = (await server.ssrLoadModule(
       "/src/lib/pageMeta.ts",
     )) as typeof import("../src/lib/pageMeta");
     const { DOCS_NAV, docsPath } = (await server.ssrLoadModule(
@@ -45,6 +46,9 @@ async function loadPages() {
     const { findDoc } = (await server.ssrLoadModule(
       "/src/content/docs/index.ts",
     )) as { findDoc: typeof FindDoc };
+    const { COMPARE_PAGE, COMPETITORS } = (await server.ssrLoadModule(
+      "/src/content/compare.ts",
+    )) as typeof Compare;
     const docs = DOCS_NAV.flatMap((group) => group.pages).map(({ slug }) => {
       const meta = findDoc(slug)?.meta;
       if (meta === undefined) {
@@ -56,7 +60,20 @@ async function loadPages() {
         description: meta.description,
       };
     });
-    return { pages: [...Object.values(PAGES), ...docs], ogImagePath };
+    return {
+      pages: [
+        ...Object.values(PAGES),
+        COMPARE_PAGE,
+        ...COMPETITORS.map((competitor) => ({
+          ...competitor.meta,
+          title: competitor.headline,
+          logo: competitor.logo,
+        })),
+        ...docs,
+      ],
+      ogImagePath,
+      siteUrl: SITE_URL,
+    };
   } finally {
     await server.close();
   }
@@ -72,7 +89,14 @@ async function dataUri(file: string, type: string): Promise<string> {
   return `data:${type};base64,${(await readFile(file)).toString("base64")}`;
 }
 
-function card(page: PageMeta, wordmark: string, pixels: string): Node {
+type OgPage = PageMeta & { logo?: string };
+
+function card(
+  page: OgPage,
+  wordmark: string,
+  pixels: string,
+  logo: string | null,
+): Node {
   const home = page.path === "/";
   return h(
     "div",
@@ -100,13 +124,22 @@ function card(page: PageMeta, wordmark: string, pixels: string): Node {
       }),
       h("div", { display: "flex", alignItems: "center", gap: 24 }, [
         image(wordmark, { height: 44, width: 44 * 4.9345 }),
-        home
-          ? null
-          : h(
-              "div",
-              { fontFamily: "Lilex", fontSize: 26, color: "#666666" },
-              page.path,
-            ),
+        logo !== null
+          ? h("div", { display: "flex", alignItems: "center", gap: 24 }, [
+              h(
+                "div",
+                { fontFamily: "Lilex", fontSize: 26, color: "#666666" },
+                "vs",
+              ),
+              image(logo, { height: 52, width: 52, borderRadius: 12 }),
+            ])
+          : home
+            ? null
+            : h(
+                "div",
+                { fontFamily: "Lilex", fontSize: 26, color: "#666666" },
+                page.path,
+              ),
       ]),
       h("div", { display: "flex", flexDirection: "column", gap: 24 }, [
         h(
@@ -139,18 +172,28 @@ function card(page: PageMeta, wordmark: string, pixels: string): Node {
   );
 }
 
-const [{ pages, ogImagePath }, regular, semibold, mono, wordmark, pixels] =
-  await Promise.all([
-    loadPages(),
-    font("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff"),
-    font("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff"),
-    font("@fontsource/lilex/files/lilex-latin-400-normal.woff"),
-    dataUri("public/brand/stateofpixel-wordmark.svg", "image/svg+xml"),
-    dataUri("public/pricing-pixels.png", "image/png"),
-  ]);
+const [
+  { pages, ogImagePath, siteUrl },
+  regular,
+  semibold,
+  mono,
+  wordmark,
+  pixels,
+] = await Promise.all([
+  loadPages(),
+  font("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff"),
+  font("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff"),
+  font("@fontsource/lilex/files/lilex-latin-400-normal.woff"),
+  dataUri("public/brand/stateofpixel-wordmark.svg", "image/svg+xml"),
+  dataUri("public/pricing-pixels.png", "image/png"),
+]);
 
-for (const page of pages) {
-  const svg = await satori(card(page, wordmark, pixels) as never, {
+for (const page of pages as OgPage[]) {
+  const logo =
+    page.logo === undefined
+      ? null
+      : await dataUri(join("public", page.logo), "image/png");
+  const svg = await satori(card(page, wordmark, pixels, logo) as never, {
     width: WIDTH,
     height: HEIGHT,
     fonts: [
@@ -169,3 +212,13 @@ for (const page of pages) {
   await writeFile(file, png);
 }
 console.log(`Wrote ${pages.length} Open Graph images to ${OUT_DIR}/og`);
+
+const sitemap = [
+  '<?xml version="1.0" encoding="UTF-8"?>',
+  '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+  ...pages.map((page) => `  <url><loc>${siteUrl}${page.path}</loc></url>`),
+  "</urlset>",
+  "",
+].join("\n");
+await writeFile(join(OUT_DIR, "sitemap.xml"), sitemap);
+console.log(`Wrote ${pages.length} URLs to ${OUT_DIR}/sitemap.xml`);
