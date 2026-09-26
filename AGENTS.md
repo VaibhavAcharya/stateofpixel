@@ -2,7 +2,8 @@
 
 Read these before changing code. Link to them instead of copying their content.
 
-- [README.md](README.md): layout, development, environments, dogfooding, checks, releases
+- [README.md](README.md): layout, development, checks, dogfooding, contributing
+- [docs/OPERATIONS.md](docs/OPERATIONS.md): environments, secrets, billing, the test repo, releases
 - [docs/PLAN.md](docs/PLAN.md): why we build it, the stack, costs and risks
 - [docs/SPEC.md](docs/SPEC.md): source of truth for internals: tables, API, functions, crons and rules behind the docs
 - [docs/DESIGN.md](docs/DESIGN.md): design system for `apps/web`

@@ -229,7 +229,7 @@ Paid plans in the pricing block show "Coming soon" until billing is available (`
 
 These paths shadow GitHub accounts with the same login.
 
-In dev only, `/lab.stateofpixel/web/builds/{1,2}` renders the build page from fixtures for the visual suite (README, Dogfooding). GitHub logins cannot contain a dot, so it never shadows an account.
+In dev only, `/lab.stateofpixel/web/builds/{1,2}` renders the build page from fixtures for the visual suite (README, Development). GitHub logins cannot contain a dot, so it never shadows an account.
 
 ### 5.2 Install (`/install`)
 
