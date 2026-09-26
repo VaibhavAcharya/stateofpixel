@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       {
-        title: "Visual regression testing that runs in your CI / stateofpixel",
+        title: "stateofpixel / Visual regression testing that runs in your CI",
       },
       ...pageMeta(PAGES.home),
     ],
