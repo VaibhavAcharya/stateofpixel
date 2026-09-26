@@ -17,6 +17,7 @@ import {
   ProjectNotFound,
   Skeleton,
   SkeletonRows,
+  SnapshotImage,
   Spinner,
 } from "../../../../components/ui";
 import { shortSha } from "../../../../lib/format";
@@ -231,8 +232,8 @@ function SuiteBaselines({
                   }}
                 >
                   {snapshot.image && (
-                    <img
-                      src={snapshot.image.url}
+                    <SnapshotImage
+                      image={snapshot.image}
                       alt=""
                       loading="lazy"
                       className="size-full object-contain object-top"

@@ -5,7 +5,6 @@ import {
   MonitorIcon,
   MoonIcon,
   PlusIcon,
-  RocketLaunchIcon,
   SignOutIcon,
   SquaresFourIcon,
   SunIcon,
@@ -76,8 +75,6 @@ export function AppHeader({
 function AccountSwitcher({ owner }: { owner?: string }) {
   const accounts = useQuery(api.me.accounts);
   const installUrl = useQuery(api.me.installUrl);
-  const billingAvailable = useQuery(api.billing.available);
-  const current = accounts?.find((account) => account.login === owner);
 
   return (
     <Menu
@@ -126,21 +123,6 @@ function AccountSwitcher({ owner }: { owner?: string }) {
           )}
         </Link>
       ))}
-      {billingAvailable && current !== undefined && !current.subscribed && (
-        <>
-          <MenuSeparator />
-          <Link
-            to="/$owner/settings/billing"
-            params={{ owner: current.login }}
-            className={`${menuItemClass} text-muted`}
-            data-umami-event="Upgrade hint"
-            data-umami-event-source="account switcher"
-          >
-            <RocketLaunchIcon size={16} className="shrink-0" />
-            Upgrade plan
-          </Link>
-        </>
-      )}
       {installUrl !== undefined && (
         <>
           <MenuSeparator />

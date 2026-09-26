@@ -1,10 +1,12 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
+  type ActionCtx,
   internalMutation,
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
+import { privateImageUrl } from "./lib/imageUrls";
 import { withStorageBytes } from "./lib/storage";
 import { rateLimiter } from "./rateLimits";
 
@@ -126,10 +128,21 @@ export async function confirmUpload(
 export async function getUrl(
   ctx: QueryCtx,
   image: Doc<"images">,
+  project: Doc<"projects">,
 ): Promise<string | null> {
-  return image.storageId === undefined
-    ? null
+  if (image.storageId === undefined) {
+    return null;
+  }
+  return project.private
+    ? privateImageUrl(project._id, image._id)
     : ctx.storage.getUrl(image.storageId);
+}
+
+export function readImage(
+  ctx: ActionCtx,
+  storageId: Id<"_storage">,
+): Promise<Blob | null> {
+  return ctx.storage.get(storageId);
 }
 
 function normalizeSha256(value: string): string | null {

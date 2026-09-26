@@ -50,7 +50,7 @@ Access comes from GitHub. stateofpixel has no invites or roles of its own; the M
 | admin | also change project settings and tokens |
 | account owner | also change the plan and billing |
 
-The server asks GitHub for the user's permission on the repo with the user's token and caches the answer for 5 minutes (section 8 has the pattern). Removing someone from the repo on GitHub removes their access here within 5 minutes. Org owner comes from `GET /user/memberships/orgs/{org}` with the same token. The owner of a user account is that user. The account pages ask GitHub once per page load and save the answer as `role` on the user's `accountMembers` row, so the Members tab can show roles and the Billing tab can disable its buttons for members. The billing actions still ask GitHub on every call.
+The server asks GitHub for the user's permission on the repo with the user's token and caches the answer for 5 minutes (section 8 has the pattern). Removing someone from the repo on GitHub removes their access here within 5 minutes, and to private image links within 2 hours (section 11, Private images). Org owner comes from `GET /user/memberships/orgs/{org}` with the same token. The owner of a user account is that user. The account pages ask GitHub once per page load and save the answer as `role` on the user's `accountMembers` row, so the Members tab can show roles and the Billing tab can disable its buttons for members. The billing actions still ask GitHub on every call.
 
 Controls a user cannot use stay visible and are disabled, with a tooltip that says who can use them: the project Settings tab for users who are not repo admins, and Upgrade and Manage billing for account members who are not owners.
 
@@ -263,7 +263,7 @@ Shown when the signed-in user has no installations. One button to the GitHub App
 ```
 
 - Tabs: Projects (this page), Members (5.9) and Billing (5.10). Every account member sees all three. The header, the storage banner and the tabs are the same on all three pages.
-- Account switcher for users in several orgs. Each account shows its plan in muted text. When billing is available and the current account has no subscription, the menu has an "Upgrade plan" item that links to the Billing tab.
+- Account switcher for users in several orgs. Each account shows its plan in muted text.
 - One row per project: name, latest build number, branch, conclusion pill, relative time.
 - Storage meter links to the Usage page (owners only; others see no meter). It ships with the Usage page (M3).
 - Storage banner from 80% of the limit (4.10). The same banner shows on project pages to users with write access. When billing is available it links to the Billing tab ("upgrade the plan"); otherwise it points to the support email.
@@ -408,8 +408,9 @@ Every change is saved on blur with a small "Saved" note. No save button.
 
 ### 5.10 Billing (`/{owner}/settings/billing`)
 
-- Plan box: plan name, storage used and, for an active subscription, "Renews on Oct 25, 2026" or "Ends on Oct 25, 2026". When billing is available, it shows an Upgrade menu (paid plans, monthly and yearly) while the account has no subscription, and Manage billing once it has a billing customer. For members who are not owners both buttons are disabled, with the tooltip "Only owners of acme on GitHub can change the plan and billing." While the role is not known they stay enabled, and the actions check for an owner and the box shows the error.
+- Plan box: plan name, storage used and, for an active subscription, "Renews on Oct 25, 2026" or "Ends on Oct 25, 2026". When billing is available, it shows an Upgrade menu (paid plans, monthly and yearly) while the account has no subscription, a Change plan menu with the same items and the current one marked while the subscription is active and not cancelled, and Manage billing once it has a billing customer. For members who are not owners the buttons are disabled, with the tooltip "Only owners of acme on GitHub can change the plan and billing." While the role is not known they stay enabled, and the actions check for an owner and the box shows the error.
 - Checkout and the customer portal return to `/{owner}/settings/billing`, checkout with `?subscription_id=...&status=...`. The status is a hint from Dodo, never proof of payment, so the plan box only says what happens next: "Payment received. Your plan updates in a few seconds." until the webhook makes that subscription active, then "Payment received. You are on the 25 GB plan."; "Your payment is processing" for `pending`; and for any other status, "The payment did not go through, so your plan did not change." The notice can be dismissed, which removes the query.
+- Choosing a plan in Change plan shows a confirm row under the plan box with the amount charged now from `billing.previewPlanChange` and the new renewal date: "Move to the 100 GB plan, billed yearly? You pay $X now. Unused time on your current plan counts toward it, and any left over is credited to later renewals. The new plan renews on Oct 26, 2027." Confirming runs `billing.changePlan`; if Dodo returns a payment link, the page opens it. After that the box says "Plan change received. Your plan updates in a few seconds." until the webhook moves the account, then "Plan changed. You are on the 100 GB plan."
 - When a renewal fails (`on_hold` or `past_due`), the plan box says "Your last payment failed" and points to Manage billing. The plan stays until Dodo cancels the subscription.
 - When the subscription is cancelled at the next billing date, the plan box says "Your 25 GB plan is cancelled. It stays until Oct 25, 2026, then the account moves to the Free plan with 10 GB of storage."
 - Not built yet (M3): storage split into baselines, PR-only images and diff images; a table per project with storage, share of total, retention setting and a link to its settings; a chart of daily storage for the last 90 days from `usageDaily`; payment method and invoices in the plan box.
@@ -454,6 +455,7 @@ The GitHub provider uses the GitHub App's own client ID and secret, so the user 
 | billingCustomerId | string, optional | Dodo Payments customer id, set by the first active subscription. |
 | billingSubscriptionId | string, optional | The Dodo Payments subscription that sets the plan. Cleared when it ends. |
 | billingStatus | string, optional | Dodo status of that subscription, like `active` or `on_hold`. |
+| billingInterval | `"monthly"` or `"yearly"`, optional | Interval of that subscription's product. |
 | billingPeriodEndsAt | number, optional | `next_billing_date` of that subscription: when it renews, or when it ends if it is cancelled at that date. |
 | billingCancelsAtPeriodEnd | boolean, optional | `cancel_at_next_billing_date` of that subscription. |
 | deletedAt | number, optional | |
@@ -692,7 +694,7 @@ What the action does:
 2. Baseline selection (section 7.6) in one query.
 3. Hash lookups in chunks of 1,000 names, several chunks in parallel. Each chunk is one internal query that reads the baseline snapshot by `by_buildId_and_name` and the image by `by_accountId_and_hash`. 1,000 names is 2,000 index ranges, under the 4,096 limit.
 4. One mutation per chunk of 1,000 that gets upload URLs from `blobs.createUploadTargets`, one per hash the account does not have yet (Convex `generateUploadUrl`, [docs](https://docs.convex.dev/file-storage/upload-files)).
-5. Baseline URLs from `blobs.getUrl` for changed names.
+5. Baseline URLs from `blobs.getUrl` for changed names, signed for private projects (section 11, Private images).
 
 Response:
 
@@ -795,7 +797,7 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 | `me.refreshAccounts` | action | signed in | `GET /user/installations` with the user token, links the user to accounts. Runs at sign-in and from "Refresh" on the Install page. |
 | `permissions.refresh` | action | signed in | See above. Writes `none` when GitHub answers 404. `orgOwner` comes from the org membership role, or from the login for a user account. |
 | `projects.access` | query | signed in | Project id, cached permission, whether it is fresh, `canRead` and `canWrite`, and the account's storage usage when the user can write. The page calls `permissions.refresh` while it is not fresh. |
-| `accounts.home` | query | account member | The account, its installation settings URL, its storage usage (plan, bytes, limit, `overLimitSince`), its subscription (id, status, period end and whether it cancels then), whether it has a billing customer, and the user's role (`owner`, `member` or `null` while unknown). The page works out the storage state with the clock, since queries do not read it. |
+| `accounts.home` | query | account member | The account, its installation settings URL, its storage usage (plan, bytes, limit, `overLimitSince`), its subscription (id, status, interval, period end and whether it cancels then), whether it has a billing customer, and the user's role (`owner`, `member` or `null` while unknown). The page works out the storage state with the clock, since queries do not read it. |
 | `accounts.setPlan` | internal mutation | Convex dashboard or `npx convex run` | Sets `plan` and `storageLimitBytes`. A `custom` plan takes the limit as an argument. For plans set by hand; paid plans come from billing. |
 | `accounts.projects` | query | account member | Paginated projects with their latest build, searchable, sorted by name or last build. |
 | `members.list` | query | account member | Up to 200 members: login, name, avatar, role and last sign-in, owners first. |
@@ -815,8 +817,11 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 | `tokens.revoke` | mutation | admin | |
 | `projects.remove` | mutation | admin | Checks the typed name, deletes the project, schedules chunked deletion of its data. |
 | `usage.get` | query | org owner | Usage page data. Not built yet. |
+| `images.grant` | mutation | read access | `{ projectId }`. Returns `{ exp, sig }` for the private image links of that project (section 11). |
 | `billing.available` | query | anyone | Whether this deployment has a Dodo API key. |
 | `billing.checkout` | action | account owner | `{ login, plan, interval }`. Returns a Dodo Payments checkout URL for a paid plan, monthly or yearly. Throws `already_subscribed` when the account has a subscription. |
+| `billing.previewPlanChange` | action | account owner | `{ login, plan, interval }`. Returns `{ amount, currency, renewsAt }` for moving the subscription to that product: the amount charged now in minor units and the new next billing date. Throws `not_subscribed` without a subscription, `same_plan` for the current product and `over_plan_limit` when `storageBytes` is above the new plan's limit. |
+| `billing.changePlan` | action | account owner | Same arguments and checks. Moves the subscription to that product with `prorated_immediately` and `on_payment_failure: prevent_change`. Returns a payment link when Dodo needs the customer to pay on a checkout page, otherwise `null`. The webhook sets the new plan. |
 | `billing.portal` | action | account owner | Returns a Dodo Payments customer portal link for payment method, invoices and cancelling. Throws `not_subscribed` without a customer. |
 
 `reviews.apply` on superseded, pending, expired or storage-blocked builds throws a `ConvexError` with code `build_not_reviewable`. `approve` and `reject` apply to snapshots with review state `pending`, `approved` or `rejected`; `undo` sets them back to `pending` and removes the `approvedImages` rows of that image on the PR. `"all"` only touches `pending` snapshots, runs 500 per scheduled mutation (changed first, then added), and cannot undo. Every call recomputes the conclusion and bumps the GitHub check.
@@ -829,9 +834,11 @@ Dodo sends subscription events to the HTTP action `POST /dodo/webhook`. It verif
 
 | Subscription status | Action |
 |---|---|
-| `active` | Set the plan of its product, `billingCustomerId`, `billingSubscriptionId`, `billingStatus`, `billingPeriodEndsAt` and `billingCancelsAtPeriodEnd`. |
+| `active` | Set the plan and `billingInterval` of its product, `billingCustomerId`, `billingSubscriptionId`, `billingStatus`, `billingPeriodEndsAt` and `billingCancelsAtPeriodEnd`. |
 | `cancelled`, `expired`, `failed` | If it is the account's `billingSubscriptionId`, move to `free` and clear the subscription fields. |
 | other (`on_hold`, `past_due`, `paused`, `pending`) | If it is the account's `billingSubscriptionId`, set `billingStatus`, `billingPeriodEndsAt` and `billingCancelsAtPeriodEnd`. The plan stays. |
+
+A plan change keeps the subscription id and sends `subscription.plan_changed` with the new `product_id`, which the `active` row handles. With `prorated_immediately` Dodo credits the unused time on the old product, charges a full cycle of the new one and moves the billing date to the day of the change ([docs](https://docs.dodopayments.com/developer-resources/subscription-upgrade-downgrade)). Downgrades work the same way, and a credit larger than the charge pays toward later renewals.
 
 The customer portal offers two ways to cancel. "Cancel now" ends the subscription at once, so the account moves to `free` on that event. "Cancel at next billing date" keeps the subscription `active` with `cancel_at_next_billing_date` until the period ends, so the plan stays until then and the plan box shows the end date (5.10).
 
@@ -924,13 +931,24 @@ v1 stores every PNG in Convex File Storage. All storage code sits in `packages/b
 |---|---|---|
 | `createUploadTargets(hashes)` | `ctx.storage.generateUploadUrl()` per hash | presigned PUT per hash |
 | `confirmUpload(hash, ref)` | check `_storage.sha256`, return `storageId` | HEAD the object, check size |
-| `getUrl(image)` | `ctx.storage.getUrl(storageId)` | presigned GET or public bucket URL |
+| `getUrl(image, project)` | public project: `ctx.storage.getUrl(storageId)`; private project: the image route below | presigned GET or public bucket URL |
+| `readImage(storageId)` | `ctx.storage.get(storageId)`, for the image route | GET the object |
 | `delete(image)` | `ctx.storage.delete(storageId)` | DELETE the object |
 
-Nothing else in the backend touches `ctx.storage`. Moving to R2 means writing the R2 side of these four, then migrating images in batches and flipping `images.store` per row. A future R2 key layout: `a/{accountId}/img/{hash[0:2]}/{hash}.png`.
+Nothing else in the backend touches `ctx.storage`. Moving to R2 means writing the R2 side of these five, then migrating images in batches and flipping `images.store` per row. A future R2 key layout: `a/{accountId}/img/{hash[0:2]}/{hash}.png`.
 
 Things to know about Convex File Storage URLs ([docs](https://docs.convex.dev/file-storage/serve-files)):
-- `getUrl` returns a signed URL, per the Convex guidelines in `packages/backend/convex/_generated/ai/guidelines.md`. Anyone holding the URL can open the image. How long a signed URL stays valid is not stated there (unverified), so treat it as long-lived and never store it; store the `Id<"_storage">` and call `getUrl` on read.
+- "Anyone with the URL can access the file without further authentication from your app." The URL does not expire; only deleting the file revokes it. So `getUrl` URLs go only to public projects, and we never store them.
+
+### Private images
+
+Images of private projects go through the HTTP route `GET /images/{projectId}/{imageId}?exp=...&sig=...` in `convex/images.ts`. Queries cannot read the clock, so they return the link without `exp` and `sig`, and the signature comes from a grant:
+
+- `sig` is HMAC-SHA256 of `{projectId}.{exp}` with `IMAGE_URL_SECRET`, base64url. `exp` is the end of the next full hour, so a grant is valid for 1 to 2 hours and every grant in the same hour gives the same link, which keeps the browser cache warm.
+- The web app gets a grant per project from `images.grant` and adds it to the links (`apps/web/src/lib/useImageUrl.ts`). It asks for a new one 30 minutes before `exp`.
+- `POST /builds` signs baseline URLs for CI the same way.
+- The route checks the signature and `exp`, that the project is not archived and that the image belongs to the project's account, then returns the bytes with `Cache-Control: private, max-age=<seconds until exp>, immutable`. A wrong or expired signature gets 403.
+- Someone removed from the repo keeps images they already had for up to 2 hours, since `exp` is at most 2 hours away. HTTP action responses are limited to 20 MiB, the same as our image limit ([limits](https://docs.convex.dev/production/state/limits)).
 - The open-source Convex backend sends `Cache-Control: private, max-age=2592000` on storage reads (unverified for hosted Convex). Browsers cache images for 30 days, shared CDNs do not. Images never change for a given file, so this is safe.
 - Every image view is Convex egress ($0.132/GB on Starter after 1 GB). The review page loads the viewer's images only, and the sidebar shows names, not thumbnails, to keep egress down.
 

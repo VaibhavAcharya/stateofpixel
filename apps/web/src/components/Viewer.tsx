@@ -13,6 +13,7 @@ import {
   DiffStatusPill,
   type Icon,
   Kbd,
+  SnapshotImage,
   SnapshotName,
   Tooltip,
 } from "./ui";
@@ -322,7 +323,13 @@ function Compare({
 
   if (mode === "side") {
     return (
-      <div className="grid grid-cols-2 items-start gap-4 max-md:grid-cols-1">
+      <div
+        className={`grid items-start gap-4 ${
+          zoom === "fit"
+            ? "grid-cols-2 max-md:grid-cols-1"
+            : "w-max grid-cols-[repeat(2,max-content)] max-md:grid-cols-[max-content]"
+        }`}
+      >
         <Frame image={baselineImage} zoom={zoom} caption={baselineLabel} />
         <Frame
           image={image}
@@ -365,9 +372,11 @@ function Compare({
   );
 }
 
+const FRAME_PLACEHOLDER = "skeleton bg-surface";
+
 function imageStyle(image: Image, zoom: ViewerZoom) {
   if (zoom === "fit") {
-    return { maxWidth: "100%" };
+    return { width: image.width, maxWidth: "100%" };
   }
   const scale = zoom === "200" ? 2 : 1;
   return {
@@ -400,7 +409,9 @@ function Frame({
         <p className="text-sm text-muted">Image not available.</p>
       ) : (
         <div
-          className={`checker relative inline-block max-w-full align-top outline-offset-0 ${
+          className={`checker relative inline-block align-top outline-offset-0 ${
+            zoom === "fit" ? "max-w-full" : ""
+          } ${
             highlighted ? "outline-2 outline-link" : "outline-1 outline-border"
           } outline-solid`}
         >
@@ -408,26 +419,28 @@ function Frame({
             <div
               className="block max-w-full"
               style={{
-                width: size.width,
                 ...imageStyle(size, zoom),
                 aspectRatio: `${size.width} / ${size.height}`,
               }}
             />
           ) : (
             image !== null && (
-              <img
-                src={image.url}
+              <SnapshotImage
+                image={image}
                 alt={caption}
+                placeholder={FRAME_PLACEHOLDER}
+                retryable
                 className="block"
                 style={imageStyle(image, zoom)}
               />
             )
           )}
           {overlay && (
-            <img
-              src={overlay.url}
+            <SnapshotImage
+              image={overlay}
               alt="Diff overlay"
-              className="absolute top-0 left-0 block opacity-70"
+              placeholder={false}
+              className="pointer-events-none absolute top-0 left-0 block opacity-70"
               style={imageStyle(overlay, zoom)}
             />
           )}
@@ -450,16 +463,18 @@ function Slider({
 
   return (
     <div className="checker relative inline-block max-w-full align-top outline-1 outline-border outline-solid select-none">
-      <img
-        src={image.url}
+      <SnapshotImage
+        image={image}
         alt="New"
+        placeholder={FRAME_PLACEHOLDER}
         className="block"
         style={imageStyle(image, zoom)}
         draggable={false}
       />
-      <img
-        src={baselineImage.url}
+      <SnapshotImage
+        image={baselineImage}
         alt="Baseline"
+        placeholder={FRAME_PLACEHOLDER}
         className="absolute top-0 left-0 block"
         style={{
           ...imageStyle(baselineImage, zoom),

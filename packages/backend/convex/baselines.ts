@@ -99,7 +99,11 @@ export const list = query({
       args.name,
       args.buildName,
     );
-    if (baseline === null) {
+    const project =
+      baseline === null
+        ? null
+        : await ctx.db.get("projects", baseline.projectId);
+    if (baseline === null || project === null) {
       return { page: [], isDone: true, continueCursor: "" };
     }
     const prefix = args.prefix ?? "";
@@ -120,7 +124,7 @@ export const list = query({
       page: await Promise.all(
         page.page.map(async (snapshot) => ({
           name: snapshot.name,
-          image: await toImageInfo(ctx, snapshot.imageId),
+          image: await toImageInfo(ctx, project, snapshot.imageId),
         })),
       ),
     };
@@ -178,7 +182,7 @@ export const history = query({
         diffStatus: snapshot.diffStatus,
         mergedPrNumber: build.mergedPrNumber ?? null,
         approvedBy: await findPrApprover(ctx, build, snapshot),
-        image: await toImageInfo(ctx, snapshot.imageId),
+        image: await toImageInfo(ctx, project, snapshot.imageId),
       })),
     );
     return { buildName, entries };

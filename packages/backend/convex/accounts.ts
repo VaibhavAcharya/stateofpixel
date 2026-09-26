@@ -113,6 +113,11 @@ export const home = query({
         v.object({
           id: v.string(),
           status: v.string(),
+          interval: v.union(
+            v.literal("monthly"),
+            v.literal("yearly"),
+            v.null(),
+          ),
           periodEndsAt: v.union(v.number(), v.null()),
           cancelsAtPeriodEnd: v.boolean(),
         }),
@@ -143,6 +148,7 @@ export const home = query({
           : {
               id: account.billingSubscriptionId,
               status: account.billingStatus ?? "active",
+              interval: account.billingInterval ?? null,
               periodEndsAt: account.billingPeriodEndsAt ?? null,
               cancelsAtPeriodEnd: account.billingCancelsAtPeriodEnd ?? false,
             },

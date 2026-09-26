@@ -116,6 +116,10 @@ export const get = query({
     if (build === null || snapshot === null || snapshot.buildId !== build._id) {
       return null;
     }
+    const project = await ctx.db.get("projects", build.projectId);
+    if (project === null) {
+      return null;
+    }
     const review = await ctx.db
       .query("reviews")
       .withIndex("by_snapshotId", (q) => q.eq("snapshotId", snapshotId))
@@ -130,9 +134,9 @@ export const get = query({
       diffRatio: snapshot.diffRatio ?? null,
       diffPixels: snapshot.diffPixels ?? null,
       metadata: snapshot.metadata,
-      image: await toImageInfo(ctx, snapshot.imageId),
-      baselineImage: await toImageInfo(ctx, snapshot.baselineImageId),
-      diffImage: await toImageInfo(ctx, snapshot.diffImageId),
+      image: await toImageInfo(ctx, project, snapshot.imageId),
+      baselineImage: await toImageInfo(ctx, project, snapshot.baselineImageId),
+      diffImage: await toImageInfo(ctx, project, snapshot.diffImageId),
       lastReview: review === null ? null : await toReviewInfo(ctx, review),
       rejectedIn:
         snapshot.reviewState === "pending"

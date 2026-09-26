@@ -435,6 +435,14 @@ export const lookupSnapshots = internalQuery({
     }),
   ),
   handler: async (ctx, { baselineBuildId, storageBlocked, snapshots }) => {
+    const baselineBuild =
+      baselineBuildId === null
+        ? null
+        : await ctx.db.get("builds", baselineBuildId);
+    const project =
+      baselineBuild === null
+        ? null
+        : await ctx.db.get("projects", baselineBuild.projectId);
     return Promise.all(
       snapshots.map(async ({ name, hash }) => {
         const baselineImage =
@@ -447,9 +455,10 @@ export const lookupSnapshots = internalQuery({
         if (baselineImage.hash === hash) {
           return { name, hash, status: "unchanged" as const };
         }
-        const baselineUrl = storageBlocked
-          ? null
-          : await getUrl(ctx, baselineImage);
+        const baselineUrl =
+          storageBlocked || project === null
+            ? null
+            : await getUrl(ctx, baselineImage, project);
         return {
           name,
           hash,

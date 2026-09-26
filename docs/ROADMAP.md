@@ -52,6 +52,8 @@ Group 3: lists and viewer
 - [x] Diff overlay toggle in Side by side, on by default
 - [x] Sentence case pill labels
 - [x] Server-side sort, filter and pagination for projects and builds, on TanStack Table
+- [ ] Viewer as a canvas like Figma: pan and zoom with trackpad, wheel and keys, kept inside the image bounds, with one Fit button to reset; replaces the Fit, 100% and 200% tabs
+- [ ] Say when retention deleted a build: keep deleted build numbers per project so an old link shows "This build was deleted after 60 days" instead of "Build not found."
 
 Group 4: landing
 - [x] Drop Playfair Display, one sans and one mono only
@@ -78,6 +80,7 @@ See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (sta
 - [x] `scripts/test-pr.sh` scenarios with an expected check result each
 - [ ] Merge scenarios (squash, rebase, merge commit) against a separate test repo
 - [ ] More `test-pr.sh` scenarios: `flaky` (an animation left on), `many-changes`, `sharded`
+- [ ] Storybook stories with fixtures for flows that are hard to reproduce, like checkout results, plan changes, failed renewals, storage warnings and blocked builds
 
 ## M3: growth
 

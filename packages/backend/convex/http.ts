@@ -9,6 +9,8 @@ import {
   whoami,
 } from "./ciApi";
 import { handle as handleGithubWebhook } from "./githubWebhook";
+import { serve as serveImage } from "./images";
+import { IMAGE_ROUTE } from "./lib/imageUrls";
 
 const http = httpRouter();
 
@@ -25,6 +27,8 @@ http.route({
   method: "POST",
   handler: handleDodoWebhook,
 });
+
+http.route({ pathPrefix: IMAGE_ROUTE, method: "GET", handler: serveImage });
 
 http.route({
   path: "/api/v1/whoami",

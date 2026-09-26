@@ -13,6 +13,7 @@ import {
   ProjectNotFound,
   RelativeTime,
   SkeletonRows,
+  SnapshotImage,
   SnapshotName,
 } from "../../../../components/ui";
 import { useViewerSettings, Viewer } from "../../../../components/Viewer";
@@ -211,8 +212,8 @@ function HistoryEntry({
           )}
         </span>
         {entry.image && (
-          <img
-            src={entry.image.url}
+          <SnapshotImage
+            image={entry.image}
             alt=""
             loading="lazy"
             className="h-12 w-16 shrink-0 rounded-xs bg-surface-2 object-contain object-top"
