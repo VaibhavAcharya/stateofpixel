@@ -1,5 +1,6 @@
 import { importPKCS8, SignJWT } from "jose";
 import { env } from "../_generated/server";
+import type { StatusState } from "./checkStatus";
 
 const API_URL = "https://api.github.com";
 
@@ -257,7 +258,7 @@ export async function findMergedPullRequest(
 }
 
 export type CommitStatusFields = {
-  state: "pending" | "success" | "failure" | "error";
+  state: StatusState;
   target_url: string;
   description: string;
   context: string;

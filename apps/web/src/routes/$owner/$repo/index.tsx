@@ -31,7 +31,7 @@ import { shortSha } from "../../../lib/format";
 import { prefetchBuild } from "../../../lib/prefetch";
 import { useListKeys } from "../../../lib/useListKeys";
 import { useProjectAccess } from "../../../lib/useProjectAccess";
-import setup from "../../../snippets/setup.yml?highlight";
+import workflow from "../../../snippets/workflow.yml?highlight";
 
 type BuildFilter = NonNullable<
   FunctionArgs<typeof api.builds.list>["states"]
@@ -451,9 +451,13 @@ function SetupCard({ owner, repo }: { owner: string; repo: string }) {
         >
           settings
         </Link>
-        .
+        . The{" "}
+        <Link to="/docs" className="text-link">
+          Quickstart
+        </Link>{" "}
+        has the full setup.
       </LeadCopy>
-      <CodeBlock fileName=".github/workflows/visual.yml" {...setup} />
+      <CodeBlock fileName=".github/workflows/visual.yml" {...workflow} />
       <p className="flex items-center gap-2 text-sm text-muted">
         <Spinner size={14} />
         Waiting for the first build. This page updates by itself.

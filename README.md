@@ -1,20 +1,94 @@
-# stateofpixel
+<p align="center">
+  <a href="https://stateofpixel.com">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="apps/web/public/brand/stateofpixel-wordmark-inverse.svg">
+      <img alt="stateofpixel" src="apps/web/public/brand/stateofpixel-wordmark.svg" height="40">
+    </picture>
+  </a>
+</p>
 
-Visual regression testing that runs in your CI. This README is for working on the repo. CLI usage is in [packages/cli/README.md](packages/cli/README.md).
+<p align="center">Visual regression testing that runs in your CI.</p>
+
+<p align="center">
+  <a href="https://stateofpixel.com">Website</a> |
+  <a href="https://stateofpixel.com/docs">Docs</a> |
+  <a href="https://www.npmjs.com/package/stateofpixel">npm</a> |
+  <a href="docs/ROADMAP.md">Roadmap</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/VaibhavAcharya/stateofpixel/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/VaibhavAcharya/stateofpixel/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://www.npmjs.com/package/stateofpixel"><img alt="npm version" src="https://img.shields.io/npm/v/stateofpixel"></a>
+</p>
+
+Your CI takes the screenshots. stateofpixel compares them with the last approved ones, shows every change on a review page, and sets a GitHub check that waits until someone approves them.
+
+```
+  your CI                          stateofpixel                    pull request
+  -------                          ------------                    ------------
+  tests write PNGs
+  npx stateofpixel upload  ----->  find the baseline
+    upload new images only         save the results  ----------->  check: pending
+    diff on the runner                                             "2 changes to review"
+                                   review page  <----------------  Details
+                                   approve  -------------------->  check: success
+```
+
+- Works with Playwright, Storybook or any folder of PNG files.
+- No secret on GitHub Actions: the CLI signs in with the OIDC token.
+- Only images the server does not have yet are uploaded, and images are diffed on your runner.
+- The review page has side by side, diff, slider and flip, and every action has a key.
+- Approvals carry over when you push again or rebase the pull request.
+- Shards of one run join one build and report one check.
+- Plans are priced by storage. There are no seats.
+
+## Quick start
+
+Install the GitHub App from [stateofpixel.com](https://stateofpixel.com), then add a step after the one that writes your screenshots:
+
+```yaml
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: npx playwright test
+      - run: npx stateofpixel upload screenshots
+```
+
+The [docs](https://stateofpixel.com/docs) cover the Playwright reporter, Storybook, other CI, sharding, reviewing and the CLI.
+
+## Repository
+
+| Path | What it is |
+|---|---|
+| `apps/web` | The web app on [TanStack Start](https://tanstack.com/start), deployed on Netlify |
+| `apps/web/src/content/docs` | The docs at `/docs`, in MDX |
+| `apps/web/visual` | Playwright tests that capture the web app for dogfooding |
+| `packages/backend` | [Convex](https://convex.dev) functions and schema: the CI API, GitHub webhooks, billing and storage |
+| `packages/cli` | The `stateofpixel` CLI and Playwright reporter, published to npm |
+| `examples/playground` | Static pages and Storybook stories that the test pull requests change |
+| `scripts` | `test-pr.sh` opens the dogfooding test pull requests |
+
+Design docs:
 
 - [docs/PLAN.md](docs/PLAN.md): why we build it, the stack, costs and risks
-- [docs/SPEC.md](docs/SPEC.md): pages, tables, API, CLI and states in detail
-- [docs/DESIGN.md](docs/DESIGN.md): the design system
+- [docs/SPEC.md](docs/SPEC.md): internals: tables, API, functions, crons and the rules behind the docs
+- [docs/DESIGN.md](docs/DESIGN.md): the design system of the web app
 - [docs/ROADMAP.md](docs/ROADMAP.md): what is done and what is next
-
-## Layout
-
-- `apps/web`: TanStack Start app, deployed on Netlify
-- `packages/backend`: Convex functions and schema
-- `packages/cli`: the `stateofpixel` CLI and Playwright reporter
-- `apps/web/visual`: Playwright tests that capture the web app for dogfooding
-- `examples/playground`: static pages and Storybook stories that the test PRs change
-- `scripts/test-pr.sh`: opens the dogfooding test PRs
+- [docs/OPERATIONS.md](docs/OPERATIONS.md): deployments, secrets, billing and releases
+- [AGENTS.md](AGENTS.md): rules for coding agents working in this repo
 
 ## Development
 
@@ -25,80 +99,39 @@ pnpm install
 pnpm dev
 ```
 
-`pnpm dev` runs `convex dev` and the web app on http://localhost:3000. The first `convex dev` asks you to log in and pick a Convex project, and writes `packages/backend/.env.local`. The web app reads `CONVEX_URL` from that file.
+`pnpm dev` runs `convex dev` and the web app on http://localhost:3000. The first `convex dev` asks you to log in and pick a Convex project, and writes `packages/backend/.env.local`. The web app reads `CONVEX_URL` from that file. Signing in needs a GitHub App of your own; [OPERATIONS.md](docs/OPERATIONS.md) lists the env vars it needs.
 
-## Environments
+The build page also renders without GitHub: in dev, `/lab.stateofpixel/web/builds/1` shows it from the fixture builds in `apps/web/src/components/build/LabBuild.tsx`. Build 1 has changes to review, build 2 is storage-blocked. Reviews there change local state only. GitHub logins cannot contain a dot, so the path never matches a real account, and production builds leave the fixtures out.
 
-| | Dev | Production |
-|---|---|---|
-| Convex deployment | your cloud dev deployment (`packages/backend/.env.local`, pick it with `npx convex dev --configure`) | `graceful-dogfish-423` |
-| Web app | http://localhost:3000 | https://stateofpixel.com |
-| GitHub App callback URL | `https://<dev deployment>.convex.site/api/auth/callback/github` | `https://graceful-dogfish-423.convex.site/api/auth/callback/github` |
-| `SITE_URL` | `http://localhost:3000` | `https://stateofpixel.com` |
-| GitHub App webhook URL | not set, the app has one webhook URL | `https://graceful-dogfish-423.convex.site/github/webhook` |
-| GitHub App setup URL | | `https://stateofpixel.com/install` |
-| Dodo Payments | test mode, webhook `https://<dev deployment>.convex.site/dodo/webhook` | live mode, webhook `https://graceful-dogfish-423.convex.site/dodo/webhook` |
-
-Both deployments need the same Convex env vars: `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`, `JWT_PRIVATE_KEY`, `JWKS`, `SITE_URL`, `IMAGE_URL_SECRET` (a random string, different per deployment, that signs private image links), `GITHUB_APP_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_PRIVATE_KEY` (PKCS#8) and `GITHUB_WEBHOOK_SECRET`. Each deployment has its own JWT key pair. The `GITHUB_*` vars, `SITE_URL` and `IMAGE_URL_SECRET` are declared in `convex/convex.config.ts`, so a push fails while any of them is missing. Compare them with `npx convex env list --names-only` and `npx convex env list --names-only --prod` in `packages/backend`.
-
-Production code deploys from Netlify: its build runs `convex deploy` with `CONVEX_DEPLOY_KEY`, then builds the web app.
-
-Paid plans come from Dodo Payments (SPEC section 8, Billing). Each deployment needs `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_SECRET` (the signing secret of its Dodo webhook) and `DODO_PAYMENTS_ENVIRONMENT` (`test_mode` or `live_mode`). These vars are optional in `convex.config.ts`, so a deployment without them still pushes; the pricing section then shows paid plans as coming soon, and billing throws `billing_not_configured`.
-
-To test billing on dev, check out in test mode with a Dodo test card. On production, a 100% discount code entered on checkout gives a real subscription at $0; cancel it afterwards from Manage billing. "Cancel now" moves the account to Free right away, "cancel at next billing date" keeps the plan until then.
-
-To copy env vars from one deployment to another without printing them, run from `packages/backend`:
-
-```sh
-npx convex env list --deployment <from> > /tmp/from.env && npx convex env set --deployment <to> --from-file /tmp/from.env; rm -f /tmp/from.env
-```
-
-To set a plan by hand, for example `custom`, run from `packages/backend`:
-
-```sh
-npx convex run --prod accounts:setPlan '{"login":"acme","plan":"25gb"}'
-npx convex run --prod accounts:setPlan '{"login":"acme","plan":"custom","storageLimitBytes":1099511627776}'
-```
-
-## CLI
-
-Build the workspace CLI and point it at your dev deployment with a project token from its project settings:
-
-```sh
-pnpm --filter stateofpixel build
-STATEOFPIXEL_API_URL=https://<dev deployment>.convex.site/api/v1 STATEOFPIXEL_TOKEN=sop_... \
-  node packages/cli/dist/index.mjs upload <dir>
-```
-
-Without `STATEOFPIXEL_API_URL` it talks to production.
-
-## Dogfooding
-
-`.github/workflows/visual.yml` runs on every PR and uploads three builds to production with the workspace CLI, authenticated with the GitHub Actions OIDC token. So every PR also tests the CLI it changes, and a PR that changes the backend is tested by the old production backend, which keeps the CI API backward compatible:
-
-- `playground`: `examples/playground/pages`, captured by `pnpm --filter @stateofpixel/playground capture`
-- `storybook`: the playground stories, built with `pnpm --filter @stateofpixel/playground build-storybook` and captured with `stateofpixel storybook`
-- `web`: the public pages and the build page, captured by `pnpm --filter @stateofpixel/web visual` through the Playwright reporter. The reporter uploads on CI only, so a local run only writes screenshots.
-
-The build page is captured from fixtures, so it needs no sign-in or seeded Convex data. In dev, `/lab.stateofpixel/web/builds/1` renders the real build page from the fixture builds in `apps/web/src/components/build/LabBuild.tsx`: build 1 has changes to review, build 2 is storage-blocked. Reviews there change local state only. GitHub logins cannot contain a dot, so the path never matches a real account, and production builds leave the fixtures out.
-
-`scripts/test-pr.sh <scenario>` opens a draft PR that changes the playground in a known way and prints the expected check for `playground` and `storybook`. Scenarios: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`, `add-story`, `remove-story`. It needs `gh` signed in.
-
-Merge scenarios run against the private repo [`VaibhavAcharya/stateofpixel-test`](https://github.com/VaibhavAcharya/stateofpixel-test). Its workflow uploads `shots/*.png` to the dev deployment with the published CLI, and `python3 scripts/png.py <name> <hex color>` recolors a shot. The GitHub App sends webhooks to production only, so after adding a repo to the installation, run `npx convex run installations:sync '{"installationId": <id>}'` in `packages/backend` to create its dev project.
-
-Netlify deploy previews and branch deploys build only the web app against the production Convex URL. Only production builds run `convex deploy`.
+To try the CLI against your dev deployment, see [CLI against dev](docs/OPERATIONS.md#cli-against-dev).
 
 ## Checks
 
+These are the checks `ci.yml` runs:
+
 ```sh
 pnpm lint
+pnpm --filter stateofpixel build
 pnpm typecheck
 pnpm test
 pnpm build
 ```
 
-`typecheck` in `apps/web` reads the types from `packages/cli/dist`, so run `pnpm --filter stateofpixel build` first on a fresh checkout, as `ci.yml` does.
+Biome formats and lints; `pnpm format` fixes formatting. `typecheck` in `apps/web` reads the types from `packages/cli/dist`, so build the CLI first on a fresh checkout.
 
-## Releases
+## Dogfooding
 
-release-please opens a release PR for `packages/cli` from conventional commits on `main`. Merging it tags the release, and `release.yml` then tests, builds and publishes the CLI to npm.
+`.github/workflows/visual.yml` runs on every pull request and uploads three builds to production with the workspace CLI, authenticated with the GitHub Actions OIDC token. So every pull request also tests the CLI it changes, and a pull request that changes the backend is tested by the old production backend, which keeps the CI API backward compatible:
+
+- `playground`: `examples/playground/pages`, captured by `pnpm --filter @stateofpixel/playground capture`
+- `storybook`: the playground stories, built with `pnpm --filter @stateofpixel/playground build-storybook` and captured with `stateofpixel storybook`
+- `web`: the public pages and the build page, captured by `pnpm --filter @stateofpixel/web visual` through the Playwright reporter. The reporter uploads on CI only, so a local run only writes screenshots.
+
+`scripts/test-pr.sh <scenario>` opens a draft pull request that changes the playground in a known way and prints the expected check for `playground` and `storybook`. Scenarios: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`, `add-story`, `remove-story`. It needs `gh` signed in.
+
+## Contributing
+
+- Commit titles are [conventional commits](https://www.conventionalcommits.org), because release-please builds the CLI changelog from them.
+- When user-facing behavior changes, update its page in `apps/web/src/content/docs` in the same change. When internals change, update [SPEC.md](docs/SPEC.md).
+- Limits, check states, CLI flags and keyboard shortcuts render in the docs from code. Change the code, not the docs text.
+- Run the checks above before opening a pull request.

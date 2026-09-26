@@ -11,11 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BrandRouteImport } from './routes/brand'
+import { Route as DocsRouteImport } from './routes/docs'
 import { Route as InstallRouteImport } from './routes/install'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RefundsRouteImport } from './routes/refunds'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as OwnerIndexRouteImport } from './routes/$owner/index'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner/$repo/index'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner/$repo/settings'
 import { Route as OwnerSettingsBillingRouteImport } from './routes/$owner/settings/billing'
@@ -34,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
 const BrandRoute = BrandRouteImport.update({
   id: '/brand',
   path: '/brand',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InstallRoute = InstallRouteImport.update({
@@ -60,6 +68,16 @@ const OwnerIndexRoute = OwnerIndexRouteImport.update({
   id: '/$owner/',
   path: '/$owner/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DocsIndexRoute = DocsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsSlugRoute = DocsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => DocsRoute,
 } as any)
 const OwnerRepoIndexRoute = OwnerRepoIndexRouteImport.update({
   id: '/$owner/$repo/',
@@ -112,11 +130,14 @@ const OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/brand': typeof BrandRoute
+  '/docs': typeof DocsRouteWithChildren
   '/install': typeof InstallRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
+  '/docs/$slug': typeof DocsSlugRoute
   '/$owner/': typeof OwnerIndexRoute
+  '/docs/': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
@@ -134,7 +155,9 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
+  '/docs/$slug': typeof DocsSlugRoute
   '/$owner': typeof OwnerIndexRoute
+  '/docs': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
@@ -148,11 +171,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/brand': typeof BrandRoute
+  '/docs': typeof DocsRouteWithChildren
   '/install': typeof InstallRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
+  '/docs/$slug': typeof DocsSlugRoute
   '/$owner/': typeof OwnerIndexRoute
+  '/docs/': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
@@ -168,11 +194,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/brand'
+    | '/docs'
     | '/install'
     | '/privacy'
     | '/refunds'
     | '/terms'
+    | '/docs/$slug'
     | '/$owner/'
+    | '/docs/'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
     | '/$owner/settings/members'
@@ -190,7 +219,9 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refunds'
     | '/terms'
+    | '/docs/$slug'
     | '/$owner'
+    | '/docs'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
     | '/$owner/settings/members'
@@ -203,11 +234,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/brand'
+    | '/docs'
     | '/install'
     | '/privacy'
     | '/refunds'
     | '/terms'
+    | '/docs/$slug'
     | '/$owner/'
+    | '/docs/'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
     | '/$owner/settings/members'
@@ -222,6 +256,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BrandRoute: typeof BrandRoute
+  DocsRoute: typeof DocsRouteWithChildren
   InstallRoute: typeof InstallRoute
   PrivacyRoute: typeof PrivacyRoute
   RefundsRoute: typeof RefundsRoute
@@ -250,6 +285,13 @@ declare module '@tanstack/react-router' {
       path: '/brand'
       fullPath: '/brand'
       preLoaderRoute: typeof BrandRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/install': {
@@ -286,6 +328,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/$owner/'
       preLoaderRoute: typeof OwnerIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/docs/': {
+      id: '/docs/'
+      path: '/'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof DocsIndexRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/$slug': {
+      id: '/docs/$slug'
+      path: '/$slug'
+      fullPath: '/docs/$slug'
+      preLoaderRoute: typeof DocsSlugRouteImport
+      parentRoute: typeof DocsRoute
     }
     '/$owner/$repo/': {
       id: '/$owner/$repo/'
@@ -353,6 +409,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DocsRouteChildren {
+  DocsSlugRoute: typeof DocsSlugRoute
+  DocsIndexRoute: typeof DocsIndexRoute
+}
+
+const DocsRouteChildren: DocsRouteChildren = {
+  DocsSlugRoute: DocsSlugRoute,
+  DocsIndexRoute: DocsIndexRoute,
+}
+
+const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
+
 interface OwnerRepoBuildsNumberRouteChildren {
   OwnerRepoBuildsNumberIndexRoute: typeof OwnerRepoBuildsNumberIndexRoute
   OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute: typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute
@@ -372,6 +440,7 @@ const OwnerRepoBuildsNumberRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BrandRoute: BrandRoute,
+  DocsRoute: DocsRouteWithChildren,
   InstallRoute: InstallRoute,
   PrivacyRoute: PrivacyRoute,
   RefundsRoute: RefundsRoute,

@@ -18,16 +18,20 @@ import { ciError } from "./lib/ciErrors";
 import { snapshotResult, upload } from "./lib/ciRequests";
 import { conclude } from "./lib/conclude";
 import { isBaselineCandidate } from "./lib/history";
+import {
+  BUILD_EXPIRY_MS,
+  DAILY_BUILDS,
+  DAILY_UPLOAD_BYTES,
+  MAX_ANCESTORS,
+  MAX_SHARDS,
+} from "./lib/limits";
 import { matchesBranch } from "./lib/matchesBranch";
 import { findReadableBuild, findReadableProject } from "./lib/permissions";
 import { formatGigabytes, storageState, storageWarnings } from "./lib/storage";
 import { buildUrl } from "./lib/urls";
-import { DAILY_BUILDS, DAILY_UPLOAD_BYTES, rateLimiter } from "./rateLimits";
+import { rateLimiter } from "./rateLimits";
 import { buildConclusion, buildCounts, buildStatus } from "./schema";
 
-const EXPIRY_MS = 60 * 60 * 1000;
-const MAX_SHARDS = 256;
-const MAX_ANCESTORS = 100;
 const BUILDS_PER_COMMIT = 10;
 const FINALIZE_PAGE_SIZE = 500;
 const MAX_SUPERSEDED_PER_FINALIZE = 100;
@@ -262,7 +266,7 @@ async function createBuild(
     ciRunUrl: args.ciRunUrl,
   });
   const expiryJobId = await ctx.scheduler.runAfter(
-    EXPIRY_MS,
+    BUILD_EXPIRY_MS,
     internal.builds.expire,
     { buildId },
   );

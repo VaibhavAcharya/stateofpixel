@@ -22,14 +22,16 @@ import {
   isAncestor,
 } from "./lib/github";
 import { createGrant, withGrant } from "./lib/imageUrls";
+import {
+  MAX_METADATA_BYTES,
+  MAX_SNAPSHOT_NAME_LENGTH,
+  MAX_SNAPSHOTS_PER_BUILD,
+} from "./lib/limits";
 import { rateLimiter } from "./rateLimits";
 import { DEFAULT_BUILD_NAME } from "./schema";
 
 const CHUNK_SIZE = 1000;
 const MAX_BODY_BYTES = 16 * 1024 * 1024;
-const MAX_SNAPSHOTS_PER_BUILD = 20_000;
-const MAX_NAME_LENGTH = 512;
-const MAX_METADATA_BYTES = 4096;
 const SHA256_HEX = /^[0-9a-f]{64}$/i;
 const SHARD_COMPLETE_PATH =
   /^\/api\/v1\/builds\/([^/]+)\/shards\/(\d+)\/complete$/;
@@ -142,11 +144,11 @@ function checkSnapshotCount(count: number) {
 function checkNames(names: string[]) {
   const seen = new Set<string>();
   for (const name of names) {
-    if (name.length > MAX_NAME_LENGTH) {
+    if (name.length > MAX_SNAPSHOT_NAME_LENGTH) {
       throw ciError(
         400,
         "snapshot_name_too_long",
-        `Snapshot name "${name.slice(0, 50)}..." is over ${MAX_NAME_LENGTH} characters.`,
+        `Snapshot name "${name.slice(0, 50)}..." is over ${MAX_SNAPSHOT_NAME_LENGTH} characters.`,
       );
     }
     if (name === "") {

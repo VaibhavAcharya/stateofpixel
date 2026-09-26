@@ -1,0 +1,45 @@
+export const meta = {
+  title: "Reviewing changes",
+  description: "Compare, approve and reject visual changes on the build page.",
+  lead: "Every build has a page that lists its snapshots next to the baseline. The check on the pull request links to it.",
+};
+
+## The build page
+
+The sidebar groups snapshots into Changed, Added, Removed, Failed and Unchanged. The first changed snapshot opens when the page loads, and each snapshot has its own link you can share.
+
+- **Changed**: pixels differ from the baseline above the threshold, or the size changed.
+- **Added**: the baseline has no snapshot with this name.
+- **Removed**: the baseline has it and this build does not. Removed snapshots never need review.
+- **Failed**: the upload or the diff failed on CI. A build with a failed snapshot cannot pass, so push again after fixing the cause.
+
+## Compare
+
+- **Side by side**: baseline left, new right, with the diff drawn over the new image. Press <kbd>d</kbd> to hide it.
+- **Diff**: the new image with the changed pixels in red.
+- **Slider**: drag a handle to wipe between the two.
+- **Flip**: one frame that switches between baseline and new when you press <kbd>space</kbd>. The best mode for 1 pixel shifts.
+
+Images show at Fit by default. Switch to 100% or 200% to see real pixels. When the sizes differ, both images align at the top left.
+
+## Approve and reject
+
+Anyone with write access to the repository on GitHub can review. Everyone with read access can open the page. There are no seats.
+
+- Approve a snapshot with <kbd>a</kbd>, which also moves to the next pending one, or approve every pending snapshot with Approve all.
+- Reject with <kbd>r</kbd> and an optional comment. One rejection makes the check fail with "1 change rejected".
+- Undo a review with <kbd>u</kbd>.
+
+When every change is approved, the check turns green on GitHub. See [The GitHub check](/docs/checks).
+
+## New pushes
+
+A new push on the pull request makes a new build, and the older build is marked superseded, with a link to the newest one. Approvals carry over: if an image was approved in an earlier build of the same pull request and suite, it is approved again, and the page says who approved it and in which build. So a rebase does not ask you to review the same pixels twice.
+
+Rejections do not carry over. A rejected image that shows up again is pending, with a note that it was rejected before.
+
+## Keyboard shortcuts
+
+Press <kbd>?</kbd> on the build page to see them.
+
+<ShortcutsTable />

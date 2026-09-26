@@ -1,5 +1,6 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import {
+  BookOpenIcon,
   CaretUpDownIcon,
   CheckIcon,
   MonitorIcon,
@@ -208,6 +209,10 @@ function UserMenu() {
         </fieldset>
       </div>
       <MenuSeparator />
+      <Link to="/docs" className={menuItemClass}>
+        <BookOpenIcon size={16} className="shrink-0 text-muted" />
+        Docs
+      </Link>
       <button
         type="button"
         className={menuItemClass}

@@ -1,0 +1,69 @@
+import { facts } from "../../components/docs/facts";
+
+export const meta = {
+  title: "Sharding",
+  description: "Split a visual test run across CI jobs and get one build and one check.",
+  lead: "Several CI jobs can upload parts of one build. The check reports once, after the last part.",
+};
+
+## When you know the shard count
+
+Each job passes its shard and the total. The first job to upload creates the build, the others join it, and the build finishes when every shard is done.
+
+```yaml .github/workflows/visual.yml
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --shard ${{ matrix.shard }}/4
+      - run: npx stateofpixel upload screenshots --shard ${{ matrix.shard }}/4
+```
+
+While shards upload, the check says "Waiting for screenshots (2 of 4 shards)". The [Playwright reporter](/docs/playwright) reads Playwright's own `--shard`, so with it you skip the upload step.
+
+## When you do not
+
+Each job uploads with `--shard auto`, and one last job calls `finalize`:
+
+```yaml .github/workflows/visual.yml
+jobs:
+  visual:
+    # ... each job ends with:
+    steps:
+      - run: npx stateofpixel upload screenshots --shard auto
+
+  finalize:
+    needs: visual
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: npx stateofpixel finalize --skip-if-empty
+```
+
+`--skip-if-empty` makes `finalize` report a build with no changes when no shard ran, so the check still reports.
+
+## How shards find each other
+
+Shards of one build share a nonce. On GitHub Actions it is the run id plus the attempt, so every job of a run joins the same build, and a re-run starts a fresh build instead of mixing with the old one. Elsewhere, set it yourself:
+
+```sh ci.sh
+export STATEOFPIXEL_TOKEN=sop_...
+export STATEOFPIXEL_NONCE="$CI_PIPELINE_ID"
+
+npx stateofpixel upload screenshots --shard 2/4
+```
+
+## Builds that never finish
+
+A build that is not finished {facts.buildExpiryMinutes} minutes after its first shard expires. The check shows "Build never finished". A build takes up to {facts.shardsPerBuild} shards.

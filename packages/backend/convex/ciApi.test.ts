@@ -5,12 +5,9 @@ import { exportPKCS8, generateKeyPair } from "jose";
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { api as functions, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { DAILY_BUILDS, DAILY_UPLOAD_BYTES } from "./lib/limits";
 import { hashProjectToken } from "./lib/projectTokens";
-import {
-  DAILY_BUILDS,
-  DAILY_UPLOAD_BYTES,
-  rateLimiter as limits,
-} from "./rateLimits";
+import { rateLimiter as limits } from "./rateLimits";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");

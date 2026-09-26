@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { toStorageUsage } from "./accounts";
+import { MAX_RETENTION_DAYS, MIN_RETENTION_DAYS } from "./lib/limits";
 import {
   allows,
   findAllowedProject,
@@ -14,8 +15,6 @@ import { repoPermission, storageUsage } from "./schema";
 
 const MAX_BRANCH_PATTERNS = 20;
 const MAX_BRANCH_PATTERN_LENGTH = 200;
-const MIN_RETENTION_DAYS = 7;
-const MAX_RETENTION_DAYS = 365;
 const DELETE_PAGE_SIZE = 500;
 
 export const access = query({

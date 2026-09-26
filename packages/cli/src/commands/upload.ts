@@ -12,6 +12,7 @@ import {
 import { defaultNonce, readCiInfo, readGitInfo, resolveToken } from "../ci-env";
 import { createDiffEngine } from "../diff/engine";
 import { formatCount, formatCounts } from "../format";
+import { ENV } from "../reference";
 import {
   readSnapshots,
   type Shard,
@@ -39,17 +40,16 @@ export async function uploadCommand(
   if (!stats?.isDirectory()) {
     throw new Error(`Not a directory: ${dir}`);
   }
-  const shard = options.shard ?? parseShard(env.STATEOFPIXEL_SHARD ?? "1/1");
-  const buildName =
-    options.buildName ?? env.STATEOFPIXEL_BUILD_NAME ?? "default";
-  const nonce = options.nonce ?? env.STATEOFPIXEL_NONCE ?? defaultNonce(env);
+  const shard = options.shard ?? parseShard(env[ENV.shard] ?? "1/1");
+  const buildName = options.buildName ?? env[ENV.buildName] ?? "default";
+  const nonce = options.nonce ?? env[ENV.nonce] ?? defaultNonce(env);
   if (nonce === null && shard.total !== 1) {
     throw new Error("Set --nonce so every shard joins the same build.");
   }
   const git = await readGitInfo(
     env,
     process.cwd(),
-    options.baselineBranch ?? env.STATEOFPIXEL_BASELINE_BRANCH,
+    options.baselineBranch ?? env[ENV.baselineBranch],
   );
 
   if (options.dryRun) {

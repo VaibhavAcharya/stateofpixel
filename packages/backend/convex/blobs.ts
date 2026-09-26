@@ -7,13 +7,15 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { privateImageUrl } from "./lib/imageUrls";
+import {
+  MAX_IMAGE_BYTES,
+  MAX_IMAGE_HEIGHT,
+  MAX_IMAGE_WIDTH,
+} from "./lib/limits";
 import { withStorageBytes } from "./lib/storage";
 import { rateLimiter } from "./rateLimits";
 
 const TOUCH_AFTER_MS = 12 * 60 * 60 * 1000;
-const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
-const MAX_IMAGE_WIDTH = 10_000;
-const MAX_IMAGE_HEIGHT = 50_000;
 
 export const createUploadTargets = internalMutation({
   args: {

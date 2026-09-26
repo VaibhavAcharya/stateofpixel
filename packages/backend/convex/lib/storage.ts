@@ -1,6 +1,6 @@
+import { STORAGE_GRACE_MS, STORAGE_WARNING_SHARE } from "./limits";
+
 const GIGABYTE = 1024 ** 3;
-const WARNING_SHARE = 0.8;
-const GRACE_MS = 14 * 24 * 60 * 60 * 1000;
 
 export const PLAN_STORAGE_LIMIT_BYTES = {
   free: 10 * GIGABYTE,
@@ -18,7 +18,7 @@ export type StorageUsage = {
 export type StorageState = "ok" | "warning" | "grace" | "blocked";
 
 export function storageState(usage: StorageUsage, now: number): StorageState {
-  if (usage.storageBytes < usage.storageLimitBytes * WARNING_SHARE) {
+  if (usage.storageBytes < usage.storageLimitBytes * STORAGE_WARNING_SHARE) {
     return "ok";
   }
   if (usage.storageBytes < usage.storageLimitBytes) {
@@ -28,7 +28,7 @@ export function storageState(usage: StorageUsage, now: number): StorageState {
 }
 
 export function graceEndsAt(overLimitSince: number): number {
-  return overLimitSince + GRACE_MS;
+  return overLimitSince + STORAGE_GRACE_MS;
 }
 
 export function withStorageBytes(

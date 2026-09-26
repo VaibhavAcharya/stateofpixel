@@ -1,0 +1,21 @@
+const MINUTE_MS = 60 * 1000;
+const DAY_MS = 24 * 60 * MINUTE_MS;
+
+export const MAX_SNAPSHOTS_PER_BUILD = 20_000;
+export const MAX_SHARDS = 256;
+export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+export const MAX_IMAGE_WIDTH = 10_000;
+export const MAX_IMAGE_HEIGHT = 50_000;
+export const MAX_SNAPSHOT_NAME_LENGTH = 512;
+export const MAX_METADATA_BYTES = 4096;
+export const BUILD_EXPIRY_MS = 60 * MINUTE_MS;
+export const DAILY_BUILDS = 2000;
+export const DAILY_UPLOAD_BYTES = 20 * 1024 ** 3;
+export const CI_REQUESTS_PER_MINUTE = 600;
+export const MAX_ANCESTORS = 100;
+export const DEFAULT_RETENTION_DAYS = 60;
+export const MIN_RETENTION_DAYS = 7;
+export const MAX_RETENTION_DAYS = 365;
+export const STORAGE_WARNING_SHARE = 0.8;
+export const STORAGE_GRACE_MS = 14 * DAY_MS;
+export const DEFAULT_DIFF_THRESHOLD = 0.1;
