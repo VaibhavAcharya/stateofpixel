@@ -1,46 +1,7 @@
-import type { Id } from "@stateofpixel/backend/dataModel";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { STORY_NOW } from "../../lib/storyFixtures";
+import { build, buildCounts as counts } from "../../lib/storyFixtures";
 import { Banners, BuildHeader } from "./BuildHeader";
-import type { Build } from "./types";
-
-const MINUTE_MS = 60 * 1000;
-
-const counts = {
-  unchanged: 12,
-  changed: 4,
-  added: 1,
-  removed: 1,
-  failed: 0,
-  pending: 5,
-  approved: 0,
-  rejected: 0,
-};
-
-const build: Build = {
-  buildId: "build_1" as Id<"builds">,
-  number: 412,
-  buildName: "default",
-  branch: "feat/billing",
-  baselineBranch: "main",
-  commitSha: "4f2a9c1e8b7d6a5f4e3d2c1b0a9f8e7d6c5b4a39",
-  commitMessage: "Redesign the pricing and sign-in pages",
-  prNumber: 88,
-  status: "finalized",
-  conclusion: "changes",
-  superseded: false,
-  shards: { done: 1, total: 1 },
-  autoApproved: false,
-  storageBlocked: false,
-  ciRunUrl: null,
-  baseline: { number: 405, branch: "main" },
-  supersededBy: null,
-  mergedPr: null,
-  counts,
-  createdAt: STORY_NOW - 5 * MINUTE_MS,
-  finalizedAt: STORY_NOW - 4 * MINUTE_MS,
-};
 
 const meta = {
   title: "Build/Header",

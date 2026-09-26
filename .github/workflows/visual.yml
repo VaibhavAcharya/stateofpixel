@@ -47,4 +47,4 @@ jobs:
         env:
           VITE_CONVEX_URL: https://graceful-dogfish-423.convex.cloud
       - run: pnpm --filter @stateofpixel/web build-storybook
-      - run: node packages/cli/dist/index.mjs storybook apps/web/storybook-static --build-name web-storybook --viewports 375,1280
+      - run: node packages/cli/dist/index.mjs storybook apps/web/storybook-static --build-name web-storybook --viewports 375,1280 --delay 300

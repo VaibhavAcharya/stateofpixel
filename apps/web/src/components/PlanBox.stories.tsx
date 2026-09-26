@@ -1,6 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn, userEvent, within } from "storybook/test";
-import { DAY_MS, STORY_NOW, storage, subscription } from "../lib/storyFixtures";
+import {
+  DAY_MS,
+  STORY_NOW,
+  storage,
+  subscription,
+  withMenuRoom,
+} from "../lib/storyFixtures";
 import { PlanBox } from "./PlanBox";
 
 const meta = {
@@ -28,12 +34,6 @@ const paid = {
   subscription: subscription(),
   billingCustomer: true,
 };
-
-const withMenuRoom = (Story: () => React.ReactNode) => (
-  <div className="min-h-96">
-    <Story />
-  </div>
-);
 
 export const Free: Story = {};
 
