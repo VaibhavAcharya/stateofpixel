@@ -24,6 +24,7 @@ export const facts = {
   maxRetentionDays: limits.MAX_RETENTION_DAYS,
   storageWarning: `${limits.STORAGE_WARNING_SHARE * 100}%`,
   graceDays: limits.STORAGE_GRACE_MS / DAY_MS,
+  planEndNoticeDays: limits.PLAN_END_NOTICE_MS / DAY_MS,
   diffThreshold: limits.DEFAULT_DIFF_THRESHOLD,
   freeStorage: `${PLAN_STORAGE_LIMIT_BYTES.free / GB} GB`,
 };

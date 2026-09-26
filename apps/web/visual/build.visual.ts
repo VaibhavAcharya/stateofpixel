@@ -15,3 +15,9 @@ for (const [name, number] of [
     await snapshot(page, name);
   });
 }
+
+test("build-deleted", async ({ page }) => {
+  await page.goto(`/${LAB_OWNER}/web/builds/3`);
+  await page.getByText("This build was deleted.").waitFor();
+  await snapshot(page, "build-deleted");
+});

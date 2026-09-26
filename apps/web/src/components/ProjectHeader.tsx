@@ -7,8 +7,8 @@ import {
 import { api } from "@stateofpixel/backend/api";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "convex-helpers/react/cache/hooks";
+import { AccountBanner } from "./AccountBanner";
 import { PageHeader } from "./Page";
-import { StorageBanner } from "./StorageBanner";
 import { Tab, Tabs } from "./Tabs";
 import { buttonClass } from "./ui";
 
@@ -49,8 +49,12 @@ export function ProjectHeader({
           </a>
         }
       />
-      {access?.storage && (
-        <StorageBanner owner={owner} storage={access.storage} />
+      {access?.account && (
+        <AccountBanner
+          owner={owner}
+          account={access.account}
+          repo={{ name: repo, canAdmin: access.canAdmin }}
+        />
       )}
       <Tabs>
         <Tab

@@ -19,3 +19,4 @@ export const MAX_RETENTION_DAYS = 365;
 export const STORAGE_WARNING_SHARE = 0.8;
 export const STORAGE_GRACE_MS = 14 * DAY_MS;
 export const DEFAULT_DIFF_THRESHOLD = 0.1;
+export const PLAN_END_NOTICE_MS = 14 * DAY_MS;

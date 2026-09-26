@@ -144,6 +144,18 @@ async function setup() {
     t.run(async (ctx) =>
       (await ctx.db.query("builds").collect()).map((build) => build.number),
     );
+  const deletedBuilds = () =>
+    t.run(async (ctx) =>
+      (await ctx.db.query("deletedBuilds").collect()).map(
+        ({ number, branch, prNumber, reason, retentionDays }) => ({
+          number,
+          branch,
+          prNumber,
+          reason,
+          retentionDays,
+        }),
+      ),
+    );
   return {
     t,
     ...ids,
@@ -152,6 +164,7 @@ async function setup() {
     insertSnapshot,
     run,
     buildNumbers,
+    deletedBuilds,
   };
 }
 
@@ -179,8 +192,15 @@ it("marks the builds of a PR as closed and reopened", async () => {
 });
 
 it("deletes builds of PRs closed longer than the retention setting", async () => {
-  const { t, insertBuild, insertImage, insertSnapshot, run, buildNumbers } =
-    await setup();
+  const {
+    t,
+    insertBuild,
+    insertImage,
+    insertSnapshot,
+    run,
+    buildNumbers,
+    deletedBuilds,
+  } = await setup();
   const main = await insertBuild({ branch: "main" });
   const release = await insertBuild({ branch: "release/1" });
   const closed = await insertBuild({
@@ -219,10 +239,19 @@ it("deletes builds of PRs closed longer than the retention setting", async () =>
     reviews: 2,
     approvals: [8],
   });
+  expect(await deletedBuilds()).toEqual([
+    {
+      number: 3,
+      branch: "old-feature",
+      prNumber: 7,
+      reason: "pr_closed",
+      retentionDays: 30,
+    },
+  ]);
 });
 
 it("deletes builds of branches without builds for the retention period", async () => {
-  const { insertBuild, run, buildNumbers } = await setup();
+  const { insertBuild, run, buildNumbers, deletedBuilds } = await setup();
   await insertBuild({ branch: "feature", prNumber: 7 });
   await insertBuild({ branch: "spike" });
   vi.setSystemTime(Date.now() + 20 * DAY_MS);
@@ -232,6 +261,15 @@ it("deletes builds of branches without builds for the retention period", async (
   await run(internal.retention.deleteOldBuilds);
 
   expect(await buildNumbers()).toEqual([2, 3]);
+  expect(await deletedBuilds()).toEqual([
+    {
+      number: 1,
+      branch: "feature",
+      prNumber: 7,
+      reason: "branch_inactive",
+      retentionDays: 30,
+    },
+  ]);
 });
 
 it("keeps an old build that another build uses as its baseline", async () => {

@@ -1,8 +1,13 @@
 import { conclude } from "@stateofpixel/backend/conclude";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { type ReactNode, useState } from "react";
+import { LAB_OWNER } from "../../lib/lab";
 import type { DiffStatus, ReviewState } from "../ui";
-import { BuildNotFound } from "./BuildNotFound";
+import {
+  BuildDeleted,
+  type BuildDeletion,
+  BuildNotFound,
+} from "./BuildNotFound";
 import { type BuildData, BuildDataContext, NEXT_STATE } from "./buildData";
 import type { Build, Snapshot } from "./types";
 
@@ -121,6 +126,16 @@ const FIXTURES: Record<number, LabBuildFixture> = {
   },
 };
 
+const DELETED: Record<number, BuildDeletion> = {
+  3: {
+    branch: "feat/pricing-toggle",
+    prNumber: 42,
+    reason: "pr_closed",
+    retentionDays: 60,
+    deletedAt: Date.UTC(2026, 8, 3, 12),
+  },
+};
+
 function toImage(url: string | null) {
   return url === null ? null : { url, ...SIZE };
 }
@@ -158,7 +173,17 @@ export default function LabBuild({
     {},
   );
   if (fixture === undefined) {
-    return <BuildNotFound title="Build not found." />;
+    const deletion = DELETED[number];
+    return deletion === undefined ? (
+      <BuildNotFound title="Build not found." />
+    ) : (
+      <BuildDeleted
+        owner={LAB_OWNER}
+        repo="web"
+        number={number}
+        deletion={deletion}
+      />
+    );
   }
 
   const snapshots = fixture.snapshots.map((snapshot) => ({

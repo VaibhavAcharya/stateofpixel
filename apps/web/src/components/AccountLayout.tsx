@@ -11,8 +11,8 @@ import { useAction } from "convex/react";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { type ReactNode, useEffect } from "react";
 import { errorCode } from "../lib/errorCode";
+import { AccountBanner } from "./AccountBanner";
 import { Page, PageHeader } from "./Page";
-import { StorageBanner } from "./StorageBanner";
 import { Tab, Tabs } from "./Tabs";
 import { Avatar, accountAvatar, buttonClass, EmptyState } from "./ui";
 
@@ -87,9 +87,7 @@ export function AccountLayout({
           )
         }
       />
-      {home !== undefined && (
-        <StorageBanner owner={owner} storage={home.storage} />
-      )}
+      {home !== undefined && <AccountBanner owner={owner} account={home} />}
       <Tabs>
         <Tab
           to="/$owner"

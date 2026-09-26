@@ -195,7 +195,7 @@ A re-run of a failed CI job gets a new `GITHUB_RUN_ATTEMPT`, so it creates a fre
 
 ### 4.10 Storage limit reached
 
-1. Account reaches 80% of its storage limit. Account and project pages show a yellow banner to members with write access. The CLI prints a warning line.
+1. Account reaches 80% of its storage limit. Account pages, and project pages for users with write access, show a yellow banner. The CLI prints a warning line.
 2. At 100%, a 14-day grace period starts and `overLimitSince` is set. Everything keeps working, banner turns red and names the date grace ends.
 3. After grace, new builds get `storageBlocked`. They still hash-compare, but `POST /builds` returns no upload URLs for new hashes and no baseline URLs, so the CLI neither uploads nor diffs. Snapshots that match the baseline are `unchanged` as usual. Changed and added snapshots get a row with no image and review state `none`. The build finalizes as `changes`, is never a baseline, cannot be reviewed, and the check passes with "Storage limit reached, not compared". CI never fails because of us.
 4. Freeing space (shorter retention, deleting projects) or upgrading ends the state as soon as `storageBytes` drops under the limit. Upgrading goes through Dodo Payments (section 8, Billing). `accounts.setPlan` (an internal mutation run from the Convex dashboard) still sets a plan by hand, for example `custom`.
@@ -253,11 +253,16 @@ Shown when the signed-in user has no installations. One button to the GitHub App
 +--------------------------------------------------------------+
 ```
 
-- Tabs: Projects (this page), Members (5.9) and Billing (5.10). Every account member sees all three. The header, the storage banner and the tabs are the same on all three pages.
+- Tabs: Projects (this page), Members (5.9) and Billing (5.10). Every account member sees all three. The header, the account banner and the tabs are the same on all three pages.
 - Account switcher for users in several orgs. Each account shows its plan in muted text.
 - One row per project: name, latest build number, branch, conclusion pill, relative time.
 - Storage meter links to the Usage page (owners only; others see no meter). It ships with the Usage page (M3).
-- Storage banner from 80% of the limit (4.10). The same banner shows on project pages to users with write access. When billing is available it links to the Billing tab ("upgrade the plan"); otherwise it points to the support email.
+- Account banner, one at a time, most urgent first. The same banner shows on project pages to users with write access.
+  1. Storage over the limit, in grace or blocked (4.10). Red.
+  2. A failed renewal (`on_hold` or `past_due`): "The last payment for the 25 GB plan failed." Red. The plan stays until Dodo cancels the subscription.
+  3. A subscription cancelled at the next billing date, when the account stores more than the Free plan allows or the plan ends within 14 days: "The 25 GB plan ends on Oct 25, 2026, then the account moves to the Free plan with 10 GB of storage." When it stores more, it adds "It stores 18 GB, so from Nov 8, 2026 new images are not stored." Yellow when it stores more, blue otherwise.
+  4. Storage from 80% of the limit (4.10). Yellow.
+- The storage banners say how to free space and get more. On a project page, admins get a link to the project settings; everyone else reads that repository admins can lower retention. Owners get a link to the Billing tab ("Upgrade the plan", or "Move to a bigger plan" with a subscription, and "Update the payment method"). Members of an org read "Ask an owner of acme to ...", with "an owner" linking to the Members tab, and collaborators on a user account read "Ask octocat to ...". While the role is not known they read "Owners of acme can ...". When billing is not available the banner points to the support email.
 - "Configure access on GitHub" links to the installation settings.
 
 ### 5.4 Project page (`/{owner}/{repo}`)
@@ -318,6 +323,7 @@ Header:
 - Counts per diff status. Clicking one scrolls the list to that group.
 - "Approve all" approves every pending snapshot. "Reject" rejects the build as a whole, which rejects every pending snapshot. Both need write permission; for readers the buttons are hidden and a note says "You need write access on GitHub to review".
 - Banners: superseded (link to newest), pending (shard progress, auto-refresh), expired, error, storage limit, "From PR #123" on squash-merged main builds.
+- A build that retention deleted shows "This build was deleted." with its branch and date from `deletedBuilds`: "Build 42 of feat/header was deleted on Sep 3, 2026, 60 days after pull request #88 closed." or "..., after the branch had no new build for 60 days." A number under `nextBuildNumber` without a row, deleted before `deletedBuilds` existed, says it was deleted by retention. A See builds button links to the project. Any other missing number shows "Build not found."
 
 Sidebar:
 - Groups in order: Changed, Added, Removed, Failed, Unchanged. Unchanged is collapsed.
@@ -402,8 +408,7 @@ Every change is saved on blur with a small "Saved" note. No save button.
 - Plan box: plan name, storage used and, for an active subscription, "Renews on Oct 25, 2026" or "Ends on Oct 25, 2026". When billing is available, it shows an Upgrade menu (paid plans, monthly and yearly) while the account has no subscription, a Change plan menu with the same items and the current one marked while the subscription is active and not cancelled, and Manage billing once it has a billing customer. For members who are not owners the buttons are disabled, with the tooltip "Only owners of acme on GitHub can change the plan and billing." While the role is not known they stay enabled, and the actions check for an owner and the box shows the error.
 - Checkout and the customer portal return to `/{owner}/settings/billing`, checkout with `?subscription_id=...&status=...`. The status is a hint from Dodo, never proof of payment, so the plan box only says what happens next: "Payment received. Your plan updates in a few seconds." until the webhook makes that subscription active, then "Payment received. You are on the 25 GB plan."; "Your payment is processing" for `pending`; and for any other status, "The payment did not go through, so your plan did not change." The notice can be dismissed, which removes the query.
 - Choosing a plan in Change plan shows a confirm row under the plan box with the amount charged now from `billing.previewPlanChange` and the new renewal date: "Move to the 100 GB plan, billed yearly? You pay $X now. Unused time on your current plan counts toward it, and any left over is credited to later renewals. The new plan renews on Oct 26, 2027." Confirming runs `billing.changePlan`; if Dodo returns a payment link, the page opens it. After that the box says "Plan change received. Your plan updates in a few seconds." until the webhook moves the account, then "Plan changed. You are on the 100 GB plan."
-- When a renewal fails (`on_hold` or `past_due`), the plan box says "Your last payment failed" and points to Manage billing. The plan stays until Dodo cancels the subscription.
-- When the subscription is cancelled at the next billing date, the plan box says "Your 25 GB plan is cancelled. It stays until Oct 25, 2026, then the account moves to the Free plan with 10 GB of storage."
+- A failed renewal and a cancelled subscription show in the account banner (5.3), so members see them on every account page and writers on project pages.
 - Not built yet (M3): storage split into baselines, PR-only images and diff images; a table per project with storage, share of total, retention setting and a link to its settings; a chart of daily storage for the last 90 days from `usageDaily`; payment method and invoices in the plan box.
 
 ### 5.11 User menu
@@ -538,6 +543,21 @@ Indexes:
 - `by_projectId_and_status_and_conclusion` on `[projectId, status, conclusion]`, for the states filter.
 - `by_baselineBuildId` on `[baselineBuildId]`, so `deleteOldBuilds` keeps builds that are another build's baseline.
 - The builds list uses `by_projectId_and_number` in descending order.
+
+### deletedBuilds
+
+One row per build that `deleteOldBuilds` deleted, so an old link can say why it is gone. Deleted with the project.
+
+| Field | Type | Notes |
+|---|---|---|
+| projectId | Id<"projects"> | |
+| number | number | The deleted build's number. |
+| branch | string | |
+| prNumber | number, optional | |
+| reason | `pr_closed` or `branch_inactive` | Which retention rule deleted it. |
+| retentionDays | number | `prRetentionDays` when it was deleted. `_creationTime` is when. |
+
+Index: `by_projectId_and_number` on `[projectId, number]`.
 
 ### snapshots
 
@@ -787,7 +807,7 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 | `me.installUrl` | query | signed in | The GitHub App install URL. |
 | `me.refreshAccounts` | action | signed in | `GET /user/installations` with the user token, links the user to accounts. Runs at sign-in and from "Refresh" on the Install page. |
 | `permissions.refresh` | action | signed in | See above. Writes `none` when GitHub answers 404. `orgOwner` comes from the org membership role, or from the login for a user account. |
-| `projects.access` | query | signed in | Project id, cached permission, whether it is fresh, `canRead` and `canWrite`, and the account's storage usage when the user can write. The page calls `permissions.refresh` while it is not fresh. |
+| `projects.access` | query | signed in | Project id, cached permission, whether it is fresh, `canRead`, `canWrite` and `canAdmin`, and for users who can write the account's type, storage usage, subscription and the user's role in it (`null` while unknown or when the user is not a member). The page calls `permissions.refresh` while it is not fresh. |
 | `accounts.home` | query | account member | The account, its installation settings URL, its storage usage (plan, bytes, limit, `overLimitSince`), its subscription (id, status, interval, period end and whether it cancels then), whether it has a billing customer, and the user's role (`owner`, `member` or `null` while unknown). The page works out the storage state with the clock, since queries do not read it. |
 | `accounts.setPlan` | internal mutation | Convex dashboard or `npx convex run` | Sets `plan` and `storageLimitBytes`. A `custom` plan takes the limit as an argument. For plans set by hand; paid plans come from billing. |
 | `accounts.projects` | query | account member | Paginated projects with their latest build, searchable, sorted by name or last build. |
@@ -795,6 +815,7 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 | `members.refreshRole` | action | account member | Asks GitHub whether the user owns the account and saves `role`. The account pages call it once per page load. |
 | `builds.list` | query | read | Paginated with `.paginate()`, filters branch, pull request and a list of states. |
 | `builds.get` | query | read | Build and counts by number. |
+| `builds.deleted` | query | read | For a number under `nextBuildNumber` with no build: its `deletedBuilds` row, or `null` when it has none. `null` for any other number. |
 | `snapshots.list` | query | read | Paginated sidebar list by `by_buildId_and_diffStatus_and_name`: name, statuses and diff ratio, no image URLs. |
 | `snapshots.get` | query | read | One snapshot with metadata, review info and history. |
 | `reviews.apply` | mutation | write | `{ buildId, snapshotIds or "all", action, comment }`. "all" runs in chunks of 1,000 through scheduled mutations; the UI shows progress from `counts`. |
@@ -928,7 +949,7 @@ In `packages/backend/convex/crons.ts` ([docs](https://docs.convex.dev/scheduling
 | Cron | Schedule | Work |
 |---|---|---|
 | `syncChecks` | every 5 min | Retries GitHub check updates that did not land. |
-| `deleteOldBuilds` | daily 03:30 UTC | Deletes builds of PRs closed longer than `prRetentionDays` ago, and builds of branches with no new build for that long. Never deletes pending builds, builds on the default branch or an auto-approve branch, or a build that another build uses as its baseline. Deletes the build row first, then its snapshots and reviews in chunks, then the PR's `approvedImages` once no build of that PR is left. |
+| `deleteOldBuilds` | daily 03:30 UTC | Deletes builds of PRs closed longer than `prRetentionDays` ago, and builds of branches with no new build for that long. Never deletes pending builds, builds on the default branch or an auto-approve branch, or a build that another build uses as its baseline. Deletes the build row first and writes a `deletedBuilds` row with the rule that matched, then deletes its snapshots and reviews in chunks, then the PR's `approvedImages` once no build of that PR is left. |
 | `collectImages` | daily 04:00 UTC | Deletes images with no snapshot referencing them (checked through `by_imageId`, `by_baselineImageId` and `by_diffImageId`) and `lastReferencedAt` over 24 hours ago, and their stored files. Subtracts the bytes from `accounts.storageBytes`. |
 | `cleanupEvents` | daily 04:30 UTC | Deletes `githubEvents` older than 7 days. |
 

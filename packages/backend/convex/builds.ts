@@ -1129,6 +1129,63 @@ export const get = query({
   },
 });
 
+export const deleted = query({
+  args: { owner: v.string(), name: v.string(), number: v.number() },
+  returns: v.union(
+    v.null(),
+    v.object({
+      deletion: v.union(
+        v.null(),
+        v.object({
+          branch: v.string(),
+          prNumber: v.union(v.number(), v.null()),
+          reason: v.union(v.literal("pr_closed"), v.literal("branch_inactive")),
+          retentionDays: v.number(),
+          deletedAt: v.number(),
+        }),
+      ),
+    }),
+  ),
+  handler: async (ctx, { owner, name, number }) => {
+    const project = await findReadableProject(ctx, owner, name);
+    if (
+      project === null ||
+      !Number.isInteger(number) ||
+      number < 1 ||
+      number >= project.nextBuildNumber
+    ) {
+      return null;
+    }
+    const build = await ctx.db
+      .query("builds")
+      .withIndex("by_projectId_and_number", (q) =>
+        q.eq("projectId", project._id).eq("number", number),
+      )
+      .unique();
+    if (build !== null) {
+      return null;
+    }
+    const deletion = await ctx.db
+      .query("deletedBuilds")
+      .withIndex("by_projectId_and_number", (q) =>
+        q.eq("projectId", project._id).eq("number", number),
+      )
+      .unique();
+    return {
+      deletion:
+        deletion === null
+          ? null
+          : {
+              branch: deletion.branch,
+              prNumber: deletion.prNumber ?? null,
+              reason: deletion.reason,
+              retentionDays: deletion.retentionDays,
+              deletedAt: deletion._creationTime,
+            },
+    };
+  },
+});
+
 async function findLastPrBuild(
   ctx: QueryCtx,
   build: Doc<"builds">,

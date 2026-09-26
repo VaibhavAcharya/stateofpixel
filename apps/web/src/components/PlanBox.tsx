@@ -8,11 +8,11 @@ import {
 import { api } from "@stateofpixel/backend/api";
 import {
   formatGigabytes,
-  PLAN_STORAGE_LIMIT_BYTES,
   type StorageUsage,
 } from "@stateofpixel/backend/storage";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import type { ReactNode } from "react";
+import type { Subscription } from "../lib/accountAlert";
 import { formatDate } from "../lib/format";
 import {
   type BillingInterval,
@@ -59,7 +59,6 @@ const NOTICE_STYLES = {
 
 const PAID_STATUSES = new Set(["active", "succeeded"]);
 const PROCESSING_STATUSES = new Set(["pending", "processing"]);
-const FAILED_RENEWAL_STATUSES = new Set(["on_hold", "past_due"]);
 
 function planNotice(
   planName: string,
@@ -103,29 +102,6 @@ function planNotice(
       text: "The payment did not go through, so your plan did not change. Try again, or use another card.",
     };
   }
-  if (
-    subscription !== null &&
-    FAILED_RENEWAL_STATUSES.has(subscription.status)
-  ) {
-    return {
-      tone: "error",
-      text: `Your last payment failed. Update your payment method in Manage billing to keep the ${planName} plan.`,
-    };
-  }
-  if (
-    subscription?.status === "active" &&
-    subscription.cancelsAtPeriodEnd &&
-    subscription.periodEndsAt !== null
-  ) {
-    return {
-      tone: "info",
-      text: `Your ${planName} plan is cancelled. It stays until ${formatDate(
-        subscription.periodEndsAt,
-      )}, then the account moves to the Free plan with ${formatGigabytes(
-        PLAN_STORAGE_LIMIT_BYTES.free,
-      )} of storage.`,
-    };
-  }
   return null;
 }
 
@@ -138,14 +114,6 @@ function periodLine(subscription: Subscription | null): string | null {
     ? `Ends on ${date}`
     : `Renews on ${date}`;
 }
-
-type Subscription = {
-  id: string;
-  status: string;
-  interval: BillingInterval | null;
-  periodEndsAt: number | null;
-  cancelsAtPeriodEnd: boolean;
-};
 
 export function PlanBox({
   login,

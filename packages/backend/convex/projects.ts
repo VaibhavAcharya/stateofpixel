@@ -1,7 +1,12 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { toStorageUsage } from "./accounts";
+import {
+  memberRole,
+  subscription,
+  toStorageUsage,
+  toSubscription,
+} from "./accounts";
 import { MAX_RETENTION_DAYS, MIN_RETENTION_DAYS } from "./lib/limits";
 import {
   allows,
@@ -11,7 +16,7 @@ import {
   requirePermission,
 } from "./lib/permissions";
 import { deleteBuildRows } from "./retention";
-import { repoPermission, storageUsage } from "./schema";
+import { accountRole, repoPermission, storageUsage } from "./schema";
 
 const MAX_BRANCH_PATTERNS = 20;
 const MAX_BRANCH_PATTERN_LENGTH = 200;
@@ -33,7 +38,15 @@ export const access = query({
       canWrite: v.boolean(),
       canAdmin: v.boolean(),
       hasBuilds: v.boolean(),
-      storage: v.union(storageUsage, v.null()),
+      account: v.union(
+        v.null(),
+        v.object({
+          type: v.union(v.literal("user"), v.literal("org")),
+          role: v.union(accountRole, v.null()),
+          storage: storageUsage,
+          subscription,
+        }),
+      ),
     }),
   ),
   handler: async (ctx, { owner, name }) => {
@@ -46,6 +59,20 @@ export const access = query({
     const account = canWrite
       ? await ctx.db.get("accounts", project.accountId)
       : null;
+    const { userId } = access;
+    const user =
+      account === null || userId === null
+        ? null
+        : await ctx.db.get("users", userId);
+    const membership =
+      account === null || userId === null
+        ? null
+        : await ctx.db
+            .query("accountMembers")
+            .withIndex("by_accountId_and_userId", (q) =>
+              q.eq("accountId", account._id).eq("userId", userId),
+            )
+            .unique();
     return {
       projectId: project._id,
       owner: project.owner,
@@ -58,7 +85,18 @@ export const access = query({
       canWrite,
       canAdmin: allows(project, access, "admin"),
       hasBuilds: project.lastBuildAt !== undefined,
-      storage: account === null ? null : toStorageUsage(account),
+      account:
+        account === null
+          ? null
+          : {
+              type: account.type,
+              role:
+                user === null || membership === null
+                  ? null
+                  : memberRole(account, user, membership),
+              storage: toStorageUsage(account),
+              subscription: toSubscription(account),
+            },
     };
   },
 });
@@ -184,15 +222,23 @@ export const deleteData = internalMutation({
       .query("projectTokens")
       .withIndex("by_projectId", (q) => q.eq("projectId", projectId))
       .take(DELETE_PAGE_SIZE);
+    const deletedBuilds = await ctx.db
+      .query("deletedBuilds")
+      .withIndex("by_projectId_and_number", (q) => q.eq("projectId", projectId))
+      .take(DELETE_PAGE_SIZE);
     for (const approval of approvals) {
       await ctx.db.delete("approvedImages", approval._id);
     }
     for (const token of tokens) {
       await ctx.db.delete("projectTokens", token._id);
     }
+    for (const deletedBuild of deletedBuilds) {
+      await ctx.db.delete("deletedBuilds", deletedBuild._id);
+    }
     if (
       approvals.length === DELETE_PAGE_SIZE ||
-      tokens.length === DELETE_PAGE_SIZE
+      tokens.length === DELETE_PAGE_SIZE ||
+      deletedBuilds.length === DELETE_PAGE_SIZE
     ) {
       await ctx.scheduler.runAfter(0, internal.projects.deleteData, {
         projectId,

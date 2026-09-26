@@ -99,6 +99,31 @@ export function memberRole(
   return membership.role ?? null;
 }
 
+export const subscription = v.union(
+  v.null(),
+  v.object({
+    id: v.string(),
+    status: v.string(),
+    interval: v.union(v.literal("monthly"), v.literal("yearly"), v.null()),
+    periodEndsAt: v.union(v.number(), v.null()),
+    cancelsAtPeriodEnd: v.boolean(),
+  }),
+);
+
+export function toSubscription(
+  account: Doc<"accounts">,
+): Infer<typeof subscription> {
+  return account.billingSubscriptionId === undefined
+    ? null
+    : {
+        id: account.billingSubscriptionId,
+        status: account.billingStatus ?? "active",
+        interval: account.billingInterval ?? null,
+        periodEndsAt: account.billingPeriodEndsAt ?? null,
+        cancelsAtPeriodEnd: account.billingCancelsAtPeriodEnd ?? false,
+      };
+}
+
 export const home = query({
   args: { login: v.string() },
   returns: v.union(
@@ -108,20 +133,7 @@ export const home = query({
       type: v.union(v.literal("user"), v.literal("org")),
       installationSettingsUrl: v.union(v.string(), v.null()),
       storage: storageUsage,
-      subscription: v.union(
-        v.null(),
-        v.object({
-          id: v.string(),
-          status: v.string(),
-          interval: v.union(
-            v.literal("monthly"),
-            v.literal("yearly"),
-            v.null(),
-          ),
-          periodEndsAt: v.union(v.number(), v.null()),
-          cancelsAtPeriodEnd: v.boolean(),
-        }),
-      ),
+      subscription,
       billingCustomer: v.boolean(),
       role: v.union(accountRole, v.null()),
     }),
@@ -142,16 +154,7 @@ export const home = query({
             ? `https://github.com/organizations/${account.login}/settings/installations/${account.installationId}`
             : `https://github.com/settings/installations/${account.installationId}`,
       storage: toStorageUsage(account),
-      subscription:
-        account.billingSubscriptionId === undefined
-          ? null
-          : {
-              id: account.billingSubscriptionId,
-              status: account.billingStatus ?? "active",
-              interval: account.billingInterval ?? null,
-              periodEndsAt: account.billingPeriodEndsAt ?? null,
-              cancelsAtPeriodEnd: account.billingCancelsAtPeriodEnd ?? false,
-            },
+      subscription: toSubscription(account),
       billingCustomer: account.billingCustomerId !== undefined,
       role: memberRole(account, found.user, found.membership),
     };
