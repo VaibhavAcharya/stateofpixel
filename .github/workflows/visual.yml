@@ -23,7 +23,15 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter stateofpixel build
-      - run: pnpm --filter @stateofpixel/playground exec playwright install --with-deps chromium
+      - id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @stateofpixel/playground exec playwright install --with-deps chromium
+      - if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @stateofpixel/playground exec playwright install-deps chromium
       - run: pnpm --filter @stateofpixel/playground capture
       - run: node packages/cli/dist/index.mjs upload examples/playground/screenshots --build-name playground
       - run: pnpm --filter @stateofpixel/playground build-storybook
@@ -42,9 +50,40 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter stateofpixel build
-      - run: pnpm --filter @stateofpixel/web exec playwright install --with-deps chromium
+      - id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @stateofpixel/web exec playwright install --with-deps chromium
+      - if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @stateofpixel/web exec playwright install-deps chromium
       - run: pnpm --filter @stateofpixel/web visual
         env:
           VITE_CONVEX_URL: https://graceful-dogfish-423.convex.cloud
+
+  web-storybook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter stateofpixel build
+      - id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @stateofpixel/web exec playwright install --with-deps chromium
+      - if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @stateofpixel/web exec playwright install-deps chromium
       - run: pnpm --filter @stateofpixel/web build-storybook
       - run: node packages/cli/dist/index.mjs storybook apps/web/storybook-static --build-name web-storybook --viewports 375,1280 --delay 300

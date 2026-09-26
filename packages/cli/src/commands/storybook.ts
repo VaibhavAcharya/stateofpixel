@@ -16,7 +16,7 @@ import { mapConcurrent } from "../map-concurrent";
 import { metadataFile } from "../upload";
 import { type UploadCommandOptions, uploadCommand } from "./upload";
 
-const CAPTURE_CONCURRENCY = 4;
+const CAPTURE_CONCURRENCY = 8;
 const STORY_TIMEOUT_MS = 15_000;
 const VIEWPORT_HEIGHT = 720;
 
@@ -225,6 +225,7 @@ async function serveStatic(root: string): Promise<Server> {
           "Content-Type":
             CONTENT_TYPES[path.extname(file).toLowerCase()] ??
             "application/octet-stream",
+          "Cache-Control": "max-age=3600",
         });
         createReadStream(file).pipe(response);
       },

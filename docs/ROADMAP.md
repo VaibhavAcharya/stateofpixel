@@ -85,6 +85,7 @@ See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (stat
 - [x] Merge scenarios (squash, rebase, merge commit) against a separate test repo
 - [x] More `test-pr.sh` scenarios: `flaky` (an animation left on), `many-changes`, `sharded`
 - [ ] The `web` visual job takes 4 to 5 minutes in CI; think about how to handle it
+- [ ] `stateofpixel storybook --shard i/n` captures only the stories of that shard, so `web-storybook` can run as parallel jobs
 - [x] Storybook stories with fixtures for flows that are hard to reproduce, like checkout results, plan changes, failed renewals, storage warnings and blocked builds
 
 ## M3: growth
@@ -102,7 +103,6 @@ See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (stat
 - [ ] PR comment summary
 - [ ] Tokenless auth for fork PRs
 - [ ] Flaky snapshot detection
-- [ ] Move image bytes to R2 when egress cost calls for it
 
 ## Free tier and limits
 
@@ -136,4 +136,5 @@ Needed before applying for a payment gateway.
 ## Later
 
 - [ ] Open-source the CLI and the server
+- [ ] Optional: move images stored before R2 from Convex storage to R2
 - [ ] Optional: make builds of closed pull requests read-only, with a line that the pull request is closed

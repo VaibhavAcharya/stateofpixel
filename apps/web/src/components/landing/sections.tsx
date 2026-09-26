@@ -14,6 +14,7 @@ import playwrightConfig from "../../snippets/playwright.config.ts?highlight";
 import storybook from "../../snippets/storybook.yml?highlight";
 import workflow from "../../snippets/workflow.yml?highlight";
 import { CodeBlock, type Snippet } from "../CodeBlock";
+import { facts } from "../docs/facts";
 import { AuthButton } from "../SignIn";
 import { buttonClass, Kbd, LeadCopy, Wordmark } from "../ui";
 import { ReviewDemo } from "./ReviewDemo";
@@ -431,6 +432,14 @@ const FAQ: [string, string][] = [
   [
     "Is it open source?",
     "Not yet. The CLI and the server are closed source for now.",
+  ],
+  [
+    "What is in the Free plan?",
+    `${facts.freeStorage} of stored screenshots, with unlimited snapshots, builds, projects and reviewers. No card needed. Pull request images are kept ${facts.retentionDays} days by default.`,
+  ],
+  [
+    "What happens when the free storage is full?",
+    `The CLI and the account pages warn at ${facts.storageWarning}. At 100%, a ${facts.graceDays} day grace period starts. After it, new images are not stored and the check passes with a note, so CI keeps passing. Upgrade, or lower retention to free space.`,
   ],
   [
     "What happens if I cancel a paid plan?",
