@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.1](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.4.0...v1.4.1) (2026-09-26)
+
+
+### Bug Fixes
+
+* **cli:** skip the upload on fork pull requests and OIDC outages ([c63d254](https://github.com/VaibhavAcharya/stateofpixel/commit/c63d254532d15fe8cf23bbe20557665245e70962))
+* **cli:** skip the upload on fork pull requests and OIDC outages ([a6e76a0](https://github.com/VaibhavAcharya/stateofpixel/commit/a6e76a0e65b4538dda3b63ab24df8904e7fee7b8))
+
+
+### Performance Improvements
+
+* **cli:** capture 8 stories at a time and cache static files ([c272478](https://github.com/VaibhavAcharya/stateofpixel/commit/c272478c5e5b6c8444d72d4e4ed57f0544596185))
+* **cli:** faster storybook capture, free tier FAQ ([de1f04f](https://github.com/VaibhavAcharya/stateofpixel/commit/de1f04f53a304be92f38feb9633eef6af946d366))
+
 ## [1.4.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.3.0...v1.4.0) (2026-09-26)
 
 
