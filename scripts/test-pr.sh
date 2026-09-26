@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: scripts/test-pr.sh <no-change|color-change|layout-shift|add-page|remove-page|add-story|remove-story>" >&2
+  echo "Usage: scripts/test-pr.sh <no-change|color-change|layout-shift|add-page|remove-page|add-story|remove-story|flaky|many-changes|sharded>" >&2
   exit 1
 }
 
@@ -15,6 +15,9 @@ case "$scenario" in
   remove-page) expected="playground: success, No visual changes (card removed). storybook: success, No visual changes" ;;
   add-story) expected="playground: success, No visual changes. storybook: pending, 1 change to review (Badge/Default added)" ;;
   remove-story) expected="playground: success, No visual changes. storybook: success, No visual changes (Card/Default removed)" ;;
+  flaky) expected="playground and storybook: success, No visual changes (the animation is cancelled at capture)" ;;
+  many-changes) expected="playground: pending, 23 changes to review (3 changed, 20 added). storybook: pending, 24 changes to review (4 changed, 20 added)" ;;
+  sharded) expected="playground: success, No visual changes (1 auto shard, then finalize). storybook: success, No visual changes (2 shards)" ;;
   *) usage ;;
 esac
 
@@ -69,8 +72,57 @@ JS
   remove-story)
     rm "$stories/Card.stories.js"
     ;;
+  flaky)
+    cat >> "$pages/styles.css" <<'CSS'
+
+.button.primary {
+  animation: pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.2;
+  }
+}
+CSS
+    ;;
+  many-changes)
+    sed -i.bak 's#font: 14px / 20px sans-serif;#font: 16px / 24px sans-serif;#' "$pages/styles.css"
+    for i in $(seq 1 20); do
+      cat > "$pages/item-$i.html" <<HTML
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <button type="button" class="button primary">Item $i</button>
+  </body>
+</html>
+HTML
+    done
+    {
+      cat <<'JS'
+export default {
+  title: "Item",
+  render: ({ label }) =>
+    `<button type="button" class="button primary">${label}</button>`,
+};
+JS
+      for i in $(seq 1 20); do
+        printf '\nexport const Item%s = { args: { label: "Item %s" } };\n' "$i" "$i"
+      done
+    } > "$stories/Item.stories.js"
+    ;;
+  sharded)
+    sed -i.bak \
+      -e 's#\(upload examples/playground/screenshots --build-name playground\)#\1 --shard auto \&\& node packages/cli/dist/index.mjs finalize --build-name playground#' \
+      -e 's#\(node packages/cli/dist/index.mjs storybook examples/playground/storybook-static --build-name storybook\)#\1 --include "Button/*" --shard 1/2 \&\& \1 --exclude "Button/*" --shard 2/2#' \
+      "$worktree/.github/workflows/visual.yml"
+    ;;
 esac
-rm -f "$pages"/*.bak
+rm -f "$pages"/*.bak "$worktree"/.github/workflows/*.bak
 
 git -C "$worktree" add -A
 git -C "$worktree" commit --quiet -m "test: ${scenario} scenario"
