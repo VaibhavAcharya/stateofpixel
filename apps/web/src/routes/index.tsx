@@ -13,7 +13,7 @@ import {
   TeamSection,
   WhatWeDont,
 } from "../components/landing/sections";
-import { PAGES, pageMeta } from "../lib/pageMeta";
+import { PAGES, pageLinks, pageMeta } from "../lib/pageMeta";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/")({
       },
       ...pageMeta(PAGES.home),
     ],
+    links: pageLinks(PAGES.home),
   }),
   component: Home,
 });

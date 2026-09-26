@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { ComparePage, faqJsonLd } from "../../components/compare/ComparePage";
 import { findCompetitor } from "../../content/compare";
-import { pageMeta } from "../../lib/pageMeta";
+import { pageLinks, pageMeta } from "../../lib/pageMeta";
 
 export const Route = createFileRoute("/compare/$slug")({
   loader: ({ params }) => {
@@ -19,6 +19,7 @@ export const Route = createFileRoute("/compare/$slug")({
             { title: loaderData.meta.title },
             ...pageMeta(loaderData.meta),
           ],
+          links: pageLinks(loaderData.meta),
           scripts: [
             { type: "application/ld+json", children: faqJsonLd(loaderData) },
           ],
