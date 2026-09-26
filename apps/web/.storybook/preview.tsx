@@ -13,7 +13,7 @@ import { useBilling } from "../src/lib/useBilling";
 import "../src/styles.css";
 
 sb.mock(import("convex-helpers/react/cache/hooks"));
-sb.mock(import("../src/lib/useBilling"));
+sb.mock("../src/lib/useBilling.ts");
 
 const router = createRouter({
   routeTree: createRootRoute(),
