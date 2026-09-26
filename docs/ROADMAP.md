@@ -129,7 +129,7 @@ Needed before applying for a payment gateway.
 - [x] Docs pages at `/docs`, linked from the header, footer and user menu
 - [x] Brand page with the logo, its usage and downloads
 - [x] Open Graph image per page
-- [ ] Review the npm keywords of the CLI and the topics of the GitHub repo
+- [x] Review the npm keywords of the CLI and the topics of the GitHub repo
 - [ ] Images and illustrations in the README instead of the ASCII art
 - [ ] Rethink the CLI README that npm shows
 
