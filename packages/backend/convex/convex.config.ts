@@ -10,6 +10,7 @@ const app = defineApp({
     GITHUB_WEBHOOK_SECRET: v.string(),
     SITE_URL: v.string(),
     IMAGE_URL_SECRET: v.string(),
+    IMAGES_URL: v.optional(v.string()),
     DODO_PAYMENTS_API_KEY: v.optional(v.string()),
     DODO_PAYMENTS_WEBHOOK_SECRET: v.optional(v.string()),
     DODO_PAYMENTS_ENVIRONMENT: v.optional(

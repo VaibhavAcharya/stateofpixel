@@ -605,11 +605,7 @@ export const confirmUploads = internalMutation({
     await getPendingBuild(ctx, buildId);
     const results = [];
     for (const item of uploads) {
-      const storageId = ctx.db.system.normalizeId("_storage", item.storageId);
-      const image =
-        storageId === null
-          ? null
-          : await confirmUpload(ctx, accountId, { ...item, storageId });
+      const image = await confirmUpload(ctx, accountId, item);
       results.push({ hash: item.hash, confirmed: image !== null });
     }
     return results;

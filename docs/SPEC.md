@@ -611,11 +611,11 @@ For carry-over lookups there is also `by_projectId_and_buildName_and_prNumber_an
 | accountId | Id<"accounts"> | Images are scoped per account, so one account can never reach another's image by guessing a hash. |
 | hash | string | SHA-256 hex of the file bytes. |
 | kind | `"screenshot"` or `"diff"` | |
-| bytes | number | From `_storage.size`, not from the client. |
+| bytes | number | From `_storage.size`, or from the Worker receipt for R2, not from the client. |
 | width, height | number | Sent by the client, not checked. |
-| store | `"convex"` or `"r2"` | Which store holds the bytes. Only `"convex"` in v1. |
+| store | `"convex"` or `"r2"` | Which store holds the bytes. New uploads go to R2 when `IMAGES_URL` is set. |
 | storageId | Id<"_storage">, optional | Set when `store` is `"convex"` and the upload is confirmed. |
-| r2Key | string, optional | For later. |
+| r2Key | string, optional | Set when `store` is `"r2"`: `a/{accountId}/img/{hash[0:2]}/{hash}.png`. |
 | lastReferencedAt | number | Set at confirm. `createUploadTargets` moves it forward when a build reuses the image and it is over 12 hours old, so `collectImages` never deletes an image a pending build relies on. |
 
 Index `by_accountId_and_hash` on `[accountId, hash]`, unique by code. The same PNG in two accounts is stored twice. Index `by_storageId` lets a confirm check that no image row already uses a `storageId`.
@@ -917,17 +917,30 @@ Exit code is 0 when changes exist. The GitHub check decides whether the PR can m
 
 ### Where bytes live
 
-v1 stores every PNG in Convex File Storage. All storage code sits in `packages/backend/convex/blobs.ts`:
+PNGs live in Convex File Storage or in Cloudflare R2 behind the Worker in `apps/images`. When the Convex env var `IMAGES_URL` (the Worker's URL) is set, new uploads go to R2; otherwise they go to Convex. Existing images stay where they are, since `images.store` is per row. All storage code sits in `packages/backend/convex/blobs.ts`:
 
-| Function | v1 (Convex) | Later (R2) |
+| Function | Convex | R2 |
 |---|---|---|
-| `createUploadTargets(hashes)` | `ctx.storage.generateUploadUrl()` per hash | presigned PUT per hash |
-| `confirmUpload(hash, ref)` | check `_storage.sha256`, return `storageId` | HEAD the object, check size |
-| `getUrl(image, project)` | public project: `ctx.storage.getUrl(storageId)`; private project: the image route below | presigned GET or public bucket URL |
-| `readImage(storageId)` | `ctx.storage.get(storageId)`, for the image route | GET the object |
-| `delete(image)` | `ctx.storage.delete(storageId)` | DELETE the object |
+| `createUploadTargets(hashes)` | `ctx.storage.generateUploadUrl()` per hash | Worker upload link per hash, signed below |
+| `confirmUpload(hash, ref)` | check `_storage.sha256`, return `storageId` | verify the Worker receipt |
+| `getUrl(image, project)` | public project: `ctx.storage.getUrl(storageId)`; private project: the image route below | Worker link with an image signature |
+| `readImage(storageId)` | `ctx.storage.get(storageId)`, for the image route | the Worker reads R2 |
+| `delete(image)` | `ctx.storage.delete(storageId)` | schedules `deleteR2Object`, which calls the Worker |
 
-Nothing else in the backend touches `ctx.storage`. Moving to R2 means writing the R2 side of these five, then migrating images in batches and flipping `images.store` per row. A future R2 key layout: `a/{accountId}/img/{hash[0:2]}/{hash}.png`.
+Nothing else in the backend touches `ctx.storage` or R2.
+
+### R2 and the images Worker
+
+The Worker (`apps/images/src/index.ts`) holds the R2 binding, so Convex has no R2 credentials. Both sides sign with `IMAGE_URL_SECRET` through `convex/lib/signing.ts`, HMAC-SHA256 in base64url:
+
+| Route | Signed message | Check |
+|---|---|---|
+| `POST /upload/{accountId}/{hash}?exp&sig` | `upload.{accountId}.{hash}.{exp}`, valid 1 hour | Body at most 20 MiB and its SHA-256 equals `hash`, then put to `r2Key`. Returns `{ storageId: "r2:{bytes}.{sig}" }` with `sig` over `stored.{r2Key}.{bytes}`, the same response shape as a Convex upload, so the CLI needs no change. |
+| `GET /images/{projectId}/{accountId}.{hash}.{imageSig}?exp&sig` | grant as below, plus `image.{projectId}.{r2Key}` | Private projects. The image signature ties the image to the project, the grant gives the time limit. |
+| `GET /files/{accountId}.{hash}.{sig}` | `public.{r2Key}` | Public projects. Never expires, like a Convex storage URL. |
+| `DELETE /objects/{r2Key}?before&sig` | `delete.{r2Key}.{before}` | Deletes only if the object was uploaded before `before`, so a pending delete never removes the same hash uploaded again after it. |
+
+Confirm trusts the receipt for the size, since the Worker hashed and measured the body. The Worker keeps objects in the Cloudflare edge cache, which works only on a custom domain; on `workers.dev` every read goes to R2. Unlike the Convex route, the Worker does not check that the project is archived or that the image still exists in Convex, so an archived project's images stay reachable until the grant expires, at most 2 hours. An upload that is never confirmed leaves an object in R2 with no row.
 
 Things to know about Convex File Storage URLs ([docs](https://docs.convex.dev/file-storage/serve-files)):
 - "Anyone with the URL can access the file without further authentication from your app." The URL does not expire; only deleting the file revokes it. So `getUrl` URLs go only to public projects, and we never store them.
