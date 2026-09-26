@@ -54,7 +54,7 @@ Group 3: lists and viewer
 - [x] Sentence case pill labels
 - [x] Server-side sort, filter and pagination for projects and builds, on TanStack Table
 - [ ] Viewer as a canvas like Figma: pan and zoom with trackpad, wheel and keys, kept inside the image bounds, with one Fit button to reset; replaces the Fit, 100% and 200% tabs
-- [ ] Say when retention deleted a build: keep deleted build numbers per project so an old link shows "This build was deleted after 60 days" instead of "Build not found."
+- [x] Say when retention deleted a build: keep deleted build numbers per project so an old link shows "This build was deleted after 60 days" instead of "Build not found."
 
 Group 4: landing
 - [x] Drop Playfair Display, one sans and one mono only
@@ -89,10 +89,10 @@ See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (sta
 - [x] Plan box on the account home, with payment result and failed renewal notices
 - [x] Upgrade hints in the account switcher and the storage banner
 - [x] Dodo Payments live mode on production: live products, webhook and env vars
-- [ ] Show when a cancelled subscription ends, from `cancel_at_next_billing_date` and `next_billing_date`
-- [ ] Account tabs: Projects, Members with roles from GitHub, and Billing with the plan box
+- [x] Show when a cancelled subscription ends, from `cancel_at_next_billing_date` and `next_billing_date`
+- [x] Account tabs: Projects, Members with roles from GitHub, and Billing with the plan box
 - [x] Change between paid plans without cancelling first; `billing.checkout` refuses with `already_subscribed` today
-- [ ] Disable Upgrade and Manage billing for members who are not owners, and the project Settings tab for users who are not repo admins, each with a tooltip
+- [x] Disable Upgrade and Manage billing for members who are not owners, and the project Settings tab for users who are not repo admins, each with a tooltip
 - [ ] Plan box details from SPEC 5.10: payment method and invoices
 - [ ] Usage page
 - [ ] PR comment summary
@@ -122,7 +122,7 @@ Needed before applying for a payment gateway.
 ## Marketing pages
 
 - [ ] Comparison pages against the alternatives
-- [ ] Docs pages at `/docs`, linked from the header, footer and user menu
+- [x] Docs pages at `/docs`, linked from the header, footer and user menu
 - [x] Brand page with the logo, its usage and downloads
 - [ ] Open Graph image per page
 
