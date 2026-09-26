@@ -2,16 +2,11 @@ import { DownloadSimpleIcon } from "@phosphor-icons/react/ssr";
 import { createFileRoute } from "@tanstack/react-router";
 import { PublicPage } from "../components/landing/sections";
 import { LeadCopy } from "../components/ui";
+import { PAGES, pageMeta } from "../lib/pageMeta";
 
 export const Route = createFileRoute("/brand")({
   head: () => ({
-    meta: [
-      { title: "Brand - stateofpixel" },
-      {
-        name: "description",
-        content: "The stateofpixel logo, colors and type, with downloads.",
-      },
-    ],
+    meta: [{ title: "Brand / stateofpixel" }, ...pageMeta(PAGES.brand)],
   }),
   component: Brand,
 });

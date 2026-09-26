@@ -2,9 +2,10 @@ import { Link } from "@tanstack/react-router";
 import type { MDXComponents } from "mdx/types";
 import { Children, type ReactNode } from "react";
 import { findDoc } from "../../content/docs";
+import { pageMeta } from "../../lib/pageMeta";
 import { CodeBlock as Block, type Snippet } from "../CodeBlock";
 import { Kbd } from "../ui";
-import { Code, DocsPage, DocsPageLink, H2 } from "./DocsLayout";
+import { Code, DocsPage, DocsPageLink, docsPath, H2 } from "./DocsLayout";
 import {
   CheckStatesTable,
   CliCommands,
@@ -112,8 +113,12 @@ export function docsHead(slug: string) {
       meta === undefined
         ? []
         : [
-            { title: `${meta.title} - stateofpixel docs` },
-            { name: "description", content: meta.description },
+            { title: `${meta.title} / Docs / stateofpixel` },
+            ...pageMeta({
+              path: docsPath(slug),
+              title: meta.title,
+              description: meta.description,
+            }),
           ],
   };
 }

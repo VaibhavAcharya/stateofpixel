@@ -223,6 +223,8 @@ Landing (`/`): 64px sticky header on `surface` with the wordmark, ghost anchor l
 
 Docs (`/docs`): the public header and footer with a 208px sticky nav on the left, grouped under `text-xs muted` labels with 32px `radius-sm` rows (`hover` fill and weight 500 for the current page), and one article column of 680px. The title is 28 to 36px weight 600 with a `text-lg muted` lead under it; body is `text-base` on a 24px line, `text-lg` weight 600 section headings with a `#` link on hover, code in `CodeBlock`, inline code as `mono` on `surface-2`, and tables with `text-2xs muted` headers and `border` rows. Previous and next cards close every page. Below 1024 the nav folds into a "Docs / Page" disclosure above the article.
 
+Open Graph images: every public page and docs page gets a 1200x630 PNG at `/og/<path>.png`, rendered at build time by `apps/web/scripts/og-images.ts` with satori and resvg from the title and description in `src/lib/pageMeta.ts` and the docs meta. The card is `bg` with the wordmark and the page path in Lilex `muted` at the top, the title at 72px weight 600 with -0.045em tracking and the description at 30px `muted` at the bottom, and the pricing pixel texture on the right at 50% opacity, unsmoothed. Both use `textWrap: balance`. The landing card shows the title only.
+
 Sign-in (any signed-in page while signed out): centered 360px column, 32px logo, `text-xl` title, one `text-sm muted` line, and a full-width primary "Continue with GitHub" button. While auth loads, the page shows a skeleton of the 48px app header only.
 
 ## Accessibility

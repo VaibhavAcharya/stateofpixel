@@ -1,14 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LegalPage, SupportEmail } from "../components/LegalPage";
+import { PAGES, pageMeta } from "../lib/pageMeta";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy policy - stateofpixel" },
-      {
-        name: "description",
-        content: "What data stateofpixel collects, why, and how long it stays.",
-      },
+      { title: "Privacy policy / stateofpixel" },
+      ...pageMeta(PAGES.privacy),
     ],
   }),
   component: Privacy,

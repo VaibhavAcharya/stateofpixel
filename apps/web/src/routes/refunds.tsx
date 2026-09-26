@@ -1,14 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LegalPage, SupportEmail } from "../components/LegalPage";
+import { PAGES, pageMeta } from "../lib/pageMeta";
 
 export const Route = createFileRoute("/refunds")({
   head: () => ({
     meta: [
-      { title: "Refund policy - stateofpixel" },
-      {
-        name: "description",
-        content: "How cancellation and refunds work for stateofpixel.",
-      },
+      { title: "Refund policy / stateofpixel" },
+      ...pageMeta(PAGES.refunds),
     ],
   }),
   component: Refunds,
