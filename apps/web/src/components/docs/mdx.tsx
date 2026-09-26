@@ -113,7 +113,7 @@ export function docsHead(slug: string) {
       meta === undefined
         ? []
         : [
-            { title: `${meta.title} - stateofpixel docs` },
+            { title: `${meta.title} / Docs / stateofpixel` },
             ...pageMeta({
               path: docsPath(slug),
               title: meta.title,

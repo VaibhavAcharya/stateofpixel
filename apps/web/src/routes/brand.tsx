@@ -6,7 +6,7 @@ import { PAGES, pageMeta } from "../lib/pageMeta";
 
 export const Route = createFileRoute("/brand")({
   head: () => ({
-    meta: [{ title: "Brand - stateofpixel" }, ...pageMeta(PAGES.brand)],
+    meta: [{ title: "Brand / stateofpixel" }, ...pageMeta(PAGES.brand)],
   }),
   component: Brand,
 });

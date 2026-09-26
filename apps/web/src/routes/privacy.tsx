@@ -5,7 +5,7 @@ import { PAGES, pageMeta } from "../lib/pageMeta";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy policy - stateofpixel" },
+      { title: "Privacy policy / stateofpixel" },
       ...pageMeta(PAGES.privacy),
     ],
   }),

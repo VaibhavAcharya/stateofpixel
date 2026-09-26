@@ -5,7 +5,7 @@ import { PAGES, pageMeta } from "../lib/pageMeta";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms and conditions - stateofpixel" },
+      { title: "Terms and conditions / stateofpixel" },
       ...pageMeta(PAGES.terms),
     ],
   }),

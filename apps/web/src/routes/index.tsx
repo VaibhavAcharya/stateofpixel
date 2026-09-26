@@ -16,7 +16,14 @@ import {
 import { PAGES, pageMeta } from "../lib/pageMeta";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: pageMeta(PAGES.home) }),
+  head: () => ({
+    meta: [
+      {
+        title: "Visual regression testing that runs in your CI / stateofpixel",
+      },
+      ...pageMeta(PAGES.home),
+    ],
+  }),
   component: Home,
 });
 
