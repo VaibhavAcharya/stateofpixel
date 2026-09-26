@@ -47,12 +47,14 @@ Group 2: speed
 - [x] Keep query results across navigation, prefetch neighbours, render cached permissions while they refresh
 - [x] Optimistic updates for build counts, conclusion and Approve all
 - [x] One round trip for project access and the page data on first visit
+- [ ] Find and speed up slow queries: after an approve moves to the next snapshot, its screenshot sometimes takes 3 to 4 seconds to load
 
 Group 3: lists and viewer
 - [x] Polish every list: projects, builds, accounts, sidebar
 - [x] Diff overlay toggle in Side by side, on by default
 - [x] Sentence case pill labels
 - [x] Server-side sort, filter and pagination for projects and builds, on TanStack Table
+- [ ] Snapshot skeleton that fits the viewer area: while it loads it is taller than the page, so the page scrolls while the sidebar stays fixed
 - [ ] Viewer as a canvas like Figma: pan and zoom with trackpad, wheel and keys, kept inside the image bounds, with one Fit button to reset; replaces the Fit, 100% and 200% tabs
 - [x] Say when retention deleted a build: keep deleted build numbers per project so an old link shows "This build was deleted after 60 days" instead of "Build not found."
 
@@ -73,7 +75,7 @@ Group 4: landing
 
 ## Dogfooding
 
-See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (static pages), `storybook` (playground stories) and `web` (the public pages and the fixture build pages).
+See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (static pages), `storybook` (playground stories), `web` (the public pages and the fixture build pages) and `web-storybook` (the web app stories).
 
 - [x] Playwright suite for the public web pages (landing) through `stateofpixel/playwright`
 - [x] A seeded build page that renders without GitHub sign-in, captured in the same suite
@@ -125,6 +127,9 @@ Needed before applying for a payment gateway.
 - [x] Docs pages at `/docs`, linked from the header, footer and user menu
 - [x] Brand page with the logo, its usage and downloads
 - [ ] Open Graph image per page
+- [ ] Review the npm keywords of the CLI and the topics of the GitHub repo
+- [ ] Images and illustrations in the README instead of the ASCII art
+- [ ] Rethink the CLI README that npm shows
 
 ## Later
 
