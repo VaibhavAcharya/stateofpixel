@@ -51,6 +51,10 @@ export const DOCS_NAV = [
 
 export const QUICKSTART = "quickstart";
 
+export function docsPath(slug: string): string {
+  return slug === QUICKSTART ? "/docs" : `/docs/${slug}`;
+}
+
 const PAGES = DOCS_NAV.flatMap((group) => group.pages);
 
 function currentIndex(pathname: string): number {

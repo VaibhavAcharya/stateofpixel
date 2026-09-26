@@ -13,17 +13,10 @@ import {
   TeamSection,
   WhatWeDont,
 } from "../components/landing/sections";
+import { PAGES, pageMeta } from "../lib/pageMeta";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      {
-        name: "description",
-        content:
-          "Visual regression testing that runs in your CI. Review pixel diffs, set GitHub checks, pay only for storage.",
-      },
-    ],
-  }),
+  head: () => ({ meta: pageMeta(PAGES.home) }),
   component: Home,
 });
 

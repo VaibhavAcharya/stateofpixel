@@ -1,14 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LegalPage, SupportEmail } from "../components/LegalPage";
+import { PAGES, pageMeta } from "../lib/pageMeta";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
       { title: "Terms and conditions - stateofpixel" },
-      {
-        name: "description",
-        content: "The terms for using stateofpixel.",
-      },
+      ...pageMeta(PAGES.terms),
     ],
   }),
   component: Terms,
