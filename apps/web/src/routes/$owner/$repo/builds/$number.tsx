@@ -75,6 +75,8 @@ const GROUPS: { status: DiffStatus; label: string }[] = [
   { status: "unchanged", label: "Unchanged" },
 ];
 
+const PREFETCH_PENDING = 3;
+
 const ACTION_VERBS: Record<ReviewAction, string> = {
   approve: "approve",
   reject: "reject",
@@ -378,15 +380,18 @@ function BuildPage({
     select(nextPending);
   };
 
-  const nextPending = [
+  const pendingAhead = [
     ...ordered.slice(currentIndex + 1),
     ...ordered.slice(0, currentIndex),
-  ].find((row) => row.reviewState === "pending");
+  ]
+    .filter((row) => row.reviewState === "pending")
+    .slice(0, PREFETCH_PENDING);
+  const nextPending = pendingAhead[0];
   const neighbours = new Set(
     [
       ordered[currentIndex + 1] ?? ordered[0],
       ordered[currentIndex - 1] ?? ordered[ordered.length - 1],
-      nextPending,
+      ...pendingAhead,
     ].flatMap((row) =>
       row === undefined || row.id === snapshotId ? [] : [row.id],
     ),
