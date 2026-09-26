@@ -50,6 +50,7 @@ import {
 } from "../../../../components/ui";
 import { MODES, useViewerSettings } from "../../../../components/Viewer";
 import { track } from "../../../../lib/analytics";
+import { ZOOM_STEP } from "../../../../lib/canvasView";
 import { errorCode } from "../../../../lib/errorCode";
 import { formatCount } from "../../../../lib/format";
 import { isLab } from "../../../../lib/lab";
@@ -74,6 +75,8 @@ const GROUPS: { status: DiffStatus; label: string }[] = [
   { status: "failed", label: "Failed" },
   { status: "unchanged", label: "Unchanged" },
 ];
+
+const PREFETCH_PENDING = 3;
 
 const ACTION_VERBS: Record<ReviewAction, string> = {
   approve: "approve",
@@ -315,6 +318,7 @@ function BuildPage({
   const select = (row: SnapshotRow | undefined) => {
     if (row !== undefined) {
       settings.setShowBaseline(false);
+      settings.setView(null);
       void navigate({
         to: "/$owner/$repo/builds/$number/snapshots/$snapshotId",
         params: { ...linkParams, snapshotId: row.id },
@@ -378,15 +382,18 @@ function BuildPage({
     select(nextPending);
   };
 
-  const nextPending = [
+  const pendingAhead = [
     ...ordered.slice(currentIndex + 1),
     ...ordered.slice(0, currentIndex),
-  ].find((row) => row.reviewState === "pending");
+  ]
+    .filter((row) => row.reviewState === "pending")
+    .slice(0, PREFETCH_PENDING);
+  const nextPending = pendingAhead[0];
   const neighbours = new Set(
     [
       ordered[currentIndex + 1] ?? ordered[0],
       ordered[currentIndex - 1] ?? ordered[ordered.length - 1],
-      nextPending,
+      ...pendingAhead,
     ].flatMap((row) =>
       row === undefined || row.id === snapshotId ? [] : [row.id],
     ),
@@ -456,10 +463,17 @@ function BuildPage({
           }
           break;
         case "f":
-          settings.setZoom("fit");
+          settings.setView(null);
           break;
         case "0":
-          settings.setZoom("100");
+          settings.zoom({ to: 1 });
+          break;
+        case "=":
+        case "+":
+          settings.zoom({ by: ZOOM_STEP });
+          break;
+        case "-":
+          settings.zoom({ by: 1 / ZOOM_STEP });
           break;
         case "/":
           event.preventDefault();
@@ -643,8 +657,8 @@ function NoSelection({
     );
   }
   return (
-    <div className="flex-1 bg-canvas p-4">
-      <Skeleton className="aspect-[16/10] w-full bg-surface" />
+    <div className="min-h-0 flex-1 bg-canvas p-4">
+      <Skeleton className="aspect-[16/10] max-h-full w-full bg-surface" />
     </div>
   );
 }

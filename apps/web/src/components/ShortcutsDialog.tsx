@@ -28,6 +28,7 @@ export const SHORTCUT_GROUPS: { title: string; items: [string, string[]][] }[] =
         ["Diff overlay in Side by side", ["d"]],
         ["Toggle image in Flip mode", ["space"]],
         ["Fit / 100% zoom", ["f", "0"]],
+        ["Zoom in / out", ["+", "-"]],
       ],
     },
   ];

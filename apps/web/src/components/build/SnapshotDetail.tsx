@@ -62,8 +62,8 @@ export function SnapshotDetail({
         <div className="flex h-12 shrink-0 items-center gap-3 border-b border-border px-4">
           <Skeleton className="h-3.5 w-56 rounded-xs" />
         </div>
-        <div className="flex-1 bg-canvas p-4">
-          <Skeleton className="aspect-[16/10] w-full bg-surface" />
+        <div className="min-h-0 flex-1 bg-canvas p-4">
+          <Skeleton className="aspect-[16/10] max-h-full w-full bg-surface" />
         </div>
       </>
     );

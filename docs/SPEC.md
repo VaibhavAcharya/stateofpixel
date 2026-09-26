@@ -338,7 +338,7 @@ Viewer:
   - Diff: new image with the diff image overlaid in red at 70% opacity.
   - Slider: one frame, a vertical handle wipes between baseline and new.
   - Flip: one frame, space toggles between baseline and new. Best for 1-pixel shifts.
-- Zoom: Fit (default), 100%, 200%. Mouse wheel with ctrl zooms, drag pans.
+- Canvas: Fit (default) fits the width, never above 100%. Wheel and trackpad scroll pan, drag pans, pinch or ctrl+wheel zooms at the pointer, `+` / `-` zoom at the center, `0` is 100%, `f` or the Fit button resets. Zoom goes from the whole image in view up to 800%. Panning stops at the image edges plus 16px. A wheel that cannot pan scrolls the page. Opening another snapshot resets to Fit. Math in `apps/web/src/lib/canvasView.ts`.
 - Added snapshots show only the new image. Removed snapshots show only the baseline.
 - Different dimensions: images align top-left, the empty area is a checkerboard.
 - Chosen mode and zoom are remembered in localStorage per user.
@@ -362,6 +362,7 @@ Keyboard shortcuts (`?` shows this list as an overlay):
 | `1` `2` `3` `4` | Side by side, Diff, Slider, Flip |
 | `space` | In Flip mode, toggle image |
 | `f` / `0` | Fit / 100% zoom |
+| `+` / `-` | Zoom in / out |
 | `/` | Focus filter |
 | `?` | Shortcuts overlay |
 

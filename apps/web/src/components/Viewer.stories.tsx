@@ -1,17 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import { CANVAS_PADDING, type CanvasView } from "../lib/canvasView";
 import { demoImage, preloadDemoImages } from "../lib/storyFixtures";
 import {
   useViewerSettings,
   Viewer,
   type ViewerMode,
   type ViewerSnapshot,
-  type ViewerZoom,
 } from "./Viewer";
 
 type Initial = {
   mode?: ViewerMode;
-  zoom?: ViewerZoom;
+  view?: CanvasView;
   sideDiff?: boolean;
   showBaseline?: boolean;
   diffOnly?: boolean;
@@ -26,7 +26,7 @@ function StoryViewer({
 }) {
   const settings = useViewerSettings();
   const [mode, setMode] = useState(initial.mode ?? settings.mode);
-  const [zoom, setZoom] = useState(initial.zoom ?? settings.zoom);
+  const [view, setView] = useState(initial.view ?? settings.view);
   const [sideDiff, setSideDiff] = useState(initial.sideDiff ?? true);
   const [showBaseline, setShowBaseline] = useState(
     initial.showBaseline ?? false,
@@ -37,10 +37,11 @@ function StoryViewer({
       <Viewer
         snapshot={snapshot}
         settings={{
+          ...settings,
           mode,
           setMode,
-          zoom,
-          setZoom,
+          view,
+          setView,
           sideDiff,
           setSideDiff,
           showBaseline,
@@ -100,9 +101,17 @@ export const FlipShowingBaseline: Story = {
   args: { initial: { mode: "flip", showBaseline: true } },
 };
 
-export const ActualSize: Story = { args: { initial: { zoom: "100" } } };
+const zoomed = (scale: number) => ({
+  initial: { view: { scale, x: CANVAS_PADDING, y: CANVAS_PADDING } },
+});
 
-export const DoubleSize: Story = { args: { initial: { zoom: "200" } } };
+export const ActualSize: Story = { args: zoomed(1) };
+
+export const DoubleSize: Story = { args: zoomed(2) };
+
+export const Panned: Story = {
+  args: { initial: { view: { scale: 4, x: -600, y: -300 } } },
+};
 
 export const SizeChanged: Story = {
   args: {
