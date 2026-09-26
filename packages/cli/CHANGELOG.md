@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.2.0...v1.3.0) (2026-09-26)
+
+
+### Features
+
+* report builds as GitHub commit statuses ([6e88c8c](https://github.com/VaibhavAcharya/stateofpixel/commit/6e88c8c054f8dd10b6cee83f59d28fa47aa0b934))
+* report builds as GitHub commit statuses ([9be4405](https://github.com/VaibhavAcharya/stateofpixel/commit/9be4405f11eb95fe405b737a130af42a8bea48b7))
+
 ## [1.2.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.1.0...v1.2.0) (2026-09-25)
 
 
