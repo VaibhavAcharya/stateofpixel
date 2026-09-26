@@ -73,7 +73,7 @@ Group 4: landing
 
 ## Dogfooding
 
-See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (static pages), `storybook` (playground stories) and `web` (the public pages and the fixture build pages).
+See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (static pages), `storybook` (playground stories), `web` (the public pages and the fixture build pages) and `web-storybook` (the web app stories).
 
 - [x] Playwright suite for the public web pages (landing) through `stateofpixel/playwright`
 - [x] A seeded build page that renders without GitHub sign-in, captured in the same suite
@@ -125,6 +125,9 @@ Needed before applying for a payment gateway.
 - [x] Docs pages at `/docs`, linked from the header, footer and user menu
 - [x] Brand page with the logo, its usage and downloads
 - [ ] Open Graph image per page
+- [ ] Review the npm keywords of the CLI and the topics of the GitHub repo
+- [ ] Images and illustrations in the README instead of the ASCII art
+- [ ] Rethink the CLI README that npm shows
 
 ## Later
 

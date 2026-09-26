@@ -103,6 +103,8 @@ pnpm dev
 
 The build page also renders without GitHub: in dev, `/lab.stateofpixel/web/builds/1` shows it from the fixture builds in `apps/web/src/components/build/LabBuild.tsx`. Build 1 has changes to review, build 2 is storage-blocked. Reviews there change local state only. GitHub logins cannot contain a dot, so the path never matches a real account, and production builds leave the fixtures out.
 
+States that are hard to reach against a real backend, like checkout results, plan changes, failed renewals, storage warnings and build states, have Storybook stories next to their components. `pnpm --filter @stateofpixel/web storybook` opens them on http://localhost:6007. The stories mock `useQuery` and `useBilling` in `apps/web/.storybook/preview.tsx`: a story sets query results by function name in `parameters.convex` and the billing state in `parameters.billing`. The clock is fixed, so dates stay the same between runs.
+
 To try the CLI against your dev deployment, see [CLI against dev](docs/OPERATIONS.md#cli-against-dev).
 
 ## Checks
@@ -121,11 +123,12 @@ Biome formats and lints; `pnpm format` fixes formatting. `typecheck` in `apps/we
 
 ## Dogfooding
 
-`.github/workflows/visual.yml` runs on every pull request and uploads three builds to production with the workspace CLI, authenticated with the GitHub Actions OIDC token. So every pull request also tests the CLI it changes, and a pull request that changes the backend is tested by the old production backend, which keeps the CI API backward compatible:
+`.github/workflows/visual.yml` runs on every pull request and uploads four builds to production with the workspace CLI, authenticated with the GitHub Actions OIDC token. So every pull request also tests the CLI it changes, and a pull request that changes the backend is tested by the old production backend, which keeps the CI API backward compatible:
 
 - `playground`: `examples/playground/pages`, captured by `pnpm --filter @stateofpixel/playground capture`
 - `storybook`: the playground stories, built with `pnpm --filter @stateofpixel/playground build-storybook` and captured with `stateofpixel storybook`
 - `web`: the public pages and the build page, captured by `pnpm --filter @stateofpixel/web visual` through the Playwright reporter. The reporter uploads on CI only, so a local run only writes screenshots.
+- `web-storybook`: the web app stories, built with `pnpm --filter @stateofpixel/web build-storybook` and captured with `stateofpixel storybook` at 375 and 1280 wide
 
 `scripts/test-pr.sh <scenario>` opens a draft pull request that changes the playground in a known way and prints the expected check for `playground` and `storybook`. Scenarios: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`, `add-story`, `remove-story`. It needs `gh` signed in.
 
