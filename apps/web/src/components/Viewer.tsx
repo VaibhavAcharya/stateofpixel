@@ -6,9 +6,28 @@ import {
   SquareSplitHorizontalIcon,
   SwapIcon,
 } from "@phosphor-icons/react/ssr";
-import { type ReactElement, type ReactNode, useState } from "react";
+import {
+  type ReactElement,
+  type ReactNode,
+  type Ref,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  CANVAS_PADDING,
+  type CanvasView,
+  clampView,
+  fitView,
+  type Point,
+  panView,
+  type Size,
+  zoomView,
+} from "../lib/canvasView";
 import { formatCount, formatPercent } from "../lib/format";
 import {
+  buttonClass,
   type DiffStatus,
   DiffStatusPill,
   type Icon,
@@ -19,7 +38,7 @@ import {
 } from "./ui";
 
 export type ViewerMode = "side" | "diff" | "slider" | "flip";
-export type ViewerZoom = "fit" | "100" | "200";
+export type ViewerZoom = { by: number } | { to: number };
 
 type Image = { url: string; width: number; height: number };
 
@@ -70,15 +89,10 @@ export const MODES: {
   },
 ];
 
-const ZOOMS: { value: ViewerZoom; label: string; key?: string }[] = [
-  { value: "fit", label: "Fit", key: "f" },
-  { value: "100", label: "100%", key: "0" },
-  { value: "200", label: "200%" },
-];
-
 export function useViewerSettings() {
   const [mode, setMode] = useState<ViewerMode>("side");
-  const [zoom, setZoom] = useState<ViewerZoom>("fit");
+  const [view, setView] = useState<CanvasView | null>(null);
+  const zoomTo = useRef<(zoom: ViewerZoom) => void>(() => {});
   const [sideDiff, setSideDiff] = useState(true);
   const [showBaseline, setShowBaseline] = useState(false);
   const [diffOnly, setDiffOnly] = useState(false);
@@ -87,8 +101,10 @@ export function useViewerSettings() {
     setSideDiff,
     mode,
     setMode,
-    zoom,
-    setZoom,
+    view,
+    setView,
+    zoomTo,
+    zoom: (zoom: ViewerZoom) => zoomTo.current(zoom),
     showBaseline,
     setShowBaseline,
     diffOnly,
@@ -111,9 +127,10 @@ export function Viewer({
   settings: ViewerSettings;
   navigation: ReactNode;
 }) {
-  const { mode, setMode, zoom, setZoom } = settings;
+  const { mode, setMode } = settings;
   const { image, baselineImage } = snapshot;
   const single = image === null || baselineImage === null;
+  const canvas = useCanvas(settings, contentSize(snapshot, mode, single));
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -149,24 +166,47 @@ export function Viewer({
             <ModeSwitch settings={settings} snapshot={snapshot} />
           </div>
         )}
-        <div className="ml-auto max-sm:hidden">
-          <div className="rounded-control bg-surface-2 p-0.5">
-            <Segmented
-              label="Zoom"
-              options={ZOOMS}
-              value={zoom}
-              onChange={setZoom}
-            />
-          </div>
+        <div className="ml-auto flex items-center gap-2">
+          <span className="w-11 text-right text-xs text-muted tabular-nums">
+            {Math.round(canvas.view.scale * 100)}%
+          </span>
+          <KeyTooltip label="Fit" keyName="f">
+            <button
+              type="button"
+              className={buttonClass()}
+              disabled={settings.view === null}
+              onClick={() => settings.setView(null)}
+            >
+              Fit
+              <KeyChip keyName="f" />
+            </button>
+          </KeyTooltip>
         </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-auto bg-canvas p-4">
+      <div
+        ref={canvas.stageRef}
+        className={`grid min-h-0 flex-1 overflow-hidden bg-border select-none ${
+          canvas.pannable
+            ? `touch-none ${canvas.panning ? "cursor-grabbing" : "cursor-grab"}`
+            : "touch-pan-x touch-pan-y"
+        } ${
+          single || mode !== "side"
+            ? "grid-cols-1"
+            : "grid-cols-2 gap-px max-md:grid-cols-1 max-md:grid-rows-2"
+        }`}
+      >
         {single ? (
-          <Frame
-            image={image ?? baselineImage}
-            zoom={zoom}
+          <Pane
             caption={image === null ? baselineLabel : newLabel}
-          />
+            view={canvas.view}
+            paneRef={canvas.paneRef}
+          >
+            <Frame
+              image={image ?? baselineImage}
+              scale={canvas.view.scale}
+              caption={image === null ? baselineLabel : newLabel}
+            />
+          </Pane>
         ) : (
           <Compare
             settings={settings}
@@ -175,6 +215,8 @@ export function Viewer({
             baselineImage={baselineImage}
             baselineLabel={baselineLabel}
             newLabel={newLabel}
+            view={canvas.view}
+            paneRef={canvas.paneRef}
           />
         )}
       </div>
@@ -311,6 +353,8 @@ function Compare({
   baselineImage,
   baselineLabel,
   newLabel,
+  view,
+  paneRef,
 }: {
   settings: ViewerSettings;
   snapshot: ViewerSnapshot;
@@ -318,69 +362,340 @@ function Compare({
   baselineImage: Image;
   baselineLabel: string;
   newLabel: string;
+  view: CanvasView;
+  paneRef: Ref<HTMLDivElement>;
 }) {
-  const { mode, zoom, showBaseline, diffOnly, sideDiff } = settings;
+  const { mode, showBaseline, diffOnly, sideDiff } = settings;
+  const { scale } = view;
 
   if (mode === "side") {
     return (
-      <div
-        className={`grid items-start gap-4 ${
-          zoom === "fit"
-            ? "grid-cols-2 max-md:grid-cols-1"
-            : "w-max grid-cols-[repeat(2,max-content)] max-md:grid-cols-[max-content]"
-        }`}
-      >
-        <Frame image={baselineImage} zoom={zoom} caption={baselineLabel} />
-        <Frame
-          image={image}
-          zoom={zoom}
-          caption={newLabel}
-          overlay={sideDiff ? snapshot.diffImage : null}
-        />
-      </div>
+      <>
+        <Pane caption={baselineLabel} view={view} paneRef={paneRef}>
+          <Frame image={baselineImage} scale={scale} caption={baselineLabel} />
+        </Pane>
+        <Pane caption={newLabel} view={view}>
+          <Frame
+            image={image}
+            scale={scale}
+            caption={newLabel}
+            overlay={sideDiff ? snapshot.diffImage : null}
+          />
+        </Pane>
+      </>
     );
   }
   if (mode === "diff") {
     return (
-      <Frame
-        image={diffOnly ? null : image}
-        zoom={zoom}
+      <Pane
         caption={diffOnly ? "Diff" : `${newLabel} with diff`}
-        overlay={snapshot.diffImage}
-        size={image}
-      />
+        view={view}
+        paneRef={paneRef}
+      >
+        <Frame
+          image={diffOnly ? null : image}
+          scale={scale}
+          caption={diffOnly ? "Diff" : `${newLabel} with diff`}
+          overlay={snapshot.diffImage}
+          size={image}
+        />
+      </Pane>
     );
   }
   if (mode === "slider") {
     return (
-      <figure className="min-w-0">
-        <figcaption className="flex h-6 items-start justify-between gap-4 text-xs text-muted">
-          <span>{baselineLabel}</span>
-          <span>{newLabel}</span>
-        </figcaption>
-        <Slider image={image} baselineImage={baselineImage} zoom={zoom} />
-      </figure>
+      <Pane
+        caption={
+          <>
+            <span>{baselineLabel}</span>
+            <span>{newLabel}</span>
+          </>
+        }
+        view={view}
+        paneRef={paneRef}
+      >
+        <Slider image={image} baselineImage={baselineImage} scale={scale} />
+      </Pane>
     );
   }
   return (
-    <Frame
-      image={showBaseline ? baselineImage : image}
-      zoom={zoom}
+    <Pane
       caption={showBaseline ? baselineLabel : newLabel}
-      highlighted={showBaseline}
-    />
+      view={view}
+      paneRef={paneRef}
+    >
+      <Frame
+        image={showBaseline ? baselineImage : image}
+        scale={scale}
+        caption={showBaseline ? baselineLabel : newLabel}
+        highlighted={showBaseline}
+      />
+    </Pane>
+  );
+}
+
+function contentSize(
+  snapshot: ViewerSnapshot,
+  mode: ViewerMode,
+  single: boolean,
+): Size {
+  const { image, baselineImage } = snapshot;
+  const shown =
+    single || mode === "diff"
+      ? [image ?? baselineImage]
+      : [image, baselineImage];
+  const images = shown.filter((value) => value !== null);
+  return {
+    width: Math.max(1, ...images.map((value) => value.width)),
+    height: Math.max(1, ...images.map((value) => value.height)),
+  };
+}
+
+const WHEEL_ZOOM_LIMIT = 25;
+
+type Pointers = Map<number, Point>;
+
+function useCanvas(settings: ViewerSettings, content: Size) {
+  const { view: stored, setView, zoomTo } = settings;
+  const [stage, setStage] = useState<HTMLDivElement | null>(null);
+  const [viewport, setViewport] = useState<Size | null>(null);
+  const [panning, setPanning] = useState(false);
+  const latest = useRef({ viewport, content, view: null as CanvasView | null });
+
+  const resolve = (value: CanvasView | null, size: Size, box: Size) =>
+    value === null ? fitView(size, box) : clampView(value, size, box);
+  const view =
+    viewport === null
+      ? { scale: 1, x: 0, y: 0 }
+      : resolve(stored, viewport, content);
+  latest.current = { viewport, content, view };
+  const pannable =
+    viewport !== null &&
+    (content.width * view.scale + 2 * CANVAS_PADDING > viewport.width ||
+      content.height * view.scale + 2 * CANVAS_PADDING > viewport.height);
+
+  const update = (change: (current: CanvasView, size: Size) => CanvasView) =>
+    setView((value) => {
+      const { viewport: size, content: box } = latest.current;
+      return size === null ? value : change(resolve(value, size, box), size);
+    });
+  const zoomAt = (scale: (current: number) => number, anchor?: Point) =>
+    update((current, size) =>
+      zoomView(
+        current,
+        scale(current.scale),
+        anchor ?? { x: size.width / 2, y: size.height / 2 },
+        size,
+        latest.current.content,
+      ),
+    );
+  const pan = (delta: Point) =>
+    update((current, size) =>
+      panView(current, delta, size, latest.current.content),
+    );
+  const actions = useRef({ zoomAt, pan });
+  actions.current = { zoomAt, pan };
+
+  useEffect(() => {
+    zoomTo.current = (zoom) =>
+      actions.current.zoomAt((scale) =>
+        "to" in zoom ? zoom.to : scale * zoom.by,
+      );
+  }, [zoomTo]);
+
+  const paneRef = useCallback((element: HTMLDivElement | null) => {
+    if (element === null) {
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry === undefined) {
+        return;
+      }
+      const { width, height } = entry.contentRect;
+      setViewport((value) =>
+        value?.width === width && value.height === height
+          ? value
+          : { width, height },
+      );
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (stage === null) {
+      return;
+    }
+    const anchorOf = (target: EventTarget | null, point: Point): Point => {
+      const pane =
+        (target as HTMLElement | null)?.closest("[data-pane]") ??
+        stage.querySelector("[data-pane]");
+      const rect = pane?.getBoundingClientRect();
+      return rect === undefined
+        ? point
+        : { x: point.x - rect.left, y: point.y - rect.top };
+    };
+
+    const onWheel = (event: WheelEvent) => {
+      const unit = event.deltaMode === 1 ? 16 : 1;
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+        const delta = Math.max(
+          -WHEEL_ZOOM_LIMIT,
+          Math.min(WHEEL_ZOOM_LIMIT, event.deltaY * unit),
+        );
+        actions.current.zoomAt(
+          (scale) => scale * Math.exp(-delta / 100),
+          anchorOf(event.target, { x: event.clientX, y: event.clientY }),
+        );
+        return;
+      }
+      const horizontal = event.shiftKey && event.deltaX === 0;
+      const delta = {
+        x: -(horizontal ? event.deltaY : event.deltaX) * unit,
+        y: horizontal ? 0 : -event.deltaY * unit,
+      };
+      const { viewport: size, content: box, view: current } = latest.current;
+      if (size === null || current === null) {
+        return;
+      }
+      const next = panView(current, delta, size, box);
+      if (next.x === current.x && next.y === current.y) {
+        return;
+      }
+      event.preventDefault();
+      actions.current.pan(delta);
+    };
+
+    let gestureScale = 1;
+    const onGestureStart = (event: Event) => {
+      event.preventDefault();
+      gestureScale = 1;
+    };
+    const onGestureChange = (event: Event) => {
+      event.preventDefault();
+      const gesture = event as Event & {
+        scale: number;
+        clientX: number;
+        clientY: number;
+      };
+      const factor = gesture.scale / gestureScale;
+      gestureScale = gesture.scale;
+      actions.current.zoomAt(
+        (scale) => scale * factor,
+        anchorOf(event.target, { x: gesture.clientX, y: gesture.clientY }),
+      );
+    };
+
+    const pointers: Pointers = new Map();
+    const center = () => {
+      const points = [...pointers.values()];
+      return {
+        x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
+        y: points.reduce((sum, point) => sum + point.y, 0) / points.length,
+      };
+    };
+    const spread = () => {
+      const [first, second] = [...pointers.values()];
+      return first === undefined || second === undefined
+        ? 0
+        : Math.hypot(first.x - second.x, first.y - second.y);
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if (
+        (event.pointerType === "mouse" && event.button !== 0) ||
+        (event.target as HTMLElement).closest("button, input")
+      ) {
+        return;
+      }
+      stage.setPointerCapture(event.pointerId);
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      setPanning(true);
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      if (!pointers.has(event.pointerId)) {
+        return;
+      }
+      const before = center();
+      const beforeSpread = spread();
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      const after = center();
+      const afterSpread = spread();
+      actions.current.pan({ x: after.x - before.x, y: after.y - before.y });
+      if (beforeSpread > 0 && afterSpread > 0) {
+        actions.current.zoomAt(
+          (scale) => (scale * afterSpread) / beforeSpread,
+          anchorOf(event.target, after),
+        );
+      }
+    };
+    const onPointerUp = (event: PointerEvent) => {
+      pointers.delete(event.pointerId);
+      if (pointers.size === 0) {
+        setPanning(false);
+      }
+    };
+
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    stage.addEventListener("gesturestart", onGestureStart);
+    stage.addEventListener("gesturechange", onGestureChange);
+    stage.addEventListener("pointerdown", onPointerDown);
+    stage.addEventListener("pointermove", onPointerMove);
+    stage.addEventListener("pointerup", onPointerUp);
+    stage.addEventListener("pointercancel", onPointerUp);
+    return () => {
+      stage.removeEventListener("wheel", onWheel);
+      stage.removeEventListener("gesturestart", onGestureStart);
+      stage.removeEventListener("gesturechange", onGestureChange);
+      stage.removeEventListener("pointerdown", onPointerDown);
+      stage.removeEventListener("pointermove", onPointerMove);
+      stage.removeEventListener("pointerup", onPointerUp);
+      stage.removeEventListener("pointercancel", onPointerUp);
+    };
+  }, [stage]);
+
+  return { view, panning, pannable, stageRef: setStage, paneRef };
+}
+
+function Pane({
+  caption,
+  view,
+  paneRef,
+  children,
+}: {
+  caption: ReactNode;
+  view: CanvasView;
+  paneRef?: Ref<HTMLDivElement>;
+  children: ReactNode;
+}) {
+  return (
+    <figure className="flex min-h-0 min-w-0 flex-col bg-canvas">
+      <figcaption className="flex h-7 shrink-0 items-end justify-between gap-4 px-4 text-xs text-muted">
+        {caption}
+      </figcaption>
+      <div
+        ref={paneRef}
+        data-pane
+        className="relative min-h-0 flex-1 overflow-hidden"
+      >
+        <div
+          className="absolute top-0 left-0"
+          style={{
+            transform: `translate(${Math.round(view.x)}px, ${Math.round(view.y)}px)`,
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </figure>
   );
 }
 
 const FRAME_PLACEHOLDER = "skeleton bg-surface";
 
-function imageStyle(image: Image, zoom: ViewerZoom) {
-  if (zoom === "fit") {
-    return { width: image.width, maxWidth: "100%" };
-  }
-  const scale = zoom === "200" ? 2 : 1;
+function imageStyle(image: Image, scale: number) {
   return {
-    width: image.width * scale,
+    width: Math.round(image.width * scale),
     maxWidth: "none",
     imageRendering: scale > 1 ? ("pixelated" as const) : undefined,
   };
@@ -388,87 +703,83 @@ function imageStyle(image: Image, zoom: ViewerZoom) {
 
 function Frame({
   image,
-  zoom,
+  scale,
   caption,
   overlay,
   size,
   highlighted = false,
 }: {
   image: Image | null;
-  zoom: ViewerZoom;
+  scale: number;
   caption: string;
   overlay?: Image | null;
   size?: Image;
   highlighted?: boolean;
 }) {
   const base = image ?? overlay;
+  if (base == null) {
+    return <p className="text-sm text-muted">Image not available.</p>;
+  }
   return (
-    <figure className="min-w-0">
-      <figcaption className="h-6 text-xs text-muted">{caption}</figcaption>
-      {base == null ? (
-        <p className="text-sm text-muted">Image not available.</p>
-      ) : (
+    <div
+      className={`checker relative block outline-offset-0 ${
+        highlighted ? "outline-2 outline-link" : "outline-1 outline-border"
+      } outline-solid`}
+    >
+      {image === null && size !== undefined ? (
         <div
-          className={`checker relative inline-block align-top outline-offset-0 ${
-            zoom === "fit" ? "max-w-full" : ""
-          } ${
-            highlighted ? "outline-2 outline-link" : "outline-1 outline-border"
-          } outline-solid`}
-        >
-          {image === null && size !== undefined ? (
-            <div
-              className="block max-w-full"
-              style={{
-                ...imageStyle(size, zoom),
-                aspectRatio: `${size.width} / ${size.height}`,
-              }}
-            />
-          ) : (
-            image !== null && (
-              <SnapshotImage
-                image={image}
-                alt={caption}
-                placeholder={FRAME_PLACEHOLDER}
-                retryable
-                className="block"
-                style={imageStyle(image, zoom)}
-              />
-            )
-          )}
-          {overlay && (
-            <SnapshotImage
-              image={overlay}
-              alt="Diff overlay"
-              placeholder={false}
-              className="pointer-events-none absolute top-0 left-0 block opacity-70"
-              style={imageStyle(overlay, zoom)}
-            />
-          )}
-        </div>
+          className="block"
+          style={{
+            ...imageStyle(size, scale),
+            aspectRatio: `${size.width} / ${size.height}`,
+          }}
+        />
+      ) : (
+        image !== null && (
+          <SnapshotImage
+            image={image}
+            alt={caption}
+            placeholder={FRAME_PLACEHOLDER}
+            retryable
+            className="block"
+            style={imageStyle(image, scale)}
+            draggable={false}
+          />
+        )
       )}
-    </figure>
+      {overlay && (
+        <SnapshotImage
+          image={overlay}
+          alt="Diff overlay"
+          placeholder={false}
+          className="pointer-events-none absolute top-0 left-0 block opacity-70"
+          style={imageStyle(overlay, scale)}
+          draggable={false}
+        />
+      )}
+    </div>
   );
 }
 
 function Slider({
   image,
   baselineImage,
-  zoom,
+  scale,
 }: {
   image: Image;
   baselineImage: Image;
-  zoom: ViewerZoom;
+  scale: number;
 }) {
   const [position, setPosition] = useState(50);
 
   return (
-    <div className="checker relative inline-block max-w-full align-top outline-1 outline-border outline-solid select-none">
+    <div className="checker relative block outline-1 outline-border outline-solid">
       <SnapshotImage
         image={image}
         alt="New"
         placeholder={FRAME_PLACEHOLDER}
         className="block"
-        style={imageStyle(image, zoom)}
+        style={imageStyle(image, scale)}
         draggable={false}
       />
       <SnapshotImage
@@ -477,7 +788,7 @@ function Slider({
         placeholder={FRAME_PLACEHOLDER}
         className="absolute top-0 left-0 block"
         style={{
-          ...imageStyle(baselineImage, zoom),
+          ...imageStyle(baselineImage, scale),
           clipPath: `inset(0 ${100 - position}% 0 0)`,
         }}
         draggable={false}

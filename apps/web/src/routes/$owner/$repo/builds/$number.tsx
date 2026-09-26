@@ -50,6 +50,7 @@ import {
 } from "../../../../components/ui";
 import { MODES, useViewerSettings } from "../../../../components/Viewer";
 import { track } from "../../../../lib/analytics";
+import { ZOOM_STEP } from "../../../../lib/canvasView";
 import { errorCode } from "../../../../lib/errorCode";
 import { formatCount } from "../../../../lib/format";
 import { isLab } from "../../../../lib/lab";
@@ -317,6 +318,7 @@ function BuildPage({
   const select = (row: SnapshotRow | undefined) => {
     if (row !== undefined) {
       settings.setShowBaseline(false);
+      settings.setView(null);
       void navigate({
         to: "/$owner/$repo/builds/$number/snapshots/$snapshotId",
         params: { ...linkParams, snapshotId: row.id },
@@ -461,10 +463,17 @@ function BuildPage({
           }
           break;
         case "f":
-          settings.setZoom("fit");
+          settings.setView(null);
           break;
         case "0":
-          settings.setZoom("100");
+          settings.zoom({ to: 1 });
+          break;
+        case "=":
+        case "+":
+          settings.zoom({ by: ZOOM_STEP });
+          break;
+        case "-":
+          settings.zoom({ by: 1 / ZOOM_STEP });
           break;
         case "/":
           event.preventDefault();

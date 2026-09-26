@@ -9,6 +9,7 @@ import {
   XCircleIcon,
 } from "@phosphor-icons/react/ssr";
 import { useEffect, useRef, useState } from "react";
+import { ZOOM_STEP } from "../../lib/canvasView";
 import { formatPercent } from "../../lib/format";
 import {
   buttonClass,
@@ -262,10 +263,17 @@ export function ReviewDemo() {
           }
           break;
         case "f":
-          settings.setZoom("fit");
+          settings.setView(null);
           break;
         case "0":
-          settings.setZoom("100");
+          settings.zoom({ to: 1 });
+          break;
+        case "=":
+        case "+":
+          settings.zoom({ by: ZOOM_STEP });
+          break;
+        case "-":
+          settings.zoom({ by: 1 / ZOOM_STEP });
           break;
         default:
           return;
