@@ -17,6 +17,8 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RefundsRouteImport } from './routes/refunds'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as OwnerIndexRouteImport } from './routes/$owner/index'
+import { Route as CompareIndexRouteImport } from './routes/compare/index'
+import { Route as CompareSlugRouteImport } from './routes/compare/$slug'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner/$repo/index'
@@ -67,6 +69,16 @@ const TermsRoute = TermsRouteImport.update({
 const OwnerIndexRoute = OwnerIndexRouteImport.update({
   id: '/$owner/',
   path: '/$owner/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareIndexRoute = CompareIndexRouteImport.update({
+  id: '/compare/',
+  path: '/compare/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareSlugRoute = CompareSlugRouteImport.update({
+  id: '/compare/$slug',
+  path: '/compare/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsIndexRoute = DocsIndexRouteImport.update({
@@ -135,8 +147,10 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
+  '/compare/$slug': typeof CompareSlugRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/$owner/': typeof OwnerIndexRoute
+  '/compare/': typeof CompareIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
@@ -155,8 +169,10 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
+  '/compare/$slug': typeof CompareSlugRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/$owner': typeof OwnerIndexRoute
+  '/compare': typeof CompareIndexRoute
   '/docs': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
@@ -176,8 +192,10 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
+  '/compare/$slug': typeof CompareSlugRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/$owner/': typeof OwnerIndexRoute
+  '/compare/': typeof CompareIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
@@ -199,8 +217,10 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refunds'
     | '/terms'
+    | '/compare/$slug'
     | '/docs/$slug'
     | '/$owner/'
+    | '/compare/'
     | '/docs/'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
@@ -219,8 +239,10 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refunds'
     | '/terms'
+    | '/compare/$slug'
     | '/docs/$slug'
     | '/$owner'
+    | '/compare'
     | '/docs'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
@@ -239,8 +261,10 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refunds'
     | '/terms'
+    | '/compare/$slug'
     | '/docs/$slug'
     | '/$owner/'
+    | '/compare/'
     | '/docs/'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
@@ -261,7 +285,9 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   RefundsRoute: typeof RefundsRoute
   TermsRoute: typeof TermsRoute
+  CompareSlugRoute: typeof CompareSlugRoute
   OwnerIndexRoute: typeof OwnerIndexRoute
+  CompareIndexRoute: typeof CompareIndexRoute
   OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRoute
   OwnerSettingsBillingRoute: typeof OwnerSettingsBillingRoute
   OwnerSettingsMembersRoute: typeof OwnerSettingsMembersRoute
@@ -327,6 +353,20 @@ declare module '@tanstack/react-router' {
       path: '/$owner'
       fullPath: '/$owner/'
       preLoaderRoute: typeof OwnerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare/': {
+      id: '/compare/'
+      path: '/compare'
+      fullPath: '/compare/'
+      preLoaderRoute: typeof CompareIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare/$slug': {
+      id: '/compare/$slug'
+      path: '/compare/$slug'
+      fullPath: '/compare/$slug'
+      preLoaderRoute: typeof CompareSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/': {
@@ -445,7 +485,9 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   RefundsRoute: RefundsRoute,
   TermsRoute: TermsRoute,
+  CompareSlugRoute: CompareSlugRoute,
   OwnerIndexRoute: OwnerIndexRoute,
+  CompareIndexRoute: CompareIndexRoute,
   OwnerRepoSettingsRoute: OwnerRepoSettingsRoute,
   OwnerSettingsBillingRoute: OwnerSettingsBillingRoute,
   OwnerSettingsMembersRoute: OwnerSettingsMembersRoute,

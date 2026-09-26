@@ -11,6 +11,8 @@ for (const path of [
   "privacy",
   "terms",
   "refunds",
+  "compare",
+  "compare/argos",
   "docs",
   "docs/playwright",
   "docs/review",

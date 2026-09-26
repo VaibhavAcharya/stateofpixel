@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { MDXComponents } from "mdx/types";
 import { Children, type ReactNode } from "react";
 import { findDoc } from "../../content/docs";
-import { pageMeta } from "../../lib/pageMeta";
+import { pageLinks, pageMeta } from "../../lib/pageMeta";
 import { CodeBlock as Block, type Snippet } from "../CodeBlock";
 import { Kbd } from "../ui";
 import { Code, DocsPage, DocsPageLink, docsPath, H2 } from "./DocsLayout";
@@ -108,17 +108,16 @@ export function DocsArticle({ slug }: { slug: string }) {
 
 export function docsHead(slug: string) {
   const meta = findDoc(slug)?.meta;
+  if (meta === undefined) {
+    return {};
+  }
+  const page = {
+    path: docsPath(slug),
+    title: meta.title,
+    description: meta.description,
+  };
   return {
-    meta:
-      meta === undefined
-        ? []
-        : [
-            { title: `${meta.title} / Docs / stateofpixel` },
-            ...pageMeta({
-              path: docsPath(slug),
-              title: meta.title,
-              description: meta.description,
-            }),
-          ],
+    meta: [{ title: `${meta.title} / Docs / stateofpixel` }, ...pageMeta(page)],
+    links: pageLinks(page),
   };
 }

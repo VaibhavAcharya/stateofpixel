@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LegalPage, SupportEmail } from "../components/LegalPage";
-import { PAGES, pageMeta } from "../lib/pageMeta";
+import { PAGES, pageLinks, pageMeta } from "../lib/pageMeta";
 
 export const Route = createFileRoute("/refunds")({
   head: () => ({
@@ -8,6 +8,7 @@ export const Route = createFileRoute("/refunds")({
       { title: "Refund policy / stateofpixel" },
       ...pageMeta(PAGES.refunds),
     ],
+    links: pageLinks(PAGES.refunds),
   }),
   component: Refunds,
 });

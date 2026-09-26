@@ -21,7 +21,7 @@ import { ReviewDemo } from "./ReviewDemo";
 
 export const WIDE = "mx-auto max-w-[1448px] px-6 max-sm:px-4";
 export const SECTION = `${WIDE} py-24 max-sm:py-12`;
-const LEAD =
+export const LEAD =
   "text-2xl font-[450] tracking-[-0.035em] text-balance text-muted max-sm:text-xl";
 export const DISPLAY =
   "text-[clamp(40px,4.6vw,66px)] leading-[1.1] font-semibold tracking-[-0.045em] text-balance";
@@ -33,6 +33,7 @@ const NAV = [
   ["How it works", "/#how"],
   ["Pricing", "/#pricing"],
   ["FAQ", "/#faq"],
+  ["Compare", "/compare"],
   ["Docs", "/docs"],
 ] as const;
 
@@ -351,7 +352,7 @@ export function PipelinesSection() {
   );
 }
 
-function DottedRows({ items }: { items: [string, string][] }) {
+export function DottedRows({ items }: { items: [string, string][] }) {
   return (
     <ul className="mt-12 border-t border-dotted border-field-border/50">
       {items.map(([title, text]) => (
@@ -504,6 +505,7 @@ export function FinalWithSnippet() {
 
 const FOOTER_LINKS = [
   ["Docs", "/docs"],
+  ["Compare", "/compare"],
   ["Brand", "/brand"],
   ["Privacy", "/privacy"],
   ["Terms", "/terms"],

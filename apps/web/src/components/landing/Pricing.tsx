@@ -2,6 +2,7 @@ import { CheckIcon } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useState } from "react";
+import { ARGOS, CHROMATIC, cheapestPlan } from "../../lib/competitorPricing";
 import { SUPPORT_EMAIL } from "../../lib/supportEmail";
 import type { PaidPlan } from "../../lib/useBilling";
 import { AuthButton } from "../SignIn";
@@ -38,31 +39,6 @@ export function monthlyPrice(tier: Tier, billing: Billing) {
 
 function fittingTier(gigabytes: number) {
   return TIERS.find((tier) => gigabytes <= tier.gigabytes) ?? null;
-}
-
-type Plan = { price: number; included: number; extra: number | null };
-
-const CHROMATIC: Plan[] = [
-  { price: 0, included: 5_000, extra: null },
-  { price: 179, included: 35_000, extra: 0.008 },
-  { price: 399, included: 85_000, extra: 0.008 },
-];
-
-const ARGOS: Plan[] = [
-  { price: 0, included: 5_000, extra: null },
-  { price: 100, included: 35_000, extra: 0.004 },
-];
-
-function cheapest(plans: Plan[], snapshots: number) {
-  return Math.min(
-    ...plans
-      .filter((plan) => plan.extra !== null || snapshots <= plan.included)
-      .map(
-        (plan) =>
-          plan.price +
-          Math.max(0, snapshots - plan.included) * (plan.extra ?? 0),
-      ),
-  );
 }
 
 const money = new Intl.NumberFormat("en-US", {
@@ -107,8 +83,8 @@ export function estimate(workload: Workload) {
     snapshots,
     stored,
     tier: fittingTier(stored),
-    chromatic: cheapest(CHROMATIC, snapshots),
-    argos: cheapest(ARGOS, snapshots),
+    chromatic: cheapestPlan(CHROMATIC, snapshots).cost,
+    argos: cheapestPlan(ARGOS, snapshots).cost,
   };
 }
 

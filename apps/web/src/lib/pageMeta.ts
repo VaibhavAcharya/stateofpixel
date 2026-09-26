@@ -39,12 +39,18 @@ export function pageMeta(page: PageMeta) {
   return [
     { name: "description", content: page.description },
     { property: "og:site_name", content: "stateofpixel" },
+    { property: "og:type", content: "website" },
     { property: "og:title", content: page.title },
     { property: "og:description", content: page.description },
     { property: "og:url", content: `${SITE_URL}${page.path}` },
     { property: "og:image", content: `${SITE_URL}${ogImagePath(page.path)}` },
     { property: "og:image:width", content: "1200" },
     { property: "og:image:height", content: "630" },
+    { property: "og:image:alt", content: page.title },
     { name: "twitter:card", content: "summary_large_image" },
   ];
+}
+
+export function pageLinks(page: PageMeta) {
+  return [{ rel: "canonical", href: `${SITE_URL}${page.path}` }];
 }

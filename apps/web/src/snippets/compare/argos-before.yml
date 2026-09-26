@@ -1,0 +1,6 @@
+steps:
+  - run: npm test
+  - name: Upload screenshots to Argos
+    run: npm exec -- argos upload ./screenshots
+    env:
+      ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}

@@ -1,0 +1,6 @@
+permissions:
+  id-token: write
+
+steps:
+  - run: npm test
+  - run: npx stateofpixel upload screenshots
