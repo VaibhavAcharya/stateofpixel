@@ -9,11 +9,11 @@ usage() {
 scenario="${1:-}"
 case "$scenario" in
   no-change) expected="playground and storybook: success, No visual changes" ;;
-  color-change) expected="playground: action_required, 1 change to review (buttons). storybook: action_required, 1 change to review (Button/Primary)" ;;
-  layout-shift) expected="playground: action_required, 2 changes to review (buttons, card). storybook: action_required, 4 changes to review (every story)" ;;
-  add-page) expected="playground: action_required, 1 change to review (badge added). storybook: success, No visual changes" ;;
+  color-change) expected="playground: pending, 1 change to review (buttons). storybook: pending, 1 change to review (Button/Primary)" ;;
+  layout-shift) expected="playground: pending, 2 changes to review (buttons, card). storybook: pending, 4 changes to review (every story)" ;;
+  add-page) expected="playground: pending, 1 change to review (badge added). storybook: success, No visual changes" ;;
   remove-page) expected="playground: success, No visual changes (card removed). storybook: success, No visual changes" ;;
-  add-story) expected="playground: success, No visual changes. storybook: action_required, 1 change to review (Badge/Default added)" ;;
+  add-story) expected="playground: success, No visual changes. storybook: pending, 1 change to review (Badge/Default added)" ;;
   remove-story) expected="playground: success, No visual changes. storybook: success, No visual changes (Card/Default removed)" ;;
   *) usage ;;
 esac
