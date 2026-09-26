@@ -112,19 +112,21 @@ Removed snapshots do not block (proposal). Deleting a story is intentional in al
 
 ### GitHub check mapping
 
-| Build state | Check status | Conclusion | Title |
-|---|---|---|---|
-| pending | `in_progress` | | Waiting for screenshots (2 of 4 shards) |
-| finalized, `no_changes` | `completed` | `success` | No visual changes |
-| finalized, `changes` | `completed` | `action_required` | 12 changes to review |
-| finalized, `approved` | `completed` | `success` | 12 changes approved |
-| finalized, `approved` by auto-approve | `completed` | `success` | Baseline updated, 12 changes |
-| finalized, `rejected` | `completed` | `failure` | 2 changes rejected |
-| expired | `completed` | `timed_out` | Build never finished |
-| error | `completed` | `failure` | Upload failed, see CI logs |
-| over storage limit | `completed` | `neutral` | Storage limit reached, not compared |
+The check is a GitHub commit status. GitHub links a status straight to its `target_url`, while the Details link of an app's check run opens GitHub's own checks page. A completed check run also has no waiting state, and GitHub shows `action_required` as failing.
 
-`details_url` is always the build page. Branch protection treats `action_required` as not passing, so a PR with unreviewed changes cannot merge when the check is required (unverified, check GitHub docs).
+| Build state | State | Description |
+|---|---|---|
+| pending | `pending` | Waiting for screenshots (2 of 4 shards) |
+| finalized, `no_changes` | `success` | No visual changes |
+| finalized, `changes` | `pending` | 12 changes to review |
+| finalized, `approved` | `success` | 12 changes approved |
+| finalized, `approved` by auto-approve | `success` | Baseline updated, 12 changes |
+| finalized, `rejected` | `failure` | 2 changes rejected |
+| expired | `error` | Build never finished |
+| error | `error` | Upload failed, see CI logs |
+| over storage limit | `success` | Storage limit reached, not compared |
+
+`target_url` is always the build page. A required check that is `pending` blocks the merge, so a PR with unreviewed changes cannot merge until they are approved. The storage limit reports `success` because statuses have no neutral state and CI never fails because of us.
 
 ## 4. UX flows
 
@@ -156,7 +158,7 @@ For CI other than GitHub Actions, a link opens the Tokens section of settings.
 
 1. Developer pushes a branch and opens a PR.
 2. CI uploads. 1,488 unchanged, 10 changed, 2 added. Only 12 images are uploaded, plus 10 diff images.
-3. Check: action_required, "12 changes to review", with a "Details" link.
+3. Check: pending, "12 changes to review", with a "Details" link.
 4. Reviewer clicks Details and lands on the build page with the first changed snapshot open.
 5. Reviewer steps through with `j` and `k`, approves with `a`. Or clicks "Approve all".
 6. When the last pending snapshot is approved, conclusion becomes `approved` and the check flips to success. The page shows a toast "Build approved, check updated on GitHub".
@@ -207,7 +209,7 @@ A re-run of a failed CI job gets a new `GITHUB_RUN_ATTEMPT`, so it creates a fre
 
 1. Account reaches 80% of its storage limit. Account and project pages show a yellow banner to members with write access. The CLI prints a warning line.
 2. At 100%, a 14-day grace period starts and `overLimitSince` is set. Everything keeps working, banner turns red and names the date grace ends.
-3. After grace, new builds get `storageBlocked`. They still hash-compare, but `POST /builds` returns no upload URLs for new hashes and no baseline URLs, so the CLI neither uploads nor diffs. Snapshots that match the baseline are `unchanged` as usual. Changed and added snapshots get a row with no image and review state `none`. The build finalizes as `changes`, is never a baseline, cannot be reviewed, and the check is neutral, "Storage limit reached, not compared". CI never fails because of us.
+3. After grace, new builds get `storageBlocked`. They still hash-compare, but `POST /builds` returns no upload URLs for new hashes and no baseline URLs, so the CLI neither uploads nor diffs. Snapshots that match the baseline are `unchanged` as usual. Changed and added snapshots get a row with no image and review state `none`. The build finalizes as `changes`, is never a baseline, cannot be reviewed, and the check passes with "Storage limit reached, not compared". CI never fails because of us.
 4. Freeing space (shorter retention, deleting projects) or upgrading ends the state as soon as `storageBytes` drops under the limit. Upgrading goes through Dodo Payments (section 8, Billing). `accounts.setPlan` (an internal mutation run from the Convex dashboard) still sets a plan by hand, for example `custom`.
 
 ### 4.11 Removing access
@@ -528,7 +530,7 @@ The account home lists projects through `by_accountId_and_lastBuildAt` or `by_ac
 | counts | object | `{unchanged, changed, added, removed, failed, pending, approved, rejected}`. Kept in sync by every mutation that changes a snapshot, so pages never count rows. |
 | storageBlocked | boolean | Set at create when the account is over its limit after grace. |
 | expiryJobId | Id<"_scheduled_functions">, optional | The scheduled expiry, cancelled at finalize. |
-| githubCheckRunId | number, optional | |
+| githubCheckRunId | number, optional | Left from check runs. No longer written. |
 | checkVersion | number | Incremented by every change that affects the check. |
 | checkOutOfSync | boolean | True until a sync of the current `checkVersion` lands on GitHub. Index `by_checkOutOfSync`, read by the `syncChecks` cron. |
 | checkSyncScheduledAt | number, optional | Set while a sync action is scheduled, so a build has one sync at a time. Treated as stuck after 5 minutes. |
@@ -843,7 +845,8 @@ GitHub App permissions:
 
 | Permission | Level | Why |
 |---|---|---|
-| Checks | write | Create and update check runs. |
+| Commit statuses | write | Set the check on the build's commit. |
+| Checks | write | Not used since the move to commit statuses. Drop it once every installation accepted Commit statuses. |
 | Pull requests | read and write | PR number, base branch, squash merge lookup. Write is not used yet. |
 | Contents | read | Compare API for baseline fallback. |
 | Actions | read | Not used yet. |
@@ -858,15 +861,11 @@ Webhooks go to the HTTP action `POST /github/webhook`. It reads the raw body, ve
 | `installation` created, deleted, suspend, unsuspend | Create or archive account and projects. |
 | `installation_repositories` added, removed | Create or archive projects. |
 | `repository` renamed, transferred, edited | Update owner, name, default branch, private flag. |
-| `check_run` rerequested | Re-send the current check state. Does not re-run CI. |
 | `pull_request` closed, reopened | Set or clear `prClosedAt` on that PR's builds. Closing starts their retention clock. The GitHub App must subscribe to the Pull request event. |
 
-GitHub API calls (check runs, compare, PR lookup) run in actions with an installation token made from the app's private key. Octokit uses Web Crypto and probably runs in the default Convex runtime (unverified); if not, those actions move to a `"use node"` file. Scheduled actions run at most once and are not retried ([docs](https://docs.convex.dev/scheduling/scheduled-functions)), so every state change bumps `checkVersion` and schedules `checks.sync` unless one is already scheduled. The sync creates the check run (`external_id` is the build id) or updates it, then clears `checkOutOfSync` only when the version it sent is still current; otherwise it runs again. A cron every 5 minutes retries builds that are still out of sync. A 422 from GitHub, for example for a commit GitHub does not have, is not retried. The check name is `stateofpixel`, or `stateofpixel/<buildName>` for other build names, on the build's head commit.
+GitHub API calls (commit statuses, compare, PR lookup) run in actions with an installation token made from the app's private key. Octokit uses Web Crypto and probably runs in the default Convex runtime (unverified); if not, those actions move to a `"use node"` file. Scheduled actions run at most once and are not retried ([docs](https://docs.convex.dev/scheduling/scheduled-functions)), so every state change bumps `checkVersion` and schedules `checks.sync` unless one is already scheduled. The sync posts a commit status for the build's context, which replaces the previous one, then clears `checkOutOfSync` only when the version it sent is still current; otherwise it runs again. A cron every 5 minutes retries builds that are still out of sync. A 422 from GitHub, for example for a commit GitHub does not have, is not retried. A 403 from an installation that has not accepted the Commit statuses permission keeps retrying, so the check appears once the owner accepts. The check name is `stateofpixel`, or `stateofpixel/<buildName>` for other build names, on the build's head commit.
 
-Check run content:
-- Title from the mapping table in section 3.
-- Summary: a counts table, a link to the build, and up to 10 changed or added snapshot names linking to `/builds/{number}/snapshots/{id}`.
-- No annotations in v1.
+Status content: the state and description from the mapping table in section 3, with the build page as `target_url`.
 
 ## 10. CLI
 

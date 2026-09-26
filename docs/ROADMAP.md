@@ -28,6 +28,7 @@ Progress tracker for [PLAN.md](./PLAN.md). Details for each item are in [SPEC.md
 - [x] Baseline selection
 - [x] `stateofpixel upload <dir>`
 - [x] GitHub check runs
+- [ ] GitHub commit statuses instead of check runs, so the check waits in pending and links straight to the build
 - [x] Pages: account home, project builds list, build review page
 - [x] Review actions and keyboard shortcuts
 - [x] Auto-approve on the default branch
