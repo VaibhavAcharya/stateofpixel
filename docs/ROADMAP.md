@@ -112,7 +112,7 @@ See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (stat
 - [x] Rate limits for builds per account, requests per token and bytes uploaded per day
 - [x] Enforce the limits in SPEC section 12
 - [ ] Per-account egress tracking
-- [ ] Landing and FAQ copy for the free tier
+- [x] Landing and FAQ copy for the free tier
 
 ## Legal
 
