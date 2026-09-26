@@ -84,6 +84,8 @@ The build page is captured from fixtures, so it needs no sign-in or seeded Conve
 
 `scripts/test-pr.sh <scenario>` opens a draft PR that changes the playground in a known way and prints the expected check for `playground` and `storybook`. Scenarios: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`, `add-story`, `remove-story`. It needs `gh` signed in.
 
+Merge scenarios run against the private repo [`VaibhavAcharya/stateofpixel-test`](https://github.com/VaibhavAcharya/stateofpixel-test). Its workflow uploads `shots/*.png` to the dev deployment with the published CLI, and `python3 scripts/png.py <name> <hex color>` recolors a shot. The GitHub App sends webhooks to production only, so after adding a repo to the installation, run `npx convex run installations:sync '{"installationId": <id>}'` in `packages/backend` to create its dev project.
+
 Netlify deploy previews and branch deploys build only the web app against the production Convex URL. Only production builds run `convex deploy`.
 
 ## Checks
