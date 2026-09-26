@@ -335,10 +335,11 @@ Viewer:
 - Title row: snapshot name, diff status, diff percent and pixel count, dimensions (both if they differ, like `1280x720 to 1280x812`).
 - Modes:
   - Side by side: baseline left, new right, zoom and pan synced.
-  - Diff: new image with the diff image overlaid in red at 70% opacity.
+  - Diff: new image with the diff image overlaid in the diff color at 70% opacity.
   - Slider: one frame, a vertical handle wipes between baseline and new.
   - Flip: one frame, space toggles between baseline and new. Best for 1-pixel shifts.
 - Canvas: Fit (default) fits the width, never above 100%. Wheel and trackpad scroll pan, drag pans, pinch or ctrl+wheel zooms at the pointer, `+` / `-` zoom at the center, `0` is 100%, `f` or the Fit button resets. Zoom goes from the whole image in view up to 800%. Panning stops at the image edges plus 16px. A wheel that cannot pan scrolls the page. Opening another snapshot resets to Fit. Math in `apps/web/src/lib/canvasView.ts`.
+- Diff color: red (default), magenta, blue or green, picked in the toolbar while the diff shows (Side by side with the overlay on, and Diff). Kept in the viewer settings, so it stays across snapshots until reload. The diff PNG is used as a mask: an SVG filter (`feFlood` in the color, `feComposite` `in` `SourceAlpha`) paints each non-transparent pixel in the picked color. A filter needs no CORS on the image, which `mask-image` would.
 - Added snapshots show only the new image. Removed snapshots show only the baseline.
 - Different dimensions: images align top-left, the empty area is a checkerboard.
 - Chosen mode and zoom are remembered in localStorage per user.
