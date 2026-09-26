@@ -1,5 +1,6 @@
 import type { Id } from "../_generated/dataModel";
 import { env } from "../_generated/server";
+import { messages, sign, verify } from "./signing";
 
 export const IMAGE_ROUTE = "/images/";
 
@@ -14,8 +15,28 @@ export function privateImageUrl(
   return `${env.CONVEX_SITE_URL}${IMAGE_ROUTE}${projectId}/${imageId}`;
 }
 
+export async function r2ImageUrl(
+  project: { _id: Id<"projects">; private: boolean },
+  image: { accountId: Id<"accounts">; hash: string; r2Key: string },
+  imagesUrl: string,
+): Promise<string> {
+  const token = `${image.accountId}.${image.hash}`;
+  return project.private
+    ? `${imagesUrl}${IMAGE_ROUTE}${project._id}/${token}.${await sign(
+        env.IMAGE_URL_SECRET,
+        messages.privateImage(project._id, image.r2Key),
+      )}`
+    : `${imagesUrl}/files/${token}.${await sign(
+        env.IMAGE_URL_SECRET,
+        messages.publicImage(image.r2Key),
+      )}`;
+}
+
 export function withGrant(url: string, grant: ImageGrant): string {
-  return url.startsWith(`${env.CONVEX_SITE_URL}${IMAGE_ROUTE}`)
+  const routes = [env.CONVEX_SITE_URL, env.IMAGES_URL].flatMap((base) =>
+    base === undefined ? [] : [`${base}${IMAGE_ROUTE}`],
+  );
+  return routes.some((route) => url.startsWith(route))
     ? `${url}?exp=${grant.exp}&sig=${grant.sig}`
     : url;
 }
@@ -29,12 +50,10 @@ export async function createGrant(
   now: number,
 ): Promise<ImageGrant> {
   const exp = grantExpiry(now);
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    await signingKey(),
-    grantMessage(projectId, exp),
-  );
-  return { exp, sig: toBase64Url(new Uint8Array(signature)) };
+  return {
+    exp,
+    sig: await sign(env.IMAGE_URL_SECRET, messages.grant(projectId, exp)),
+  };
 }
 
 export async function verifyGrant(
@@ -46,45 +65,5 @@ export async function verifyGrant(
   if (!Number.isSafeInteger(exp) || exp <= now) {
     return false;
   }
-  const signature = fromBase64Url(sig);
-  if (signature === null) {
-    return false;
-  }
-  return crypto.subtle.verify(
-    "HMAC",
-    await signingKey(),
-    signature,
-    grantMessage(projectId, exp),
-  );
-}
-
-function grantMessage(projectId: string, exp: number) {
-  return new TextEncoder().encode(`${projectId}.${exp}`);
-}
-
-function signingKey() {
-  return crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(env.IMAGE_URL_SECRET),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"],
-  );
-}
-
-function toBase64Url(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-function fromBase64Url(value: string): Uint8Array<ArrayBuffer> | null {
-  if (!/^[A-Za-z0-9_-]{43}$/.test(value)) {
-    return null;
-  }
-  return Uint8Array.from(
-    atob(value.replace(/-/g, "+").replace(/_/g, "/")),
-    (char) => char.charCodeAt(0),
-  );
+  return verify(env.IMAGE_URL_SECRET, messages.grant(projectId, exp), sig);
 }

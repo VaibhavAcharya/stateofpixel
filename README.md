@@ -76,6 +76,7 @@ The [docs](https://stateofpixel.com/docs) cover the Playwright reporter, Storybo
 | `apps/web` | The web app on [TanStack Start](https://tanstack.com/start), deployed on Netlify |
 | `apps/web/src/content/docs` | The docs at `/docs`, in MDX |
 | `apps/web/visual` | Playwright tests that capture the web app for dogfooding |
+| `apps/images` | A Cloudflare Worker that stores and serves images from R2 |
 | `packages/backend` | [Convex](https://convex.dev) functions and schema: the CI API, GitHub webhooks, billing and storage |
 | `packages/cli` | The `stateofpixel` CLI and Playwright reporter, published to npm |
 | `examples/playground` | Static pages and Storybook stories that the test pull requests change |

@@ -1,21 +1,32 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   type ActionCtx,
+  env,
+  internalAction,
   internalMutation,
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
-import { privateImageUrl } from "./lib/imageUrls";
+import { privateImageUrl, r2ImageUrl } from "./lib/imageUrls";
 import {
   MAX_IMAGE_BYTES,
   MAX_IMAGE_HEIGHT,
   MAX_IMAGE_WIDTH,
 } from "./lib/limits";
+import {
+  messages,
+  R2_RECEIPT_PREFIX,
+  r2Key,
+  sign,
+  verify,
+} from "./lib/signing";
 import { withStorageBytes } from "./lib/storage";
 import { rateLimiter } from "./rateLimits";
 
 const TOUCH_AFTER_MS = 12 * 60 * 60 * 1000;
+const UPLOAD_URL_TTL_MS = 60 * 60 * 1000;
 
 export const createUploadTargets = internalMutation({
   args: {
@@ -35,7 +46,7 @@ export const createUploadTargets = internalMutation({
         }
         targets.push({
           hash,
-          uploadUrl: await ctx.storage.generateUploadUrl(),
+          uploadUrl: await createUploadUrl(ctx, accountId, hash, now),
         });
       } else if (now - image.lastReferencedAt > TOUCH_AFTER_MS) {
         await ctx.db.patch("images", image._id, { lastReferencedAt: now });
@@ -44,6 +55,24 @@ export const createUploadTargets = internalMutation({
     return targets;
   },
 });
+
+async function createUploadUrl(
+  ctx: MutationCtx,
+  accountId: Id<"accounts">,
+  hash: string,
+  now: number,
+): Promise<string> {
+  if (env.IMAGES_URL === undefined) {
+    return ctx.storage.generateUploadUrl();
+  }
+  const normalized = hash.toLowerCase();
+  const exp = now + UPLOAD_URL_TTL_MS;
+  const sig = await sign(
+    env.IMAGE_URL_SECRET,
+    messages.upload(accountId, normalized, exp),
+  );
+  return `${env.IMAGES_URL}/upload/${accountId}/${normalized}?exp=${exp}&sig=${sig}`;
+}
 
 export async function findImage(
   ctx: QueryCtx,
@@ -60,7 +89,7 @@ export async function findImage(
 
 export type Upload = {
   hash: string;
-  storageId: Id<"_storage">;
+  storageId: string;
   kind: "screenshot" | "diff";
   width: number;
   height: number;
@@ -71,9 +100,16 @@ export async function confirmUpload(
   accountId: Id<"accounts">,
   upload: Upload,
 ): Promise<Doc<"images"> | null> {
+  if (upload.storageId.startsWith(R2_RECEIPT_PREFIX)) {
+    return confirmR2Upload(ctx, accountId, upload);
+  }
+  const storageId = ctx.db.system.normalizeId("_storage", upload.storageId);
+  if (storageId === null) {
+    return null;
+  }
   const referenced = await ctx.db
     .query("images")
-    .withIndex("by_storageId", (q) => q.eq("storageId", upload.storageId))
+    .withIndex("by_storageId", (q) => q.eq("storageId", storageId))
     .first();
   if (referenced !== null) {
     return referenced.accountId === accountId && referenced.hash === upload.hash
@@ -81,7 +117,7 @@ export async function confirmUpload(
       : null;
   }
 
-  const file = await ctx.db.system.get("_storage", upload.storageId);
+  const file = await ctx.db.system.get("_storage", storageId);
   if (file === null) {
     return null;
   }
@@ -91,29 +127,80 @@ export async function confirmUpload(
     upload.width > MAX_IMAGE_WIDTH ||
     upload.height > MAX_IMAGE_HEIGHT
   ) {
-    await ctx.storage.delete(upload.storageId);
+    await ctx.storage.delete(storageId);
     return null;
   }
 
   const existing = await findImage(ctx, accountId, upload.hash);
   if (existing !== null) {
-    await ctx.storage.delete(upload.storageId);
+    await ctx.storage.delete(storageId);
     return existing;
   }
+  return insertImage(
+    ctx,
+    accountId,
+    upload,
+    { store: "convex", storageId },
+    file.size,
+  );
+}
+
+async function confirmR2Upload(
+  ctx: MutationCtx,
+  accountId: Id<"accounts">,
+  upload: Upload,
+): Promise<Doc<"images"> | null> {
+  const key = r2Key(accountId, upload.hash.toLowerCase());
+  const [bytesText, sig, ...rest] = upload.storageId
+    .slice(R2_RECEIPT_PREFIX.length)
+    .split(".");
+  const bytes = Number(bytesText);
+  if (
+    sig === undefined ||
+    rest.length > 0 ||
+    !Number.isSafeInteger(bytes) ||
+    bytes > MAX_IMAGE_BYTES ||
+    upload.width > MAX_IMAGE_WIDTH ||
+    upload.height > MAX_IMAGE_HEIGHT ||
+    !(await verify(env.IMAGE_URL_SECRET, messages.receipt(key, bytes), sig))
+  ) {
+    return null;
+  }
+  const existing = await findImage(ctx, accountId, upload.hash);
+  if (existing !== null) {
+    return existing;
+  }
+  return insertImage(
+    ctx,
+    accountId,
+    upload,
+    { store: "r2", r2Key: key },
+    bytes,
+  );
+}
+
+async function insertImage(
+  ctx: MutationCtx,
+  accountId: Id<"accounts">,
+  upload: Upload,
+  location:
+    | { store: "convex"; storageId: Id<"_storage"> }
+    | { store: "r2"; r2Key: string },
+  bytes: number,
+): Promise<Doc<"images"> | null> {
   const imageId = await ctx.db.insert("images", {
     accountId,
     hash: upload.hash.toLowerCase(),
     kind: upload.kind,
-    bytes: file.size,
+    bytes,
     width: upload.width,
     height: upload.height,
-    store: "convex",
-    storageId: upload.storageId,
+    ...location,
     lastReferencedAt: Date.now(),
   });
   await rateLimiter.limit(ctx, "uploadedBytes", {
     key: accountId,
-    count: file.size,
+    count: bytes,
     reserve: true,
   });
   const account = await ctx.db.get("accounts", accountId);
@@ -121,7 +208,7 @@ export async function confirmUpload(
     await ctx.db.patch(
       "accounts",
       accountId,
-      withStorageBytes(account, account.storageBytes + file.size, Date.now()),
+      withStorageBytes(account, account.storageBytes + bytes, Date.now()),
     );
   }
   return ctx.db.get("images", imageId);
@@ -132,6 +219,11 @@ export async function getUrl(
   image: Doc<"images">,
   project: Doc<"projects">,
 ): Promise<string | null> {
+  if (image.store === "r2") {
+    return image.r2Key === undefined || env.IMAGES_URL === undefined
+      ? null
+      : r2ImageUrl(project, { ...image, r2Key: image.r2Key }, env.IMAGES_URL);
+  }
   if (image.storageId === undefined) {
     return null;
   }
@@ -161,8 +253,33 @@ function normalizeSha256(value: string): string | null {
 }
 
 export async function deleteImage(ctx: MutationCtx, image: Doc<"images">) {
+  if (image.store === "r2" && image.r2Key !== undefined) {
+    await ctx.scheduler.runAfter(0, internal.blobs.deleteR2Object, {
+      key: image.r2Key,
+      before: Date.now(),
+    });
+  }
   if (image.storageId !== undefined) {
     await ctx.storage.delete(image.storageId);
   }
   await ctx.db.delete("images", image._id);
 }
+
+export const deleteR2Object = internalAction({
+  args: { key: v.string(), before: v.number() },
+  returns: v.null(),
+  handler: async (_ctx, { key, before }) => {
+    if (env.IMAGES_URL === undefined) {
+      throw new Error(`IMAGES_URL is not set, cannot delete ${key}`);
+    }
+    const sig = await sign(env.IMAGE_URL_SECRET, messages.delete(key, before));
+    const response = await fetch(
+      `${env.IMAGES_URL}/objects/${key}?before=${before}&sig=${sig}`,
+      { method: "DELETE" },
+    );
+    if (!response.ok) {
+      throw new Error(`Deleting ${key} failed with ${response.status}`);
+    }
+    return null;
+  },
+});
