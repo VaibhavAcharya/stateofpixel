@@ -54,8 +54,8 @@ Group 3: lists and viewer
 - [x] Diff overlay toggle in Side by side, on by default
 - [x] Sentence case pill labels
 - [x] Server-side sort, filter and pagination for projects and builds, on TanStack Table
-- [ ] Snapshot skeleton that fits the viewer area: while it loads it is taller than the page, so the page scrolls while the sidebar stays fixed
-- [ ] Viewer as a canvas like Figma: pan and zoom with trackpad, wheel and keys, kept inside the image bounds, with one Fit button to reset; replaces the Fit, 100% and 200% tabs
+- [x] Snapshot skeleton that fits the viewer area: while it loads it is taller than the page, so the page scrolls while the sidebar stays fixed
+- [x] Viewer as a canvas like Figma: pan and zoom with trackpad, wheel and keys, kept inside the image bounds, with one Fit button to reset; replaces the Fit, 100% and 200% tabs
 - [ ] Pickable diff overlay color
 - [x] Say when retention deleted a build: keep deleted build numbers per project so an old link shows "This build was deleted after 60 days" instead of "Build not found."
 
