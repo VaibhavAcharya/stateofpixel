@@ -28,7 +28,7 @@ Progress tracker for [PLAN.md](./PLAN.md). Details for each item are in [SPEC.md
 - [x] Baseline selection
 - [x] `stateofpixel upload <dir>`
 - [x] GitHub check runs
-- [ ] GitHub commit statuses instead of check runs, so the check waits in pending and links straight to the build
+- [x] GitHub commit statuses instead of check runs, so the check waits in pending and links straight to the build
 - [x] Pages: account home, project builds list, build review page
 - [x] Review actions and keyboard shortcuts
 - [x] Auto-approve on the default branch
@@ -79,7 +79,7 @@ See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (sta
 - [x] A seeded build page that renders without GitHub sign-in, captured in the same suite
 - [x] Storybook stories in `examples/playground`, captured with `stateofpixel storybook`
 - [x] `scripts/test-pr.sh` scenarios with an expected check result each
-- [ ] Merge scenarios (squash, rebase, merge commit) against a separate test repo
+- [x] Merge scenarios (squash, rebase, merge commit) against a separate test repo
 - [ ] More `test-pr.sh` scenarios: `flaky` (an animation left on), `many-changes`, `sharded`
 - [ ] Storybook stories with fixtures for flows that are hard to reproduce, like checkout results, plan changes, failed renewals, storage warnings and blocked builds
 
@@ -91,7 +91,7 @@ See the README, Dogfooding. `visual.yml` uploads three builds: `playground` (sta
 - [x] Dodo Payments live mode on production: live products, webhook and env vars
 - [ ] Show when a cancelled subscription ends, from `cancel_at_next_billing_date` and `next_billing_date`
 - [ ] Account tabs: Projects, Members with roles from GitHub, and Billing with the plan box
-- [ ] Change between paid plans without cancelling first; `billing.checkout` refuses with `already_subscribed` today
+- [x] Change between paid plans without cancelling first; `billing.checkout` refuses with `already_subscribed` today
 - [ ] Disable Upgrade and Manage billing for members who are not owners, and the project Settings tab for users who are not repo admins, each with a tooltip
 - [ ] Plan box details from SPEC 5.10: payment method and invoices
 - [ ] Usage page
