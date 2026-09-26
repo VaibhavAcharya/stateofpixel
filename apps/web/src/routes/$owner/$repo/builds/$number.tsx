@@ -643,8 +643,8 @@ function NoSelection({
     );
   }
   return (
-    <div className="flex-1 bg-canvas p-4">
-      <Skeleton className="aspect-[16/10] w-full bg-surface" />
+    <div className="min-h-0 flex-1 bg-canvas p-4">
+      <Skeleton className="aspect-[16/10] max-h-full w-full bg-surface" />
     </div>
   );
 }
