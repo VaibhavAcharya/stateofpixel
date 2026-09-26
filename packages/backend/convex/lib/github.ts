@@ -256,46 +256,23 @@ export async function findMergedPullRequest(
   return merged?.number ?? null;
 }
 
-export type CheckRunFields = {
-  status: "in_progress" | "completed";
-  conclusion?:
-    | "success"
-    | "action_required"
-    | "failure"
-    | "timed_out"
-    | "neutral";
-  details_url: string;
-  output: { title: string; summary: string };
+export type CommitStatusFields = {
+  state: "pending" | "success" | "failure" | "error";
+  target_url: string;
+  description: string;
+  context: string;
 };
 
-export async function createCheckRun(
+export async function createCommitStatus(
   installationToken: string,
   owner: string,
   name: string,
-  fields: CheckRunFields & {
-    name: string;
-    head_sha: string;
-    external_id: string;
-  },
-): Promise<number> {
-  const { id } = await githubRequest<{ id: number }>(
-    installationToken,
-    `/repos/${owner}/${name}/check-runs`,
-    { method: "POST", body: JSON.stringify(fields) },
-  );
-  return id;
-}
-
-export async function updateCheckRun(
-  installationToken: string,
-  owner: string,
-  name: string,
-  checkRunId: number,
-  fields: CheckRunFields,
+  commitSha: string,
+  fields: CommitStatusFields,
 ): Promise<void> {
   await githubRequest(
     installationToken,
-    `/repos/${owner}/${name}/check-runs/${checkRunId}`,
-    { method: "PATCH", body: JSON.stringify(fields) },
+    `/repos/${owner}/${name}/statuses/${commitSha}`,
+    { method: "POST", body: JSON.stringify(fields) },
   );
 }

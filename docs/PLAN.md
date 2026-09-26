@@ -67,7 +67,7 @@ Argos is the real competitor. It already does BYO CI and hash dedupe. The gaps w
                                                 carry over approvals,
                                                 set GitHub check:
                                                   success if no changes
-                                                  action_required if changes
+                                                  pending if changes
                                                   (link to review page)
 ```
 

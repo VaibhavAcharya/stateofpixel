@@ -550,7 +550,7 @@ function CheckRun({ counts }: { counts: DemoReview["counts"] }) {
           ? "Success"
           : summary.tone === "rejected"
             ? "Failure"
-            : "Action required"}
+            : "Pending"}
       </span>
     </div>
   );

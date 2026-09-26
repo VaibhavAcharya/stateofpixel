@@ -8,17 +8,15 @@ import {
   type MutationCtx,
 } from "./_generated/server";
 import {
-  type CheckRunFields,
-  createCheckRun,
+  type CommitStatusFields,
+  createCommitStatus,
   createInstallationToken,
   GithubError,
-  updateCheckRun,
 } from "./lib/github";
 import { buildUrl } from "./lib/urls";
 import { DEFAULT_BUILD_NAME } from "./schema";
 
 const SYNC_STALE_MS = 5 * 60 * 1000;
-const MAX_LINKED_SNAPSHOTS = 10;
 const RETRY_BATCH = 100;
 
 export async function touchCheck(ctx: MutationCtx, buildId: Id<"builds">) {
@@ -48,55 +46,46 @@ export const sync = internalAction({
     if (state === null) {
       return null;
     }
-    let checkRunId = state.checkRunId;
     try {
       if (state.repository !== null) {
         const token = await createInstallationToken(
           state.repository.installationId,
         );
         const { owner, name } = state.repository;
-        if (checkRunId === null) {
-          checkRunId = await createCheckRun(token, owner, name, {
-            name: state.checkName,
-            head_sha: state.commitSha,
-            external_id: buildId,
-            ...state.fields,
-          });
-        } else {
-          await updateCheckRun(token, owner, name, checkRunId, state.fields);
-        }
+        await createCommitStatus(
+          token,
+          owner,
+          name,
+          state.commitSha,
+          state.fields,
+        );
       }
     } catch (error) {
       const rejected = error instanceof GithubError && error.status === 422;
       await ctx.runMutation(internal.checks.markSynced, {
         buildId,
         version: rejected ? state.version : null,
-        checkRunId,
       });
       throw error;
     }
     await ctx.runMutation(internal.checks.markSynced, {
       buildId,
       version: state.version,
-      checkRunId,
     });
     return null;
   },
 });
 
-const checkFields = v.object({
-  status: v.union(v.literal("in_progress"), v.literal("completed")),
-  conclusion: v.optional(
-    v.union(
-      v.literal("success"),
-      v.literal("action_required"),
-      v.literal("failure"),
-      v.literal("timed_out"),
-      v.literal("neutral"),
-    ),
+const statusFields = v.object({
+  state: v.union(
+    v.literal("pending"),
+    v.literal("success"),
+    v.literal("failure"),
+    v.literal("error"),
   ),
-  details_url: v.string(),
-  output: v.object({ title: v.string(), summary: v.string() }),
+  target_url: v.string(),
+  description: v.string(),
+  context: v.string(),
 });
 
 export const state = internalQuery({
@@ -105,8 +94,6 @@ export const state = internalQuery({
     v.null(),
     v.object({
       version: v.number(),
-      checkRunId: v.union(v.number(), v.null()),
-      checkName: v.string(),
       commitSha: v.string(),
       repository: v.union(
         v.null(),
@@ -116,7 +103,7 @@ export const state = internalQuery({
           name: v.string(),
         }),
       ),
-      fields: checkFields,
+      fields: statusFields,
     }),
   ),
   handler: async (ctx, { buildId }) => {
@@ -129,25 +116,8 @@ export const state = internalQuery({
     const account = await ctx.db.get("accounts", project.accountId);
     const url = buildUrl(project, build.number);
 
-    const linked: Doc<"snapshots">[] = [];
-    for (const diffStatus of ["changed", "added"] as const) {
-      linked.push(
-        ...(await ctx.db
-          .query("snapshots")
-          .withIndex("by_buildId_and_diffStatus_and_name", (q) =>
-            q.eq("buildId", buildId).eq("diffStatus", diffStatus),
-          )
-          .take(MAX_LINKED_SNAPSHOTS - linked.length)),
-      );
-    }
-
     return {
       version: build.checkVersion,
-      checkRunId: build.githubCheckRunId ?? null,
-      checkName:
-        build.buildName === DEFAULT_BUILD_NAME
-          ? "stateofpixel"
-          : `stateofpixel/${build.buildName}`,
       commitSha: build.commitSha,
       repository:
         account?.installationId === undefined ||
@@ -158,42 +128,26 @@ export const state = internalQuery({
               owner: project.owner,
               name: project.name,
             },
-      fields: toCheckFields(build, url, linked),
+      fields: {
+        ...toStatus(build),
+        target_url: url,
+        context:
+          build.buildName === DEFAULT_BUILD_NAME
+            ? "stateofpixel"
+            : `stateofpixel/${build.buildName}`,
+      },
     };
   },
 });
 
-function toCheckFields(
+function toStatus(
   build: Doc<"builds">,
-  url: string,
-  linked: Doc<"snapshots">[],
-): CheckRunFields {
+): Pick<CommitStatusFields, "state" | "description"> {
   const { counts } = build;
   const changes = counts.changed + counts.added;
-  const summary = [
-    "| Unchanged | Changed | Added | Removed | Failed |",
-    "|---|---|---|---|---|",
-    `| ${[counts.unchanged, counts.changed, counts.added, counts.removed, counts.failed].map(formatCount).join(" | ")} |`,
-    "",
-    `[Open build #${build.number}](${url})`,
-    ...(linked.length === 0
-      ? []
-      : [
-          "",
-          ...linked.map(
-            (snapshot) =>
-              `- ${snapshot.diffStatus}: [${escapeMarkdown(snapshot.name)}](${url}/snapshots/${snapshot._id})`,
-          ),
-        ]),
-  ].join("\n");
-  const completed = (
-    conclusion: NonNullable<CheckRunFields["conclusion"]>,
-    title: string,
-  ): CheckRunFields => ({
-    status: "completed",
-    conclusion,
-    details_url: url,
-    output: { title, summary },
+  const status = (state: CommitStatusFields["state"], description: string) => ({
+    state,
+    description,
   });
 
   if (build.status === "pending") {
@@ -201,45 +155,38 @@ function toCheckFields(
       build.shardsTotal === undefined || build.shardsTotal === 1
         ? ""
         : ` (${build.doneShardIndexes.length} of ${build.shardsTotal} shards)`;
-    return {
-      status: "in_progress",
-      details_url: url,
-      output: { title: `Waiting for screenshots${shards}`, summary },
-    };
+    return status("pending", `Waiting for screenshots${shards}`);
   }
   if (build.status === "expired") {
-    return completed("timed_out", "Build never finished");
+    return status("error", "Build never finished");
   }
   if (build.status === "error") {
-    return completed("failure", "Upload failed, see CI logs");
+    return status("error", "Upload failed, see CI logs");
   }
   if (build.storageBlocked && build.conclusion !== "no_changes") {
-    return completed("neutral", "Storage limit reached, not compared");
+    return status("success", "Storage limit reached, not compared");
   }
   switch (build.conclusion) {
     case "no_changes":
-      return completed("success", "No visual changes");
+      return status("success", "No visual changes");
     case "approved":
       if (build.baselineBuildId === undefined) {
-        return completed(
+        return status(
           "success",
           `Baseline created, ${plural(counts.added, "snapshot")}`,
         );
       }
-      return completed(
+      return status(
         "success",
         build.autoApproved
           ? `Baseline updated, ${plural(changes, "change")}`
           : `${plural(changes, "change")} approved`,
       );
     case "rejected":
-      return completed(
-        "failure",
-        `${plural(counts.rejected, "change")} rejected`,
-      );
+      return status("failure", `${plural(counts.rejected, "change")} rejected`);
     default:
-      return completed(
-        "action_required",
+      return status(
+        "pending",
         counts.failed > 0
           ? `${plural(counts.pending, "change")} to review, ${formatCount(counts.failed)} failed`
           : `${plural(counts.pending, "change")} to review`,
@@ -255,18 +202,13 @@ function formatCount(count: number): string {
   return count.toLocaleString("en-US");
 }
 
-function escapeMarkdown(text: string): string {
-  return text.replace(/([\\[\]()*_`|])/g, "\\$1");
-}
-
 export const markSynced = internalMutation({
   args: {
     buildId: v.id("builds"),
     version: v.union(v.number(), v.null()),
-    checkRunId: v.union(v.number(), v.null()),
   },
   returns: v.null(),
-  handler: async (ctx, { buildId, version, checkRunId }) => {
+  handler: async (ctx, { buildId, version }) => {
     const build = await ctx.db.get("builds", buildId);
     if (build === null) {
       return null;
@@ -274,7 +216,6 @@ export const markSynced = internalMutation({
     const synced = version === build.checkVersion;
     const resync = !synced && version !== null;
     await ctx.db.patch("builds", buildId, {
-      githubCheckRunId: checkRunId ?? build.githubCheckRunId,
       checkOutOfSync: !synced,
       checkSyncScheduledAt: resync ? Date.now() : undefined,
     });
@@ -308,19 +249,3 @@ export const retryOutOfSync = internalMutation({
     return null;
   },
 });
-
-export async function rerequestCheck(
-  ctx: MutationCtx,
-  installationId: number,
-  externalId: string,
-) {
-  const buildId = ctx.db.normalizeId("builds", externalId);
-  const build = buildId === null ? null : await ctx.db.get("builds", buildId);
-  const project =
-    build === null ? null : await ctx.db.get("projects", build.projectId);
-  const account =
-    project === null ? null : await ctx.db.get("accounts", project.accountId);
-  if (build !== null && account?.installationId === installationId) {
-    await touchCheck(ctx, build._id);
-  }
-}

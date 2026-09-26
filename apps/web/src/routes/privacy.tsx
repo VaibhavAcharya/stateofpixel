@@ -91,7 +91,7 @@ function Privacy() {
         <li>
           To run the service: store baselines, compare builds and show them.
         </li>
-        <li>To create and update check runs on your commits in GitHub.</li>
+        <li>To set commit statuses on your commits in GitHub.</li>
         <li>To check that you are allowed to see or review a project.</li>
         <li>To reply when you contact us.</li>
       </ul>
@@ -100,7 +100,7 @@ function Privacy() {
       <h2>Who processes it</h2>
       <p>We use these providers to run stateofpixel:</p>
       <ul>
-        <li>GitHub, for sign-in, the GitHub App and check runs.</li>
+        <li>GitHub, for sign-in, the GitHub App and commit statuses.</li>
         <li>
           Convex, for the database, file storage and the backend functions.
         </li>

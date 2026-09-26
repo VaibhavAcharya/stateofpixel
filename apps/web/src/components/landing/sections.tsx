@@ -330,7 +330,7 @@ const PIPELINES: [string, string][] = [
   ],
   [
     "Running out of storage",
-    "The CLI warns at 80%. After 14 days over the limit, new images are not stored and the check turns neutral, so CI keeps passing.",
+    "The CLI warns at 80%. After 14 days over the limit, new images are not stored and the check passes with a note, so CI keeps passing.",
   ],
   [
     "Large suites",
@@ -405,7 +405,7 @@ const FAQ: [string, string][] = [
   ],
   [
     "What GitHub permissions does the app ask for?",
-    "Checks write, to set the check. Pull requests read, for the PR number and base branch. Contents read, which GitHub requires for the compare API we use to find the baseline commit. Metadata read, which every app has.",
+    "Commit statuses write, to set the check. Pull requests read, for the PR number and base branch. Contents read, which GitHub requires for the compare API we use to find the baseline commit. Metadata read, which every app has.",
   ],
   [
     "Who can approve changes?",

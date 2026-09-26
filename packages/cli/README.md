@@ -75,6 +75,6 @@ When the service is down, or a rate limit is hit, `upload` and `finalize` print 
 - 512 characters per snapshot name, 4 KB of metadata per snapshot.
 - 2,000 builds and 20 GB of uploads per account per day, 600 requests per minute per token.
 
-When an account passes 80% of its storage, the CLI prints a warning. After 14 days over the limit, new images are not stored and the check is neutral, so CI keeps passing.
+When an account passes 80% of its storage, the CLI prints a warning. After 14 days over the limit, new images are not stored and the check passes with a note, so CI keeps passing.
 
 Requires Node 20 or newer.
