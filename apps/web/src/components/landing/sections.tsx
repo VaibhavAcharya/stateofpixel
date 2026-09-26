@@ -32,6 +32,7 @@ const NAV = [
   ["How it works", "/#how"],
   ["Pricing", "/#pricing"],
   ["FAQ", "/#faq"],
+  ["Docs", "/docs"],
 ] as const;
 
 export function HeaderNav() {
@@ -493,6 +494,7 @@ export function FinalWithSnippet() {
 }
 
 const FOOTER_LINKS = [
+  ["Docs", "/docs"],
   ["Brand", "/brand"],
   ["Privacy", "/privacy"],
   ["Terms", "/terms"],

@@ -235,10 +235,11 @@ URL scheme mirrors GitHub: `/{owner}/{repo}`. Public pages (5.1) are server-rend
 | `/` | Landing. One-sentence pitch, the review demo, setup snippets per runner, upload times from our own CI, team access, a cost comparison, pricing block, FAQ, Sign in button. |
 | `/brand` | Logo files to download, usage rules, colors and type. |
 | `/privacy`, `/terms`, `/refunds` | Legal pages. Support email `hello@stateofpixel.com`. |
+| `/docs`, `/docs/{page}` | User docs: Quickstart; Playwright, Storybook, Any screenshots; Other CI, Sharding, Suites; Reviewing changes, The GitHub check, Baselines; Stable screenshots; CLI, Limits and storage. Linked from the public header and footer and the user menu. The pages live in `apps/web/src/routes/docs/` and the nav in `components/docs/DocsLayout.tsx`. |
 
 Paid plans in the pricing block show "Coming soon" until billing is available (`billing.available`). Upgrading happens only from the plan box on the Billing tab (5.10).
 
-These paths shadow GitHub accounts with the same login. Docs pages are not built yet.
+These paths shadow GitHub accounts with the same login.
 
 In dev only, `/lab.stateofpixel/web/builds/{1,2}` renders the build page from fixtures for the visual suite (README, Dogfooding). GitHub logins cannot contain a dot, so it never shadows an account.
 
@@ -419,7 +420,7 @@ Every change is saved on blur with a small "Saved" note. No save button.
 
 ### 5.11 User menu
 
-Avatar menu with: account switcher, Docs, Sign out. No user settings page in v1.
+Avatar menu with: account switcher, theme, Docs, Sign out. No user settings page in v1.
 
 ## 6. Convex tables
 

@@ -6,7 +6,16 @@ test("landing", async ({ page }) => {
   await snapshot(page, "landing");
 });
 
-for (const path of ["brand", "privacy", "terms", "refunds"]) {
+for (const path of [
+  "brand",
+  "privacy",
+  "terms",
+  "refunds",
+  "docs",
+  "docs/playwright",
+  "docs/review",
+  "docs/cli",
+]) {
   test(path, async ({ page }) => {
     await page.goto(`/${path}`);
     await snapshot(page, path);

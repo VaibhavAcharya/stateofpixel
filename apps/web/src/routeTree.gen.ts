@@ -11,11 +11,25 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BrandRouteImport } from './routes/brand'
+import { Route as DocsRouteImport } from './routes/docs'
 import { Route as InstallRouteImport } from './routes/install'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RefundsRouteImport } from './routes/refunds'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as OwnerIndexRouteImport } from './routes/$owner/index'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as DocsAnyScreenshotsRouteImport } from './routes/docs/any-screenshots'
+import { Route as DocsBaselinesRouteImport } from './routes/docs/baselines'
+import { Route as DocsChecksRouteImport } from './routes/docs/checks'
+import { Route as DocsCliRouteImport } from './routes/docs/cli'
+import { Route as DocsLimitsRouteImport } from './routes/docs/limits'
+import { Route as DocsOtherCiRouteImport } from './routes/docs/other-ci'
+import { Route as DocsPlaywrightRouteImport } from './routes/docs/playwright'
+import { Route as DocsReviewRouteImport } from './routes/docs/review'
+import { Route as DocsShardingRouteImport } from './routes/docs/sharding'
+import { Route as DocsStableScreenshotsRouteImport } from './routes/docs/stable-screenshots'
+import { Route as DocsStorybookRouteImport } from './routes/docs/storybook'
+import { Route as DocsSuitesRouteImport } from './routes/docs/suites'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner/$repo/index'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner/$repo/settings'
 import { Route as OwnerSettingsBillingRouteImport } from './routes/$owner/settings/billing'
@@ -34,6 +48,11 @@ const IndexRoute = IndexRouteImport.update({
 const BrandRoute = BrandRouteImport.update({
   id: '/brand',
   path: '/brand',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InstallRoute = InstallRouteImport.update({
@@ -60,6 +79,71 @@ const OwnerIndexRoute = OwnerIndexRouteImport.update({
   id: '/$owner/',
   path: '/$owner/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DocsIndexRoute = DocsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsAnyScreenshotsRoute = DocsAnyScreenshotsRouteImport.update({
+  id: '/any-screenshots',
+  path: '/any-screenshots',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsBaselinesRoute = DocsBaselinesRouteImport.update({
+  id: '/baselines',
+  path: '/baselines',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsChecksRoute = DocsChecksRouteImport.update({
+  id: '/checks',
+  path: '/checks',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsCliRoute = DocsCliRouteImport.update({
+  id: '/cli',
+  path: '/cli',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsLimitsRoute = DocsLimitsRouteImport.update({
+  id: '/limits',
+  path: '/limits',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsOtherCiRoute = DocsOtherCiRouteImport.update({
+  id: '/other-ci',
+  path: '/other-ci',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsPlaywrightRoute = DocsPlaywrightRouteImport.update({
+  id: '/playwright',
+  path: '/playwright',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsReviewRoute = DocsReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsShardingRoute = DocsShardingRouteImport.update({
+  id: '/sharding',
+  path: '/sharding',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsStableScreenshotsRoute = DocsStableScreenshotsRouteImport.update({
+  id: '/stable-screenshots',
+  path: '/stable-screenshots',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsStorybookRoute = DocsStorybookRouteImport.update({
+  id: '/storybook',
+  path: '/storybook',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsSuitesRoute = DocsSuitesRouteImport.update({
+  id: '/suites',
+  path: '/suites',
+  getParentRoute: () => DocsRoute,
 } as any)
 const OwnerRepoIndexRoute = OwnerRepoIndexRouteImport.update({
   id: '/$owner/$repo/',
@@ -112,11 +196,25 @@ const OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/brand': typeof BrandRoute
+  '/docs': typeof DocsRouteWithChildren
   '/install': typeof InstallRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
+  '/docs/any-screenshots': typeof DocsAnyScreenshotsRoute
+  '/docs/baselines': typeof DocsBaselinesRoute
+  '/docs/checks': typeof DocsChecksRoute
+  '/docs/cli': typeof DocsCliRoute
+  '/docs/limits': typeof DocsLimitsRoute
+  '/docs/other-ci': typeof DocsOtherCiRoute
+  '/docs/playwright': typeof DocsPlaywrightRoute
+  '/docs/review': typeof DocsReviewRoute
+  '/docs/sharding': typeof DocsShardingRoute
+  '/docs/stable-screenshots': typeof DocsStableScreenshotsRoute
+  '/docs/storybook': typeof DocsStorybookRoute
+  '/docs/suites': typeof DocsSuitesRoute
   '/$owner/': typeof OwnerIndexRoute
+  '/docs/': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
@@ -134,7 +232,20 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
+  '/docs/any-screenshots': typeof DocsAnyScreenshotsRoute
+  '/docs/baselines': typeof DocsBaselinesRoute
+  '/docs/checks': typeof DocsChecksRoute
+  '/docs/cli': typeof DocsCliRoute
+  '/docs/limits': typeof DocsLimitsRoute
+  '/docs/other-ci': typeof DocsOtherCiRoute
+  '/docs/playwright': typeof DocsPlaywrightRoute
+  '/docs/review': typeof DocsReviewRoute
+  '/docs/sharding': typeof DocsShardingRoute
+  '/docs/stable-screenshots': typeof DocsStableScreenshotsRoute
+  '/docs/storybook': typeof DocsStorybookRoute
+  '/docs/suites': typeof DocsSuitesRoute
   '/$owner': typeof OwnerIndexRoute
+  '/docs': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
@@ -148,11 +259,25 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/brand': typeof BrandRoute
+  '/docs': typeof DocsRouteWithChildren
   '/install': typeof InstallRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
+  '/docs/any-screenshots': typeof DocsAnyScreenshotsRoute
+  '/docs/baselines': typeof DocsBaselinesRoute
+  '/docs/checks': typeof DocsChecksRoute
+  '/docs/cli': typeof DocsCliRoute
+  '/docs/limits': typeof DocsLimitsRoute
+  '/docs/other-ci': typeof DocsOtherCiRoute
+  '/docs/playwright': typeof DocsPlaywrightRoute
+  '/docs/review': typeof DocsReviewRoute
+  '/docs/sharding': typeof DocsShardingRoute
+  '/docs/stable-screenshots': typeof DocsStableScreenshotsRoute
+  '/docs/storybook': typeof DocsStorybookRoute
+  '/docs/suites': typeof DocsSuitesRoute
   '/$owner/': typeof OwnerIndexRoute
+  '/docs/': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
@@ -168,11 +293,25 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/brand'
+    | '/docs'
     | '/install'
     | '/privacy'
     | '/refunds'
     | '/terms'
+    | '/docs/any-screenshots'
+    | '/docs/baselines'
+    | '/docs/checks'
+    | '/docs/cli'
+    | '/docs/limits'
+    | '/docs/other-ci'
+    | '/docs/playwright'
+    | '/docs/review'
+    | '/docs/sharding'
+    | '/docs/stable-screenshots'
+    | '/docs/storybook'
+    | '/docs/suites'
     | '/$owner/'
+    | '/docs/'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
     | '/$owner/settings/members'
@@ -190,7 +329,20 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refunds'
     | '/terms'
+    | '/docs/any-screenshots'
+    | '/docs/baselines'
+    | '/docs/checks'
+    | '/docs/cli'
+    | '/docs/limits'
+    | '/docs/other-ci'
+    | '/docs/playwright'
+    | '/docs/review'
+    | '/docs/sharding'
+    | '/docs/stable-screenshots'
+    | '/docs/storybook'
+    | '/docs/suites'
     | '/$owner'
+    | '/docs'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
     | '/$owner/settings/members'
@@ -203,11 +355,25 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/brand'
+    | '/docs'
     | '/install'
     | '/privacy'
     | '/refunds'
     | '/terms'
+    | '/docs/any-screenshots'
+    | '/docs/baselines'
+    | '/docs/checks'
+    | '/docs/cli'
+    | '/docs/limits'
+    | '/docs/other-ci'
+    | '/docs/playwright'
+    | '/docs/review'
+    | '/docs/sharding'
+    | '/docs/stable-screenshots'
+    | '/docs/storybook'
+    | '/docs/suites'
     | '/$owner/'
+    | '/docs/'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
     | '/$owner/settings/members'
@@ -222,6 +388,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BrandRoute: typeof BrandRoute
+  DocsRoute: typeof DocsRouteWithChildren
   InstallRoute: typeof InstallRoute
   PrivacyRoute: typeof PrivacyRoute
   RefundsRoute: typeof RefundsRoute
@@ -250,6 +417,13 @@ declare module '@tanstack/react-router' {
       path: '/brand'
       fullPath: '/brand'
       preLoaderRoute: typeof BrandRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/install': {
@@ -286,6 +460,97 @@ declare module '@tanstack/react-router' {
       fullPath: '/$owner/'
       preLoaderRoute: typeof OwnerIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/docs/': {
+      id: '/docs/'
+      path: '/'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof DocsIndexRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/any-screenshots': {
+      id: '/docs/any-screenshots'
+      path: '/any-screenshots'
+      fullPath: '/docs/any-screenshots'
+      preLoaderRoute: typeof DocsAnyScreenshotsRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/baselines': {
+      id: '/docs/baselines'
+      path: '/baselines'
+      fullPath: '/docs/baselines'
+      preLoaderRoute: typeof DocsBaselinesRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/checks': {
+      id: '/docs/checks'
+      path: '/checks'
+      fullPath: '/docs/checks'
+      preLoaderRoute: typeof DocsChecksRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/cli': {
+      id: '/docs/cli'
+      path: '/cli'
+      fullPath: '/docs/cli'
+      preLoaderRoute: typeof DocsCliRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/limits': {
+      id: '/docs/limits'
+      path: '/limits'
+      fullPath: '/docs/limits'
+      preLoaderRoute: typeof DocsLimitsRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/other-ci': {
+      id: '/docs/other-ci'
+      path: '/other-ci'
+      fullPath: '/docs/other-ci'
+      preLoaderRoute: typeof DocsOtherCiRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/playwright': {
+      id: '/docs/playwright'
+      path: '/playwright'
+      fullPath: '/docs/playwright'
+      preLoaderRoute: typeof DocsPlaywrightRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/review': {
+      id: '/docs/review'
+      path: '/review'
+      fullPath: '/docs/review'
+      preLoaderRoute: typeof DocsReviewRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/sharding': {
+      id: '/docs/sharding'
+      path: '/sharding'
+      fullPath: '/docs/sharding'
+      preLoaderRoute: typeof DocsShardingRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/stable-screenshots': {
+      id: '/docs/stable-screenshots'
+      path: '/stable-screenshots'
+      fullPath: '/docs/stable-screenshots'
+      preLoaderRoute: typeof DocsStableScreenshotsRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/storybook': {
+      id: '/docs/storybook'
+      path: '/storybook'
+      fullPath: '/docs/storybook'
+      preLoaderRoute: typeof DocsStorybookRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/suites': {
+      id: '/docs/suites'
+      path: '/suites'
+      fullPath: '/docs/suites'
+      preLoaderRoute: typeof DocsSuitesRouteImport
+      parentRoute: typeof DocsRoute
     }
     '/$owner/$repo/': {
       id: '/$owner/$repo/'
@@ -353,6 +618,40 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DocsRouteChildren {
+  DocsAnyScreenshotsRoute: typeof DocsAnyScreenshotsRoute
+  DocsBaselinesRoute: typeof DocsBaselinesRoute
+  DocsChecksRoute: typeof DocsChecksRoute
+  DocsCliRoute: typeof DocsCliRoute
+  DocsLimitsRoute: typeof DocsLimitsRoute
+  DocsOtherCiRoute: typeof DocsOtherCiRoute
+  DocsPlaywrightRoute: typeof DocsPlaywrightRoute
+  DocsReviewRoute: typeof DocsReviewRoute
+  DocsShardingRoute: typeof DocsShardingRoute
+  DocsStableScreenshotsRoute: typeof DocsStableScreenshotsRoute
+  DocsStorybookRoute: typeof DocsStorybookRoute
+  DocsSuitesRoute: typeof DocsSuitesRoute
+  DocsIndexRoute: typeof DocsIndexRoute
+}
+
+const DocsRouteChildren: DocsRouteChildren = {
+  DocsAnyScreenshotsRoute: DocsAnyScreenshotsRoute,
+  DocsBaselinesRoute: DocsBaselinesRoute,
+  DocsChecksRoute: DocsChecksRoute,
+  DocsCliRoute: DocsCliRoute,
+  DocsLimitsRoute: DocsLimitsRoute,
+  DocsOtherCiRoute: DocsOtherCiRoute,
+  DocsPlaywrightRoute: DocsPlaywrightRoute,
+  DocsReviewRoute: DocsReviewRoute,
+  DocsShardingRoute: DocsShardingRoute,
+  DocsStableScreenshotsRoute: DocsStableScreenshotsRoute,
+  DocsStorybookRoute: DocsStorybookRoute,
+  DocsSuitesRoute: DocsSuitesRoute,
+  DocsIndexRoute: DocsIndexRoute,
+}
+
+const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
+
 interface OwnerRepoBuildsNumberRouteChildren {
   OwnerRepoBuildsNumberIndexRoute: typeof OwnerRepoBuildsNumberIndexRoute
   OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute: typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute
@@ -372,6 +671,7 @@ const OwnerRepoBuildsNumberRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BrandRoute: BrandRoute,
+  DocsRoute: DocsRouteWithChildren,
   InstallRoute: InstallRoute,
   PrivacyRoute: PrivacyRoute,
   RefundsRoute: RefundsRoute,

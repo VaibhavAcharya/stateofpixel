@@ -4,8 +4,12 @@ import { codeToTokens } from "shiki";
 import type { Plugin } from "vite";
 
 const QUERY = "?highlight";
-const LANGUAGES: Record<string, "yaml" | "shellscript" | "typescript"> = {
+const LANGUAGES: Record<
+  string,
+  "yaml" | "shellscript" | "typescript" | "json"
+> = {
   ".yml": "yaml",
+  ".json": "json",
   ".sh": "shellscript",
   ".ts": "typescript",
 };

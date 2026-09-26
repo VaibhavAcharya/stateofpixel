@@ -2,6 +2,8 @@
 
 Visual regression testing that runs in your CI. Upload a folder of screenshots, review the changes on [stateofpixel.com](https://stateofpixel.com), and a GitHub check blocks the merge until every change is approved.
 
+The full docs are at [stateofpixel.com/docs](https://stateofpixel.com/docs).
+
 ## GitHub Actions
 
 Install the GitHub App from [stateofpixel.com](https://stateofpixel.com), then add a step after the one that writes your screenshots:

@@ -1,0 +1,8 @@
+steps:
+  - uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
+  - run: npm ci
+  - run: npx playwright install --with-deps chromium
+  - run: npx storybook build
+  - run: npx stateofpixel storybook storybook-static --viewports 375,1280

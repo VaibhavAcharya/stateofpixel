@@ -1,0 +1,5 @@
+{
+  "browser": "chromium",
+  "viewport": 1280,
+  "testFile": "tests/cart.spec.ts"
+}
