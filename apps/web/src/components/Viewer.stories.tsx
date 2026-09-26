@@ -3,6 +3,7 @@ import { useState } from "react";
 import { CANVAS_PADDING, type CanvasView } from "../lib/canvasView";
 import { demoImage, preloadDemoImages } from "../lib/storyFixtures";
 import {
+  type DiffColor,
   useViewerSettings,
   Viewer,
   type ViewerMode,
@@ -15,6 +16,7 @@ type Initial = {
   sideDiff?: boolean;
   showBaseline?: boolean;
   diffOnly?: boolean;
+  diffColor?: DiffColor;
 };
 
 function StoryViewer({
@@ -32,6 +34,7 @@ function StoryViewer({
     initial.showBaseline ?? false,
   );
   const [diffOnly, setDiffOnly] = useState(initial.diffOnly ?? false);
+  const [diffColor, setDiffColor] = useState(initial.diffColor ?? "red");
   return (
     <div className="flex h-[720px] flex-col bg-surface">
       <Viewer
@@ -48,6 +51,8 @@ function StoryViewer({
           setShowBaseline,
           diffOnly,
           setDiffOnly,
+          diffColor,
+          setDiffColor,
         }}
         baselineLabel="Baseline #405"
         newLabel="New #412"
@@ -87,10 +92,23 @@ export const SideBySideWithoutOverlay: Story = {
   args: { initial: { sideDiff: false } },
 };
 
+export const SideBySideBlueOverlay: Story = {
+  args: { initial: { diffColor: "blue" } },
+};
+
+export const SideBySideGreenOverlayDark: Story = {
+  args: { initial: { diffColor: "green" } },
+  parameters: { theme: "dark" },
+};
+
 export const Diff: Story = { args: { initial: { mode: "diff" } } };
 
 export const DiffOnly: Story = {
   args: { initial: { mode: "diff", diffOnly: true } },
+};
+
+export const DiffOnlyMagenta: Story = {
+  args: { initial: { mode: "diff", diffOnly: true, diffColor: "magenta" } },
 };
 
 export const Slider: Story = { args: { initial: { mode: "slider" } } };

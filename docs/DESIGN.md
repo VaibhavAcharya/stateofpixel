@@ -60,11 +60,11 @@ Image viewer.
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `diff` | `#ff0000` at 70% opacity | same | Diff overlay, per SPEC 5.5. Same in both themes because it sits on the screenshot. |
+| `diff` | `#ff0000` (default), `#ff00ff`, `#0066ff` or `#00cc00` at 70% opacity | same | Diff overlay, per SPEC 5.5, in the color picked in the toolbar. Same in both themes because it sits on the screenshot. |
 | `checker-a` / `checker-b` | `#ffffff` / `#e6e6e6` | `#1a1a1a` / `#292929` | Checkerboard, 8px squares |
 | `canvas` | `#f2f2f2` | `#000000` | Area around the image inside the viewer |
 
-The diff PNG is made by the CLI. The CLI must render diff pixels as pure red on transparent so the overlay color above is what the reviewer sees. Pixelmatch and odiff both default to red (unverified).
+The diff PNG is made by the CLI. The CLI renders diff pixels opaque on transparent (`diffMask` in pixelmatch, `outputDiffMask` in odiff). The viewer paints every non-transparent pixel in the picked color with an SVG filter, so the color in the PNG does not matter.
 
 ### Typography
 
@@ -168,7 +168,7 @@ Code blocks. `surface-2` fill, 1px `border`, radius `radius-md`, 13px/1.8 Lilex,
 The viewer is a `surface` panel with radius `radius-lg` and 1px `border`. Inside it, from top to bottom:
 
 1. Title row, 48px: snapshot name (`text-base` weight 500, split as in the sidebar), diff status pill, diff percent and pixel count (`text-xs muted`, tabular), then right-aligned the dimensions (`1280x720 to 1280x812` when they differ, with the second value in `changed` color), the position ("3 of 20") and previous and next buttons for `k` and `j`.
-2. Toolbar, at least 44px, wraps instead of scrolling so tooltips are not clipped: one track on the left with the mode segmented control (Side by side 1, Diff 2, Slider 3, Flip 4), a 1px divider, and a labelled switch for the current mode's option (Diff overlay with `d` in Side by side, which draws the diff mask over the new image and is on by default, Diff only in Diff, Show baseline with `space` in Flip, none in Slider); on the right the zoom percent in `text-xs muted` and a secondary Fit button with `f`, disabled while the view is at Fit. The switch is 28x16, `accent` when on, `field-border` when off.
+2. Toolbar, at least 44px, wraps instead of scrolling so tooltips are not clipped: one track on the left with the mode segmented control (Side by side 1, Diff 2, Slider 3, Flip 4), a 1px divider, and a labelled switch for the current mode's option (Diff overlay with `d` in Side by side, which draws the diff mask over the new image and is on by default, Diff only in Diff, Show baseline with `space` in Flip, none in Slider); while the diff shows (Side by side with the overlay on, and Diff), a second track with four 28px color dots for the diff color (Red, Magenta, Blue, Green), the active one on `surface` like a segmented option; on the right the zoom percent in `text-xs muted` and a secondary Fit button with `f`, disabled while the view is at Fit. The switch is 28x16, `accent` when on, `field-border` when off.
 3. Stage: a pan and zoom canvas with `canvas` fill that fills the remaining height and clips the images, 16px padding around the image at the edges. Side-by-side panes are split by a 1px `border` line, side by side from 768px and stacked below. Images sit on the checkerboard at top-left alignment (SPEC 5.5), with no radius and no shadow. At zoom above 100%, `image-rendering: pixelated`. Each pane has a 28px caption strip above it ("Baseline #405", "New #411") in `text-xs muted`. In Flip mode the caption is the current side and switches instantly; the frame border turns `link` color while showing the baseline so the state is visible without reading.
 4. Review bar, 56px, top border: review info on the left ("Approved by @alice 3 min ago", "Waiting for review") in `text-xs muted` with the review icon; on the right `[Undo  u]` ghost (only once reviewed), `[Reject  r]` danger and `[Approve  a]` primary, grouped so the pointer travels the shortest distance between them. The kbd chip inside a primary button uses the inverted style (`accent-fg` at 15% fill). `r` swaps the bar for a comment field with Cancel and Reject.
 
@@ -182,7 +182,7 @@ Checkerboard CSS, 8px squares:
 }
 ```
 
-Slider handle: 2px vertical line in `link`, with a 24px round grip (`surface` fill, 1px `border`, two small chevrons) centered vertically. The handle is focusable and moves 1% per arrow key, 10% with shift. Diff overlay is the diff PNG at 70% opacity over the new image, with a toggle to hide the new image and show the diff alone.
+Slider handle: 2px vertical line in `link`, with a 24px round grip (`surface` fill, 1px `border`, two small chevrons) centered vertically. The handle is focusable and moves 1% per arrow key, 10% with shift. Diff overlay is the diff PNG at 70% opacity in the picked diff color over the new image, with a toggle to hide the new image and show the diff alone.
 
 ## Layout
 
@@ -211,7 +211,7 @@ Build review page. Full width, no max width, the viewport height is fixed and on
 
 Build header, about 76px: line one is `#411` in `muted` then the commit message in `text-lg` weight 600, truncated, then the conclusion pill; line two is `text-xs muted` metadata with 14px icons: branch (links to the filtered builds list), SHA, PR, "vs #405 on main", time. "Reject build" and "Approve all N" sit on the right and are hidden until the build is finalized. The sidebar is 300px at 1280 and up, 260px from 1024 to 1279, `surface` with a right border. The detail footer (metadata) sits below the review bar and is collapsed to one 32px line by default so the stage keeps its height.
 
-Below 1024 the sidebar becomes a drawer over the viewer (up to 320px, `shadow-menu`, dimmed backdrop), opened by a "3 of 13" button in the title row; `j` and `k` still work with it closed. Below 640 the header actions and review buttons stretch to full width, mode labels shorten (Side, Diff, Slider, Flip), side-by-side stacks baseline above new, and buttons are 44px on coarse pointers. Viewer settings are not saved: every visit starts in Side by side at Fit with the diff overlay on. The theme is the only saved preference.
+Below 1024 the sidebar becomes a drawer over the viewer (up to 320px, `shadow-menu`, dimmed backdrop), opened by a "3 of 13" button in the title row; `j` and `k` still work with it closed. Below 640 the header actions and review buttons stretch to full width, mode labels shorten (Side, Diff, Slider, Flip), side-by-side stacks baseline above new, and buttons are 44px on coarse pointers. Viewer settings are not saved: every visit starts in Side by side at Fit with the diff overlay on in red. The theme is the only saved preference.
 
 Builds table on mobile: rows become two-line list items with a row line between them, line one is `#412` plus the conclusion pill and time, line two is the branch in mono and the commit message in `muted`. PR and SHA are dropped.
 

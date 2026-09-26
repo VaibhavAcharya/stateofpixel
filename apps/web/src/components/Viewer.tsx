@@ -89,6 +89,16 @@ export const MODES: {
   },
 ];
 
+export type DiffColor = "red" | "magenta" | "blue" | "green";
+
+export const DIFF_COLORS: { value: DiffColor; label: string; color: string }[] =
+  [
+    { value: "red", label: "Red", color: "#ff0000" },
+    { value: "magenta", label: "Magenta", color: "#ff00ff" },
+    { value: "blue", label: "Blue", color: "#0066ff" },
+    { value: "green", label: "Green", color: "#00cc00" },
+  ];
+
 export function useViewerSettings() {
   const [mode, setMode] = useState<ViewerMode>("side");
   const [view, setView] = useState<CanvasView | null>(null);
@@ -96,6 +106,7 @@ export function useViewerSettings() {
   const [sideDiff, setSideDiff] = useState(true);
   const [showBaseline, setShowBaseline] = useState(false);
   const [diffOnly, setDiffOnly] = useState(false);
+  const [diffColor, setDiffColor] = useState<DiffColor>("red");
   return {
     sideDiff,
     setSideDiff,
@@ -109,6 +120,8 @@ export function useViewerSettings() {
     setShowBaseline,
     diffOnly,
     setDiffOnly,
+    diffColor,
+    setDiffColor,
   };
 }
 
@@ -130,10 +143,15 @@ export function Viewer({
   const { mode, setMode } = settings;
   const { image, baselineImage } = snapshot;
   const single = image === null || baselineImage === null;
+  const overlayShown =
+    !single &&
+    snapshot.diffImage !== null &&
+    (mode === "diff" || (mode === "side" && settings.sideDiff));
   const canvas = useCanvas(settings, contentSize(snapshot, mode, single));
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      <DiffColorFilters />
       <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-2">
         <h2
           className="min-w-0 text-base font-medium max-sm:w-full"
@@ -165,6 +183,12 @@ export function Viewer({
             />
             <ModeSwitch settings={settings} snapshot={snapshot} />
           </div>
+        )}
+        {overlayShown && (
+          <DiffColorPicker
+            value={settings.diffColor}
+            onChange={settings.setDiffColor}
+          />
         )}
         <div className="ml-auto flex items-center gap-2">
           <span className="w-11 text-right text-xs text-muted tabular-nums">
@@ -320,6 +344,62 @@ function ModeSwitch({
   );
 }
 
+function DiffColorFilters() {
+  return (
+    <svg aria-hidden className="absolute size-0">
+      {DIFF_COLORS.map((option) => (
+        <filter
+          key={option.value}
+          id={`diff-color-${option.value}`}
+          colorInterpolationFilters="sRGB"
+        >
+          <feFlood floodColor={option.color} />
+          <feComposite operator="in" in2="SourceAlpha" />
+        </filter>
+      ))}
+    </svg>
+  );
+}
+
+function DiffColorPicker({
+  value,
+  onChange,
+}: {
+  value: DiffColor;
+  onChange: (value: DiffColor) => void;
+}) {
+  return (
+    <fieldset
+      aria-label="Diff color"
+      className="flex items-center rounded-control bg-surface-2 p-0.5"
+    >
+      {DIFF_COLORS.map((option) => {
+        const active = option.value === value;
+        return (
+          <Tooltip key={option.value} label={option.label}>
+            <button
+              type="button"
+              aria-pressed={active}
+              aria-label={option.label}
+              className={`flex size-7 items-center justify-center rounded-[9px] transition-colors duration-100 ${
+                active
+                  ? "bg-surface shadow-[inset_0_0_0_1px_var(--color-border)]"
+                  : "hover:bg-surface/60"
+              }`}
+              onClick={() => onChange(option.value)}
+            >
+              <span
+                className="size-3 rounded-full"
+                style={{ backgroundColor: option.color }}
+              />
+            </button>
+          </Tooltip>
+        );
+      })}
+    </fieldset>
+  );
+}
+
 function KeyChip({ keyName }: { keyName: string }) {
   return (
     <span className="max-lg:hidden">
@@ -365,7 +445,7 @@ function Compare({
   view: CanvasView;
   paneRef: Ref<HTMLDivElement>;
 }) {
-  const { mode, showBaseline, diffOnly, sideDiff } = settings;
+  const { mode, showBaseline, diffOnly, sideDiff, diffColor } = settings;
   const { scale } = view;
 
   if (mode === "side") {
@@ -380,6 +460,7 @@ function Compare({
             scale={scale}
             caption={newLabel}
             overlay={sideDiff ? snapshot.diffImage : null}
+            overlayColor={diffColor}
           />
         </Pane>
       </>
@@ -397,6 +478,7 @@ function Compare({
           scale={scale}
           caption={diffOnly ? "Diff" : `${newLabel} with diff`}
           overlay={snapshot.diffImage}
+          overlayColor={diffColor}
           size={image}
         />
       </Pane>
@@ -706,6 +788,7 @@ function Frame({
   scale,
   caption,
   overlay,
+  overlayColor = "red",
   size,
   highlighted = false,
 }: {
@@ -713,6 +796,7 @@ function Frame({
   scale: number;
   caption: string;
   overlay?: Image | null;
+  overlayColor?: DiffColor;
   size?: Image;
   highlighted?: boolean;
 }) {
@@ -753,7 +837,10 @@ function Frame({
           alt="Diff overlay"
           placeholder={false}
           className="pointer-events-none absolute top-0 left-0 block opacity-70"
-          style={imageStyle(overlay, scale)}
+          style={{
+            ...imageStyle(overlay, scale),
+            filter: `url(#diff-color-${overlayColor})`,
+          }}
           draggable={false}
         />
       )}
