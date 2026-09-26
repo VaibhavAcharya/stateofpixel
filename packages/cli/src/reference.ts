@@ -52,7 +52,8 @@ const buildOptions = (dryRun: string): OptionSpec[] => [
   },
   {
     flags: "--strict",
-    description: "fail when the service is not reachable",
+    description:
+      "fail instead of skipping on an outage, a rate limit or a fork",
     default: false,
   },
   { flags: "--dry-run", description: dryRun, default: false },
@@ -126,7 +127,8 @@ export const COMMANDS: CommandSpec[] = [
       },
       {
         flags: "--strict",
-        description: "fail when the service is not reachable",
+        description:
+          "fail instead of skipping on an outage, a rate limit or a fork",
         default: false,
       },
     ],

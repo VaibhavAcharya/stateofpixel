@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
+import { ApiError, retryServerErrors } from "./api";
 
 const execFileAsync = promisify(execFile);
 const MAX_ANCESTORS = 100;
@@ -23,12 +24,14 @@ export type CiInfo = { provider?: string; runUrl?: string };
 type GithubEvent = {
   pull_request?: {
     number: number;
-    head: { sha: string; ref: string };
+    head: { sha: string; ref: string; repo?: { full_name: string } | null };
     base: { ref: string };
   };
   head_commit?: { message: string } | null;
-  repository?: { default_branch?: string };
+  repository?: { default_branch?: string; full_name?: string };
 };
+
+export class ForkPullRequestError extends Error {}
 
 export async function readGitInfo(
   env: Env,
@@ -94,6 +97,7 @@ export function defaultNonce(env: Env): string | null {
 export async function resolveToken(
   env: Env,
   fetchImpl: typeof fetch = fetch,
+  retryDelayMs = 1000,
 ): Promise<string> {
   if (env.STATEOFPIXEL_TOKEN) {
     return env.STATEOFPIXEL_TOKEN;
@@ -101,22 +105,40 @@ export async function resolveToken(
   const requestUrl = env.ACTIONS_ID_TOKEN_REQUEST_URL;
   const requestToken = env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
   if (!requestUrl || !requestToken) {
+    if (isForkPullRequest(await readGithubEvent(env))) {
+      throw new ForkPullRequestError(
+        "GitHub Actions gives no OIDC token to pull requests from forks.",
+      );
+    }
     throw new Error(
       "No token. On GitHub Actions add `permissions: id-token: write`, elsewhere set STATEOFPIXEL_TOKEN.",
     );
   }
   const url = new URL(requestUrl);
   url.searchParams.set("audience", OIDC_AUDIENCE);
-  const response = await fetchImpl(url, {
-    headers: { Authorization: `Bearer ${requestToken}` },
-  });
-  if (!response.ok) {
-    throw new Error(
-      `GitHub Actions OIDC token request failed with HTTP ${response.status}.`,
-    );
-  }
-  const { value } = (await response.json()) as { value: string };
-  return value;
+  return retryServerErrors(
+    async () => {
+      const response = await fetchImpl(url, {
+        headers: { Authorization: `Bearer ${requestToken}` },
+      });
+      if (!response.ok) {
+        throw new ApiError(
+          response.status,
+          "oidc_failed",
+          `GitHub Actions OIDC token request failed with HTTP ${response.status}.`,
+        );
+      }
+      const { value } = (await response.json()) as { value: string };
+      return value;
+    },
+    3,
+    retryDelayMs,
+  );
+}
+
+function isForkPullRequest(event: GithubEvent | null): boolean {
+  const headRepo = event?.pull_request?.head.repo?.full_name;
+  return headRepo !== undefined && headRepo !== event?.repository?.full_name;
 }
 
 async function readGithubEvent(env: Env): Promise<GithubEvent | null> {

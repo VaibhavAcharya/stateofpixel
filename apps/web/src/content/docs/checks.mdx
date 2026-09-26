@@ -23,6 +23,8 @@ The CLI exits 0 when there are changes, so the CI job passes and the check decid
 
 A pending check blocks the merge too, so a pull request with changes nobody reviewed cannot merge. Changes that land without review still become the baseline on the default branch. See [Baselines](/docs/baselines).
 
+Pull requests from forks get no check, because GitHub gives them no token to sign in with. See [Authentication](/docs/cli#authentication).
+
 ## GitHub App permissions
 
 The app needs Commit statuses write to set the check, Pull requests read for the pull request number and base branch, Contents read for the compare API, and Metadata read, which every app has.

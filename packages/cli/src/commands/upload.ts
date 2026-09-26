@@ -9,7 +9,13 @@ import {
   isRateLimited,
   isServerError,
 } from "../api";
-import { defaultNonce, readCiInfo, readGitInfo, resolveToken } from "../ci-env";
+import {
+  defaultNonce,
+  ForkPullRequestError,
+  readCiInfo,
+  readGitInfo,
+  resolveToken,
+} from "../ci-env";
 import { createDiffEngine } from "../diff/engine";
 import { formatCount, formatCounts } from "../format";
 import { ENV } from "../reference";
@@ -85,6 +91,12 @@ export async function uploadCommand(
       ci: readCiInfo(env),
     });
   } catch (error) {
+    if (error instanceof ForkPullRequestError && !options.strict) {
+      console.warn(
+        `stateofpixel: skipped, ${error.message} Use --strict to fail instead.`,
+      );
+      return;
+    }
     if (isRateLimited(error) && !options.strict) {
       console.warn(
         `stateofpixel: skipped, ${error.message} Use --strict to fail instead.`,
