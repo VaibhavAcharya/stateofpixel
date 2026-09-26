@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.3.0...v1.4.0) (2026-09-26)
+
+
+### Features
+
+* **web:** add docs pages ([53bf7a4](https://github.com/VaibhavAcharya/stateofpixel/commit/53bf7a4b19383a03f75fe3a5798fb47cb80389b0))
+* **web:** add MDX docs as the source of truth for user-facing behavior ([52914da](https://github.com/VaibhavAcharya/stateofpixel/commit/52914da27ad5b32f18e83a6c15d066bce95d1e2e))
+* **web:** write docs in MDX and render facts from code ([53b4c58](https://github.com/VaibhavAcharya/stateofpixel/commit/53b4c58a494d33c24e4eb185c8a97a17ca9b58db))
+
 ## [1.3.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.2.0...v1.3.0) (2026-09-26)
 
 
