@@ -166,9 +166,11 @@ function ReviewStatus({ snapshot }: { snapshot: Snapshot }) {
       <span className="text-xs text-muted">
         {snapshot.diffStatus === "removed"
           ? "Not in this build, no review needed"
-          : snapshot.image === null
-            ? "Not stored, the account was over its storage limit"
-            : "Matches the baseline, no review needed"}
+          : snapshot.diffStatus === "failed"
+            ? "Upload or diff failed on CI, push again after fixing the cause"
+            : snapshot.image === null
+              ? "Not stored, the account was over its storage limit"
+              : "Matches the baseline, no review needed"}
       </span>
     );
   }
