@@ -102,7 +102,6 @@ See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (stat
 - [ ] PR comment summary
 - [ ] Tokenless auth for fork PRs
 - [ ] Flaky snapshot detection
-- [ ] Move image bytes to R2 when egress cost calls for it
 
 ## Free tier and limits
 
@@ -136,4 +135,5 @@ Needed before applying for a payment gateway.
 ## Later
 
 - [ ] Open-source the CLI and the server
+- [ ] Optional: move images stored before R2 from Convex storage to R2
 - [ ] Optional: make builds of closed pull requests read-only, with a line that the pull request is closed
