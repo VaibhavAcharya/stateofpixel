@@ -18,11 +18,15 @@ Every image is stored once per account, keyed by its content. A snapshot that di
 
 Upgrading, or freeing space with a shorter retention or by deleting a project, ends this as soon as usage is back under the limit.
 
+Owners of the account on GitHub change the plan. Everyone else in the account sees the same warnings, with a note to ask an owner.
+
+A cancelled plan stays until the end of its billing period. If the account then stores more than the Free plan allows, the grace period starts that day. The banner warns about this as soon as the plan is cancelled, and {facts.planEndNoticeDays} days before any cancelled plan ends.
+
 ## Retention
 
 Builds of pull requests are deleted a set time after the pull request closes, {facts.retentionDays} days by default. Builds of branches without a pull request are deleted when the branch had no new build for that long. Admins set it from {facts.minRetentionDays} to {facts.maxRetentionDays} days under Settings, Retention.
 
-Builds on the default branch and on auto-approve branches are kept, and so is any build that another build uses as its baseline. A daily cleanup removes images that no build has used for 24 hours, and frees their storage. A link to a deleted build shows "Build not found."
+Builds on the default branch and on auto-approve branches are kept, and so is any build that another build uses as its baseline. A daily cleanup removes images that no build has used for 24 hours, and frees their storage. A link to a deleted build says when it was deleted and which rule deleted it.
 
 ## Limits
 

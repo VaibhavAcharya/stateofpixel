@@ -26,7 +26,10 @@ import {
 } from "react";
 import { AppHeader } from "../../../../components/AppHeader";
 import { Banners, BuildHeader } from "../../../../components/build/BuildHeader";
-import { BuildNotFound } from "../../../../components/build/BuildNotFound";
+import {
+  BuildDeleted,
+  BuildNotFound,
+} from "../../../../components/build/BuildNotFound";
 import {
   type ReviewAction,
   useBuildData,
@@ -150,6 +153,10 @@ function BuildAccess({
     api.builds.get,
     valid ? { owner, name: repo, number } : "skip",
   );
+  const deleted = useQuery(
+    api.builds.deleted,
+    valid && build === null ? { owner, name: repo, number } : "skip",
+  );
   const prefetch = valid && snapshotId !== undefined && (
     <PrefetchSnapshot
       owner={owner}
@@ -170,7 +177,19 @@ function BuildAccess({
     return <BuildNotFound title="Project not found." />;
   }
   if (!build) {
-    return <BuildNotFound title="Build not found." />;
+    if (deleted === undefined && valid) {
+      return <BuildSkeleton />;
+    }
+    return deleted ? (
+      <BuildDeleted
+        owner={owner}
+        repo={repo}
+        number={number}
+        deletion={deleted.deletion}
+      />
+    ) : (
+      <BuildNotFound title="Build not found." />
+    );
   }
   return (
     <BuildPage

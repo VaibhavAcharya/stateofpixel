@@ -67,11 +67,20 @@ export const deleteOldBuilds = internalMutation({
         );
       }
       const project = projects.get(build.projectId) ?? null;
-      if (
-        project !== null &&
-        (await isPastRetention(ctx, project, build, startedAt))
-      ) {
+      const reason =
+        project === null
+          ? null
+          : await retentionReason(ctx, project, build, startedAt);
+      if (project !== null && reason !== null) {
         await ctx.db.delete("builds", build._id);
+        await ctx.db.insert("deletedBuilds", {
+          projectId: build.projectId,
+          number: build.number,
+          branch: build.branch,
+          prNumber: build.prNumber,
+          reason,
+          retentionDays: project.prRetentionDays,
+        });
         await ctx.scheduler.runAfter(0, internal.retention.deleteBuildData, {
           buildId: build._id,
         });
@@ -94,12 +103,12 @@ export const deleteOldBuilds = internalMutation({
   },
 });
 
-async function isPastRetention(
+async function retentionReason(
   ctx: QueryCtx,
   project: Doc<"projects">,
   build: Doc<"builds">,
   now: number,
-): Promise<boolean> {
+): Promise<Doc<"deletedBuilds">["reason"] | null> {
   if (
     build.status === "pending" ||
     build.branch === project.defaultBranch ||
@@ -107,7 +116,7 @@ async function isPastRetention(
       matchesBranch(pattern, build.branch),
     )
   ) {
-    return false;
+    return null;
   }
   const cutoff = now - project.prRetentionDays * DAY_MS;
   const lastOnBranch = await ctx.db
@@ -117,17 +126,20 @@ async function isPastRetention(
     )
     .order("desc")
     .first();
-  const expired =
-    (build.prClosedAt !== undefined && build.prClosedAt < cutoff) ||
-    (lastOnBranch?._creationTime ?? build._creationTime) < cutoff;
-  if (!expired) {
-    return false;
+  const reason =
+    build.prClosedAt !== undefined && build.prClosedAt < cutoff
+      ? "pr_closed"
+      : (lastOnBranch?._creationTime ?? build._creationTime) < cutoff
+        ? "branch_inactive"
+        : null;
+  if (reason === null) {
+    return null;
   }
   const usedAsBaseline = await ctx.db
     .query("builds")
     .withIndex("by_baselineBuildId", (q) => q.eq("baselineBuildId", build._id))
     .first();
-  return usedAsBaseline === null;
+  return usedAsBaseline === null ? reason : null;
 }
 
 export const deleteBuildData = internalMutation({

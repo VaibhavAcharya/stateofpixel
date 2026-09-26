@@ -216,6 +216,15 @@ export default defineSchema({
     .index("by_checkOutOfSync", ["checkOutOfSync"])
     .index("by_baselineBuildId", ["baselineBuildId"]),
 
+  deletedBuilds: defineTable({
+    projectId: v.id("projects"),
+    number: v.number(),
+    branch: v.string(),
+    prNumber: v.optional(v.number()),
+    reason: v.union(v.literal("pr_closed"), v.literal("branch_inactive")),
+    retentionDays: v.number(),
+  }).index("by_projectId_and_number", ["projectId", "number"]),
+
   snapshots: defineTable({
     buildId: v.id("builds"),
     shardIndex: v.number(),

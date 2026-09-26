@@ -717,3 +717,90 @@ it("lists the current baselines and the history of one snapshot", async () => {
   });
   expect(history?.entries[0]?.image?.url).toEqual(expect.any(String));
 });
+
+it("says when retention deleted a build", async () => {
+  const { t, user, grant, projectId } = await setup();
+  await t.run(async (ctx) => {
+    await ctx.db.patch("projects", projectId, { nextBuildNumber: 5 });
+    await ctx.db.insert("deletedBuilds", {
+      projectId,
+      number: 3,
+      branch: "old-feature",
+      prNumber: 9,
+      reason: "pr_closed",
+      retentionDays: 30,
+    });
+  });
+  const deleted = (number: number) =>
+    user.query(api.builds.deleted, { ...repo, number });
+
+  expect(await deleted(3)).toBeNull();
+
+  await grant("read");
+  expect(await deleted(3)).toMatchObject({
+    deletion: {
+      branch: "old-feature",
+      prNumber: 9,
+      reason: "pr_closed",
+      retentionDays: 30,
+    },
+  });
+  expect(await deleted(4)).toEqual({ deletion: null });
+  expect(await deleted(2)).toBeNull();
+  expect(await deleted(5)).toBeNull();
+  expect(await deleted(0)).toBeNull();
+});
+
+it("returns the account's billing state and role to writers", async () => {
+  const { t, user, grant, userId } = await setup();
+  await grant("write");
+  await t.run(async (ctx) => {
+    const project = await ctx.db
+      .query("projects")
+      .withIndex("by_owner_and_name", (q) =>
+        q.eq("owner", "acme").eq("name", "web-app"),
+      )
+      .unique();
+    if (project === null) {
+      throw new Error("No project");
+    }
+    await ctx.db.patch("accounts", project.accountId, {
+      plan: "25gb",
+      billingSubscriptionId: "sub_1",
+      billingStatus: "on_hold",
+      billingPeriodEndsAt: 1000,
+    });
+    const membership = await ctx.db
+      .query("accountMembers")
+      .withIndex("by_accountId_and_userId", (q) =>
+        q.eq("accountId", project.accountId).eq("userId", userId),
+      )
+      .unique();
+    if (membership !== null) {
+      await ctx.db.patch("accountMembers", membership._id, { role: "member" });
+    }
+  });
+
+  expect((await user.query(api.projects.access, repo))?.account).toEqual({
+    type: "org",
+    role: "member",
+    storage: {
+      plan: "25gb",
+      storageBytes: 0,
+      storageLimitBytes: 10 * 1024 ** 3,
+    },
+    subscription: {
+      id: "sub_1",
+      status: "on_hold",
+      interval: null,
+      periodEndsAt: 1000,
+      cancelsAtPeriodEnd: false,
+    },
+  });
+});
+
+it("hides the account's billing state from readers", async () => {
+  const { user, grant } = await setup();
+  await grant("read");
+  expect((await user.query(api.projects.access, repo))?.account).toBeNull();
+});
