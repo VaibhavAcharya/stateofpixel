@@ -87,6 +87,7 @@ See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (stat
 - [ ] The `web` visual job takes 4 to 5 minutes in CI; think about how to handle it
 - [ ] `stateofpixel storybook --shard i/n` captures only the stories of that shard, so `web-storybook` can run as parallel jobs
 - [x] Storybook stories with fixtures for flows that are hard to reproduce, like checkout results, plan changes, failed renewals, storage warnings and blocked builds
+- [ ] `apps/web/visual/build.visual.ts` looks flaky; find out why and make it stable
 
 ## M3: growth
 
@@ -131,7 +132,7 @@ Needed before applying for a payment gateway.
 - [x] Open Graph image per page
 - [x] Review the npm keywords of the CLI and the topics of the GitHub repo
 - [ ] Images and illustrations in the README instead of the ASCII art
-- [ ] Rethink the CLI README that npm shows
+- [x] Rethink the CLI README that npm shows
 
 ## Later
 
