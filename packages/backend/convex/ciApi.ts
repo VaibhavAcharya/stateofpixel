@@ -21,6 +21,7 @@ import {
   GithubError,
   isAncestor,
 } from "./lib/github";
+import { createGrant, withGrant } from "./lib/imageUrls";
 import { rateLimiter } from "./rateLimits";
 import { DEFAULT_BUILD_NAME } from "./schema";
 
@@ -278,6 +279,7 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
     build,
     lookups.map((lookup) => lookup.hash),
   );
+  const grant = await createGrant(auth.project.id, Date.now());
 
   return Response.json({
     buildId: build.buildId,
@@ -288,6 +290,9 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
     baseline: build.baseline,
     snapshots: lookups.map((snapshot) => ({
       ...snapshot,
+      ...("baselineUrl" in snapshot && snapshot.baselineUrl !== undefined
+        ? { baselineUrl: withGrant(snapshot.baselineUrl, grant) }
+        : {}),
       ...(uploadUrls.has(snapshot.hash)
         ? { uploadUrl: uploadUrls.get(snapshot.hash) }
         : {}),

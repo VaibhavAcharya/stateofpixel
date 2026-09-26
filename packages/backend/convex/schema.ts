@@ -100,6 +100,9 @@ export default defineSchema({
     billingCustomerId: v.optional(v.string()),
     billingSubscriptionId: v.optional(v.string()),
     billingStatus: v.optional(v.string()),
+    billingInterval: v.optional(
+      v.union(v.literal("monthly"), v.literal("yearly")),
+    ),
     billingPeriodEndsAt: v.optional(v.number()),
     billingCancelsAtPeriodEnd: v.optional(v.boolean()),
     deletedAt: v.optional(v.number()),

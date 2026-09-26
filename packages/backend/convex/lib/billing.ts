@@ -43,13 +43,18 @@ export function productId(
   return PRODUCTS[environment][plan][interval];
 }
 
-export function planForProduct(
+export function productPlan(
   environment: BillingEnvironment,
   productId: string,
-): PaidPlan | null {
+): { plan: PaidPlan; interval: BillingInterval } | null {
   for (const [plan, ids] of Object.entries(PRODUCTS[environment])) {
-    if (ids.monthly === productId || ids.yearly === productId) {
-      return plan as PaidPlan;
+    for (const [interval, id] of Object.entries(ids)) {
+      if (id === productId) {
+        return {
+          plan: plan as PaidPlan,
+          interval: interval as BillingInterval,
+        };
+      }
     }
   }
   return null;

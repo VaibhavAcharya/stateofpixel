@@ -1,11 +1,16 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
-import { expect, it, vi } from "vitest";
+import { beforeAll, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
+
+beforeAll(() => {
+  vi.stubEnv("IMAGE_URL_SECRET", "test-image-secret");
+  vi.stubEnv("CONVEX_SITE_URL", "https://test.convex.site");
+});
 
 const counts = {
   unchanged: 1,
@@ -278,6 +283,55 @@ it("lists builds by branch and returns build and snapshot details", async () => 
     diffImage: null,
     lastReview: null,
   });
+});
+
+it("serves private images only through a signed link", async () => {
+  const { t, user, grant, projectId, snapshotId } = await setup();
+  await grant("read");
+  const detail = await user.query(api.snapshots.get, {
+    ...repo,
+    number: 2,
+    snapshotId,
+  });
+  const url = new URL(detail?.image?.url ?? "");
+  expect(url.pathname).toMatch(new RegExp(`^/images/${projectId}/[^/]+$`));
+  expect(url.search).toBe("");
+
+  expect((await t.fetch(url.pathname)).status).toBe(403);
+  const signed = await user.mutation(api.images.grant, { projectId });
+  const path = `${url.pathname}?exp=${signed.exp}&sig=${signed.sig}`;
+  const response = await t.fetch(path);
+  expect(response.status).toBe(200);
+  expect(await response.text()).toBe("png");
+  expect(response.headers.get("Cache-Control")).toMatch(/^private/);
+
+  expect(
+    (await t.fetch(`${url.pathname}?exp=${signed.exp + 1}&sig=${signed.sig}`))
+      .status,
+  ).toBe(403);
+  vi.useFakeTimers({ now: signed.exp });
+  expect((await t.fetch(path)).status).toBe(403);
+  vi.useRealTimers();
+});
+
+it("refuses an image link grant without read access", async () => {
+  const { user, grant, projectId } = await setup();
+  await grant("none");
+  await expect(user.mutation(api.images.grant, { projectId })).rejects.toThrow(
+    /not_found/,
+  );
+});
+
+it("keeps direct image links for public projects", async () => {
+  const { user, snapshotId } = await setup({ private: false });
+  const detail = await user.query(api.snapshots.get, {
+    ...repo,
+    number: 2,
+    snapshotId,
+  });
+  expect(new URL(detail?.image?.url ?? "").pathname).toMatch(
+    /^\/api\/storage\//,
+  );
 });
 
 it("shows the account home only to members", async () => {

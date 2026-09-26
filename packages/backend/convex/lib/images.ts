@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { getUrl } from "../blobs";
 
@@ -10,6 +10,7 @@ export const imageInfo = v.union(
 
 export async function toImageInfo(
   ctx: QueryCtx,
+  project: Doc<"projects">,
   imageId: Id<"images"> | undefined,
 ) {
   const image =
@@ -17,7 +18,7 @@ export async function toImageInfo(
   if (image === null) {
     return null;
   }
-  const url = await getUrl(ctx, image);
+  const url = await getUrl(ctx, image, project);
   return url === null
     ? null
     : { url, width: image.width, height: image.height };

@@ -8,6 +8,7 @@ const modules = import.meta.glob("./**/*.ts");
 const GIGABYTE = 1024 ** 3;
 const WEBHOOK_SECRET = `whsec_${btoa("test-dodo-webhook-secret")}`;
 const MONTHLY_25GB = "pdt_0NoN5TjZdBKHRU6UskUXu";
+const YEARLY_100GB = "pdt_0NoN5ToBDApZ02O0BMR1K";
 const NEXT_BILLING_DATE = "2026-10-25T10:00:00Z";
 
 beforeAll(() => {
@@ -134,8 +135,36 @@ it("moves the account to the plan of an active subscription", async () => {
     storageLimitBytes: 25 * GIGABYTE,
     billingCustomerId: "cus_acme",
     billingSubscriptionId: "sub_1",
+    billingInterval: "monthly",
   });
   expect(updated?.overLimitSince).toBeUndefined();
+});
+
+it("follows a plan change on the same subscription", async () => {
+  const { t, accountId, account } = await setup();
+  await deliver(
+    t,
+    subscriptionEvent("subscription.active", {
+      accountId,
+      subscriptionId: "sub_1",
+      status: "active",
+    }),
+  );
+  await deliver(
+    t,
+    subscriptionEvent("subscription.plan_changed", {
+      accountId,
+      subscriptionId: "sub_1",
+      status: "active",
+      productId: YEARLY_100GB,
+    }),
+  );
+  expect(await account()).toMatchObject({
+    plan: "100gb",
+    storageLimitBytes: 100 * GIGABYTE,
+    billingSubscriptionId: "sub_1",
+    billingInterval: "yearly",
+  });
 });
 
 it("moves the account back to free when its subscription ends", async () => {
@@ -247,4 +276,53 @@ it("keeps the plan until a subscription cancelled at the next billing date ends"
   expect(ended).toMatchObject({ plan: "free" });
   expect(ended?.billingPeriodEndsAt).toBeUndefined();
   expect(ended?.billingCancelsAtPeriodEnd).toBeUndefined();
+});
+
+async function subscribedOwner(storageBytes: number) {
+  const t = convexTest(schema, modules);
+  const userId = await t.run(async (ctx) => {
+    const accountId = await ctx.db.insert("accounts", {
+      githubAccountId: 1,
+      login: "octocat",
+      type: "user",
+      plan: "100gb",
+      storageLimitBytes: 100 * GIGABYTE,
+      storageBytes,
+      billingCustomerId: "cus_octocat",
+      billingSubscriptionId: "sub_1",
+      billingStatus: "active",
+      billingInterval: "yearly",
+    });
+    const userId = await ctx.db.insert("users", {
+      githubUserId: 1,
+      login: "octocat",
+      githubToken: "ghu_octocat",
+      lastSeenAt: 0,
+    });
+    await ctx.db.insert("accountMembers", { accountId, userId });
+    return userId;
+  });
+  return t.withIdentity({ subject: `${userId}|session` });
+}
+
+it("refuses to change to the plan the account is on", async () => {
+  const owner = await subscribedOwner(GIGABYTE);
+  await expect(
+    owner.action(api.billing.changePlan, {
+      login: "octocat",
+      plan: "100gb",
+      interval: "yearly",
+    }),
+  ).rejects.toThrow(/same_plan/);
+});
+
+it("refuses to change to a plan smaller than the storage used", async () => {
+  const owner = await subscribedOwner(30 * GIGABYTE);
+  await expect(
+    owner.action(api.billing.previewPlanChange, {
+      login: "octocat",
+      plan: "25gb",
+      interval: "yearly",
+    }),
+  ).rejects.toThrow(/over_plan_limit/);
 });

@@ -15,10 +15,13 @@ import {
 import { planFields } from "./accounts";
 import {
   type BillingEnvironment,
+  type BillingInterval,
   isEndedStatus,
-  planForProduct,
+  type PaidPlan,
   productId,
+  productPlan,
 } from "./lib/billing";
+import { PLAN_STORAGE_LIMIT_BYTES } from "./lib/storage";
 import { isAccountOwner } from "./members";
 
 const paidPlan = v.union(
@@ -86,6 +89,67 @@ export const checkout = action({
   },
 });
 
+export const previewPlanChange = action({
+  args: { login: v.string(), plan: paidPlan, interval },
+  returns: v.object({
+    amount: v.number(),
+    currency: v.string(),
+    renewsAt: v.number(),
+  }),
+  handler: async (ctx, { login, plan, interval }) => {
+    const subscriptionId = await requirePlanChange(ctx, login, plan, interval);
+    const preview = await dodo().subscriptions.previewChangePlan(
+      subscriptionId,
+      planChange(plan, interval),
+    );
+    return {
+      amount: preview.immediate_charge.summary.total_amount,
+      currency: preview.immediate_charge.summary.currency,
+      renewsAt: Date.parse(preview.new_plan.next_billing_date),
+    };
+  },
+});
+
+export const changePlan = action({
+  args: { login: v.string(), plan: paidPlan, interval },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, { login, plan, interval }) => {
+    const subscriptionId = await requirePlanChange(ctx, login, plan, interval);
+    const result = await dodo().subscriptions.changePlan(subscriptionId, {
+      ...planChange(plan, interval),
+      on_payment_failure: "prevent_change",
+    });
+    return result.payment_link ?? null;
+  },
+});
+
+function planChange(plan: PaidPlan, interval: BillingInterval) {
+  return {
+    product_id: productId(billingEnvironment(), plan, interval),
+    quantity: 1,
+    proration_billing_mode: "prorated_immediately" as const,
+  };
+}
+
+async function requirePlanChange(
+  ctx: ActionCtx,
+  login: string,
+  plan: PaidPlan,
+  interval: BillingInterval,
+): Promise<string> {
+  const target = await requireBillingOwner(ctx, login);
+  if (target.billingSubscriptionId === null) {
+    throw new ConvexError({ code: "not_subscribed" });
+  }
+  if (target.plan === plan && target.billingInterval === interval) {
+    throw new ConvexError({ code: "same_plan" });
+  }
+  if (target.storageBytes > PLAN_STORAGE_LIMIT_BYTES[plan]) {
+    throw new ConvexError({ code: "over_plan_limit" });
+  }
+  return target.billingSubscriptionId;
+}
+
 export const portal = action({
   args: { login: v.string() },
   returns: v.string(),
@@ -135,6 +199,9 @@ export const target = internalQuery({
       accountType: v.union(v.literal("user"), v.literal("org")),
       billingCustomerId: v.union(v.string(), v.null()),
       billingSubscriptionId: v.union(v.string(), v.null()),
+      billingInterval: v.union(interval, v.null()),
+      plan: v.string(),
+      storageBytes: v.number(),
     }),
   ),
   handler: async (ctx, { userId, login }) => {
@@ -165,6 +232,9 @@ export const target = internalQuery({
       accountType: account.type,
       billingCustomerId: account.billingCustomerId ?? null,
       billingSubscriptionId: account.billingSubscriptionId ?? null,
+      billingInterval: account.billingInterval ?? null,
+      plan: account.plan,
+      storageBytes: account.storageBytes,
     };
   },
 });
@@ -234,18 +304,19 @@ export const syncSubscription = internalMutation({
     }
 
     if (args.status === "active") {
-      const plan = planForProduct(billingEnvironment(), args.productId);
-      if (plan === null) {
+      const product = productPlan(billingEnvironment(), args.productId);
+      if (product === null) {
         console.warn(
           `Subscription ${args.subscriptionId} has unknown product ${args.productId}`,
         );
         return null;
       }
       await ctx.db.patch("accounts", account._id, {
-        ...planFields(account, plan),
+        ...planFields(account, product.plan),
         billingCustomerId: args.customerId,
         billingSubscriptionId: args.subscriptionId,
         billingStatus: args.status,
+        billingInterval: product.interval,
         billingPeriodEndsAt: args.periodEndsAt,
         billingCancelsAtPeriodEnd: args.cancelsAtPeriodEnd,
       });
@@ -256,6 +327,7 @@ export const syncSubscription = internalMutation({
         ...planFields(account, "free"),
         billingSubscriptionId: undefined,
         billingStatus: undefined,
+        billingInterval: undefined,
         billingPeriodEndsAt: undefined,
         billingCancelsAtPeriodEnd: undefined,
       });

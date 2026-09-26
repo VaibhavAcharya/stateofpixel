@@ -136,6 +136,6 @@ Storage-only billing means retention is a product feature. Show each project its
 - Flaky renders make any visual tool look broken. The Docker and Playwright defaults matter as much as the server.
 - GitHub App permissions scare some orgs. Keep the permission list minimal and documented.
 - Convex egress is $0.12 to $0.13/GB, and review pages are mostly image downloads. Keep the storage module small so the move to R2 stays a contained change.
-- Convex File Storage `getUrl` returns a signed URL (Convex guidelines in `packages/backend/convex/_generated/ai/guidelines.md`). Anyone holding it can open a private repo's screenshot, and how long it stays valid is not documented there (unverified).
+- Convex File Storage URLs never expire, and anyone with one can open the file ([docs](https://docs.convex.dev/file-storage/serve-files)). Private repo images go through our own HTTP route with links that expire within 2 hours (SPEC section 11). Every private image view is one function call on top of the egress.
 - The Convex free plan returns errors when over limits. Run production on Starter with a card on file from day one.
 - Concurrency on Starter may be 16 queries and 16 mutations at once (unverified). Many CI shards uploading at once could queue. Move to Pro when that shows up.

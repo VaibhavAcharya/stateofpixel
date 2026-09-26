@@ -14,7 +14,12 @@ import {
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import type { ReactNode } from "react";
 import { formatDate } from "../lib/format";
-import { type PaidPlan, useBilling } from "../lib/useBilling";
+import {
+  type BillingInterval,
+  type PaidPlan,
+  type PlanChange,
+  useBilling,
+} from "../lib/useBilling";
 import {
   type Billing,
   formatPrice,
@@ -60,7 +65,20 @@ function planNotice(
   planName: string,
   subscription: Subscription | null,
   checkoutResult: CheckoutResult | null,
+  change: PlanChange | null,
+  changed: boolean,
 ): Notice | null {
+  if (change?.submitted) {
+    return changed
+      ? {
+          tone: "success",
+          text: `Plan changed. You are on the ${planName} plan.`,
+        }
+      : {
+          tone: "info",
+          text: "Plan change received. Your plan updates in a few seconds.",
+        };
+  }
   if (checkoutResult !== null) {
     if (PAID_STATUSES.has(checkoutResult.status)) {
       return subscription?.id === checkoutResult.subscriptionId &&
@@ -124,6 +142,7 @@ function periodLine(subscription: Subscription | null): string | null {
 type Subscription = {
   id: string;
   status: string;
+  interval: BillingInterval | null;
   periodEndsAt: number | null;
   cancelsAtPeriodEnd: boolean;
 };
@@ -150,7 +169,20 @@ export function PlanBox({
   const available = useQuery(api.billing.available);
   const billing = useBilling();
   const planName = PLAN_NAMES[storage.plan];
-  const notice = planNotice(planName, subscription, checkoutResult);
+  const change = billing.change;
+  const changed =
+    change !== null &&
+    storage.plan === change.plan &&
+    subscription?.interval === change.interval;
+  const notice = planNotice(
+    planName,
+    subscription,
+    checkoutResult,
+    change,
+    changed,
+  );
+  const canChange =
+    subscription?.status === "active" && !subscription.cancelsAtPeriodEnd;
   const period = periodLine(subscription);
   const lockedReason =
     role !== "member"
@@ -163,7 +195,13 @@ export function PlanBox({
       {notice !== null && (
         <PlanNotice
           notice={notice}
-          onDismiss={checkoutResult === null ? undefined : onDismissCheckout}
+          onDismiss={
+            change?.submitted
+              ? billing.cancelChange
+              : checkoutResult === null
+                ? undefined
+                : onDismissCheckout
+          }
         />
       )}
       <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface px-4 py-3 ring-1 ring-border">
@@ -207,10 +245,89 @@ export function PlanBox({
                 }
               />
             )}
+            {canChange && (
+              <UpgradeMenu
+                label="Change plan"
+                disabledReason={lockedReason}
+                pending={false}
+                current={
+                  subscription.interval === null
+                    ? undefined
+                    : { plan: storage.plan, interval: subscription.interval }
+                }
+                onChoose={(plan, interval) =>
+                  void billing.startChange(login, plan, interval)
+                }
+              />
+            )}
           </div>
         )}
       </section>
+      {change !== null && !change.submitted && (
+        <ChangeConfirm
+          change={change}
+          pending={billing.pending}
+          onCancel={billing.cancelChange}
+          onConfirm={() => void billing.confirmChange(login)}
+        />
+      )}
     </div>
+  );
+}
+
+function formatAmount(amount: number, currency: string): string {
+  const format = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+  });
+  const digits = format.resolvedOptions().maximumFractionDigits ?? 2;
+  return format.format(amount / 10 ** digits);
+}
+
+function ChangeConfirm({
+  change,
+  pending,
+  onCancel,
+  onConfirm,
+}: {
+  change: PlanChange;
+  pending: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const target = `${PLAN_NAMES[change.plan]} plan, billed ${change.interval}`;
+  const { preview } = change;
+  return (
+    <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface px-4 py-3 text-sm ring-1 ring-border">
+      {preview === null ? (
+        <p className="text-muted">Checking the price of the {target}.</p>
+      ) : (
+        <p className="max-w-prose">
+          <span className="font-medium">Move to the {target}?</span>{" "}
+          <span className="text-muted">
+            {preview.amount === 0
+              ? "You pay nothing now."
+              : `You pay ${formatAmount(preview.amount, preview.currency)} now.`}{" "}
+            Unused time on your current plan counts toward it, and any left over
+            is credited to later renewals. The new plan renews on{" "}
+            {formatDate(preview.renewsAt)}.
+          </span>
+        </p>
+      )}
+      <div className="flex gap-2">
+        <button type="button" className={buttonClass()} onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className={buttonClass("primary")}
+          disabled={preview === null || pending}
+          onClick={onConfirm}
+        >
+          {pending ? "Changing plan" : "Change plan"}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -247,11 +364,13 @@ export function UpgradeMenu({
   label = "Upgrade",
   disabledReason,
   pending,
+  current,
   onChoose,
 }: {
   label?: string;
   disabledReason?: string;
   pending: boolean;
+  current?: { plan: string; interval: BillingInterval };
   onChoose: (plan: PaidPlan, interval: Billing) => void;
 }) {
   if (disabledReason !== undefined) {
@@ -286,11 +405,16 @@ export function UpgradeMenu({
                 key={tier.plan}
                 plan={tier.plan}
                 interval={interval}
+                isCurrent={
+                  current?.plan === tier.plan && current.interval === interval
+                }
                 onChoose={onChoose}
               >
                 {tier.gigabytes} GB
                 <span className="text-muted tabular-nums">
-                  {formatPrice(monthlyPrice(tier, interval))} /mo
+                  {current?.plan === tier.plan && current.interval === interval
+                    ? "Current"
+                    : `${formatPrice(monthlyPrice(tier, interval))} /mo`}
                 </span>
               </UpgradeItem>
             ),
@@ -304,11 +428,13 @@ export function UpgradeMenu({
 function UpgradeItem({
   plan,
   interval,
+  isCurrent,
   onChoose,
   children,
 }: {
   plan: PaidPlan;
   interval: Billing;
+  isCurrent: boolean;
   onChoose: (plan: PaidPlan, interval: Billing) => void;
   children: ReactNode;
 }) {
@@ -316,7 +442,8 @@ function UpgradeItem({
   return (
     <button
       type="button"
-      className={`${menuItemClass} justify-between`}
+      className={`${menuItemClass} justify-between disabled:opacity-50 disabled:hover:bg-transparent`}
+      disabled={isCurrent}
       data-umami-event="Checkout"
       data-umami-event-plan={plan}
       data-umami-event-period={interval}

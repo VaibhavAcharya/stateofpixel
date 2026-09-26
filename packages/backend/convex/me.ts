@@ -23,7 +23,6 @@ export const accounts = query({
       type: v.union(v.literal("user"), v.literal("org")),
       installed: v.boolean(),
       plan,
-      subscribed: v.boolean(),
     }),
   ),
   handler: async (ctx) => {
@@ -47,7 +46,6 @@ export const accounts = query({
         type: account.type,
         installed: account.installationId !== undefined,
         plan: account.plan,
-        subscribed: account.billingSubscriptionId !== undefined,
       });
     }
     return result.sort((a, b) => a.login.localeCompare(b.login));

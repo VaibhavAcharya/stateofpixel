@@ -33,6 +33,8 @@ let checkCalls: {
 beforeAll(async () => {
   const { privateKey } = await generateKeyPair("RS256", { extractable: true });
   vi.stubEnv("SITE_URL", "https://stateofpixel.test");
+  vi.stubEnv("IMAGE_URL_SECRET", "test-image-secret");
+  vi.stubEnv("CONVEX_SITE_URL", "https://test.convex.site");
   vi.stubEnv("GITHUB_APP_ID", "12345");
   vi.stubEnv("GITHUB_APP_PRIVATE_KEY", await exportPKCS8(privateKey));
 });
@@ -327,6 +329,15 @@ it("compares a build against the nearest approved ancestor", async () => {
     { name: "Footer", status: "unchanged", upload: false, baseline: false },
     { name: "Promo", status: "added", upload: true, baseline: false },
   ]);
+  const baselineUrl = new URL(
+    created.snapshots.find((s: { name: string }) => s.name === "Header")
+      .baselineUrl,
+  );
+  expect(baselineUrl.pathname).toMatch(/^\/images\//);
+  const baseline = await t.fetch(
+    `${baselineUrl.pathname}${baselineUrl.search}`,
+  );
+  expect(await baseline.text()).toBe("header-v1");
   expect(build).toMatchObject({
     status: "finalized",
     conclusion: "changes",

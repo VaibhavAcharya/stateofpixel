@@ -51,6 +51,7 @@ import { errorCode } from "../../../../lib/errorCode";
 import { formatCount } from "../../../../lib/format";
 import { isLab } from "../../../../lib/lab";
 import { prefetchBuild } from "../../../../lib/prefetch";
+import { useImageUrl } from "../../../../lib/useImageUrl";
 import { useProjectAccess } from "../../../../lib/useProjectAccess";
 
 export const Route = createFileRoute("/$owner/$repo/builds/$number")({
@@ -222,17 +223,16 @@ function PrefetchSnapshot({
     number,
     snapshotId,
   });
+  const image = useImageUrl(snapshot?.image?.url);
+  const baselineImage = useImageUrl(snapshot?.baselineImage?.url);
+  const diffImage = useImageUrl(snapshot?.diffImage?.url);
   useEffect(() => {
-    for (const image of [
-      snapshot?.image,
-      snapshot?.baselineImage,
-      snapshot?.diffImage,
-    ]) {
-      if (image) {
-        new Image().src = image.url;
+    for (const url of [image, baselineImage, diffImage]) {
+      if (url !== undefined) {
+        new Image().src = url;
       }
     }
-  }, [snapshot]);
+  }, [image, baselineImage, diffImage]);
   return null;
 }
 

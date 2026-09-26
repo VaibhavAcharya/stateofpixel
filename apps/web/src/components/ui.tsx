@@ -12,13 +12,17 @@ import {
 } from "@phosphor-icons/react/ssr";
 import type { Doc } from "@stateofpixel/backend/dataModel";
 import {
+  type ComponentProps,
   type ComponentType,
   cloneElement,
   type ReactElement,
   type ReactNode,
   useId,
+  useRef,
+  useState,
 } from "react";
 import { formatAbsolute, formatCount, formatRelative } from "../lib/format";
+import { renewImageGrant, useImageUrl } from "../lib/useImageUrl";
 
 export type DiffStatus = Doc<"snapshots">["diffStatus"];
 export type ReviewState = Doc<"snapshots">["reviewState"];
@@ -454,3 +458,96 @@ export const listRowClass =
 
 export const listRowLinkClass =
   "after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:shadow-[inset_0_0_0_2px_var(--color-focus)]";
+
+const BLANK_IMAGE =
+  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
+type SnapshotImageProps = Omit<ComponentProps<"img">, "src" | "alt"> & {
+  image: { url: string; width: number; height: number };
+  alt: string;
+  placeholder?: string | false;
+  retryable?: boolean;
+};
+
+export function SnapshotImage(props: SnapshotImageProps) {
+  const [attempt, setAttempt] = useState(0);
+  return (
+    <LoadingImage
+      key={`${props.image.url}#${attempt}`}
+      {...props}
+      onRetry={() => {
+        renewImageGrant(props.image.url);
+        setAttempt((value) => value + 1);
+      }}
+    />
+  );
+}
+
+function LoadingImage({
+  image,
+  alt,
+  placeholder = "skeleton",
+  retryable = false,
+  onRetry,
+  className = "",
+  style,
+  ...props
+}: SnapshotImageProps & { onRetry: () => void }) {
+  const url = useImageUrl(image.url);
+  const [state, setState] = useState<"loading" | "loaded" | "failed">(
+    "loading",
+  );
+  const renewed = useRef(false);
+  const frameStyle = {
+    aspectRatio: `${image.width} / ${image.height}`,
+    ...style,
+  };
+  if (state === "failed" && placeholder !== false && retryable) {
+    return (
+      <span
+        className={`${className} relative z-10 bg-surface-2`}
+        style={frameStyle}
+      >
+        <span className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted">
+          <WarningIcon size={20} />
+          Could not load this image.
+          <button type="button" className={buttonClass()} onClick={onRetry}>
+            Try again
+          </button>
+        </span>
+      </span>
+    );
+  }
+  const stateClass = {
+    loading: placeholder === false ? "invisible" : placeholder,
+    loaded: "",
+    failed: placeholder === false ? "invisible" : "bg-surface-2",
+  }[state];
+  return (
+    <img
+      {...props}
+      src={url ?? BLANK_IMAGE}
+      alt={alt}
+      title={state === "failed" ? "Could not load this image" : undefined}
+      width={image.width}
+      height={image.height}
+      className={`${className} ${stateClass}`}
+      style={frameStyle}
+      onLoad={(event) => {
+        if (
+          url !== undefined &&
+          event.currentTarget.getAttribute("src") === url
+        ) {
+          setState("loaded");
+        }
+      }}
+      onError={() => {
+        if (!renewed.current && renewImageGrant(image.url)) {
+          renewed.current = true;
+          return;
+        }
+        setState("failed");
+      }}
+    />
+  );
+}
