@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: scripts/test-pr.sh <no-change|color-change|layout-shift|add-page|remove-page|add-story|remove-story|flaky|many-changes|sharded>" >&2
+  echo "Usage: scripts/test-pr.sh <no-change|color-change|layout-shift|add-page|remove-page|add-story|remove-story|flaky|many-changes|sharded|restyle>" >&2
   exit 1
 }
 
@@ -17,6 +17,7 @@ case "$scenario" in
   remove-story) expected="playground: success, No visual changes. storybook: success, No visual changes (Card/Default removed)" ;;
   flaky) expected="playground and storybook: success, No visual changes (the animation is cancelled at capture)" ;;
   many-changes) expected="playground: pending, 23 changes to review (3 changed, 20 added). storybook: pending, 24 changes to review (4 changed, 20 added)" ;;
+  restyle) expected="playground: pending, 3 changes to review. storybook: pending, 4 changes to review. web and web-storybook: pending, almost every snapshot changed" ;;
   sharded) expected="playground: success, No visual changes (1 auto shard, then finalize). storybook: success, No visual changes (2 shards)" ;;
   *) usage ;;
 esac
@@ -115,6 +116,19 @@ JS
       done
     } > "$stories/Item.stories.js"
     ;;
+  restyle)
+    sed -i.bak \
+      -e 's/--accent: #171717;/--accent: #7c3aed;/' \
+      -e 's/--border: #ebebeb;/--border: #c4b5fd;/' \
+      -e 's#font: 14px / 20px sans-serif;#font: 15px / 22px serif;#' \
+      "$pages/styles.css"
+    sed -i.bak \
+      -e 's/--font-sans: "IBM Plex Sans Variable", /--font-sans: ui-serif, Georgia, /' \
+      -e 's/--color-accent: #171717;/--color-accent: #7c3aed;/' \
+      -e 's/--color-border: #ebebeb;/--color-border: #c4b5fd;/' \
+      -e 's/--color-link: #0068d6;/--color-link: #db2777;/' \
+      "$worktree/apps/web/src/styles.css"
+    ;;
   sharded)
     sed -i.bak \
       -e 's#\(upload examples/playground/screenshots --build-name playground\)#\1 --shard auto \&\& node packages/cli/dist/index.mjs finalize --build-name playground#' \
@@ -122,7 +136,7 @@ JS
       "$worktree/.github/workflows/visual.yml"
     ;;
 esac
-rm -f "$pages"/*.bak "$worktree"/.github/workflows/*.bak
+rm -f "$pages"/*.bak "$worktree"/.github/workflows/*.bak "$worktree"/apps/web/src/*.bak
 
 git -C "$worktree" add -A
 git -C "$worktree" commit --quiet -m "test: ${scenario} scenario"
