@@ -1,5 +1,0 @@
-steps:
-  - run: npx playwright test
-  - run: npx stateofpixel upload screenshots --build-name e2e
-  - run: npx storybook build
-  - run: npx stateofpixel storybook storybook-static --build-name storybook

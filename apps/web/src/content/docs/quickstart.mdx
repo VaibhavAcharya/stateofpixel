@@ -1,0 +1,59 @@
+export const meta = {
+  title: "Quickstart",
+  description: "Set up stateofpixel on a GitHub repository in a few minutes.",
+  lead: "Your CI takes the screenshots. stateofpixel compares them with the last approved ones and sets a check on the pull request until someone approves the changes.",
+};
+
+## 1. Install the GitHub App
+
+Sign in on [stateofpixel.com](/) and install the GitHub App on your account or organization. Pick the repositories to test. Each repository becomes a project, and its project page shows the setup steps until the first build arrives.
+
+## 2. Add the workflow
+
+Add a step that runs after your tests write their screenshots. This example runs Playwright tests that save PNG files into `screenshots`:
+
+```yaml .github/workflows/visual.yml
+name: Visual
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - run: npx stateofpixel upload screenshots
+```
+
+- `id-token: write` lets the CLI sign in with the GitHub Actions OIDC token, so you do not need a secret.
+- Run it on pushes to `main` too. Builds on your default branch are approved on their own and become the baseline that pull requests compare against.
+- `fetch-depth: 0` gives the CLI the git history it uses to find the baseline. With a shallow clone the server asks the GitHub compare API instead.
+
+With the Playwright integration you skip the upload step, and with Storybook one command captures every story. See [Playwright](/docs/playwright) and [Storybook](/docs/storybook).
+
+## 3. Push to main
+
+The first build has nothing to compare with, so every snapshot is added and the build is approved on its own. It becomes the first baseline, and the check says "Baseline created".
+
+## 4. Open a pull request
+
+When a pull request changes how something looks, the `stateofpixel` check waits with "2 changes to review". Details opens the build page, where anyone with write access to the repository approves or rejects each change. When every change is approved, the check turns green. See [Reviewing changes](/docs/review).
+
+## 5. Require the check
+
+The check only blocks merges when GitHub requires it. In the repository settings on GitHub, add a branch protection rule or a ruleset for `main` that requires status checks to pass, and pick `stateofpixel`. See [The GitHub check](/docs/checks) for every state it can be in.

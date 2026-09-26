@@ -1,0 +1,35 @@
+export const meta = {
+  title: "Other CI",
+  description: "Run stateofpixel on CI other than GitHub Actions with a project token.",
+  lead: "Outside GitHub Actions, the CLI signs in with a project token instead of the OIDC token.",
+};
+
+## Create a token
+
+Repository admins open the project on stateofpixel.com, then Settings, Tokens, and create a token. It starts with `sop_` and is shown once, so copy it into your CI's secrets right away. Tokens can be revoked from the same place, which also shows when each one was last used.
+
+## Run the CLI
+
+Set the token as `STATEOFPIXEL_TOKEN` and run the same commands as on GitHub Actions:
+
+```sh ci.sh
+export STATEOFPIXEL_TOKEN=sop_...
+
+npx playwright test
+npx stateofpixel upload screenshots
+```
+
+## Git information
+
+On other CI the CLI reads the commit, branch and history from the local checkout:
+
+- Check out the branch by name. On a detached `HEAD` the branch is recorded as `HEAD`.
+- Fetch enough history to reach your default branch. When the baseline is not in the local history, the server asks the GitHub compare API.
+- The baseline branch is `origin/HEAD`, or `main` when that is not set. Pass `--baseline-branch` to pick another one.
+- The commit has to be on GitHub, because the check is set on it there.
+
+The pull request number comes from the GitHub Actions event, so on other CI builds are linked to their branch and commit only. A new push does not carry over approvals from the last build, and builds are not marked superseded.
+
+## Shards
+
+GitHub Actions gives every job of a run the same id. Elsewhere, set `STATEOFPIXEL_NONCE` to an id your CI shares between the jobs of one run. See [Sharding](/docs/sharding).

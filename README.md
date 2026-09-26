@@ -1,9 +1,9 @@
 # stateofpixel
 
-Visual regression testing that runs in your CI. This README is for working on the repo. CLI usage is in [packages/cli/README.md](packages/cli/README.md).
+Visual regression testing that runs in your CI. This README is for working on the repo. User docs are MDX in [apps/web/src/content/docs](apps/web/src/content/docs), served at [stateofpixel.com/docs](https://stateofpixel.com/docs).
 
 - [docs/PLAN.md](docs/PLAN.md): why we build it, the stack, costs and risks
-- [docs/SPEC.md](docs/SPEC.md): pages, tables, API, CLI and states in detail
+- [docs/SPEC.md](docs/SPEC.md): internals: pages, tables, API, CLI and states in detail
 - [docs/DESIGN.md](docs/DESIGN.md): the design system
 - [docs/ROADMAP.md](docs/ROADMAP.md): what is done and what is next
 

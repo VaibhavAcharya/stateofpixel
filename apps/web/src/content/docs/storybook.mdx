@@ -1,0 +1,49 @@
+export const meta = {
+  title: "Storybook",
+  description: "Capture every story of a built Storybook and upload it with one command.",
+  lead: "One command opens every story of a built Storybook in Chromium, takes a screenshot at each width and uploads them.",
+};
+
+## Install
+
+The capture uses the Playwright in your project.
+
+```sh terminal
+npm install -D stateofpixel playwright
+npx playwright install chromium
+```
+
+## Run it on CI
+
+```yaml .github/workflows/visual.yml
+steps:
+  - uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
+  - run: npm ci
+  - run: npx playwright install --with-deps chromium
+  - run: npx storybook build
+  - run: npx stateofpixel storybook storybook-static --viewports 375,1280
+```
+
+Keep `id-token: write` and the push trigger on `main` from the [Quickstart](/docs).
+
+Each story is captured at every width in `--viewports` and named `Title/Name [chromium 1280]`, like `Button/Primary [chromium 375]`.
+
+## Pick stories and wait for them
+
+```sh terminal
+npx stateofpixel storybook storybook-static \
+  --include "Components/**" \
+  --exclude "**/Playground" \
+  --wait-for-selector "[data-ready]" \
+  --delay 200
+```
+
+<CliOptions name="storybook" only={["--viewports", "--include", "--exclude", "--wait-for-selector", "--delay"]} />
+
+In `--include` and `--exclude`, `*` stays inside one segment of `Title/Name` and `**` crosses segments.
+
+`storybook` also takes every flag of `upload`, like `--build-name`, `--shard` and `--threshold`. See the [CLI](/docs/cli) reference. Use `--dry-run` to capture and print the plan without uploading.
+
+Stories that load data or fonts late are the usual cause of noisy diffs. [Stable screenshots](/docs/stable-screenshots) has the fixes.

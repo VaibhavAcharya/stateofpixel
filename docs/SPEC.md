@@ -114,19 +114,7 @@ Removed snapshots do not block (proposal). Deleting a story is intentional in al
 
 The check is a GitHub commit status. GitHub links a status straight to its `target_url`, while the Details link of an app's check run opens GitHub's own checks page. A completed check run also has no waiting state, and GitHub shows `action_required` as failing.
 
-| Build state | State | Description |
-|---|---|---|
-| pending | `pending` | Waiting for screenshots (2 of 4 shards) |
-| finalized, `no_changes` | `success` | No visual changes |
-| finalized, `changes` | `pending` | 12 changes to review |
-| finalized, `approved` | `success` | 12 changes approved |
-| finalized, `approved` by auto-approve | `success` | Baseline updated, 12 changes |
-| finalized, `rejected` | `failure` | 2 changes rejected |
-| expired | `error` | Build never finished |
-| error | `error` | Upload failed, see CI logs |
-| over storage limit | `success` | Storage limit reached, not compared |
-
-`target_url` is always the build page. A required check that is `pending` blocks the merge, so a PR with unreviewed changes cannot merge until they are approved. The storage limit reports `success` because statuses have no neutral state and CI never fails because of us.
+`toStatus` in `convex/lib/checkStatus.ts` maps a build to its state and description, and [/docs/checks](https://stateofpixel.com/docs/checks) renders its table from the same function. Waiting shards and changes to review are `pending`, rejected changes are `failure`, expired builds and failed uploads are `error`, and everything else, including the storage limit, is `success`. `target_url` is always the build page. The storage limit reports `success` because statuses have no neutral state and CI never fails because of us.
 
 ## 4. UX flows
 
@@ -235,7 +223,7 @@ URL scheme mirrors GitHub: `/{owner}/{repo}`. Public pages (5.1) are server-rend
 | `/` | Landing. One-sentence pitch, the review demo, setup snippets per runner, upload times from our own CI, team access, a cost comparison, pricing block, FAQ, Sign in button. |
 | `/brand` | Logo files to download, usage rules, colors and type. |
 | `/privacy`, `/terms`, `/refunds` | Legal pages. Support email `hello@stateofpixel.com`. |
-| `/docs`, `/docs/{page}` | User docs: Quickstart; Playwright, Storybook, Any screenshots; Other CI, Sharding, Suites; Reviewing changes, The GitHub check, Baselines; Stable screenshots; CLI, Limits and storage. Linked from the public header and footer and the user menu. The pages live in `apps/web/src/routes/docs/` and the nav in `components/docs/DocsLayout.tsx`. |
+| `/docs`, `/docs/{page}` | User docs: Quickstart; Playwright, Storybook, Any screenshots; Other CI, Sharding, Suites; Reviewing changes, The GitHub check, Baselines; Stable screenshots; CLI, Limits and storage. Linked from the public header and footer and the user menu. The pages are MDX in `apps/web/src/content/docs/`, served by `routes/docs/$slug.tsx`, with the nav in `components/docs/DocsLayout.tsx`. Tables of limits, check states, CLI flags and shortcuts render from the code (`components/docs/generated.tsx`). |
 
 Paid plans in the pricing block show "Coming soon" until billing is available (`billing.available`). Upgrading happens only from the plan box on the Billing tab (5.10).
 
@@ -881,34 +869,15 @@ Package `stateofpixel`, closed source, published unminified with source maps. No
 
 ### Commands
 
-| Command | Purpose |
-|---|---|
-| `stateofpixel upload <dir>` | Hash, upload, diff, complete a shard. The main command. |
-| `stateofpixel finalize` | Finish a build in finalize mode. |
-| `stateofpixel storybook <static-dir>` | Capture every story from a built Storybook with Playwright, then upload. Takes the `upload` flags plus `--viewports` (default `1280`), `--include` and `--exclude` globs on `title/name`, `--wait-for-selector` (default `#storybook-root > *`) and `--delay`. |
-| `stateofpixel compare <dir> <baseline-dir>` | Local only (M0). Writes `stateofpixel-report/index.html`. |
-
-`upload` flags:
-
-| Flag | Env var | Default |
-|---|---|---|
-| `--build-name` | `STATEOFPIXEL_BUILD_NAME` | `default` |
-| `--shard i/n` or `--shard auto` | `STATEOFPIXEL_SHARD` | `1/1` |
-| `--nonce` | `STATEOFPIXEL_NONCE` | CI run id plus attempt |
-| `--baseline-branch` | `STATEOFPIXEL_BASELINE_BRANCH` | PR base, else default branch |
-| `--subset` | | off. Use when only some snapshots ran, so missing ones are not `removed`. |
-| `--threshold` | | from project settings |
-| `--strict` | | off. Exit 1 on 5xx and rate limits (429) instead of warning and exiting 0. |
-| `--dry-run` | | off. Hash and print the plan, upload nothing. |
-| | `STATEOFPIXEL_TOKEN` | OIDC on GitHub Actions |
+Commands, flags, defaults and env vars are defined once in `packages/cli/src/reference.ts`. `index.ts` builds commander from it, and [/docs/cli](https://stateofpixel.com/docs/cli) renders its tables from it. Commands: `upload <dir>` (hash, upload, diff, complete a shard), `storybook <static-dir>` (capture every story with Playwright, then upload), `finalize` (finish a build in finalize mode) and `compare <dir> <baseline-dir>` (local only, writes `stateofpixel-report/index.html`). Without a nonce on a runner other than GitHub Actions, a single-shard upload uses `local-<timestamp>`, and sharded uploads and `finalize` fail.
 
 Snapshot name from a folder upload is the path relative to `<dir>` without `.png`, like `components/Button/primary`.
 
-`finalize` takes `--build-name`, `--nonce`, `--baseline-branch`, `--skip-if-empty` and `--strict`. A `<name>.meta.json` file next to `<name>.png` is sent as that snapshot's metadata. Git info comes from the GitHub Actions env and event payload (the PR head SHA, not the merge SHA) and from local git; `ancestors` is `git rev-list` of the commit, or of `HEAD` without the merge commit when the PR head is not in a shallow checkout. The API base URL is `STATEOFPIXEL_API_URL`, default `https://graceful-dogfish-423.convex.site/api/v1` until a custom domain exists.
+A `<name>.meta.json` file next to `<name>.png` is sent as that snapshot's metadata. Git info comes from the GitHub Actions env and event payload (the PR head SHA, not the merge SHA) and from local git; `ancestors` is `git rev-list` of the commit, or of `HEAD` without the merge commit when the PR head is not in a shallow checkout. The API base URL is `STATEOFPIXEL_API_URL`, default `https://graceful-dogfish-423.convex.site/api/v1` until a custom domain exists.
 
 ### Playwright integration
 
-A reporter plus a `snapshot(page, name)` helper, with setup in `packages/cli/README.md`. `snapshot` applies the flakiness defaults (animations disabled, caret hidden, fonts loaded), appends `[browser width]` to the name, saves a full-page PNG into `stateofpixel-screenshots` (or `STATEOFPIXEL_DIR`) and writes metadata next to it. The reporter clears that folder when the run begins and uploads it once the run ends, per shard when Playwright sharding is on. It uploads only when `CI` is set, unless the reporter option `uploadOutsideCi` is true, and marks the upload as a subset when the run did not pass. Reporter options: `buildName`, `nonce`, `baselineBranch`, `subset`, `threshold`, `strict`, `uploadOutsideCi`. Storybook captures and the Playwright helper use the Playwright the project installs, an optional peer dependency.
+A reporter plus a `snapshot(page, name)` helper, with setup in `apps/web/src/content/docs/playwright.mdx`. `snapshot` applies the flakiness defaults (animations disabled, caret hidden, fonts loaded), appends `[browser width]` to the name, saves a full-page PNG into `stateofpixel-screenshots` (or `STATEOFPIXEL_DIR`) and writes metadata next to it. The reporter clears that folder when the run begins and uploads it once the run ends, per shard when Playwright sharding is on. It uploads only when `CI` is set, unless the reporter option `uploadOutsideCi` is true, and marks the upload as a subset when the run did not pass. Reporter options: `buildName`, `nonce`, `baselineBranch`, `subset`, `threshold`, `strict`, `uploadOutsideCi`. Storybook captures and the Playwright helper use the Playwright the project installs, an optional peer dependency.
 
 ### Output
 
@@ -969,22 +938,22 @@ Storage billed is the sum of `images.bytes` per account. Every image counts once
 
 ## 12. Limits
 
-The CI API enforces these. A request over a limit gets a 4xx with the codes in brackets, and an image over the size or dimension limit comes back in `rejectedUploads`.
+The CI API enforces these. A request over a limit gets a 4xx with the codes in brackets, and an image over the size or dimension limit comes back in `rejectedUploads`. The values live in `convex/lib/limits.ts`, and [/docs/limits](https://stateofpixel.com/docs/limits) renders them from there.
 
-| Limit | Value | Why |
+| Limit | Constant | Why |
 |---|---|---|
-| Snapshots per build | 20,000 (`too_many_snapshots`) | Keeps a 20k manifest near 2 MB. |
-| Request body for every CI call | 16 MB (`body_too_large`) | Convex HTTP actions accept up to 20 MiB. The CLI splits bigger manifests into several calls with the same nonce and shard. |
-| Image size | 20 MB | Checked from `_storage.size` at confirm. |
-| Image dimensions | 10,000 x 50,000 px | |
-| Snapshot name | 512 chars (`snapshot_name_too_long`) | |
-| Metadata per snapshot | 4 KB (`metadata_too_large`) | |
-| Shards per build | 256 (`invalid_shard`, `too_many_shards` for auto shards) | |
-| Build timeout | 60 min from creation to finalize | |
-| Requests per token | 600 a minute (`rate_limited`, 429) | Token bucket keyed by project token, or by project for OIDC. |
-| Builds per account | 2,000 a day (`build_limit_reached`, 429) | Counted when a build is created, not when a shard joins. |
-| Bytes uploaded per account | 20 GB a day (`upload_limit_reached`, 429) | Counted at upload confirm. New builds are refused once the day's bytes are used. |
-| Server chunk size | 1,000 snapshots per query or mutation | 1 s, 4,096 index ranges and 16,000 writes per function ([limits](https://docs.convex.dev/production/state/limits)). |
+| Snapshots per build (`too_many_snapshots`) | `MAX_SNAPSHOTS_PER_BUILD` | Keeps a 20k manifest near 2 MB. |
+| Request body for every CI call (`body_too_large`) | `MAX_BODY_BYTES` in `ciApi.ts` | Convex HTTP actions accept up to 20 MiB. The CLI splits bigger manifests into several calls with the same nonce and shard. |
+| Image size | `MAX_IMAGE_BYTES` | Checked from `_storage.size` at confirm. |
+| Image dimensions | `MAX_IMAGE_WIDTH`, `MAX_IMAGE_HEIGHT` | |
+| Snapshot name (`snapshot_name_too_long`) | `MAX_SNAPSHOT_NAME_LENGTH` | |
+| Metadata per snapshot (`metadata_too_large`) | `MAX_METADATA_BYTES` | |
+| Shards per build (`invalid_shard`, `too_many_shards` for auto shards) | `MAX_SHARDS` | |
+| Build timeout, creation to finalize | `BUILD_EXPIRY_MS` | |
+| Requests per token (`rate_limited`, 429) | `CI_REQUESTS_PER_MINUTE` | Token bucket keyed by project token, or by project for OIDC. |
+| Builds per account a day (`build_limit_reached`, 429) | `DAILY_BUILDS` | Counted when a build is created, not when a shard joins. |
+| Bytes uploaded per account a day (`upload_limit_reached`, 429) | `DAILY_UPLOAD_BYTES` | Counted at upload confirm. New builds are refused once the day's bytes are used. |
+| Server chunk size | `CHUNK_SIZE` in `ciApi.ts` | 1 s, 4,096 index ranges and 16,000 writes per function ([limits](https://docs.convex.dev/production/state/limits)). |
 
 ## 13. Not in v1
 

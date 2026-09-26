@@ -7,6 +7,7 @@ import {
 } from "../api";
 import { defaultNonce, readCiInfo, readGitInfo, resolveToken } from "../ci-env";
 import { formatCounts } from "../format";
+import { ENV } from "../reference";
 import { waitForFinalize } from "../upload";
 
 export type FinalizeCommandOptions = {
@@ -21,9 +22,8 @@ export async function finalizeCommand(
   options: FinalizeCommandOptions,
 ): Promise<void> {
   const env = process.env;
-  const buildName =
-    options.buildName ?? env.STATEOFPIXEL_BUILD_NAME ?? "default";
-  const nonce = options.nonce ?? env.STATEOFPIXEL_NONCE ?? defaultNonce(env);
+  const buildName = options.buildName ?? env[ENV.buildName] ?? "default";
+  const nonce = options.nonce ?? env[ENV.nonce] ?? defaultNonce(env);
   if (nonce === null) {
     throw new Error("Set --nonce to the nonce the shards used.");
   }
@@ -31,7 +31,7 @@ export async function finalizeCommand(
     ? await readGitInfo(
         env,
         process.cwd(),
-        options.baselineBranch ?? env.STATEOFPIXEL_BASELINE_BRANCH,
+        options.baselineBranch ?? env[ENV.baselineBranch],
       )
     : undefined;
 

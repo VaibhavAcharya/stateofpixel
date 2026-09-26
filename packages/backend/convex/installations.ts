@@ -13,6 +13,7 @@ import {
   listInstallationRepositories,
   toRepositoryFields,
 } from "./lib/github";
+import { DEFAULT_DIFF_THRESHOLD, DEFAULT_RETENTION_DAYS } from "./lib/limits";
 import { PLAN_STORAGE_LIMIT_BYTES } from "./lib/storage";
 
 const PROJECT_CHUNK_SIZE = 200;
@@ -148,9 +149,9 @@ export const upsertProjects = internalMutation({
         ...repository,
         accountId,
         autoApproveBranches: [repository.defaultBranch],
-        diffThreshold: 0.1,
+        diffThreshold: DEFAULT_DIFF_THRESHOLD,
         diffIncludeAA: false,
-        prRetentionDays: 60,
+        prRetentionDays: DEFAULT_RETENTION_DAYS,
         nextBuildNumber: 1,
       });
     }

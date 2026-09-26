@@ -1,0 +1,48 @@
+export const meta = {
+  title: "CLI",
+  description: "Commands, flags, environment variables and exit codes of the stateofpixel CLI.",
+  lead: "The stateofpixel package on npm. Node 20 or newer. Run npx stateofpixel <command> --help for the same list.",
+};
+
+## Commands
+
+<CliCommands />
+
+## upload
+
+<CliOptions name="upload" />
+
+## storybook
+
+Takes every flag of `upload`, plus these. See [Storybook](/docs/storybook).
+
+<CliOptions name="storybook" only={["--viewports", "--include", "--exclude", "--wait-for-selector", "--delay"]} />
+
+## finalize
+
+Use the same values the shards used. See [Sharding](/docs/sharding).
+
+<CliOptions name="finalize" />
+
+## compare
+
+<CliOptions name="compare" />
+
+## Authentication
+
+On GitHub Actions the CLI uses the OIDC token, which needs `permissions: id-token: write`. Anywhere else, set `STATEOFPIXEL_TOKEN` to a project token. See [Other CI](/docs/other-ci).
+
+## Output
+
+```text terminal
+stateofpixel  build #411  feat/header vs main (#405)
+  1,500 snapshots  1,488 unchanged  10 changed  2 added  1 removed
+  uploaded 22 images (1.3 MB) in 2.1 s
+  review: https://stateofpixel.com/acme/web-app/builds/411
+```
+
+## Exit codes
+
+- **0** when the build was reported, with or without changes. The GitHub check decides whether the pull request can merge.
+- **0** with a warning when stateofpixel is down or a rate limit is hit, so an outage does not break your CI. Pass `--strict` to exit 1 instead.
+- **1** on configuration and authentication errors, failed uploads, and images over the [limits](/docs/limits).

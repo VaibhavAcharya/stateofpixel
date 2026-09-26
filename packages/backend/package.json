@@ -4,8 +4,10 @@
   "type": "module",
   "exports": {
     "./api": "./convex/_generated/api.js",
+    "./checkStatus": "./convex/lib/checkStatus.ts",
     "./conclude": "./convex/lib/conclude.ts",
     "./dataModel": "./convex/_generated/dataModel.d.ts",
+    "./limits": "./convex/lib/limits.ts",
     "./storage": "./convex/lib/storage.ts"
   },
   "scripts": {

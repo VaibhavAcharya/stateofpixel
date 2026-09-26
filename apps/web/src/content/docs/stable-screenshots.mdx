@@ -1,0 +1,45 @@
+import { facts } from "../../components/docs/facts";
+
+export const meta = {
+  title: "Stable screenshots",
+  description: "Keep screenshots the same between runs so only real changes need review.",
+  lead: "A snapshot that changes on every run asks for review on every run. Most noise comes from a few causes, and each has a fix.",
+};
+
+## Render in the same place
+
+Screenshots render in your CI, so fonts and anti-aliasing depend on the machine. Take them in the same environment every time, for example the Playwright Docker image with the same Playwright version as your project. Do not mix screenshots from your laptop with screenshots from CI.
+
+## Freeze the page
+
+```ts tests/dashboard.spec.ts
+import { test } from "@playwright/test";
+import { snapshot } from "stateofpixel/playwright";
+
+test("dashboard", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-01-01T10:00:00Z"));
+  await page.goto("/dashboard");
+  await page.getByRole("table").waitFor();
+  await snapshot(page, "App/Dashboard");
+});
+```
+
+- `snapshot()` from the [Playwright integration](/docs/playwright) already waits for fonts, disables CSS animations and transitions, and hides the caret.
+- Fix the clock with `page.clock` so dates and relative times do not change.
+- Wait for the content you want, not for a fixed time.
+- Replace random or live data, like avatars, ads and charts of today's numbers, with fixed test data, or hide it with CSS before the screenshot.
+- For Storybook, use `--wait-for-selector` and `--delay` for stories that render late.
+
+## Tune the threshold
+
+Two project settings decide when pixels count as changed. Admins find them under Settings, Diff:
+
+- **Threshold**, from 0 to 1, default {facts.diffThreshold}. How different a pixel's color has to be to count. Higher ignores more.
+- **Count anti-aliased pixels as changes**, off by default. Anti-aliased edges are ignored unless you turn it on.
+
+`--threshold` on the CLI, or `threshold` on the Playwright reporter, overrides the setting for that upload. To try values before you change them, compare two folders on your machine:
+
+```sh terminal
+npx stateofpixel compare screenshots baseline --threshold 0.2
+# Writes stateofpixel-report/index.html
+```

@@ -1,0 +1,31 @@
+import { facts } from "../../components/docs/facts";
+
+export const meta = {
+  title: "Limits and storage",
+  description: "Limits per build and account, how storage is counted, and how long images are kept.",
+  lead: "Plans are priced by storage only. Builds, snapshots and reviewers are not billed.",
+};
+
+## How storage is counted
+
+Every image is stored once per account, keyed by its content. A snapshot that did not change between builds adds nothing, however many builds use it. Storage is the size of every stored image: baselines, images from pull requests and diff images. The account's Billing tab shows how much is used. The Free plan has {facts.freeStorage}, and [pricing](/#pricing) lists the paid plans.
+
+## When an account is over its limit
+
+1. At {facts.storageWarning}, the account and project pages show a warning, and the CLI prints one.
+2. At 100%, a {facts.graceDays} day grace period starts. Everything keeps working, and the banner names the day it ends.
+3. After the grace period, new images are not stored. Builds still report, but changed snapshots are not compared, and the check passes with "Storage limit reached, not compared". CI keeps passing.
+
+Upgrading, or freeing space with a shorter retention or by deleting a project, ends this as soon as usage is back under the limit.
+
+## Retention
+
+Builds of pull requests are deleted a set time after the pull request closes, {facts.retentionDays} days by default. Builds of branches without a pull request are deleted when the branch had no new build for that long. Admins set it from {facts.minRetentionDays} to {facts.maxRetentionDays} days under Settings, Retention.
+
+Builds on the default branch and on auto-approve branches are kept, and so is any build that another build uses as its baseline. A daily cleanup removes images that no build has used for 24 hours, and frees their storage. A link to a deleted build shows "Build not found."
+
+## Limits
+
+<LimitsTable />
+
+Images over the size or dimension limits are rejected, their snapshots fail, and `upload` exits 1. Rate limits make the CLI warn and exit 0.

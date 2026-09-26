@@ -5,58 +5,90 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { CodeBlock, type Snippet } from "../CodeBlock";
 import { PublicPage, WIDE } from "../landing/sections";
 
 export const DOCS_NAV = [
-  { title: "Get started", pages: [{ to: "/docs", label: "Quickstart" }] },
+  {
+    title: "Get started",
+    pages: [{ slug: "quickstart", label: "Quickstart" }],
+  },
   {
     title: "Capture",
     pages: [
-      { to: "/docs/playwright", label: "Playwright" },
-      { to: "/docs/storybook", label: "Storybook" },
-      { to: "/docs/any-screenshots", label: "Any screenshots" },
+      { slug: "playwright", label: "Playwright" },
+      { slug: "storybook", label: "Storybook" },
+      { slug: "any-screenshots", label: "Any screenshots" },
     ],
   },
   {
     title: "Run in CI",
     pages: [
-      { to: "/docs/other-ci", label: "Other CI" },
-      { to: "/docs/sharding", label: "Sharding" },
-      { to: "/docs/suites", label: "Suites" },
+      { slug: "other-ci", label: "Other CI" },
+      { slug: "sharding", label: "Sharding" },
+      { slug: "suites", label: "Suites" },
     ],
   },
   {
     title: "Review",
     pages: [
-      { to: "/docs/review", label: "Reviewing changes" },
-      { to: "/docs/checks", label: "The GitHub check" },
-      { to: "/docs/baselines", label: "Baselines" },
+      { slug: "review", label: "Reviewing changes" },
+      { slug: "checks", label: "The GitHub check" },
+      { slug: "baselines", label: "Baselines" },
     ],
   },
   {
     title: "Guides",
-    pages: [{ to: "/docs/stable-screenshots", label: "Stable screenshots" }],
+    pages: [{ slug: "stable-screenshots", label: "Stable screenshots" }],
   },
   {
     title: "Reference",
     pages: [
-      { to: "/docs/cli", label: "CLI" },
-      { to: "/docs/limits", label: "Limits and storage" },
+      { slug: "cli", label: "CLI" },
+      { slug: "limits", label: "Limits and storage" },
     ],
   },
-] as const;
+];
 
-type DocsNavPage = (typeof DOCS_NAV)[number]["pages"][number];
-type DocsPath = DocsNavPage["to"];
+export const QUICKSTART = "quickstart";
 
-const PAGES: readonly DocsNavPage[] = DOCS_NAV.flatMap(
-  (group): readonly DocsNavPage[] => group.pages,
-);
+const PAGES = DOCS_NAV.flatMap((group) => group.pages);
 
 function currentIndex(pathname: string): number {
-  const path = pathname.replace(/\/$/, "") || "/";
-  return PAGES.findIndex((page) => page.to === path);
+  const slug = pathname.replace(/\/$/, "").split("/docs/")[1] ?? QUICKSTART;
+  return PAGES.findIndex((page) => page.slug === slug);
+}
+
+export function DocsPageLink({
+  slug,
+  hash,
+  className,
+  children,
+}: {
+  slug: string;
+  hash?: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return slug === QUICKSTART ? (
+    <Link
+      to="/docs"
+      hash={hash}
+      activeOptions={{ exact: true, includeHash: false }}
+      className={className}
+    >
+      {children}
+    </Link>
+  ) : (
+    <Link
+      to="/docs/$slug"
+      params={{ slug }}
+      hash={hash}
+      activeOptions={{ includeHash: false }}
+      className={className}
+    >
+      {children}
+    </Link>
+  );
 }
 
 export function DocsLayout() {
@@ -106,14 +138,13 @@ function NavGroups() {
           </p>
           <ul>
             {group.pages.map((page) => (
-              <li key={page.to}>
-                <Link
-                  to={page.to}
-                  activeOptions={{ exact: true }}
+              <li key={page.slug}>
+                <DocsPageLink
+                  slug={page.slug}
                   className="flex h-8 items-center rounded-sm px-2 text-sm text-muted transition-colors duration-100 hover:bg-hover hover:text-text data-[status=active]:bg-hover data-[status=active]:font-medium data-[status=active]:text-text"
                 >
                   {page.label}
-                </Link>
+                </DocsPageLink>
               </li>
             ))}
           </ul>
@@ -156,13 +187,13 @@ export function DocsPage({
           <span />
         ) : (
           <PageLink
-            to={previous.to}
+            slug={previous.slug}
             label={previous.label}
             direction="Previous"
           />
         )}
         {next !== undefined && (
-          <PageLink to={next.to} label={next.label} direction="Next" />
+          <PageLink slug={next.slug} label={next.label} direction="Next" />
         )}
       </nav>
     </article>
@@ -170,18 +201,18 @@ export function DocsPage({
 }
 
 function PageLink({
-  to,
+  slug,
   label,
   direction,
 }: {
-  to: DocsPath;
+  slug: string;
   label: string;
   direction: "Previous" | "Next";
 }) {
   const Icon = direction === "Previous" ? ArrowLeftIcon : ArrowRightIcon;
   return (
-    <Link
-      to={to}
+    <DocsPageLink
+      slug={slug}
       className={`flex flex-col gap-1 rounded-md p-3 ring-1 ring-border transition-colors duration-100 hover:bg-hover ${
         direction === "Next"
           ? "col-start-2 items-end text-right max-sm:col-start-1"
@@ -194,11 +225,11 @@ function PageLink({
         {direction === "Next" && <Icon size={12} />}
       </span>
       <span className="text-sm font-medium">{label}</span>
-    </Link>
+    </DocsPageLink>
   );
 }
 
-export function H2({ id, children }: { id: string; children: string }) {
+export function H2({ id, children }: { id: string; children: ReactNode }) {
   return (
     <h2 id={id} className="group">
       <a
@@ -219,12 +250,6 @@ export function Code({ children }: { children: ReactNode }) {
     <code className="mono rounded-xs bg-surface-2 px-1 py-0.5 whitespace-nowrap">
       {children}
     </code>
-  );
-}
-
-export function Snip({ file, snippet }: { file: string; snippet: Snippet }) {
-  return (
-    <CodeBlock fileName={file} code={snippet.code} lines={snippet.lines} />
   );
 }
 
@@ -267,13 +292,4 @@ export function Table({
       </table>
     </div>
   );
-}
-
-export function docsHead(title: string, description: string) {
-  return () => ({
-    meta: [
-      { title: `${title} - stateofpixel docs` },
-      { name: "description", content: description },
-    ],
-  });
 }
