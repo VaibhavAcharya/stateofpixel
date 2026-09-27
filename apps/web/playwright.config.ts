@@ -5,7 +5,10 @@ export default defineConfig({
   testMatch: "*.visual.ts",
   forbidOnly: !!process.env.CI,
   reporter: [["list"], ["stateofpixel/playwright", { buildName: "web" }]],
-  use: { baseURL: "http://localhost:3000" },
+  use: {
+    baseURL: "http://localhost:3000",
+    launchOptions: { args: ["--disable-partial-raster"] },
+  },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     {
