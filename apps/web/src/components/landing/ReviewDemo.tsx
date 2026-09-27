@@ -93,6 +93,16 @@ const UNCHANGED_COUNT = 214;
 
 const FIRST_INDEX = DEMO_SNAPSHOTS.findIndex(({ id }) => id === "signin");
 
+const MOBILE_FIRST_INDEX = DEMO_SNAPSHOTS.findIndex(
+  ({ id }) => id === "header",
+);
+
+function firstIndex() {
+  return window.matchMedia("(max-width: 639px)").matches
+    ? MOBILE_FIRST_INDEX
+    : FIRST_INDEX;
+}
+
 function snapshotAt(index: number) {
   const snapshot = DEMO_SNAPSHOTS[index];
   if (snapshot === undefined) {
@@ -109,6 +119,8 @@ function useDemoReview() {
   );
   const [index, setIndex] = useState(FIRST_INDEX);
   const current = snapshotAt(index);
+
+  useEffect(() => setIndex(firstIndex()), []);
   const counts = { pending: 0, approved: 0, rejected: 0 };
   for (const state of Object.values(reviews)) {
     counts[state] += 1;
@@ -151,7 +163,7 @@ function useDemoReview() {
     setReviews(
       Object.fromEntries(DEMO_SNAPSHOTS.map(({ id }) => [id, "pending"])),
     );
-    setIndex(FIRST_INDEX);
+    setIndex(firstIndex());
   };
 
   return {

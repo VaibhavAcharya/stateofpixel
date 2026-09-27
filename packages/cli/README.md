@@ -2,7 +2,7 @@
 
 Visual regression testing that runs in your CI. Upload a folder of screenshots, review the changes on [stateofpixel.com](https://stateofpixel.com), and a GitHub check waits until every change is approved. [Require the check](https://stateofpixel.com/docs/checks#require-it) to block the merge until then.
 
-![The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in red](https://stateofpixel.com/readme/review-page.png)
+![The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in green](https://stateofpixel.com/readme/review-page.png)
 
 The docs are at [stateofpixel.com/docs](https://stateofpixel.com/docs).
 
