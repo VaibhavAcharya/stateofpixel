@@ -47,6 +47,7 @@ import type * as retention from "../retention.js";
 import type * as reviews from "../reviews.js";
 import type * as snapshots from "../snapshots.js";
 import type * as tokens from "../tokens.js";
+import type * as usage from "../usage.js";
 import type * as users from "../users.js";
 
 import type {
@@ -95,6 +96,7 @@ declare const fullApi: ApiFromModules<{
   reviews: typeof reviews;
   snapshots: typeof snapshots;
   tokens: typeof tokens;
+  usage: typeof usage;
   users: typeof users;
 }>;
 

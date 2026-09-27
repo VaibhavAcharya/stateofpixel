@@ -11,3 +11,15 @@ export function matchesBranch(pattern: string, branch: string): boolean {
     .join(".*");
   return new RegExp(`^${source}$`).test(branch);
 }
+
+export function isKeptBranch(
+  project: { defaultBranch: string; autoApproveBranches: string[] },
+  branch: string,
+): boolean {
+  return (
+    branch === project.defaultBranch ||
+    project.autoApproveBranches.some((pattern) =>
+      matchesBranch(pattern, branch),
+    )
+  );
+}

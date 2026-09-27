@@ -295,6 +295,8 @@ export default defineSchema({
     storageId: v.optional(v.id("_storage")),
     r2Key: v.optional(v.string()),
     lastReferencedAt: v.number(),
+    projectId: v.optional(v.id("projects")),
+    baseline: v.optional(v.boolean()),
   })
     .index("by_accountId_and_hash", ["accountId", "hash"])
     .index("by_storageId", ["storageId"]),

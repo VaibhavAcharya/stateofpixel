@@ -352,6 +352,47 @@ it("compares a build against the nearest approved ancestor", async () => {
   });
 });
 
+it("tags images with their project and whether the default branch uses them", async () => {
+  const { t } = await setup();
+  await runBuild(t, {
+    commit: "c1",
+    images: [{ name: "Header", content: "header-v1" }],
+  });
+  await runBuild(t, {
+    commit: "c2",
+    ancestors: ["c1"],
+    prNumber: 7,
+    images: [
+      { name: "Header", content: "header-v1" },
+      { name: "Promo", content: "promo-v1" },
+    ],
+  });
+  await runBuild(t, {
+    commit: "c3",
+    ancestors: ["c1"],
+    images: [
+      { name: "Header", content: "header-v1" },
+      { name: "Footer", content: "footer-v1" },
+    ],
+  });
+
+  const tags = await t.run(async (ctx) => {
+    const project = await ctx.db.query("projects").unique();
+    const images = await ctx.db.query("images").collect();
+    return Object.fromEntries(
+      images.map((image) => [
+        image.hash,
+        [image.projectId === project?._id, image.baseline],
+      ]),
+    );
+  });
+  expect(tags).toEqual({
+    [await sha256("header-v1")]: [true, true],
+    [await sha256("promo-v1")]: [true, false],
+    [await sha256("footer-v1")]: [true, true],
+  });
+});
+
 it("asks GitHub for a baseline when no ancestor has a build", async () => {
   const { t } = await setup();
   const images = [{ name: "Header", content: "header-v1" }];
