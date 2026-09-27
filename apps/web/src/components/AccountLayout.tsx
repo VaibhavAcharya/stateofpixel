@@ -1,6 +1,7 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import {
   ArrowUpRightIcon,
+  ChartBarIcon,
   CreditCardIcon,
   SquaresFourIcon,
   UsersIcon,
@@ -16,7 +17,7 @@ import { Page, PageHeader } from "./Page";
 import { Tab, Tabs } from "./Tabs";
 import { Avatar, accountAvatar, buttonClass, EmptyState } from "./ui";
 
-type AccountTab = "projects" | "members" | "billing";
+type AccountTab = "projects" | "members" | "usage" | "billing";
 
 const refreshedRoles = new Set<string>();
 
@@ -102,6 +103,18 @@ export function AccountLayout({
           icon={UsersIcon}
           label="Members"
           active={tab === "members"}
+        />
+        <Tab
+          to="/$owner/settings/usage"
+          params={{ owner }}
+          icon={ChartBarIcon}
+          label="Usage"
+          active={tab === "usage"}
+          disabledReason={
+            home?.role === "member"
+              ? `Only owners of ${owner} on GitHub can see usage.`
+              : undefined
+          }
         />
         <Tab
           to="/$owner/settings/billing"

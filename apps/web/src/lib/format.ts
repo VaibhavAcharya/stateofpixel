@@ -44,3 +44,18 @@ export function formatDate(timestamp: number): string {
     dateStyle: "medium",
   });
 }
+
+const KILOBYTE = 1024;
+
+export function formatBytes(bytes: number): string {
+  if (bytes >= KILOBYTE ** 3) {
+    return `${Number((bytes / KILOBYTE ** 3).toFixed(1))} GB`;
+  }
+  if (bytes >= KILOBYTE ** 2) {
+    return `${Number((bytes / KILOBYTE ** 2).toFixed(1))} MB`;
+  }
+  if (bytes >= KILOBYTE) {
+    return `${Math.round(bytes / KILOBYTE)} KB`;
+  }
+  return `${bytes} B`;
+}
