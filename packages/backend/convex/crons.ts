@@ -21,4 +21,6 @@ crons.cron("collectImages", "0 4 * * *", internal.retention.collectImages, {});
 
 crons.cron("cleanupEvents", "30 4 * * *", internal.retention.cleanupEvents, {});
 
+crons.cron("usage", "0 5 * * *", internal.usage.count, {});
+
 export default crons;

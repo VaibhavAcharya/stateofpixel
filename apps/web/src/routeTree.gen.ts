@@ -26,6 +26,7 @@ import { Route as OwnerRepoIndexRouteImport } from './routes/$owner/$repo/index'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner/$repo/settings'
 import { Route as OwnerSettingsBillingRouteImport } from './routes/$owner/settings/billing'
 import { Route as OwnerSettingsMembersRouteImport } from './routes/$owner/settings/members'
+import { Route as OwnerSettingsUsageRouteImport } from './routes/$owner/settings/usage'
 import { Route as OwnerRepoBaselinesIndexRouteImport } from './routes/$owner/$repo/baselines/index'
 import { Route as OwnerRepoBaselinesSplatRouteImport } from './routes/$owner/$repo/baselines/$'
 import { Route as OwnerRepoBuildsNumberRouteImport } from './routes/$owner/$repo/builds/$number'
@@ -117,6 +118,11 @@ const OwnerSettingsMembersRoute = OwnerSettingsMembersRouteImport.update({
   path: '/$owner/settings/members',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OwnerSettingsUsageRoute = OwnerSettingsUsageRouteImport.update({
+  id: '/$owner/settings/usage',
+  path: '/$owner/settings/usage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OwnerRepoBaselinesIndexRoute = OwnerRepoBaselinesIndexRouteImport.update({
   id: '/$owner/$repo/baselines/',
   path: '/$owner/$repo/baselines/',
@@ -162,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
+  '/$owner/settings/usage': typeof OwnerSettingsUsageRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
   '/$owner/$repo/baselines/$': typeof OwnerRepoBaselinesSplatRoute
   '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberRouteWithChildren
@@ -185,6 +192,7 @@ export interface FileRoutesByTo {
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
+  '/$owner/settings/usage': typeof OwnerSettingsUsageRoute
   '/$owner/$repo': typeof OwnerRepoIndexRoute
   '/$owner/$repo/baselines/$': typeof OwnerRepoBaselinesSplatRoute
   '/$owner/$repo/baselines': typeof OwnerRepoBaselinesIndexRoute
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
+  '/$owner/settings/usage': typeof OwnerSettingsUsageRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
   '/$owner/$repo/baselines/$': typeof OwnerRepoBaselinesSplatRoute
   '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberRouteWithChildren
@@ -235,6 +244,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
     | '/$owner/settings/members'
+    | '/$owner/settings/usage'
     | '/$owner/$repo/'
     | '/$owner/$repo/baselines/$'
     | '/$owner/$repo/builds/$number'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
     | '/$owner/settings/members'
+    | '/$owner/settings/usage'
     | '/$owner/$repo'
     | '/$owner/$repo/baselines/$'
     | '/$owner/$repo/baselines'
@@ -281,6 +292,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
     | '/$owner/settings/members'
+    | '/$owner/settings/usage'
     | '/$owner/$repo/'
     | '/$owner/$repo/baselines/$'
     | '/$owner/$repo/builds/$number'
@@ -304,6 +316,7 @@ export interface RootRouteChildren {
   OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRoute
   OwnerSettingsBillingRoute: typeof OwnerSettingsBillingRoute
   OwnerSettingsMembersRoute: typeof OwnerSettingsMembersRoute
+  OwnerSettingsUsageRoute: typeof OwnerSettingsUsageRoute
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
   OwnerRepoBaselinesSplatRoute: typeof OwnerRepoBaselinesSplatRoute
   OwnerRepoBuildsNumberRoute: typeof OwnerRepoBuildsNumberRouteWithChildren
@@ -431,6 +444,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerSettingsMembersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$owner/settings/usage': {
+      id: '/$owner/settings/usage'
+      path: '/$owner/settings/usage'
+      fullPath: '/$owner/settings/usage'
+      preLoaderRoute: typeof OwnerSettingsUsageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$owner/$repo/baselines/': {
       id: '/$owner/$repo/baselines/'
       path: '/$owner/$repo/baselines'
@@ -512,6 +532,7 @@ const rootRouteChildren: RootRouteChildren = {
   OwnerRepoSettingsRoute: OwnerRepoSettingsRoute,
   OwnerSettingsBillingRoute: OwnerSettingsBillingRoute,
   OwnerSettingsMembersRoute: OwnerSettingsMembersRoute,
+  OwnerSettingsUsageRoute: OwnerSettingsUsageRoute,
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,
   OwnerRepoBaselinesSplatRoute: OwnerRepoBaselinesSplatRoute,
   OwnerRepoBuildsNumberRoute: OwnerRepoBuildsNumberRouteWithChildren,

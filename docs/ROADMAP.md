@@ -115,7 +115,6 @@ See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (stat
 - [x] Storage warning at 80%, 14-day grace at 100%, then new images are not stored
 - [x] Rate limits for builds per account, requests per token and bytes uploaded per day
 - [x] Enforce the limits in SPEC section 12
-- [ ] Per-account egress tracking
 - [x] Landing and FAQ copy for the free tier
 
 ## Legal
@@ -143,4 +142,5 @@ Needed before applying for a payment gateway.
 
 - [ ] Open-source the CLI and the server
 - [ ] Optional: move images stored before R2 from Convex storage to R2
+- [ ] Per-account egress tracking. Images are served from R2, which has no egress fee.
 - [ ] Optional: make builds of closed pull requests read-only, with a line that the pull request is closed

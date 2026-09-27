@@ -25,7 +25,7 @@ import {
   MAX_ANCESTORS,
   MAX_SHARDS,
 } from "./lib/limits";
-import { matchesBranch } from "./lib/matchesBranch";
+import { isKeptBranch, matchesBranch } from "./lib/matchesBranch";
 import { findReadableBuild, findReadableProject } from "./lib/permissions";
 import { formatGigabytes, storageState, storageWarnings } from "./lib/storage";
 import { buildUrl } from "./lib/urls";
@@ -622,6 +622,8 @@ export const insertSnapshots = internalMutation({
   returns: v.null(),
   handler: async (ctx, { buildId, accountId, shardIndex, results }) => {
     const build = await getPendingBuild(ctx, buildId, shardIndex);
+    const project = await ctx.db.get("projects", build.projectId);
+    const baseline = project !== null && isKeptBranch(project, build.branch);
     const counts = { ...build.counts };
     for (const result of results) {
       const existing = await findSnapshot(ctx, buildId, result.name);
@@ -652,6 +654,8 @@ export const insertSnapshots = internalMutation({
         metadata: result.metadata ?? {},
         ...snapshot,
       });
+      await tagImage(ctx, snapshot.imageId, build, baseline);
+      await tagImage(ctx, snapshot.diffImageId, build, baseline);
       counts[snapshot.diffStatus]++;
       if (snapshot.reviewState !== "none") {
         counts[snapshot.reviewState]++;
@@ -727,6 +731,28 @@ async function toSnapshot(
     diffPixels: result.diffPixels,
     reviewState,
   };
+}
+
+async function tagImage(
+  ctx: MutationCtx,
+  imageId: Id<"images"> | undefined,
+  build: Doc<"builds">,
+  baseline: boolean,
+) {
+  const image =
+    imageId === undefined ? null : await ctx.db.get("images", imageId);
+  if (
+    image === null ||
+    (image.projectId === undefined && image._creationTime < build._creationTime)
+  ) {
+    return;
+  }
+  if (image.projectId === undefined || (baseline && image.baseline !== true)) {
+    await ctx.db.patch("images", image._id, {
+      projectId: image.projectId ?? build.projectId,
+      baseline: image.baseline === true || baseline,
+    });
+  }
 }
 
 async function findCarriedApproval(

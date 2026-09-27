@@ -395,7 +395,7 @@ Browse what is approved on the default branch now.
 | Diff | Threshold | 0.1 | Passed to the CLI in the build response, so config lives in one place. The CLI config overrides it. |
 | Diff | Include anti-aliasing | off | |
 | Checks | Check name | `stateofpixel` | With several build names: `stateofpixel / {build name}`. |
-| Retention | Keep PR-only images for | 60 days | 7 to 365. Showing the storage this setting uses comes with the usage page. |
+| Retention | Keep PR-only images for | 60 days | 7 to 365. The Usage tab (5.11) shows the storage of each project's PR-only images; showing it here is not built yet. |
 | Tokens | Project tokens | none | Create, name, last used time, revoke. Token shown once. |
 | Danger | Delete project | | Type the repo name to confirm. Deletes the project row right away and its builds, snapshots, reviews, approvals and tokens in chunks. A repository still in the installation comes back as an empty project on the next sync. |
 
@@ -413,9 +413,17 @@ Every change is saved on blur with a small "Saved" note. No save button.
 - Checkout and the customer portal return to `/{owner}/settings/billing`, checkout with `?subscription_id=...&status=...`. The status is a hint from Dodo, never proof of payment, so the plan box only says what happens next: "Payment received. Your plan updates in a few seconds." until the webhook makes that subscription active, then "Payment received. You are on the 25 GB plan."; "Your payment is processing" for `pending`; and for any other status, "The payment did not go through, so your plan did not change." The notice can be dismissed, which removes the query.
 - Choosing a plan in Change plan shows a confirm row under the plan box with the amount charged now from `billing.previewPlanChange` and the new renewal date: "Move to the 100 GB plan, billed yearly? You pay $X now. Unused time on your current plan counts toward it, and any left over is credited to later renewals. The new plan renews on Oct 26, 2027." Confirming runs `billing.changePlan`; if Dodo returns a payment link, the page opens it. After that the box says "Plan change received. Your plan updates in a few seconds." until the webhook moves the account, then "Plan changed. You are on the 100 GB plan."
 - A failed renewal and a cancelled subscription show in the account banner (5.3), so members see them on every account page and writers on project pages.
-- Not built yet (M3): storage split into baselines, PR-only images and diff images; a table per project with storage, share of total, retention setting and a link to its settings; a chart of daily storage for the last 90 days from `usageDaily`; payment method and invoices in the plan box.
+- Not built yet (M3): payment method and invoices in the plan box.
 
-### 5.11 User menu
+### 5.11 Usage (`/{owner}/settings/usage`, owners only)
+
+- A tab between Members and Billing. For members who are not owners it is disabled, with the tooltip "Only owners of acme on GitHub can see usage.", and the page says only owners can see usage.
+- Summary box: storage used of the plan limit from `accounts.storageBytes`, a bar split into baselines, PR-only images and diff images, the size of each, and when the split was last counted. Before the first count it says the split shows after it.
+- A bar chart of daily storage for the last 90 days from `usageDaily`, with the date and size of each day in its title. Days without a count are empty.
+- A table per project, largest first: name (links to its settings; archived projects show "Archived" and no link), storage, share of the counted total, baselines, PR-only images, diff images and the retention setting. Below 768px the three split columns are hidden, and below 640px the retention column.
+- The split comes from the latest `usageDaily` day, so it can be up to a day old, while the total is live.
+
+### 5.12 User menu
 
 Avatar menu with: account switcher, theme, Docs, Sign out. No user settings page in v1.
 
@@ -619,6 +627,8 @@ For carry-over lookups there is also `by_projectId_and_buildName_and_prNumber_an
 | storageId | Id<"_storage">, optional | Set when `store` is `"convex"` and the upload is confirmed. |
 | r2Key | string, optional | Set when `store` is `"r2"`: `a/{accountId}/img/{hash[0:2]}/{hash}.png`. |
 | lastReferencedAt | number | Set at confirm. `createUploadTargets` moves it forward when a build reuses the image and it is over 12 hours old, so `collectImages` never deletes an image a pending build relies on. |
+| projectId | Id<"projects">, optional | The first project whose snapshot used the image, set by `insertSnapshots`. Usage counts the image for this project only. Rows stored before the fields existed get both from the `usage` cron, since a PR build reusing one cannot tell whether a kept build used it. |
+| baseline | boolean, optional | True once a build on the default branch or an auto-approve branch uses the image, since retention keeps those builds. Usage counts it as a baseline, otherwise as a PR-only image. Diff images count as diffs either way. |
 
 Index `by_accountId_and_hash` on `[accountId, hash]`, unique by code. The same PNG in two accounts is stored twice. Index `by_storageId` lets a confirm check that no image row already uses a `storageId`.
 
@@ -631,8 +641,8 @@ An image row is created only after an upload is confirmed (see 7.3), so there is
 | accountId | Id<"accounts"> | |
 | projectId | Id<"projects"> | |
 | day | string | `YYYY-MM-DD`, UTC. Indexes `by_projectId_and_day` and `by_accountId_and_day`. |
-| baselineBytes, prBytes, diffBytes | number | Computed by the daily cron. |
-| builds, snapshots, uploadedImages | number | For our own dashboards, not billing. |
+| baselineBytes, prBytes, diffBytes | number | Sum of `images.bytes` for the project's images: diff images, then baseline screenshots, then the rest. Written by the `usage` cron. |
+| builds, snapshots, uploadedImages | number | Builds created in the 24 hours before the count, their snapshots, and images first stored in that time. For our own dashboards, not billing. |
 
 ### repoPermissions (cache)
 
@@ -832,7 +842,7 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 | `tokens.create` | action | admin | Generates the token, stores the hash through an internal mutation, returns the token once. |
 | `tokens.revoke` | mutation | admin | |
 | `projects.remove` | mutation | admin | Checks the typed name, deletes the project, schedules chunked deletion of its data. |
-| `usage.get` | query | org owner | Usage page data. Not built yet. |
+| `usage.get` | query | account owner | `{ login, since }` with `since` a `YYYY-MM-DD` day, since queries do not read the clock. Returns the storage usage, the latest counted day, one row per project from that day and the daily account totals from `since`. `null` for anyone who is not an owner. |
 | `images.grant` | mutation | read access | `{ projectId }`. Returns `{ exp, sig }` for the private image links of that project (section 11). |
 | `billing.available` | query | anyone | Whether this deployment has a Dodo API key. |
 | `billing.checkout` | action | account owner | `{ login, plan, interval }`. Returns a Dodo Payments checkout URL for a paid plan, monthly or yearly. Throws `already_subscribed` when the account has a subscription. |
@@ -969,8 +979,9 @@ In `packages/backend/convex/crons.ts` ([docs](https://docs.convex.dev/scheduling
 | `deleteOldBuilds` | daily 03:30 UTC | Deletes builds of PRs closed longer than `prRetentionDays` ago, and builds of branches with no new build for that long. Never deletes pending builds, builds on the default branch or an auto-approve branch, or a build that another build uses as its baseline. Deletes the build row first and writes a `deletedBuilds` row with the rule that matched, then deletes its snapshots and reviews in chunks, then the PR's `approvedImages` once no build of that PR is left. |
 | `collectImages` | daily 04:00 UTC | Deletes images with no snapshot referencing them (checked through `by_imageId`, `by_baselineImageId` and `by_diffImageId`) and `lastReferencedAt` over 24 hours ago, and their stored files. Subtracts the bytes from `accounts.storageBytes`. |
 | `cleanupEvents` | daily 04:30 UTC | Deletes `githubEvents` older than 7 days. |
+| `usage` | daily 05:00 UTC | One account at a time, pages through its images and sums their bytes per project and kind. An image without `projectId` gets it and `baseline` from up to 50 snapshots that use it; an image no snapshot uses is skipped until `collectImages` deletes it. Then it writes or replaces one `usageDaily` row per project for the day, skipping archived projects with no images. |
 
-Not built yet: `pruneRows` (daily 03:00 UTC) applies the row pruning rules from the snapshots table, and `usage` (daily 05:00 UTC) writes `usageDaily`. `accounts.storageBytes` and `overLimitSince` are kept current by upload confirm and `collectImages`. Build expiry is not a cron: `builds.expire` is scheduled per build, 60 minutes after creation, and sets `expired` if the build is still pending.
+Not built yet: `pruneRows` (daily 03:00 UTC) applies the row pruning rules from the snapshots table. `accounts.storageBytes` and `overLimitSince` are kept current by upload confirm and `collectImages`. Build expiry is not a cron: `builds.expire` is scheduled per build, 60 minutes after creation, and sets `expired` if the build is still pending.
 
 Storage billed is the sum of `images.bytes` per account. Every image counts once, however many builds reference it.
 

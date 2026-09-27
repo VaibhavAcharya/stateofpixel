@@ -8,7 +8,7 @@ export const meta = {
 
 ## How storage is counted
 
-Every image is stored once per account, keyed by its content. A snapshot that did not change between builds adds nothing, however many builds use it. Storage is the size of every stored image: baselines, images from pull requests and diff images. The account's Billing tab shows how much is used. The Free plan has {facts.freeStorage}, and [pricing](/#pricing) lists the paid plans.
+Every image is stored once per account, keyed by its content. A snapshot that did not change between builds adds nothing, however many builds use it. Storage is the size of every stored image: baselines, images from pull requests and diff images. The account's Billing tab shows how much is used. Owners also see a Usage tab. It splits storage into baselines, images kept only for pull requests and diff images, per project, and charts the last 90 days. It is counted once a day. An image used by several projects counts for the project that used it first. The Free plan has {facts.freeStorage}, and [pricing](/#pricing) lists the paid plans.
 
 ## When an account is over its limit
 

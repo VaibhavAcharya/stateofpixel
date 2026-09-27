@@ -7,7 +7,7 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { deleteImage } from "./blobs";
-import { matchesBranch } from "./lib/matchesBranch";
+import { isKeptBranch } from "./lib/matchesBranch";
 import { withStorageBytes } from "./lib/storage";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -109,13 +109,7 @@ async function retentionReason(
   build: Doc<"builds">,
   now: number,
 ): Promise<Doc<"deletedBuilds">["reason"] | null> {
-  if (
-    build.status === "pending" ||
-    build.branch === project.defaultBranch ||
-    project.autoApproveBranches.some((pattern) =>
-      matchesBranch(pattern, build.branch),
-    )
-  ) {
+  if (build.status === "pending" || isKeptBranch(project, build.branch)) {
     return null;
   }
   const cutoff = now - project.prRetentionDays * DAY_MS;
