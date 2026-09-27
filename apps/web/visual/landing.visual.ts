@@ -1,25 +1,11 @@
 import { test } from "@playwright/test";
 import { snapshot } from "stateofpixel/playwright";
+import { PUBLIC_PATHS } from "./pages";
 
-test("landing", async ({ page }) => {
-  await page.goto("/");
-  await snapshot(page, "landing");
-});
-
-for (const path of [
-  "brand",
-  "privacy",
-  "terms",
-  "refunds",
-  "compare",
-  "compare/argos",
-  "docs",
-  "docs/playwright",
-  "docs/review",
-  "docs/cli",
-]) {
-  test(path, async ({ page }) => {
-    await page.goto(`/${path}`);
-    await snapshot(page, path);
+for (const path of PUBLIC_PATHS) {
+  const name = path === "/" ? "landing" : path.slice(1);
+  test(name, async ({ page }) => {
+    await page.goto(path);
+    await snapshot(page, name);
   });
 }

@@ -27,7 +27,7 @@ jobs:
       - run: npx stateofpixel upload screenshots --shard ${{ matrix.shard }}/4
 ```
 
-While shards upload, the check says "Waiting for screenshots (2 of 4 shards)". The [Playwright reporter](/docs/playwright) reads Playwright's own `--shard`, so with it you skip the upload step.
+While shards upload, the check says "Waiting for screenshots (2 of 4 shards)". The [Playwright reporter](/docs/playwright) reads Playwright's own `--shard`, so with it you skip the upload step. [Storybook](/docs/storybook) capture splits the stories by the same `--shard`.
 
 ## When you do not
 

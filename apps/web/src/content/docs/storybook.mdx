@@ -44,6 +44,6 @@ npx stateofpixel storybook storybook-static \
 
 In `--include` and `--exclude`, `*` stays inside one segment of `Title/Name` and `**` crosses segments.
 
-`storybook` also takes every flag of `upload`, like `--build-name`, `--shard` and `--threshold`. See the [CLI](/docs/cli) reference. Use `--dry-run` to capture and print the plan without uploading.
+`storybook` also takes every flag of `upload`, like `--build-name`, `--shard` and `--threshold`. With `--shard 2/4`, it captures only every fourth story, starting at the second, so each CI job takes its share. See the [CLI](/docs/cli) reference. Use `--dry-run` to capture and print the plan without uploading.
 
 Stories that load data or fonts late are the usual cause of noisy diffs. [Stable screenshots](/docs/stable-screenshots) has the fixes.

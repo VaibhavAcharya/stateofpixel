@@ -13,10 +13,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { InvalidArgumentError } from "commander";
 import { mapConcurrent } from "../map-concurrent";
-import { metadataFile } from "../upload";
-import { type UploadCommandOptions, uploadCommand } from "./upload";
+import { ENV } from "../reference";
+import { metadataFile, type Shard } from "../upload";
+import { parseShard, type UploadCommandOptions, uploadCommand } from "./upload";
 
-const CAPTURE_CONCURRENCY = 8;
+const CAPTURE_CONCURRENCY = 4;
 const STORY_TIMEOUT_MS = 15_000;
 const VIEWPORT_HEIGHT = 720;
 
@@ -55,10 +56,14 @@ export async function storybookCommand(
   staticDir: string,
   options: StorybookCommandOptions,
 ): Promise<void> {
-  const stories = filterStories(
-    await readStories(staticDir),
-    options.include,
-    options.exclude,
+  const shard = options.shard ?? parseShard(process.env[ENV.shard] ?? "1/1");
+  const stories = shardStories(
+    filterStories(
+      await readStories(staticDir),
+      options.include,
+      options.exclude,
+    ),
+    shard,
   );
   if (stories.length === 0) {
     throw new Error(`No stories found in ${staticDir}/index.json.`);
@@ -69,7 +74,7 @@ export async function storybookCommand(
     if (failed.length > 0) {
       throw new Error(`Stories that did not render: ${failed.join(", ")}`);
     }
-    await uploadCommand(outDir, options);
+    await uploadCommand(outDir, { ...options, shard });
   } finally {
     await rm(outDir, { recursive: true, force: true });
   }
@@ -110,6 +115,14 @@ export function filterStories(
       (excludes === null || !excludes.test(name))
     );
   });
+}
+
+export function shardStories(stories: Story[], shard: Shard): Story[] {
+  const { index, total } = shard;
+  if (index === null || total === null) {
+    return stories;
+  }
+  return stories.filter((_, position) => position % total === index - 1);
 }
 
 function globToRegExp(glob: string): RegExp {

@@ -29,7 +29,7 @@ function AnnouncementPill() {
       <span className="rounded-full bg-surface px-2 py-0.5 font-medium text-text ring-1 ring-border">
         New
       </span>
-      Storybook capture runs 8 stories at a time
+      Storybook capture runs 4 stories at a time
       <ArrowRightIcon
         size={12}
         className="transition-transform duration-100 group-hover:translate-x-0.5"
