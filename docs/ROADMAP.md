@@ -58,9 +58,9 @@ Group 3: lists and viewer
 - [x] Viewer as a canvas like Figma: pan and zoom with trackpad, wheel and keys, kept inside the image bounds, with one Fit button to reset; replaces the Fit, 100% and 200% tabs
 - [x] Pickable diff overlay color
 - [x] Say when retention deleted a build: keep deleted build numbers per project so an old link shows "This build was deleted after 60 days" instead of "Build not found."
-- [ ] Diff overlay sometimes missing on first load, in the landing demo and possibly in the build page; toggling Diff overlay off and on shows it
-- [ ] Landing demo on mobile opens on the Header/Default story, so a diff shows at first glance
-- [ ] Green as the default diff overlay color
+- [x] Diff overlay sometimes missing on first load, in the landing demo and possibly in the build page; toggling Diff overlay off and on shows it
+- [x] Landing demo on mobile opens on the Header/Default story, so a diff shows at first glance
+- [x] Green as the default diff overlay color
 
 Group 4: landing
 - [x] Drop Playfair Display, one sans and one mono only
@@ -90,7 +90,7 @@ See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (stat
 - [ ] The `web` visual job takes 4 to 5 minutes in CI; think about how to handle it
 - [ ] `stateofpixel storybook --shard i/n` captures only the stories of that shard, so `web-storybook` can run as parallel jobs
 - [x] Storybook stories with fixtures for flows that are hard to reproduce, like checkout results, plan changes, failed renewals, storage warnings and blocked builds
-- [ ] `apps/web/visual/build.visual.ts` looks flaky; find out why and make it stable
+- [x] `apps/web/visual/build.visual.ts` looks flaky; find out why and make it stable
 
 ## M3: growth
 
