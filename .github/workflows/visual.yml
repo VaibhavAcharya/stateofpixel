@@ -65,6 +65,9 @@ jobs:
 
   web-storybook:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -86,4 +89,4 @@ jobs:
       - if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter @stateofpixel/web exec playwright install-deps chromium
       - run: pnpm --filter @stateofpixel/web build-storybook
-      - run: node packages/cli/dist/index.mjs storybook apps/web/storybook-static --build-name web-storybook --viewports 375,1280 --delay 300
+      - run: node packages/cli/dist/index.mjs storybook apps/web/storybook-static --build-name web-storybook --viewports 375,1280 --delay 300 --shard ${{ matrix.shard }}/3

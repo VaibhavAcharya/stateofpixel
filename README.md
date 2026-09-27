@@ -135,7 +135,7 @@ Biome formats and lints; `pnpm format` fixes formatting. `typecheck` in `apps/we
 - `playground`: `examples/playground/pages`, captured by `pnpm --filter @stateofpixel/playground capture`
 - `storybook`: the playground stories, built with `pnpm --filter @stateofpixel/playground build-storybook` and captured with `stateofpixel storybook`
 - `web`: the public pages, their Open Graph images and the build page, captured by `pnpm --filter @stateofpixel/web visual` through the Playwright reporter. The reporter uploads on CI only, so a local run only writes screenshots.
-- `web-storybook`: the web app stories, built with `pnpm --filter @stateofpixel/web build-storybook` and captured with `stateofpixel storybook` at 375 and 1280 wide
+- `web-storybook`: the web app stories, built with `pnpm --filter @stateofpixel/web build-storybook` and captured with `stateofpixel storybook` at 375 and 1280 wide in 3 shards
 
 `scripts/test-pr.sh <scenario>` opens a draft pull request that changes the playground in a known way and prints the expected check for `playground` and `storybook`. Scenarios: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`, `add-story`, `remove-story`, `flaky`, `many-changes`, `sharded`, `restyle`. `sharded` changes `visual.yml` in its branch: `playground` uploads with `--shard auto` and then `finalize`, `storybook` with `--shard 1/2` and `2/2`. `restyle` changes the fonts and color variables of the playground and the web app, so almost every `web` and `web-storybook` snapshot changes too. It needs `gh` signed in.
 

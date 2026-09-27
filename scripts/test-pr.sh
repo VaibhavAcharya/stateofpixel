@@ -132,7 +132,7 @@ JS
   sharded)
     sed -i.bak \
       -e 's#\(upload examples/playground/screenshots --build-name playground\)#\1 --shard auto \&\& node packages/cli/dist/index.mjs finalize --build-name playground#' \
-      -e 's#\(node packages/cli/dist/index.mjs storybook examples/playground/storybook-static --build-name storybook\)#\1 --include "Button/*" --shard 1/2 \&\& \1 --exclude "Button/*" --shard 2/2#' \
+      -e 's#\(node packages/cli/dist/index.mjs storybook examples/playground/storybook-static --build-name storybook\)#\1 --shard 1/2 \&\& \1 --shard 2/2#' \
       "$worktree/.github/workflows/visual.yml"
     ;;
 esac
