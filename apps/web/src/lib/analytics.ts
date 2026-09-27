@@ -12,6 +12,10 @@ export function track(event: string, data?: EventData) {
 
 export const UMAMI_BEFORE_SEND_SCRIPT = `window.umamiBeforeSend = (type, payload) => {
   const publicPaths = ["/", "/brand", "/privacy", "/terms", "/refunds", "/install"];
+  const publicSections = ["/compare", "/docs"];
+  const isPublic = (path) =>
+    publicPaths.includes(path) ||
+    publicSections.some((section) => path === section || path.startsWith(section + "/"));
   const maskPath = (path) => {
     const [, repo, section, ...rest] = path.split("/").slice(1);
     const parts = [":owner"];
@@ -24,7 +28,7 @@ export const UMAMI_BEFORE_SEND_SCRIPT = `window.umamiBeforeSend = (type, payload
   const mask = (value) => {
     if (!value) return { value, masked: false };
     const url = new URL(value, location.origin);
-    if (url.origin !== location.origin || publicPaths.includes(url.pathname)) {
+    if (url.origin !== location.origin || isPublic(url.pathname)) {
       return { value, masked: false };
     }
     const path = maskPath(url.pathname);
