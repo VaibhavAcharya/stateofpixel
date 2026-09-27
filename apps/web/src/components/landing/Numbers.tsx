@@ -1,133 +1,22 @@
-import { useState } from "react";
-import { LeadCopy } from "../ui";
+import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
+import { type ReactNode, useState } from "react";
+import { CHECKED } from "../../content/compare";
+import { track } from "../../lib/analytics";
 import {
-  DEFAULT_WORKLOAD,
-  estimate,
-  formatPrice,
-  monthlyPrice,
-  type Workload,
-} from "./Pricing";
+  ARGOS,
+  CHROMATIC,
+  PERCY,
+  type Plan,
+} from "../../lib/competitorPricing";
+import { useTicker } from "../../lib/useTicker";
+import { BillLogo, DEFAULT_SUITE, quote } from "../compare/CostCalculator";
+import { LeadCopy } from "../ui";
+import { formatPrice } from "./Pricing";
 import { SECTION } from "./sections";
 
+const DOTTED = "border-dotted border-field-border/50";
+
 const count = new Intl.NumberFormat("en-US");
-
-const MEDIUM = { label: "Medium", workload: DEFAULT_WORKLOAD };
-
-const TEAMS: { label: string; workload: Workload }[] = [
-  {
-    label: "Small",
-    workload: { ...DEFAULT_WORKLOAD, screens: 100, variants: 2, builds: 200 },
-  },
-  MEDIUM,
-  {
-    label: "Large",
-    workload: { ...DEFAULT_WORKLOAD, screens: 1000, variants: 4, builds: 1000 },
-  },
-];
-
-function describe(workload: Workload) {
-  return `${count.format(workload.screens)} stories, ${workload.variants} viewports, ${count.format(workload.builds)} builds a month`;
-}
-
-function ours(numbers: ReturnType<typeof estimate>) {
-  return numbers.tier === null ? null : monthlyPrice(numbers.tier, "monthly");
-}
-
-function CostFootnote() {
-  return (
-    <p className="mt-6 max-w-[90ch] text-xs text-muted">
-      {DEFAULT_WORKLOAD.changed}% of snapshots change per build,{" "}
-      {DEFAULT_WORKLOAD.kilobytes} KB per screenshot, pull request images kept
-      60 days. Stored size counts each changed screenshot and its diff once.
-      Chromatic and Argos list prices from{" "}
-      <a href="https://www.chromatic.com/pricing" className="text-link">
-        chromatic.com/pricing
-      </a>{" "}
-      and{" "}
-      <a href="https://argos-ci.com/pricing" className="text-link">
-        argos-ci.com/pricing
-      </a>{" "}
-      on 25 September 2026, before tax. Their TurboSnap and Storybook rates can
-      lower the count.
-    </p>
-  );
-}
-
-export function CostSection() {
-  const [team, setTeam] = useState(MEDIUM);
-  const numbers = estimate(team.workload);
-  const price = ours(numbers) ?? 0;
-  const rows: [string, number, boolean][] = [
-    ["stateofpixel", price, true],
-    ["Argos", numbers.argos, false],
-    ["Chromatic", numbers.chromatic, false],
-  ];
-  const max = Math.max(...rows.map(([, value]) => value));
-  return (
-    <section className={SECTION}>
-      <div className="flex flex-wrap items-end justify-between gap-6">
-        <LeadCopy
-          title="Same review, a fraction of the bill."
-          className="max-w-[640px]"
-        >
-          {describe(team.workload)}, {count.format(numbers.snapshots)}{" "}
-          snapshots.
-        </LeadCopy>
-        <div className="flex items-center gap-3">
-          <span id="team-size" className="text-sm text-muted">
-            Team size
-          </span>
-          <fieldset
-            aria-labelledby="team-size"
-            className="flex gap-1 rounded-control bg-surface-2 p-0.5"
-          >
-            {TEAMS.map((option) => (
-              <button
-                key={option.label}
-                type="button"
-                aria-pressed={option === team}
-                onClick={() => setTeam(option)}
-                className={`h-7 rounded-sm px-3 text-xs font-medium transition-colors duration-100 ${
-                  option === team
-                    ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
-                    : "text-muted hover:text-text"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </fieldset>
-        </div>
-      </div>
-      <dl className="mt-12 flex flex-col gap-5">
-        {rows.map(([name, value, highlight]) => (
-          <div
-            key={name}
-            className="grid grid-cols-[140px_1fr_120px] items-center gap-4 max-sm:grid-cols-[96px_1fr_88px]"
-          >
-            <dt
-              className={`text-sm ${highlight ? "font-medium" : "text-muted"}`}
-            >
-              {name}
-            </dt>
-            <div className="h-8 rounded-sm bg-surface-2">
-              <div
-                className={`h-full rounded-sm ${highlight ? "bg-approved" : "bg-field-border/50"}`}
-                style={{ width: `${Math.max((value / max) * 100, 0.5)}%` }}
-              />
-            </div>
-            <dd
-              className={`text-right tabular-nums ${highlight ? "text-xl font-semibold" : "text-base text-muted"}`}
-            >
-              {formatPrice(value)}/mo
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <CostFootnote />
-    </section>
-  );
-}
 
 const OUR_UPLOADS: [number, number][] = [
   [1.3, 0],
@@ -190,51 +79,276 @@ function median(values: number[]) {
     : (sorted[middle] ?? 0);
 }
 
-export function SpeedSection() {
-  const times = OUR_UPLOADS.map(([seconds]) => seconds);
-  const longest = Math.max(...times);
-  const empty = OUR_UPLOADS.filter(([, images]) => images === 0).length;
+export const MEDIAN_UPLOAD = median(OUR_UPLOADS.map(([seconds]) => seconds));
+
+function overage(plans: Plan[]) {
+  return plans.find((plan) => plan.extra !== null)?.extra ?? 0;
+}
+
+const PER_THOUSAND = [
+  { name: "Percy", logo: "/logos/compare/percy.png", plans: PERCY },
+  { name: "Chromatic", logo: "/logos/compare/chromatic.png", plans: CHROMATIC },
+  { name: "Argos", logo: "/logos/compare/argos.png", plans: ARGOS },
+].map((rival) => ({ ...rival, cost: overage(rival.plans) * 1000 }));
+
+export function PerThousandSection() {
+  return (
+    <section className={SECTION}>
+      <LeadCopy
+        title="What 1,000 more screenshots cost."
+        className="max-w-[720px]"
+      >
+        Past the plan limit, other tools bill each screenshot. We don't count
+        them.
+      </LeadCopy>
+      <dl
+        className={`mt-12 grid grid-cols-4 border-t ${DOTTED} max-md:grid-cols-2`}
+      >
+        <div className={`border-b ${DOTTED} py-6 pr-6`}>
+          <dt className="flex items-center gap-2 text-sm font-medium">
+            <BillLogo
+              bill={{ name: "", logo: null, plan: "", cost: 0 }}
+              size={20}
+            />
+            stateofpixel
+          </dt>
+          <dd className="mt-3 text-[56px] leading-none font-semibold tracking-[-0.045em] text-approved tabular-nums">
+            $0
+          </dd>
+        </div>
+        {PER_THOUSAND.map((rival) => (
+          <div key={rival.name} className={`border-b ${DOTTED} py-6 pr-6`}>
+            <dt className="flex items-center gap-2 text-sm text-muted">
+              <img
+                src={rival.logo}
+                alt=""
+                width={20}
+                height={20}
+                className="rounded-[22%] ring-1 ring-border"
+              />
+              {rival.name}
+            </dt>
+            <dd className="mt-3 text-[56px] leading-none font-semibold tracking-[-0.045em] text-muted tabular-nums">
+              {formatPrice(rival.cost)}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-6 text-xs text-muted">
+        Overage rate on each tool's first paid plan, list price before tax,
+        checked on {CHECKED}. Argos bills Storybook screenshots at a lower rate.
+      </p>
+    </section>
+  );
+}
+
+export function CostSection() {
+  const [screens, setScreens] = useState(DEFAULT_SUITE.screens);
+  const { snapshots, bills } = quote({ ...DEFAULT_SUITE, screens }, [
+    "argos",
+    "chromatic",
+    "percy",
+  ]);
+  const max = Math.max(...bills.map((bill) => bill.cost ?? 0), 1);
   return (
     <section
-      className={`${SECTION} grid grid-cols-[1fr_1.3fr] items-end gap-12 max-lg:grid-cols-1`}
+      className={`${SECTION} grid grid-cols-[1fr_1.2fr] gap-12 max-lg:grid-cols-1`}
     >
       <div>
-        <LeadCopy title="Measured on our own CI." className="max-w-[520px]">
-          stateofpixel reviews its own pull requests. This is its upload step.
+        <LeadCopy title="How big is your suite?" className="max-w-[520px]">
+          Drag it. {DEFAULT_SUITE.viewports} viewports and{" "}
+          {DEFAULT_SUITE.builds} builds a month.
         </LeadCopy>
-        <dl className="mt-10 grid grid-cols-2 gap-6">
-          <div>
-            <dt className="text-xs text-muted">Median upload</dt>
-            <dd className="text-[40px] leading-none font-semibold tracking-[-0.04em] tabular-nums">
-              {median(times).toFixed(1)} s
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted">Sent no images</dt>
-            <dd className="text-[40px] leading-none font-semibold tracking-[-0.04em] tabular-nums">
-              {empty} of {OUR_UPLOADS.length}
-            </dd>
-          </div>
-        </dl>
+        <label className="mt-10 flex flex-col gap-3">
+          <span className="flex items-baseline justify-between text-sm">
+            <span className="text-muted">Stories or pages</span>
+            <span className="text-[32px] leading-none font-semibold tracking-[-0.04em] tabular-nums">
+              {count.format(screens)}
+            </span>
+          </span>
+          <input
+            type="range"
+            min={10}
+            max={2000}
+            step={10}
+            value={screens}
+            onChange={(event) => setScreens(Number(event.target.value))}
+            onPointerUp={() => track("Suite slider", { screens })}
+            onKeyUp={() => track("Suite slider", { screens })}
+            className="w-full accent-(--color-text)"
+          />
+          <span className="text-xs text-muted tabular-nums">
+            {count.format(snapshots)} screenshots a month.{" "}
+            <a href="/compare#cost" className="text-link">
+              Change viewports, browsers and builds
+            </a>
+          </span>
+        </label>
       </div>
-      <figure>
-        <div className="flex h-32 items-end gap-[3px]" aria-hidden>
-          {OUR_UPLOADS.map(([seconds, images], index) => (
+      <ul className="flex flex-col gap-5">
+        {bills.map((bill, index) => (
+          <li
+            key={bill.name}
+            className="grid grid-cols-[140px_1fr_120px] items-center gap-4 max-sm:grid-cols-[96px_1fr_88px]"
+          >
+            <span className="flex items-center gap-2 text-sm">
+              <BillLogo bill={bill} size={20} />
+              <span className={index === 0 ? "font-medium" : "text-muted"}>
+                {bill.name}
+              </span>
+            </span>
+            <span className="h-8 rounded-sm bg-surface-2">
+              <span
+                className={`block h-full rounded-sm transition-[width] duration-180 ${index === 0 ? "bg-approved" : "bg-field-border/50"}`}
+                style={{
+                  width: `${Math.max(((bill.cost ?? 0) / max) * 100, 0.5)}%`,
+                }}
+              />
+            </span>
             <span
-              // biome-ignore lint/suspicious/noArrayIndexKey: fixed data
-              key={index}
-              title={`${seconds} s, ${images} images`}
-              className={`flex-1 rounded-t-xs ${images === 0 ? "bg-field-border/60" : "bg-changed"}`}
-              style={{ height: `${(seconds / longest) * 100}%` }}
-            />
-          ))}
-        </div>
-        <figcaption className="mt-3 text-xs text-muted">
-          {OUR_UPLOADS.length} uploads from the last 20 runs of our Visual
-          workflow on GitHub Actions, 2 to 14 snapshots each, read on 26
-          September 2026. Orange bars uploaded images.
-        </figcaption>
-      </figure>
+              className={`text-right tabular-nums ${index === 0 ? "text-xl font-semibold" : "text-base text-muted"}`}
+            >
+              {bill.cost === null ? "Custom" : `${formatPrice(bill.cost)}/mo`}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function FigureFrame({
+  label,
+  title,
+  text,
+  children,
+}: {
+  label: string;
+  title: string;
+  text: string;
+  children: ReactNode;
+}) {
+  return (
+    <figure className={`flex flex-col border-t ${DOTTED} pt-6`}>
+      <span className="mono text-xs text-muted">{label}</span>
+      <div
+        aria-hidden
+        className="mt-6 flex h-40 items-center justify-center rounded-lg bg-surface-2"
+      >
+        {children}
+      </div>
+      <figcaption className="mt-6">
+        <span className="block text-xl font-semibold tracking-[-0.025em]">
+          {title}
+        </span>
+        <span className="mt-2 block text-sm text-muted">{text}</span>
+      </figcaption>
+    </figure>
+  );
+}
+
+const HASHES = ["a3f9c2", "7b21e0", "c0ffee", "91d4ab", "e5e5e5"];
+
+function HashArt() {
+  const step = useTicker(HASHES.length + 1, 700);
+  return (
+    <div className="flex flex-col gap-1.5">
+      {HASHES.map((hash, index) => {
+        const lit = step > index;
+        return (
+          <span
+            key={hash}
+            className={`flex w-52 items-center gap-2 rounded-sm px-2 py-1 text-xs transition-colors duration-180 ${lit ? "bg-surface" : ""}`}
+          >
+            <span className="mono text-muted">{hash}</span>
+            <span className="ml-auto">
+              {lit &&
+                (index === 2 ? (
+                  <span className="text-changed">upload 84 KB</span>
+                ) : (
+                  <span className="text-muted">seen, skip</span>
+                ))}
+            </span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+const KEY_SCRIPT = ["j", "a", "j", "a", "j", "r"];
+
+function KeysArt() {
+  const step = useTicker(KEY_SCRIPT.length, 650);
+  return (
+    <div className="flex gap-2">
+      {["j", "k", "a", "r"].map((key) => (
+        <span
+          key={key}
+          className={`mono flex size-12 items-center justify-center rounded-md text-lg transition-all duration-100 ${KEY_SCRIPT[step] === key ? "translate-y-0.5 bg-accent text-accent-fg" : "bg-surface text-muted shadow-[inset_0_0_0_1px_var(--color-border),0_2px_0_var(--color-border)]"}`}
+        >
+          {key}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function RunnerArt() {
+  return (
+    <div className="flex items-center gap-3 text-xs">
+      <span className="rounded-md bg-surface px-3 py-2 ring-1 ring-border">
+        Your CI
+        <span className="block text-muted">renders once</span>
+      </span>
+      <ArrowRightIcon size={14} className="text-muted" />
+      <span className="rounded-md bg-surface px-3 py-2 ring-1 ring-border">
+        stateofpixel
+        <span className="block text-muted">renders never</span>
+      </span>
+    </div>
+  );
+}
+
+export function SpeedSection() {
+  return (
+    <section className={SECTION}>
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <LeadCopy title="Nothing to wait for." className="max-w-[640px]">
+          No render queue, no upload of what we have seen, no mouse needed.
+        </LeadCopy>
+        <p className="text-right max-sm:text-left">
+          <span className="block text-[56px] leading-none font-semibold tracking-[-0.045em] tabular-nums">
+            {MEDIAN_UPLOAD.toFixed(1)} s
+          </span>
+          <span className="text-xs text-muted">
+            median of {OUR_UPLOADS.length} uploads on our own CI
+          </span>
+        </p>
+      </div>
+      <div className="mt-12 grid grid-cols-3 gap-8 max-lg:grid-cols-1">
+        <FigureFrame
+          label="Fig 0.1"
+          title="Nothing renders twice."
+          text="Your tests already took the screenshots. There is no second browser to wait for."
+        >
+          <RunnerArt />
+        </FigureFrame>
+        <FigureFrame
+          label="Fig 0.2"
+          title="Unchanged costs one hash."
+          text="The CLI hashes every screenshot and uploads only the ones we have not seen."
+        >
+          <HashArt />
+        </FigureFrame>
+        <FigureFrame
+          label="Fig 0.3"
+          title="One key per decision."
+          text="j and k to move, a to approve, r to reject. The whole review page works without a mouse."
+        >
+          <KeysArt />
+        </FigureFrame>
+      </div>
     </section>
   );
 }

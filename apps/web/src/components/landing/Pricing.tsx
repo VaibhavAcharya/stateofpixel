@@ -194,7 +194,7 @@ function TierCard({
       </ul>
       {free && (
         <div className="mt-auto pt-6">
-          <AuthButton label="Install the GitHub App" />
+          <AuthButton label="Start free with GitHub" />
         </div>
       )}
     </div>
@@ -221,7 +221,7 @@ export function PricingPlans() {
               key={tier.gigabytes}
               tier={tier}
               billing={billing}
-              available={available === true}
+              available={available !== false}
             />
           ))}
         </div>
@@ -234,7 +234,7 @@ export function PricingPlans() {
           >
             Write to {SUPPORT_EMAIL}
           </a>
-          .{available !== true && " Paid plans are coming soon."}
+          .{available === false && " Paid plans are coming soon."}
         </p>
       </div>
     </section>

@@ -1,17 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { HeroChecks } from "../components/landing/HeroArt";
-import { CostSection, SpeedSection } from "../components/landing/Numbers";
+import {
+  CostSection,
+  PerThousandSection,
+  SpeedSection,
+} from "../components/landing/Numbers";
 import { PricingPlans } from "../components/landing/Pricing";
 import {
-  DemoSection,
   FaqList,
-  FinalWithSnippet,
-  HeroDescriptive,
+  FinalStartFree,
+  HeroCentered,
   HowSteps,
   PipelinesSection,
+  PromisesSection,
   PublicPage,
+  SwitchStrip,
   TeamSection,
-  WhatWeDont,
 } from "../components/landing/sections";
 import { PAGES, pageLinks, pageMeta } from "../lib/pageMeta";
 
@@ -19,7 +22,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       {
-        title: "stateofpixel / Visual regression testing that runs in your CI",
+        title: "stateofpixel / Catch UI regressions before they merge",
       },
       ...pageMeta(PAGES.home),
     ],
@@ -31,17 +34,18 @@ export const Route = createFileRoute("/")({
 function Home() {
   return (
     <PublicPage>
-      <HeroDescriptive art={<HeroChecks />} />
-      <DemoSection />
+      <HeroCentered />
+      <PerThousandSection />
       <HowSteps />
       <SpeedSection />
       <TeamSection />
       <PipelinesSection />
       <PricingPlans />
       <CostSection />
-      <WhatWeDont />
+      <PromisesSection />
+      <SwitchStrip />
       <FaqList />
-      <FinalWithSnippet />
+      <FinalStartFree />
     </PublicPage>
   );
 }
