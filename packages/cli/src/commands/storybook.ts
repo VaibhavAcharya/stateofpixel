@@ -17,7 +17,7 @@ import { ENV } from "../reference";
 import { metadataFile, type Shard } from "../upload";
 import { parseShard, type UploadCommandOptions, uploadCommand } from "./upload";
 
-const CAPTURE_CONCURRENCY = 8;
+const CAPTURE_CONCURRENCY = 4;
 const STORY_TIMEOUT_MS = 15_000;
 const VIEWPORT_HEIGHT = 720;
 
