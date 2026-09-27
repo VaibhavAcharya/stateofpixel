@@ -1,6 +1,6 @@
 {
   "name": "stateofpixel",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Visual regression testing that runs in your CI",
   "keywords": [
     "visual-regression",

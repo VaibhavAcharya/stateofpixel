@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.5.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.4.1...v1.5.0) (2026-09-27)
+
+
+### Features
+
+* **cli:** split stories between shards in storybook ([ada5b0f](https://github.com/VaibhavAcharya/stateofpixel/commit/ada5b0f5f5a2503e00b71ccb584b49d48698058a))
+* **cli:** split stories between shards in storybook ([97f14e5](https://github.com/VaibhavAcharya/stateofpixel/commit/97f14e541c7903a0dab5cd40fb5efe5bfc0bfc89))
+* **web:** make green the default diff color ([32f85bc](https://github.com/VaibhavAcharya/stateofpixel/commit/32f85bc950bf3de8a33e8e94f939eeecd7bf88b1))
+
+
+### Bug Fixes
+
+* **web:** diff overlay on first load, stable visual suite, green diff default ([affc6e9](https://github.com/VaibhavAcharya/stateofpixel/commit/affc6e9c6247d85e7a4b3f33f11d8173c9e9b55b))
+
+
+### Performance Improvements
+
+* **cli:** capture 4 stories at a time ([b79808f](https://github.com/VaibhavAcharya/stateofpixel/commit/b79808fff9a29f72b640fa2b248c487991ed904e))
+
 ## [1.4.1](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.4.0...v1.4.1) (2026-09-26)
 
 
