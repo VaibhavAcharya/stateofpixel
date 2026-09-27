@@ -87,8 +87,8 @@ See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (stat
 - [x] `scripts/test-pr.sh` scenarios with an expected check result each
 - [x] Merge scenarios (squash, rebase, merge commit) against a separate test repo
 - [x] More `test-pr.sh` scenarios: `flaky` (an animation left on), `many-changes`, `sharded`
-- [ ] The `web` visual job takes 4 to 5 minutes in CI; think about how to handle it
-- [ ] `stateofpixel storybook --shard i/n` captures only the stories of that shard, so `web-storybook` can run as parallel jobs
+- [x] The `web` visual job takes 4 to 5 minutes in CI; think about how to handle it
+- [x] `stateofpixel storybook --shard i/n` captures only the stories of that shard, so `web-storybook` can run as parallel jobs
 - [x] Storybook stories with fixtures for flows that are hard to reproduce, like checkout results, plan changes, failed renewals, storage warnings and blocked builds
 - [x] `apps/web/visual/build.visual.ts` looks flaky; find out why and make it stable
 
