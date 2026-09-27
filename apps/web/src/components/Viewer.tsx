@@ -93,10 +93,10 @@ export type DiffColor = "red" | "magenta" | "blue" | "green";
 
 export const DIFF_COLORS: { value: DiffColor; label: string; color: string }[] =
   [
+    { value: "green", label: "Green", color: "#00cc00" },
     { value: "red", label: "Red", color: "#ff0000" },
     { value: "magenta", label: "Magenta", color: "#ff00ff" },
     { value: "blue", label: "Blue", color: "#0066ff" },
-    { value: "green", label: "Green", color: "#00cc00" },
   ];
 
 export function useViewerSettings() {
@@ -106,7 +106,7 @@ export function useViewerSettings() {
   const [sideDiff, setSideDiff] = useState(true);
   const [showBaseline, setShowBaseline] = useState(false);
   const [diffOnly, setDiffOnly] = useState(false);
-  const [diffColor, setDiffColor] = useState<DiffColor>("red");
+  const [diffColor, setDiffColor] = useState<DiffColor>("green");
   return {
     sideDiff,
     setSideDiff,
@@ -788,7 +788,7 @@ function Frame({
   scale,
   caption,
   overlay,
-  overlayColor = "red",
+  overlayColor = "green",
   size,
   highlighted = false,
 }: {

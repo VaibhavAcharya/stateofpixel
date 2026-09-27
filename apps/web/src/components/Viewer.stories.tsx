@@ -34,7 +34,7 @@ function StoryViewer({
     initial.showBaseline ?? false,
   );
   const [diffOnly, setDiffOnly] = useState(initial.diffOnly ?? false);
-  const [diffColor, setDiffColor] = useState(initial.diffColor ?? "red");
+  const [diffColor, setDiffColor] = useState(initial.diffColor ?? "green");
   return (
     <div className="flex h-[720px] flex-col bg-surface">
       <Viewer
@@ -96,8 +96,8 @@ export const SideBySideBlueOverlay: Story = {
   args: { initial: { diffColor: "blue" } },
 };
 
-export const SideBySideGreenOverlayDark: Story = {
-  args: { initial: { diffColor: "green" } },
+export const SideBySideRedOverlayDark: Story = {
+  args: { initial: { diffColor: "red" } },
   parameters: { theme: "dark" },
 };
 

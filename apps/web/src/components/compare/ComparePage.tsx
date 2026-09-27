@@ -409,7 +409,7 @@ function ProductShot() {
         <div>
           <LeadCopy title="What your reviewers get." className="max-w-[420px]">
             Each changed screenshot next to its baseline, with the changed
-            pixels in red.
+            pixels in green.
           </LeadCopy>
           <ul className={`mt-8 border-t ${DOTTED} text-sm`}>
             {REVIEW_POINTS.map(([title, text]) => (
@@ -427,7 +427,7 @@ function ProductShot() {
         <div className="checker rounded-xl p-8 ring-1 ring-border max-md:p-3">
           <img
             src="/readme/review-page.png"
-            alt="The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in red"
+            alt="The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in green"
             width={1440}
             height={760}
             loading="lazy"
