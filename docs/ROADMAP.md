@@ -59,6 +59,8 @@ Group 3: lists and viewer
 - [x] Pickable diff overlay color
 - [x] Say when retention deleted a build: keep deleted build numbers per project so an old link shows "This build was deleted after 60 days" instead of "Build not found."
 - [ ] Diff overlay sometimes missing on first load, in the landing demo and possibly in the build page; toggling Diff overlay off and on shows it
+- [ ] Landing demo on mobile opens on the Header/Default story, so a diff shows at first glance
+- [ ] Green as the default diff overlay color
 
 Group 4: landing
 - [x] Drop Playfair Display, one sans and one mono only
@@ -131,6 +133,8 @@ Needed before applying for a payment gateway.
 - [x] Docs pages at `/docs`, linked from the header, footer and user menu
 - [x] Brand page with the logo, its usage and downloads
 - [x] Open Graph image per page
+- [ ] Serve the Open Graph images in dev, so `/og/<path>.png` works on localhost instead of hitting the `$owner/$repo` route
+- [ ] Capture the Open Graph images in the visual suite, so pull requests review them in stateofpixel
 - [x] Review the npm keywords of the CLI and the topics of the GitHub repo
 - [ ] Images and illustrations in the README instead of the ASCII art
 - [x] Rethink the CLI README that npm shows
