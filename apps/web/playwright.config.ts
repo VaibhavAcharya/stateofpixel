@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: "visual",
   testMatch: "*.visual.ts",
   forbidOnly: !!process.env.CI,
+  workers: 2,
   reporter: [["list"], ["stateofpixel/playwright", { buildName: "web" }]],
   use: {
     baseURL: "http://localhost:3000",
