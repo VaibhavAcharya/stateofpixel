@@ -17,6 +17,7 @@ import {
   cloneElement,
   type ReactElement,
   type ReactNode,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -498,6 +499,18 @@ function LoadingImage({
     "loading",
   );
   const renewed = useRef(false);
+  const element = useRef<HTMLImageElement>(null);
+  useEffect(() => {
+    const img = element.current;
+    if (
+      url !== undefined &&
+      img?.getAttribute("src") === url &&
+      img.complete &&
+      img.naturalWidth > 0
+    ) {
+      setState("loaded");
+    }
+  }, [url]);
   const frameStyle = {
     aspectRatio: `${image.width} / ${image.height}`,
     ...style,
@@ -526,6 +539,7 @@ function LoadingImage({
   return (
     <img
       {...props}
+      ref={element}
       src={url ?? BLANK_IMAGE}
       alt={alt}
       title={state === "failed" ? "Could not load this image" : undefined}
