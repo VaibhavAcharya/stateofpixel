@@ -8,10 +8,12 @@ import { buttonClass, Logo, Spinner } from "./ui";
 export function SignInButton({
   redirectTo = "/install",
   label = "Sign in with GitHub",
+  variant = "primary",
   className = "",
 }: {
   redirectTo?: string;
   label?: string;
+  variant?: "primary" | "ghost";
   className?: string;
 }) {
   const { signIn } = useAuthActions();
@@ -32,7 +34,7 @@ export function SignInButton({
       type="button"
       aria-busy={pending}
       disabled={pending}
-      className={`${buttonClass("primary")} disabled:opacity-100 ${className}`}
+      className={`${buttonClass(variant)} disabled:opacity-100 ${className}`}
       data-umami-event="Sign in"
       data-umami-event-label={label}
       onClick={() => {
@@ -43,7 +45,7 @@ export function SignInButton({
       {pending ? (
         <Spinner size={16} />
       ) : (
-        <GithubLogoIcon size={16} weight="fill" />
+        variant === "primary" && <GithubLogoIcon size={16} weight="fill" />
       )}
       {pending ? "Opening GitHub" : label}
     </button>

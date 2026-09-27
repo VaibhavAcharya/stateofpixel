@@ -1,11 +1,14 @@
 import {
   ArrowRightIcon,
   CaretDownIcon,
+  CheckIcon,
   GearSixIcon,
   TerminalWindowIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
+import { useConvexAuth } from "convex/react";
 import { type ReactNode, useState } from "react";
+import { COMPETITORS } from "../../content/compare";
 import { SUPPORT_EMAIL } from "../../lib/supportEmail";
 import checkoutTest from "../../snippets/checkout-test.ts?highlight";
 import local from "../../snippets/local.sh?highlight";
@@ -15,7 +18,7 @@ import storybook from "../../snippets/storybook.yml?highlight";
 import workflow from "../../snippets/workflow.yml?highlight";
 import { CodeBlock, type Snippet } from "../CodeBlock";
 import { facts } from "../docs/facts";
-import { AuthButton } from "../SignIn";
+import { AuthButton, SignInButton } from "../SignIn";
 import { buttonClass, Kbd, LeadCopy, Wordmark } from "../ui";
 import { ReviewDemo } from "./ReviewDemo";
 
@@ -23,6 +26,8 @@ export const WIDE = "mx-auto max-w-[1448px] px-6 max-sm:px-4";
 export const SECTION = `${WIDE} py-24 max-sm:py-12`;
 export const LEAD =
   "text-2xl font-[450] tracking-[-0.035em] text-balance text-muted max-sm:text-xl";
+const DOTTED = "border-dotted border-field-border/50";
+
 export const DISPLAY =
   "text-[clamp(40px,4.6vw,66px)] leading-[1.1] font-semibold tracking-[-0.045em] text-balance";
 
@@ -51,46 +56,64 @@ export function HeaderNav() {
             </a>
           ))}
         </nav>
-        <div className="ml-auto">
-          <AuthButton label="Sign in" />
-        </div>
+        <HeaderActions />
       </div>
     </header>
   );
 }
 
+function HeaderActions() {
+  const { isLoading, isAuthenticated } = useConvexAuth();
+  return (
+    <div className="ml-auto flex items-center gap-2">
+      {!isLoading && !isAuthenticated && (
+        <>
+          <span className="text-xs text-muted max-lg:hidden">
+            Free up to {facts.freeStorage}
+          </span>
+          <SignInButton
+            label="Sign in"
+            variant="ghost"
+            className="max-sm:hidden"
+          />
+        </>
+      )}
+      <AuthButton label="Start free" />
+    </div>
+  );
+}
+
 /* Hero */
 
-export function HeroDescriptive({ art }: { art: ReactNode }) {
+export function HeroCentered() {
   return (
-    <section
-      className={`${WIDE} grid grid-cols-[minmax(0,1fr)_auto] items-center gap-12 pt-24 pb-16 max-lg:grid-cols-1 max-sm:pt-12`}
-    >
-      <div>
-        <h1 className={`${DISPLAY} max-w-[16ch]`}>
-          Visual regression testing that runs in your CI.
+    <section className="pixel-texture pb-16">
+      <div className={`${WIDE} pt-24 pb-16 text-center max-sm:pt-12`}>
+        <h1 className="mx-auto max-w-[20ch] text-[clamp(36px,3.6vw,52px)] leading-[1.1] font-semibold tracking-[-0.045em] text-balance">
+          Catch UI regressions{" "}
+          <span className="text-muted">before they merge.</span>
         </h1>
-        <p className={`${LEAD} mt-6 max-w-[640px]`}>
-          Your runners take the screenshots. We keep the baselines, show every
-          pixel diff and set the GitHub check.{" "}
-          <strong className="font-semibold text-text">
-            You pay for storage, not snapshots or seats.
-          </strong>
+        <p className={`${LEAD} mx-auto mt-6 max-w-[640px]`}>
+          Every pull request gets a visual check. Your CI takes the screenshots,
+          a person approves each change.
         </p>
-        <div className="mt-8 flex flex-wrap items-center gap-3">
-          <AuthButton label="Install the GitHub App" />
-          <a href="#demo" className={buttonClass("secondary")}>
-            Try the review page
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <AuthButton label="Start free with GitHub" />
+          <a
+            href="#pricing"
+            className={buttonClass("secondary")}
+            data-umami-event="Hero see pricing"
+          >
+            See pricing
             <ArrowRightIcon size={14} className="text-muted" />
           </a>
         </div>
         <p className="mt-4 text-xs text-muted">
-          GitHub only. Playwright, Storybook or any folder of PNGs.
+          Free up to {facts.freeStorage}. No card. Playwright, Storybook or any
+          folder of PNGs.
         </p>
       </div>
-      <div aria-hidden className="max-lg:hidden">
-        {art}
-      </div>
+      <DemoSection />
     </section>
   );
 }
@@ -143,14 +166,15 @@ function DemoKeys() {
 
 /* Setup */
 
-function Logo({ name }: { name: string }) {
-  return <img src={`/logos/${name}.svg`} alt="" width={14} height={14} />;
+function Logo({ name, size = 14 }: { name: string; size?: number }) {
+  return <img src={`/logos/${name}.svg`} alt="" width={size} height={size} />;
 }
 
 type SetupTab = {
   label: string;
   icon: ReactNode;
   note: string;
+  slug: string;
   blocks: { file: string; snippet: Snippet }[];
 };
 
@@ -159,6 +183,7 @@ const SETUP_TABS = {
     label: "Playwright",
     icon: <Logo name="playwright" />,
     note: "snapshot() waits for fonts, disables animations and hides the caret. The reporter uploads when the run ends, once per shard.",
+    slug: "playwright",
     blocks: [
       { file: "playwright.config.ts", snippet: playwrightConfig },
       { file: "tests/checkout.spec.ts", snippet: checkoutTest },
@@ -168,24 +193,28 @@ const SETUP_TABS = {
     label: "Storybook",
     icon: <Logo name="storybook" />,
     note: "Captures every story at each width, named like Button/Primary [chromium 1280]. Needs Playwright in the project.",
+    slug: "storybook",
     blocks: [{ file: ".github/workflows/visual.yml", snippet: storybook }],
   },
   actions: {
     label: "GitHub Actions",
     icon: <Logo name="github-actions" />,
     note: "Point the CLI at the folder your tests write screenshots to. The file path becomes the snapshot name.",
+    slug: "any-screenshots",
     blocks: [{ file: ".github/workflows/visual.yml", snippet: workflow }],
   },
   other: {
     label: "Other CI",
     icon: <GearSixIcon size={14} className="text-muted" />,
     note: "Create a project token in the project settings and set it as STATEOFPIXEL_TOKEN.",
+    slug: "other-ci",
     blocks: [{ file: "ci.sh", snippet: otherCi }],
   },
   local: {
     label: "Local",
     icon: <TerminalWindowIcon size={14} className="text-muted" />,
     note: "Compare two folders on your machine and open an HTML report. No account needed.",
+    slug: "cli",
     blocks: [{ file: "terminal", snippet: local }],
   },
 } satisfies Record<string, SetupTab>;
@@ -269,7 +298,18 @@ export function HowSteps() {
               {...block.snippet}
             />
           ))}
-          <p className="text-xs text-muted">{current.note}</p>
+          <p className="text-xs text-muted">
+            {current.note}{" "}
+            <Link
+              to="/docs/$slug"
+              params={{ slug: current.slug }}
+              className="text-link"
+              data-umami-event="Setup guide"
+              data-umami-event-tab={tab}
+            >
+              Read the {current.label} guide
+            </Link>
+          </p>
         </div>
       </div>
     </section>
@@ -370,31 +410,88 @@ export function DottedRows({ items }: { items: [string, string][] }) {
   );
 }
 
-export function WhatWeDont() {
-  const items: [string, string][] = [
-    [
-      "We don't run browsers.",
-      "Your CI renders, so there is no second renderer to disagree with it.",
-    ],
-    [
-      "We don't see your code.",
-      "The CLI sends PNGs, their names and hashes, diff results, and git and CI metadata.",
-    ],
-    [
-      "We don't count snapshots.",
-      "Or seats, or builds. Storage is the only line on the bill.",
-    ],
-    [
-      "We don't block your CI.",
-      "If the service is down, the upload step warns and passes.",
-    ],
-  ];
+/* Promises */
+
+const PROMISES: [string, string][] = [
+  [
+    "Your code stays in your CI.",
+    "The CLI sends PNGs, their names and hashes, diff results, and git and CI metadata.",
+  ],
+  [
+    "Your pipeline never waits on us.",
+    "If stateofpixel is down, the upload step warns and exits 0.",
+  ],
+  [
+    "Your bill never grows on its own.",
+    `Plans are fixed, with no overage. ${facts.graceDays} days after the storage limit, new images are not stored and the check passes with a note.`,
+  ],
+  [
+    "Your tests stay as they are.",
+    "The CLI reads any folder of PNG files, and compare runs on your machine with no account.",
+  ],
+];
+
+export function PromisesSection() {
   return (
     <section className={SECTION}>
-      <LeadCopy title="What we don't do." className="max-w-[720px]">
-        Every feature we skip is a cost we don't pass on.
+      <LeadCopy title="Easy to say yes to." className="max-w-[720px]">
+        What a security review and a finance review both ask first.
       </LeadCopy>
-      <DottedRows items={items} />
+      <ul className="mt-12 grid grid-cols-2 gap-x-12 max-md:grid-cols-1">
+        {PROMISES.map(([title, text]) => (
+          <li key={title} className={`flex gap-4 border-t ${DOTTED} py-6`}>
+            <CheckIcon
+              size={18}
+              weight="bold"
+              className="mt-1 shrink-0 text-approved"
+            />
+            <span>
+              <span className="block text-xl font-semibold tracking-[-0.025em]">
+                {title}
+              </span>
+              <span className="mt-1 block text-sm text-muted">{text}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/* Switch */
+
+export function SwitchStrip() {
+  return (
+    <section className={SECTION}>
+      <div className="flex flex-wrap items-center justify-between gap-8 rounded-xl bg-surface-2 p-8 max-sm:p-5">
+        <LeadCopy title="Coming from another tool?" className="max-w-[520px]">
+          Switch in one pull request. Your first build on the default branch
+          becomes the baseline.
+        </LeadCopy>
+        <ul className="flex flex-wrap gap-2">
+          {COMPETITORS.map((competitor) => (
+            <li key={competitor.slug}>
+              <Link
+                to="/compare/$slug"
+                params={{ slug: competitor.slug }}
+                hash="switch"
+                className={buttonClass("secondary")}
+                data-umami-event="Switch strip"
+                data-umami-event-competitor={competitor.slug}
+              >
+                <img
+                  src={competitor.logo}
+                  alt=""
+                  width={16}
+                  height={16}
+                  className="rounded-[22%] ring-1 ring-border"
+                />
+                From {competitor.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
@@ -478,7 +575,7 @@ export function FaqList() {
   );
 }
 
-export function FinalWithSnippet() {
+export function FinalStartFree() {
   return (
     <section className="border-t border-border bg-bg">
       <div
@@ -486,15 +583,30 @@ export function FinalWithSnippet() {
       >
         <div>
           <p className={DISPLAY}>
-            Every pixel, reviewed.
+            Start free.
             <br />
-            <span className="text-muted">Nothing ships by surprise.</span>
+            <span className="text-muted">
+              Pay when you pass{" "}
+              <span className="whitespace-nowrap">{facts.freeStorage}.</span>
+            </span>
           </p>
+          <ul className="mt-8 flex flex-col gap-2 text-base">
+            {[
+              "No card to start",
+              "Unlimited screenshots, builds and reviewers",
+              "One upload step in your workflow",
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-2">
+                <CheckIcon size={16} weight="bold" className="text-approved" />
+                {item}
+              </li>
+            ))}
+          </ul>
           <div className="mt-10 flex flex-wrap items-center gap-3">
-            <AuthButton label="Install the GitHub App" />
-            <a href="#demo" className={buttonClass("ghost")}>
-              Try the demo again
-            </a>
+            <AuthButton label="Start free with GitHub" />
+            <Link to="/docs" className={buttonClass("ghost")}>
+              Read the quickstart
+            </Link>
           </div>
         </div>
         <CodeBlock fileName=".github/workflows/visual.yml" {...workflow} />

@@ -25,6 +25,7 @@ import percyAfter from "../../snippets/compare/percy-after.yml?highlight";
 import percyBefore from "../../snippets/compare/percy-before.yml?highlight";
 import playwrightConfig from "../../snippets/playwright.config.ts?highlight";
 import { CodeBlock, type Snippet } from "../CodeBlock";
+import { formatPrice } from "../landing/Pricing";
 import { DISPLAY, LEAD, PublicPage, SECTION, WIDE } from "../landing/sections";
 import { AuthButton } from "../SignIn";
 import { buttonClass, LeadCopy, Logo } from "../ui";
@@ -228,6 +229,32 @@ function StatusCard({
   );
 }
 
+function HeroTitle({ competitor }: { competitor: Competitor }) {
+  if (competitor.priced === null) {
+    return (
+      <h1 className={`${DISPLAY} mt-8 max-w-[16ch]`}>{competitor.headline}</h1>
+    );
+  }
+  const { snapshots, bills } = quote(DEFAULT_SUITE, [competitor.priced]);
+  const [ours, theirs] = bills;
+  const saved = ((theirs?.cost ?? 0) - (ours?.cost ?? 0)) * 12;
+  return (
+    <>
+      <h1 className={`${DISPLAY} mt-8 max-w-[18ch]`}>
+        <span className="block text-[clamp(56px,7vw,112px)] leading-none tracking-[-0.05em] text-approved tabular-nums">
+          {formatPrice(Math.round(saved))}
+        </span>
+        a year less than {competitor.name}.
+      </h1>
+      <p className="mt-4 text-sm text-muted">
+        For {DEFAULT_SUITE.screens} stories at {DEFAULT_SUITE.viewports}{" "}
+        viewports and {DEFAULT_SUITE.builds} builds a month,{" "}
+        {snapshots.toLocaleString("en-US")} screenshots.
+      </p>
+    </>
+  );
+}
+
 function CompareHero({
   competitor,
   sources,
@@ -241,12 +268,10 @@ function CompareHero({
     >
       <div>
         <Lockup competitor={competitor} />
-        <h1 className={`${DISPLAY} mt-8 max-w-[16ch]`}>
-          {competitor.headline}
-        </h1>
+        <HeroTitle competitor={competitor} />
         <p className={`${LEAD} mt-6 max-w-[640px]`}>{competitor.lead}</p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
-          <AuthButton label="Install the GitHub App" />
+          <AuthButton label="Start free with GitHub" />
           <a href="#switch" className={buttonClass("secondary")}>
             See the switch
             <ArrowDownIcon size={14} className="text-muted" />
@@ -628,7 +653,7 @@ export function FinalBand({ current }: { current?: Competitor }) {
             <span className="text-muted">Nothing ships by surprise.</span>
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-3">
-            <AuthButton label="Install the GitHub App" />
+            <AuthButton label="Start free with GitHub" />
             <Link to="/docs" className={buttonClass("ghost")}>
               Read the quickstart
             </Link>

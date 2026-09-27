@@ -13,6 +13,7 @@ import {
   LimitsTable,
   ShortcutsTable,
 } from "./generated";
+import { AgentPrompt, SetupPaths } from "./Setup";
 
 function text(node: ReactNode): string {
   return Children.toArray(node)
@@ -86,10 +87,12 @@ export const docsComponents: MDXComponents = {
     const { code, lines } = JSON.parse(snippet) as Snippet;
     return <Block fileName={fileName} code={code} lines={lines} />;
   },
+  AgentPrompt,
   CheckStatesTable,
   CliCommands,
   CliOptions,
   LimitsTable,
+  SetupPaths,
   ShortcutsTable,
 };
 

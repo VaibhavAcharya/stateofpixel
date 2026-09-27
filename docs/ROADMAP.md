@@ -58,6 +58,7 @@ Group 3: lists and viewer
 - [x] Viewer as a canvas like Figma: pan and zoom with trackpad, wheel and keys, kept inside the image bounds, with one Fit button to reset; replaces the Fit, 100% and 200% tabs
 - [x] Pickable diff overlay color
 - [x] Say when retention deleted a build: keep deleted build numbers per project so an old link shows "This build was deleted after 60 days" instead of "Build not found."
+- [ ] Diff overlay sometimes missing on first load, in the landing demo and possibly in the build page; toggling Diff overlay off and on shows it
 
 Group 4: landing
 - [x] Drop Playfair Display, one sans and one mono only

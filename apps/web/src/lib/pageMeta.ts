@@ -5,9 +5,9 @@ export type PageMeta = { path: string; title: string; description: string };
 export const PAGES = {
   home: {
     path: "/",
-    title: "Visual regression testing that runs in your CI.",
+    title: "Catch UI regressions before they merge.",
     description:
-      "Visual regression testing that runs in your CI. Review pixel diffs, set GitHub checks, pay only for storage.",
+      "Visual regression testing for GitHub pull requests. Your CI takes the screenshots, a person approves each change. Free up to 10 GB.",
   },
   brand: {
     path: "/brand",

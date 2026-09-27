@@ -4,6 +4,14 @@ export const meta = {
   lead: "Your CI takes the screenshots. stateofpixel compares them with the last approved ones and sets a check on the pull request until someone approves the changes.",
 };
 
+Pick where your screenshots come from, or follow the steps below. They use GitHub Actions and need no secret.
+
+<SetupPaths />
+
+To let a coding agent do the setup, give it this prompt:
+
+<AgentPrompt />
+
 ## 1. Install the GitHub App
 
 Sign in on [stateofpixel.com](/) and install the GitHub App on your account or organization. Pick the repositories to test. Each repository becomes a project, and its project page shows the setup steps until the first build arrives.

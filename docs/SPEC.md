@@ -227,7 +227,7 @@ URL scheme mirrors GitHub: `/{owner}/{repo}`. Public pages (5.1) are server-rend
 | `/docs`, `/docs/{page}` | User docs: Quickstart; Playwright, Storybook, Any screenshots; Other CI, Sharding, Suites; Reviewing changes, The GitHub check, Baselines; Stable screenshots; CLI, Limits and storage. Linked from the public header and footer and the user menu. The pages are MDX in `apps/web/src/content/docs/`, served by `routes/docs/$slug.tsx`, with the nav in `components/docs/DocsLayout.tsx`. Tables of limits, check states, CLI flags and shortcuts render from the code (`components/docs/generated.tsx`). |
 | `/robots.txt`, `/sitemap.xml` | `robots.txt` is static in `apps/web/public` and allows everything. `sitemap.xml` is written at build time by `apps/web/scripts/og-images.ts` from the same page list as the Open Graph images: the public pages, the comparisons and the docs. Each of those pages sets a canonical URL on `stateofpixel.com` through `pageLinks` in `src/lib/pageMeta.ts`, so deploy previews do not compete in search. |
 
-Paid plans in the pricing block show "Coming soon" until billing is available (`billing.available`). Upgrading happens only from the plan box on the Billing tab (5.10).
+Paid plans in the pricing block show "Coming soon" only when `billing.available` returns false; while the query loads, and in the server-rendered page, they show as available. Upgrading happens only from the plan box on the Billing tab (5.10).
 
 These paths shadow GitHub accounts with the same login.
 
