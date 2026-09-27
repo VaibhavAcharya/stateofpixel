@@ -39,6 +39,9 @@ jobs:
 
   web:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -59,7 +62,7 @@ jobs:
         run: pnpm --filter @stateofpixel/web exec playwright install --with-deps chromium
       - if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter @stateofpixel/web exec playwright install-deps chromium
-      - run: pnpm --filter @stateofpixel/web visual
+      - run: pnpm --filter @stateofpixel/web visual --shard ${{ matrix.shard }}/2
         env:
           VITE_CONVEX_URL: https://graceful-dogfish-423.convex.cloud
 
