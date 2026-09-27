@@ -894,7 +894,7 @@ Package `stateofpixel`, closed source, published unminified with source maps. No
 
 ### Commands
 
-Commands, flags, defaults and env vars are defined once in `packages/cli/src/reference.ts`. `index.ts` builds commander from it, and [/docs/cli](https://stateofpixel.com/docs/cli) renders its tables from it. Commands: `upload <dir>` (hash, upload, diff, complete a shard), `storybook <static-dir>` (capture every story with Playwright, then upload), `finalize` (finish a build in finalize mode) and `compare <dir> <baseline-dir>` (local only, writes `stateofpixel-report/index.html`). Without a nonce on a runner other than GitHub Actions, a single-shard upload uses `local-<timestamp>`, and sharded uploads and `finalize` fail.
+Commands, flags, defaults and env vars are defined once in `packages/cli/src/reference.ts`. `index.ts` builds commander from it, and [/docs/cli](https://stateofpixel.com/docs/cli) renders its tables from it. Commands: `upload <dir>` (hash, upload, diff, complete a shard), `storybook <static-dir>` (capture every story with Playwright, then upload; with `--shard i/n` only every n-th story from the i-th), `finalize` (finish a build in finalize mode) and `compare <dir> <baseline-dir>` (local only, writes `stateofpixel-report/index.html`). Without a nonce on a runner other than GitHub Actions, a single-shard upload uses `local-<timestamp>`, and sharded uploads and `finalize` fail.
 
 Snapshot name from a folder upload is the path relative to `<dir>` without `.png`, like `components/Button/primary`.
 

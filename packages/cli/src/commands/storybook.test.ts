@@ -3,6 +3,7 @@ import {
   filterStories,
   parseViewports,
   type Story,
+  shardStories,
   storySnapshotName,
 } from "./storybook";
 
@@ -20,6 +21,14 @@ it("filters stories by title and name globs", () => {
     filterStories(stories, undefined, "*/Button/Secondary").map((s) => s.id),
   ).toEqual(["button--primary", "home--default"]);
   expect(filterStories(stories, "Pages/*", undefined)).toEqual([]);
+});
+
+it("splits stories between shards", () => {
+  const ids = (index: number) =>
+    shardStories(stories, { index, total: 2 }).map((s) => s.id);
+  expect(ids(1)).toEqual(["button--primary", "home--default"]);
+  expect(ids(2)).toEqual(["button--secondary"]);
+  expect(shardStories(stories, { index: null, total: null })).toEqual(stories);
 });
 
 it("names a story snapshot after its title, name and viewport", () => {
