@@ -23,16 +23,14 @@
 
 Your CI takes the screenshots. stateofpixel compares them with the last approved ones, shows every change on a review page, and sets a GitHub check that waits until someone approves them.
 
-```
-  your CI                          stateofpixel                    pull request
-  -------                          ------------                    ------------
-  tests write PNGs
-  npx stateofpixel upload  ----->  find the baseline
-    upload new images only         save the results  ----------->  check: pending
-    diff on the runner                                             "2 changes to review"
-                                   review page  <----------------  Details
-                                   approve  -------------------->  check: success
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="apps/web/public/readme/pull-request-check-dark.png">
+    <img alt="A pull request with the stateofpixel/playwright check pending on 5 changes to review" src="apps/web/public/readme/pull-request-check.png" width="592">
+  </picture>
+</p>
+
+![The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in green](apps/web/public/readme/review-page.png)
 
 - Works with Playwright, Storybook or any folder of PNG files.
 - No secret on GitHub Actions: the CLI signs in with the OIDC token.
