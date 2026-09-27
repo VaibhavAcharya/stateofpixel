@@ -133,10 +133,10 @@ Needed before applying for a payment gateway.
 - [x] Docs pages at `/docs`, linked from the header, footer and user menu
 - [x] Brand page with the logo, its usage and downloads
 - [x] Open Graph image per page
-- [ ] Serve the Open Graph images in dev, so `/og/<path>.png` works on localhost instead of hitting the `$owner/$repo` route
-- [ ] Capture the Open Graph images in the visual suite, so pull requests review them in stateofpixel
+- [x] Serve the Open Graph images in dev, so `/og/<path>.png` works on localhost instead of hitting the `$owner/$repo` route
+- [x] Capture the Open Graph images in the visual suite, so pull requests review them in stateofpixel
 - [x] Review the npm keywords of the CLI and the topics of the GitHub repo
-- [ ] Images and illustrations in the README instead of the ASCII art
+- [x] Images and illustrations in the README instead of the ASCII art
 - [x] Rethink the CLI README that npm shows
 
 ## Later
