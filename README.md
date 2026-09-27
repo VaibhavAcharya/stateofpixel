@@ -23,16 +23,14 @@
 
 Your CI takes the screenshots. stateofpixel compares them with the last approved ones, shows every change on a review page, and sets a GitHub check that waits until someone approves them.
 
-```
-  your CI                          stateofpixel                    pull request
-  -------                          ------------                    ------------
-  tests write PNGs
-  npx stateofpixel upload  ----->  find the baseline
-    upload new images only         save the results  ----------->  check: pending
-    diff on the runner                                             "2 changes to review"
-                                   review page  <----------------  Details
-                                   approve  -------------------->  check: success
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="apps/web/public/readme/pull-request-check-dark.png">
+    <img alt="A pull request with the stateofpixel/playwright check pending on 5 changes to review" src="apps/web/public/readme/pull-request-check.png" width="592">
+  </picture>
+</p>
+
+![The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in green](apps/web/public/readme/review-page.png)
 
 - Works with Playwright, Storybook or any folder of PNG files.
 - No secret on GitHub Actions: the CLI signs in with the OIDC token.
@@ -136,7 +134,7 @@ Biome formats and lints; `pnpm format` fixes formatting. `typecheck` in `apps/we
 
 - `playground`: `examples/playground/pages`, captured by `pnpm --filter @stateofpixel/playground capture`
 - `storybook`: the playground stories, built with `pnpm --filter @stateofpixel/playground build-storybook` and captured with `stateofpixel storybook`
-- `web`: the public pages and the build page, captured by `pnpm --filter @stateofpixel/web visual` through the Playwright reporter. The reporter uploads on CI only, so a local run only writes screenshots.
+- `web`: the public pages, their Open Graph images and the build page, captured by `pnpm --filter @stateofpixel/web visual` through the Playwright reporter. The reporter uploads on CI only, so a local run only writes screenshots.
 - `web-storybook`: the web app stories, built with `pnpm --filter @stateofpixel/web build-storybook` and captured with `stateofpixel storybook` at 375 and 1280 wide
 
 `scripts/test-pr.sh <scenario>` opens a draft pull request that changes the playground in a known way and prints the expected check for `playground` and `storybook`. Scenarios: `no-change`, `color-change`, `layout-shift`, `add-page`, `remove-page`, `add-story`, `remove-story`, `flaky`, `many-changes`, `sharded`, `restyle`. `sharded` changes `visual.yml` in its branch: `playground` uploads with `--shard auto` and then `finalize`, `storybook` with `--shard 1/2` and `2/2`. `restyle` changes the fonts and color variables of the playground and the web app, so almost every `web` and `web-storybook` snapshot changes too. It needs `gh` signed in.
