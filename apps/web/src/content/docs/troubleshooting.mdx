@@ -11,7 +11,18 @@ export const meta = {
 - **The pull request comes from a fork.** The CLI prints "skipped, GitHub Actions gives no OIDC token to pull requests from forks" and exits 0. GitHub gives fork pull requests no OIDC token and no secrets, so there is nothing to sign in with. See [Authentication](/docs/cli#authentication).
 - **The workflow cannot get a token.** The CLI stops with "No token". Add `id-token: write` to the permissions of the job or the workflow.
 - **stateofpixel was not reachable.** The CLI prints "skipped, the service is not reachable" after 3 retries and exits 0, so your CI keeps passing. Pass `--strict` to fail the job instead.
+- **The OIDC token request failed.** The CLI retries a 5xx from GitHub and then skips like an outage. Any other status stops it with "GitHub Actions OIDC token request failed with HTTP 403" or similar.
 - **The GitHub App does not have the repository.** The server answers `unauthorized`. Add the repository to the installation on GitHub.
+
+## The CLI stops before uploading
+
+- **"Not a directory".** The folder you passed does not exist. Check the path from the directory the command runs in.
+- **"Set --nonce so every shard joins the same build."** Off GitHub Actions there is no run id to share, so sharded uploads need a nonce. Set `--nonce` or `STATEOFPIXEL_NONCE` to the same value in every shard. `finalize` asks for the same with "Set --nonce to the nonce the shards used." See [Other CI](/docs/other-ci).
+- **"Invalid snapshot name".** A name passed to `snapshot()` has an empty part, like `Button//Primary`, or `..`. Name each part.
+- **"No index.json".** `stateofpixel storybook` needs a built Storybook 7 or newer. Run `storybook build` first and pass its output folder.
+- **"No stories found".** The Storybook has no stories, or `--include` and `--exclude` left none.
+- **"Stories that did not render".** The listed stories failed to load, or did not match `--wait-for-selector`, within 15 seconds. Nothing was uploaded. See [Storybook](/docs/storybook).
+- **"stateofpixel storybook needs Playwright".** Install it with `npm install -D playwright`, then `npx playwright install chromium`.
 
 ## The check says "Build never finished"
 

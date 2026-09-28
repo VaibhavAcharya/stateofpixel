@@ -4,11 +4,15 @@ export const meta = {
   lead: "An account is the GitHub user or organization that installed the app. Each repository in the installation is a project.",
 };
 
+## All projects
+
+After you sign in, All projects lists the projects of every account you can see, grouped by account. Search filters them by name, and Overview opens the account page. An account shows "App not installed" when the GitHub App is not installed on it anymore. With no projects yet, the page has the button to install the app.
+
 ## The account page
 
 The account page has four tabs:
 
-- **Projects**: every repository in the installation, with its latest build.
+- **Projects**: every repository in the installation, with its latest build. Search by name, and sort by project or by last update. Press <kbd>j</kbd> and <kbd>k</kbd> to move between rows in the project and build lists, and Enter to open one.
 - **Members**: who has signed in to the account.
 - **Usage**: storage per project, for owners only. See [The Usage tab](/docs/limits#the-usage-tab).
 - **Billing**: the plan and its buttons. See [Billing](/docs/billing).
@@ -25,7 +29,7 @@ Admins of the repository on GitHub open the project's Settings tab. Everyone els
 
 - **General**: the default branch, which mirrors GitHub, and the auto-approve branches. See [Baselines](/docs/baselines#the-default-branch).
 - **Diff**: the threshold and whether anti-aliased pixels count. See [Tune the threshold](/docs/stable-screenshots#tune-the-threshold).
-- **Checks**: the name of the check. See [Suites](/docs/suites).
+- **Checks**: the name of the check, `stateofpixel`. Other suites get their own check, like `stateofpixel/storybook`. See [Suites](/docs/suites).
 - **Retention**: how long images kept only for pull requests stay. See [Retention](/docs/limits#retention).
 - **Tokens**: project tokens for CI other than GitHub Actions. See [Other CI](/docs/other-ci).
 - **Danger**: Delete project.

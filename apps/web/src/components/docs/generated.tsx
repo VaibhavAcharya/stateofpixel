@@ -3,6 +3,7 @@ import type { Id } from "@stateofpixel/backend/dataModel";
 import {
   COMMANDS,
   type CommandSpec,
+  ENVIRONMENT,
 } from "../../../../../packages/cli/src/reference";
 import { SHORTCUT_GROUPS } from "../ShortcutsDialog";
 import { Kbd } from "../ui";
@@ -184,6 +185,19 @@ export function CliOptions({
           <Code key="default">{formatDefault(option.default)}</Code>
         ),
         sentence(option.description),
+      ])}
+    />
+  );
+}
+
+export function CliEnvironment() {
+  return (
+    <Table
+      first={(value) => <Code>{value}</Code>}
+      head={["Variable", "What it does"]}
+      rows={ENVIRONMENT.map((variable) => [
+        variable.name,
+        sentence(variable.description),
       ])}
     />
   );

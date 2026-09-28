@@ -16,7 +16,7 @@ Owners see a Usage tab on the account page. It splits storage into baselines, im
 
 ## When an account is over its limit
 
-1. At {facts.storageWarning}, the account and project pages show a warning, and the CLI prints one.
+1. At {facts.storageWarning}, the account pages show a warning, and so do the project pages for people with write access. The CLI prints one too.
 2. At 100%, a {facts.graceDays} day grace period starts. Everything keeps working, and the banner names the day it ends.
 3. After the grace period, new images are not stored. Builds still report, but changed snapshots are not compared, and the check passes with "Storage limit reached, not compared". CI keeps passing.
 
