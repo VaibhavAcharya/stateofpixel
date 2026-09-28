@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.1](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.5.0...v1.5.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* **cli:** use the new tagline in the help, package and READMEs ([213a3c5](https://github.com/VaibhavAcharya/stateofpixel/commit/213a3c5c218badbbd9ca417c10622ab90f3e2f5b))
+* **cli:** use the new tagline in the help, package and READMEs ([c215058](https://github.com/VaibhavAcharya/stateofpixel/commit/c21505899adfb6e6d4e91245f8a3201db76e292a))
+
 ## [1.5.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.4.1...v1.5.0) (2026-09-27)
 
 
