@@ -513,7 +513,7 @@ const FAQ: [string, string][] = [
   ],
   [
     "Which test runners work?",
-    "Anything that writes PNG files. Playwright, Storybook with a capture script, Cypress, BackstopJS or native app screenshots. The file path becomes the snapshot name.",
+    "Anything that writes PNG files: Playwright, Cypress, BackstopJS or native app screenshots. The CLI captures Storybook stories on its own. The file path becomes the snapshot name.",
   ],
   [
     "How do you handle flaky screenshots?",
@@ -533,7 +533,7 @@ const FAQ: [string, string][] = [
   ],
   [
     "What is in the Free plan?",
-    `${facts.freeStorage} of stored screenshots, with unlimited snapshots, builds, projects and reviewers. No card needed. Pull request images are kept ${facts.retentionDays} days by default.`,
+    `${facts.freeStorage} of stored screenshots. Snapshots, builds, projects and reviewers are not charged. No card needed. Pull request images are kept ${facts.retentionDays} days by default.`,
   ],
   [
     "What happens when the free storage is full?",
@@ -593,7 +593,7 @@ export function FinalStartFree() {
           <ul className="mt-8 flex flex-col gap-2 text-base">
             {[
               "No card to start",
-              "Unlimited screenshots, builds and reviewers",
+              "No charge for screenshots, builds or reviewers",
               "One upload step in your workflow",
             ].map((item) => (
               <li key={item} className="flex items-center gap-2">

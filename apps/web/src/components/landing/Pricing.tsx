@@ -95,12 +95,12 @@ export function formatPrice(value: number) {
 }
 
 const FREE_FEATURES = [
-  "Unlimited snapshots, builds and projects",
+  "No charge for snapshots, builds or projects",
   "Everyone with write access can review",
   `Pull request images kept ${RETENTION_DAYS} days`,
 ];
 
-const PAID_FEATURES = ["Everything in Free", "Longer retention"];
+const PAID_FEATURES = ["Everything in Free"];
 
 function BillingSwitch({
   billing,
@@ -210,8 +210,8 @@ export function PricingPlans() {
         title="Pay for storage, nothing else."
         className="max-w-[760px]"
       >
-        Every plan has unlimited snapshots, seats and builds. {FREE_GIGABYTES}{" "}
-        GB is free, which covers most teams.
+        No plan charges for snapshots, seats or builds. {FREE_GIGABYTES} GB is
+        free, which covers most teams.
       </LeadCopy>
       <div className="mt-12 flex flex-col gap-4">
         <BillingSwitch billing={billing} onChange={setBilling} />

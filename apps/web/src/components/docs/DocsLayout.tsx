@@ -10,7 +10,10 @@ import { PublicPage, WIDE } from "../landing/sections";
 export const DOCS_NAV = [
   {
     title: "Get started",
-    pages: [{ slug: "quickstart", label: "Quickstart" }],
+    pages: [
+      { slug: "quickstart", label: "Quickstart" },
+      { slug: "moving", label: "Moving from another tool" },
+    ],
   },
   {
     title: "Capture",
@@ -38,7 +41,18 @@ export const DOCS_NAV = [
   },
   {
     title: "Guides",
-    pages: [{ slug: "stable-screenshots", label: "Stable screenshots" }],
+    pages: [
+      { slug: "stable-screenshots", label: "Stable screenshots" },
+      { slug: "troubleshooting", label: "Troubleshooting" },
+    ],
+  },
+  {
+    title: "Manage",
+    pages: [
+      { slug: "accounts", label: "Accounts and projects" },
+      { slug: "billing", label: "Billing" },
+      { slug: "security", label: "Security" },
+    ],
   },
   {
     title: "Reference",
@@ -103,10 +117,7 @@ export function DocsLayout() {
       <div
         className={`${WIDE} grid grid-cols-[208px_minmax(0,1fr)] gap-16 max-lg:grid-cols-1 max-lg:gap-0`}
       >
-        <nav
-          aria-label="Docs"
-          className="sticky top-16 h-[calc(100dvh-64px)] overflow-y-auto py-12 max-lg:hidden"
-        >
+        <nav aria-label="Docs" className="py-12 max-lg:hidden">
           <NavGroups />
         </nav>
         <details
@@ -251,7 +262,7 @@ export function H2({ id, children }: { id: string; children: ReactNode }) {
 
 export function Code({ children }: { children: ReactNode }) {
   return (
-    <code className="mono rounded-xs bg-surface-2 px-1 py-0.5 whitespace-nowrap">
+    <code className="mono rounded-xs bg-surface-2 px-1 py-0.5 wrap-break-word box-decoration-clone">
       {children}
     </code>
   );
