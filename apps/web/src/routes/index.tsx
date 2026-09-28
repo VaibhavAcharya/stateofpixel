@@ -25,6 +25,7 @@ export const Route = createFileRoute("/")({
         title: "stateofpixel / Catch UI regressions before they merge",
       },
       ...pageMeta(PAGES.home),
+      { name: "msvalidate.01", content: "B06E4B9FFFB847FDE53F521A284FD8FC" },
     ],
     links: pageLinks(PAGES.home),
   }),
