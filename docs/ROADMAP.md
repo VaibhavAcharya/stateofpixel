@@ -103,7 +103,7 @@ See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (stat
 - [x] Change between paid plans without cancelling first; `billing.checkout` refuses with `already_subscribed` today
 - [x] Disable Upgrade and Manage billing for members who are not owners, and the project Settings tab for users who are not repo admins, each with a tooltip
 - [ ] Plan box details from SPEC 5.10: payment method and invoices
-- [ ] Usage page
+- [x] Usage page
 - [ ] PR comment summary
 - [ ] Tokenless auth for fork PRs
 - [ ] Flaky snapshot detection
