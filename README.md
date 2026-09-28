@@ -76,7 +76,7 @@ The [docs](https://stateofpixel.com/docs) cover the Playwright reporter, Storybo
 | `apps/web/visual` | Playwright tests that capture the web app for dogfooding |
 | `apps/images` | A Cloudflare Worker that stores and serves images from R2 |
 | `packages/backend` | [Convex](https://convex.dev) functions and schema: the CI API, GitHub webhooks, billing and storage |
-| `packages/cli` | The `stateofpixel` CLI and Playwright reporter, published to npm |
+| `packages/cli` | The `stateofpixel` CLI and Playwright reporter, published to npm and mirrored to [`VaibhavAcharya/stateofpixel-cli`](https://github.com/VaibhavAcharya/stateofpixel-cli) |
 | `examples/playground` | Static pages and Storybook stories that the test pull requests change |
 | `scripts` | `test-pr.sh` opens the dogfooding test pull requests |
 

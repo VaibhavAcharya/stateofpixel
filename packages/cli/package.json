@@ -16,7 +16,12 @@
     "ci"
   ],
   "homepage": "https://stateofpixel.com",
-  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VaibhavAcharya/stateofpixel-cli.git"
+  },
+  "bugs": "https://github.com/VaibhavAcharya/stateofpixel-cli/issues",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "stateofpixel": "dist/index.mjs"
@@ -56,9 +61,12 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "@types/node": "^24.0.0",
     "@types/pngjs": "^6.0.5",
     "playwright": "^1.63.0",
-    "tsdown": "^0.23.0"
+    "tsdown": "^0.23.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.1"
   },
   "optionalDependencies": {
     "odiff-bin": "^4.5.0"

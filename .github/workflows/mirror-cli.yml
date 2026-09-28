@@ -1,0 +1,30 @@
+name: Mirror CLI
+
+on:
+  push:
+    branches: [main]
+    paths: [packages/cli/**]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency: mirror-cli
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - run: git subtree split --prefix=packages/cli -b cli
+      - run: |
+          echo "$DEPLOY_KEY" > "$RUNNER_TEMP/deploy_key"
+          chmod 600 "$RUNNER_TEMP/deploy_key"
+          echo "github.com $GITHUB_HOST_KEY" > "$RUNNER_TEMP/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/deploy_key -o IdentitiesOnly=yes -o UserKnownHostsFile=$RUNNER_TEMP/known_hosts"
+          git push git@github.com:VaibhavAcharya/stateofpixel-cli.git cli:main
+        env:
+          DEPLOY_KEY: ${{ secrets.CLI_MIRROR_DEPLOY_KEY }}
+          GITHUB_HOST_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
