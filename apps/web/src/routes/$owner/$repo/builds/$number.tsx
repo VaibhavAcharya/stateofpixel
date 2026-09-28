@@ -15,6 +15,7 @@ import {
 } from "@tanstack/react-router";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import {
+  type CSSProperties,
   createContext,
   lazy,
   type RefObject,
@@ -57,6 +58,11 @@ import { isLab } from "../../../../lib/lab";
 import { prefetchBuild } from "../../../../lib/prefetch";
 import { useImageUrl } from "../../../../lib/useImageUrl";
 import { useProjectAccess } from "../../../../lib/useProjectAccess";
+import {
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  useSidebarWidth,
+} from "../../../../lib/useSidebarWidth";
 
 export const Route = createFileRoute("/$owner/$repo/builds/$number")({
   loader: ({ context, params }) =>
@@ -492,6 +498,7 @@ function BuildPage({
     return () => window.removeEventListener("keydown", onKeyDown);
   });
 
+  const sidebar = useSidebarWidth();
   const hasSnapshots = GROUPS.some((group) => build.counts[group.status] > 0);
 
   return (
@@ -516,9 +523,16 @@ function BuildPage({
           />
         )}
         <aside
-          className={`flex w-[300px] shrink-0 flex-col border-r border-border bg-surface max-xl:w-[260px] max-lg:absolute max-lg:inset-y-0 max-lg:left-0 max-lg:z-30 max-lg:w-[min(320px,calc(100vw-48px))] max-lg:shadow-menu ${
-            listOpen ? "max-lg:animate-fade" : "max-lg:hidden"
-          }`}
+          style={
+            sidebar.width === null
+              ? undefined
+              : ({ "--sidebar-width": `${sidebar.width}px` } as CSSProperties)
+          }
+          className={`relative flex shrink-0 flex-col border-r border-border bg-surface max-lg:absolute max-lg:inset-y-0 max-lg:left-0 max-lg:z-30 max-lg:w-[min(320px,calc(100vw-48px))] max-lg:shadow-menu ${
+            sidebar.width === null
+              ? "w-[300px] max-xl:w-[260px]"
+              : "lg:w-(--sidebar-width)"
+          } ${listOpen ? "max-lg:animate-fade" : "max-lg:hidden"}`}
         >
           <FilterInput
             inputRef={filterInput}
@@ -559,6 +573,19 @@ function BuildPage({
               </p>
             )}
           </nav>
+          <hr
+            aria-orientation="vertical"
+            aria-label="Resize snapshot list"
+            aria-valuenow={sidebar.width ?? undefined}
+            aria-valuemin={SIDEBAR_MIN_WIDTH}
+            aria-valuemax={SIDEBAR_MAX_WIDTH}
+            tabIndex={0}
+            title="Drag to resize, double-click to reset"
+            className={`absolute inset-y-0 m-0 h-auto border-0 -right-[3px] z-10 w-[5px] cursor-col-resize touch-none transition-colors duration-100 hover:bg-link focus-visible:bg-link max-lg:hidden ${
+              sidebar.resizing ? "bg-link" : ""
+            }`}
+            {...sidebar.handleProps}
+          />
         </aside>
         <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface">
           {snapshotId === undefined ? (
