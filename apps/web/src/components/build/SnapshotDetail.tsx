@@ -144,7 +144,7 @@ export function SnapshotDetail({
             params={{ slug: "stable-screenshots" }}
             className="text-link"
           >
-            Make it stable
+            How to fix it
           </Link>
         </p>
       )}
