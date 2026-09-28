@@ -53,7 +53,7 @@ export const OURS: Record<RowKey, string> = {
   runners: "Playwright, Storybook, or any tool that writes PNG files.",
   git: "GitHub.",
   retention: `Default branch builds kept. Pull request builds ${facts.retentionDays} days after close, ${facts.minRetentionDays} to ${facts.maxRetentionDays} days.`,
-  openSource: "No. Closed source for now.",
+  openSource: "The CLI is MIT licensed. The server is closed source for now.",
 };
 
 export type Priced = "chromatic" | "argos" | "percy";
@@ -414,7 +414,7 @@ const argos: Competitor = {
   ahead: [
     [
       "Open source",
-      "Argos is MIT licensed. stateofpixel is closed source for now.",
+      "Argos is MIT licensed. stateofpixel's CLI is MIT licensed, and the server is closed source for now.",
     ],
     ["GitLab", "Argos supports GitLab. stateofpixel works with GitHub only."],
     [

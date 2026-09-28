@@ -24,7 +24,7 @@ Chromatic is expensive because it renders in its own browser fleet. If the user 
 - TurboSnap-style dependency graphs. The user decides what to render, and hash dedupe makes re-uploading unchanged work free anyway.
 - AI or perceptual diffing, accessibility tests, Figma sync.
 - GitLab and Bitbucket. GitHub only.
-- Open-sourcing any part. The CLI and the server stay closed source for now. The CLI ships to npm unminified with source maps, under a short license that allows free use with stateofpixel, and the docs list every request it sends.
+- Open-sourcing the server. It stays closed source for now. The CLI is MIT licensed and mirrored to a public repo (OPERATIONS.md, CLI mirror). It ships to npm unminified with source maps, and the docs list every request it sends.
 
 ## Landscape
 
@@ -131,8 +131,8 @@ Storage-only billing means retention is a product feature. Show each project its
 
 ## Risks
 
-- Argos already does most of this and is MIT. Our edge is price and simplicity, so both have to stay true as features arrive. With closed source, price has to carry that edge until we open it.
-- A closed CLI running in CI with an OIDC token adds friction with security reviews at larger companies. Readable npm code, source maps and documented requests reduce it.
+- Argos already does most of this and is MIT. Our edge is price and simplicity, so both have to stay true as features arrive. With the server closed source, price has to carry that edge until we open it.
+- A CLI running in CI with an OIDC token adds friction with security reviews at larger companies. The public MIT source, readable npm code, source maps and documented requests reduce it.
 - Flaky renders make any visual tool look broken. The Docker and Playwright defaults matter as much as the server.
 - GitHub App permissions scare some orgs. Keep the permission list minimal and documented.
 - Convex egress is $0.12 to $0.13/GB, and review pages are mostly image downloads. Keep the storage module small so the move to R2 stays a contained change.
