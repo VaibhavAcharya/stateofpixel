@@ -231,6 +231,12 @@ export function PlanBox({
           </div>
         )}
       </section>
+      {available && billingCustomer && (
+        <p className="px-1 text-xs text-muted">
+          Manage billing opens the Dodo Payments portal, where you update the
+          card, download invoices and cancel.
+        </p>
+      )}
       {change !== null && !change.submitted && (
         <ChangeConfirm
           change={change}
