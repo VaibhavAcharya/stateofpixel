@@ -35,7 +35,7 @@ Set these on your Convex deployment with `npx convex env set` in `packages/backe
 - `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`: the client ID and secret of your GitHub App. Its callback URL is `https://<dev deployment>.convex.site/api/auth/callback/github`.
 - `JWT_PRIVATE_KEY`, `JWKS`: the Convex Auth key pair, generated as in its [manual setup](https://labs.convex.dev/auth/setup/manual)
 - `GITHUB_APP_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_PRIVATE_KEY` (PKCS#8), `GITHUB_WEBHOOK_SECRET`: the same GitHub App. Its webhook URL is `https://<dev deployment>.convex.site/github/webhook`.
-- `IMAGE_URL_SECRET`: a random string that signs private image links
+- `IMAGE_URL_SECRET`: a random string that signs image uploads and private image links. The web app checks these signatures too, so set the same value on the Netlify site, and in your shell for `pnpm dev`.
 - `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_SECRET`, `DODO_PAYMENTS_ENVIRONMENT` (`test_mode` or `live_mode`): optional. Without them the pricing section shows paid plans as coming soon.
 
 ## Checks

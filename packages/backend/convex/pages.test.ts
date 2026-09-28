@@ -10,6 +10,7 @@ const modules = import.meta.glob("./**/*.ts");
 beforeAll(() => {
   vi.stubEnv("IMAGE_URL_SECRET", "test-image-secret");
   vi.stubEnv("CONVEX_SITE_URL", "https://test.convex.site");
+  vi.stubEnv("SITE_URL", "https://stateofpixel.test");
 });
 
 const counts = {
@@ -124,7 +125,7 @@ async function setup({ private: isPrivate = true } = {}) {
       reviewState: "none",
       metadata: {},
     });
-    return { userId, projectId, buildId, snapshotId };
+    return { userId, projectId, buildId, snapshotId, imageId };
   });
   const user = t.withIdentity({ subject: `${ids.userId}|session` });
   const grant = (
@@ -381,6 +382,35 @@ it("serves private images only through a signed link", async () => {
   vi.useFakeTimers({ now: signed.exp });
   expect((await t.fetch(path)).status).toBe(403);
   vi.useRealTimers();
+});
+
+it("links Blobs images through the site, private ones under the project", async () => {
+  for (const isPrivate of [true, false]) {
+    const { t, user, grant, projectId, snapshotId, imageId } = await setup({
+      private: isPrivate,
+    });
+    await grant("read");
+    const accountId = await t.run(async (ctx) => {
+      const image = await ctx.db.get("images", imageId);
+      await ctx.db.patch("images", imageId, {
+        store: "blobs",
+        storageId: undefined,
+        blobKey: `${image?.accountId}/0b9f4e1c-2d3a-4b5c-8d6e-7f8091a2b3c4`,
+      });
+      return image?.accountId;
+    });
+    const detail = await user.query(api.snapshots.get, {
+      ...repo,
+      number: 2,
+      snapshotId,
+    });
+    const file = `${accountId}.0b9f4e1c-2d3a-4b5c-8d6e-7f8091a2b3c4`;
+    expect(detail?.image?.url).toBe(
+      isPrivate
+        ? `https://stateofpixel.test/api/images/${projectId}/${file}`
+        : `https://stateofpixel.test/api/images/${file}`,
+    );
+  }
 });
 
 it("refuses an image link grant without read access", async () => {
@@ -872,4 +902,35 @@ it("hides the account's billing state from readers", async () => {
   const { user, grant } = await setup();
   await grant("read");
   expect((await user.query(api.projects.access, repo))?.account).toBeNull();
+});
+
+it("lets only account owners pick where images are stored", async () => {
+  const { t, user } = await setup();
+  const setRole = (role: "owner" | "member") =>
+    t.run(async (ctx) => {
+      const membership = await ctx.db.query("accountMembers").first();
+      if (membership !== null) {
+        await ctx.db.patch("accountMembers", membership._id, { role });
+      }
+    });
+
+  await setRole("member");
+  await expect(
+    user.mutation(api.accounts.setImageStore, {
+      login: "acme",
+      imageStore: "blobs",
+    }),
+  ).rejects.toThrow(/not_owner/);
+  expect(
+    (await user.query(api.accounts.home, { login: "acme" }))?.imageStore,
+  ).toBe("convex");
+
+  await setRole("owner");
+  await user.mutation(api.accounts.setImageStore, {
+    login: "acme",
+    imageStore: "blobs",
+  });
+  expect(
+    (await user.query(api.accounts.home, { login: "acme" }))?.imageStore,
+  ).toBe("blobs");
 });

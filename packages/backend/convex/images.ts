@@ -10,14 +10,17 @@ export const grant = mutation({
   args: { projectId: v.id("projects") },
   returns: v.object({ exp: v.number(), sig: v.string() }),
   handler: async (ctx, { projectId }) => {
-    await requirePermission(ctx, projectId, "read");
-    return createGrant(projectId, Date.now());
+    const { project } = await requirePermission(ctx, projectId, "read");
+    return createGrant(project, Date.now());
   },
 });
 
 export const storageIdFor = internalQuery({
   args: { projectId: v.string(), imageId: v.string() },
-  returns: v.union(v.id("_storage"), v.null()),
+  returns: v.union(
+    v.object({ storageId: v.id("_storage"), accountId: v.id("accounts") }),
+    v.null(),
+  ),
   handler: async (ctx, args) => {
     const projectId = ctx.db.normalizeId("projects", args.projectId);
     const imageId = ctx.db.normalizeId("images", args.imageId);
@@ -30,11 +33,12 @@ export const storageIdFor = internalQuery({
       project === null ||
       project.archivedAt !== undefined ||
       image === null ||
-      image.accountId !== project.accountId
+      image.accountId !== project.accountId ||
+      image.storageId === undefined
     ) {
       return null;
     }
-    return image.storageId ?? null;
+    return { storageId: image.storageId, accountId: image.accountId };
   },
 });
 
@@ -45,22 +49,17 @@ export const serve = httpAction(async (ctx, request) => {
     .split("/");
   const exp = Number(url.searchParams.get("exp"));
   const sig = url.searchParams.get("sig") ?? "";
+  if (projectId === undefined || imageId === undefined || rest.length > 0) {
+    return new Response("Forbidden", { status: 403 });
+  }
+  const file: { storageId: Id<"_storage">; accountId: Id<"accounts"> } | null =
+    await ctx.runQuery(internal.images.storageIdFor, { projectId, imageId });
   if (
-    projectId === undefined ||
-    imageId === undefined ||
-    rest.length > 0 ||
-    !(await verifyGrant(projectId, exp, sig, Date.now()))
+    !(await verifyGrant(projectId, file?.accountId ?? "", exp, sig, Date.now()))
   ) {
     return new Response("Forbidden", { status: 403 });
   }
-  const storageId: Id<"_storage"> | null = await ctx.runQuery(
-    internal.images.storageIdFor,
-    {
-      projectId,
-      imageId,
-    },
-  );
-  const blob = storageId === null ? null : await readImage(ctx, storageId);
+  const blob = file === null ? null : await readImage(ctx, file.storageId);
   if (blob === null) {
     return new Response("Not found", { status: 404 });
   }

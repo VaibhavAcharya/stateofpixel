@@ -10,6 +10,10 @@ export const meta = {
 
 Every image is stored once per account, keyed by its content. A snapshot that did not change between builds adds nothing, however many builds use it. Storage is the size of every stored image: baselines, images from pull requests and diff images. The account's Billing tab shows how much is used. The Free plan has {facts.freeStorage}, and [pricing](/#pricing) lists the paid plans.
 
+## Image storage
+
+Images are stored in Convex file storage or in Netlify Blobs. Account owners pick one on the Settings tab of the account page. The choice applies to new uploads, and stored images stay where they are. Storage is counted the same way for both. Netlify Blobs takes images up to {facts.blobImageSize}, and Convex up to {facts.imageSize}.
+
 ## The Usage tab
 
 Owners see a Usage tab on the account page. It splits storage into baselines, images kept only for pull requests and diff images, per project, and charts the last 90 days. It is counted once a day. An image used by several projects counts for the project that used it first.

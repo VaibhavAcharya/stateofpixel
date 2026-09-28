@@ -4,6 +4,7 @@ const DAY_MS = 24 * 60 * MINUTE_MS;
 export const MAX_SNAPSHOTS_PER_BUILD = 20_000;
 export const MAX_SHARDS = 256;
 export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+export const MAX_BLOB_IMAGE_BYTES = 4 * 1024 * 1024;
 export const MAX_IMAGE_WIDTH = 10_000;
 export const MAX_IMAGE_HEIGHT = 50_000;
 export const MAX_SNAPSHOT_NAME_LENGTH = 512;

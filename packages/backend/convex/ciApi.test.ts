@@ -7,11 +7,14 @@ import { api as functions, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { DAILY_BUILDS, DAILY_UPLOAD_BYTES } from "./lib/limits";
 import { hashProjectToken } from "./lib/projectTokens";
+import { messages, sign, verify } from "./lib/signing";
 import { rateLimiter as limits } from "./rateLimits";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
 const TOKEN = `sop_${"t".repeat(43)}`;
+const IMAGE_SECRET = "test-image-secret";
+const BLOB_UPLOAD_URL = "https://stateofpixel.test/api/v1/uploads/";
 
 type Test = ReturnType<typeof convexTest>;
 
@@ -26,11 +29,12 @@ let checkCalls: {
   path: string;
   body: Record<string, unknown>;
 }[] = [];
+let blobDeletes: string[] = [];
 
 beforeAll(async () => {
   const { privateKey } = await generateKeyPair("RS256", { extractable: true });
   vi.stubEnv("SITE_URL", "https://stateofpixel.test");
-  vi.stubEnv("IMAGE_URL_SECRET", "test-image-secret");
+  vi.stubEnv("IMAGE_URL_SECRET", IMAGE_SECRET);
   vi.stubEnv("CONVEX_SITE_URL", "https://test.convex.site");
   vi.stubEnv("GITHUB_APP_ID", "12345");
   vi.stubEnv("GITHUB_APP_PRIVATE_KEY", await exportPKCS8(privateKey));
@@ -42,8 +46,13 @@ beforeEach(() => {
   compareCalls = [];
   commitPulls = {};
   checkCalls = [];
+  blobDeletes = [];
   vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
-    const { pathname } = new URL(input);
+    const { host, pathname } = new URL(input);
+    if (host === "stateofpixel.test" && init?.method === "DELETE") {
+      blobDeletes.push(pathname.slice("/api/v1/uploads/".length));
+      return new Response(null, { status: 204 });
+    }
     if (pathname.startsWith("/repos/acme/web-app/statuses/")) {
       checkCalls.push({
         method: init?.method ?? "GET",
@@ -75,7 +84,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-async function setup() {
+async function setup({ imageStore }: { imageStore?: "convex" | "blobs" } = {}) {
   const t = convexTest(schema, modules);
   rateLimiter.register(t);
   const tokenHash = await hashProjectToken(TOKEN);
@@ -94,6 +103,7 @@ async function setup() {
       plan: "free",
       storageLimitBytes: 10 * 1024 ** 3,
       storageBytes: 0,
+      imageStore,
     });
     const projectId = await ctx.db.insert("projects", {
       accountId,
@@ -163,6 +173,26 @@ async function store(t: Test, content: string) {
   return t.run((ctx) => ctx.storage.store(new Blob([content])));
 }
 
+async function upload(uploadUrl: string, content: string) {
+  const url = new URL(uploadUrl);
+  const blobKey = url.pathname.slice("/api/v1/uploads/".length);
+  const hash = url.searchParams.get("hash") ?? "";
+  const exp = Number(url.searchParams.get("exp"));
+  expect(
+    await verify(
+      IMAGE_SECRET,
+      messages.upload(blobKey, hash, exp),
+      url.searchParams.get("sig") ?? "",
+    ),
+  ).toBe(true);
+  const bytes = new TextEncoder().encode(content).byteLength;
+  const sig = await sign(IMAGE_SECRET, messages.stored(blobKey, hash, bytes));
+  return {
+    blobKey,
+    storageId: `blob.${blobKey.split("/")[1]}.${bytes}.${sig}`,
+  };
+}
+
 async function runBuild(
   t: Test,
   {
@@ -203,7 +233,9 @@ async function runBuild(
     if (snapshot.uploadUrl !== undefined) {
       uploads.push({
         hash: await sha256(image.content),
-        storageId: await store(t, image.content),
+        storageId: snapshot.uploadUrl.startsWith(BLOB_UPLOAD_URL)
+          ? (await upload(snapshot.uploadUrl, image.content)).storageId
+          : await store(t, image.content),
         kind: "screenshot",
         width: 10,
         height: 10,
@@ -284,7 +316,9 @@ it("auto-approves the first build as the baseline", async () => {
 });
 
 it("compares a build against the nearest approved ancestor", async () => {
-  const { t } = await setup();
+  const { t, accountId: setupAccountId } = await setup({
+    imageStore: "blobs",
+  });
   await runBuild(t, {
     commit: "c1",
     images: [
@@ -330,11 +364,20 @@ it("compares a build against the nearest approved ancestor", async () => {
     created.snapshots.find((s: { name: string }) => s.name === "Header")
       .baselineUrl,
   );
-  expect(baselineUrl.pathname).toMatch(/^\/images\//);
-  const baseline = await t.fetch(
-    `${baselineUrl.pathname}${baselineUrl.search}`,
-  );
-  expect(await baseline.text()).toBe("header-v1");
+  const [, projectId, accountId] =
+    /^\/api\/images\/([a-z0-9]+)\/([a-z0-9]+)\.[0-9a-f-]{36}$/.exec(
+      baselineUrl.pathname,
+    ) ?? [];
+  expect(baselineUrl.origin).toBe("https://stateofpixel.test");
+  expect(accountId).toBe(setupAccountId);
+  const exp = Number(baselineUrl.searchParams.get("exp"));
+  expect(
+    await verify(
+      IMAGE_SECRET,
+      messages.grant(projectId ?? "", setupAccountId, exp),
+      baselineUrl.searchParams.get("sig") ?? "",
+    ),
+  ).toBe(true);
   expect(build).toMatchObject({
     status: "finalized",
     conclusion: "changes",
@@ -1153,4 +1196,124 @@ it("limits builds and uploaded bytes per account per day", async () => {
   const uploads = await create("run-2");
   expect(uploads.status).toBe(429);
   expect(uploads.body.error.code).toBe("upload_limit_reached");
+});
+
+async function uploadTargets(t: Test, buildId: string, hash: string) {
+  const targets = await api(t, "POST", `/builds/${buildId}/upload-urls`, {
+    hashes: [hash],
+  });
+  return targets.body.uploads[0].uploadUrl as string;
+}
+
+it("stores uploads in Blobs and deletes a duplicate blob of the same image", async () => {
+  const { t, accountId } = await setup({ imageStore: "blobs" });
+  const [header] = await snapshotsOf([
+    { name: "Header", content: "header-v1" },
+  ]);
+  const hash = header?.hash ?? "";
+  const created = await api(t, "POST", "/builds", {
+    nonce: "run-1",
+    shard: { index: 1, total: 1 },
+    git: {
+      commit: "c1",
+      branch: "main",
+      baselineBranch: "main",
+      ancestors: [],
+    },
+    snapshots: [header],
+  });
+  const buildId = created.body.buildId;
+  const first = await upload(created.body.snapshots[0].uploadUrl, "header-v1");
+  const second = await upload(
+    await uploadTargets(t, buildId, hash),
+    "header-v1",
+  );
+  expect(first.blobKey).toMatch(new RegExp(`^${accountId}/[0-9a-f-]{36}$`));
+  expect(second.blobKey).not.toBe(first.blobKey);
+
+  const completed = await api(
+    t,
+    "POST",
+    `/builds/${buildId}/shards/1/complete`,
+    {
+      uploads: [first, second].map(({ storageId }) => ({
+        hash,
+        storageId,
+        kind: "screenshot",
+        width: 10,
+        height: 10,
+      })),
+      results: [{ name: "Header", hash, status: "added" }],
+    },
+  );
+  expect(completed.body.rejectedUploads).toEqual([]);
+  expect(blobDeletes).toEqual([second.blobKey]);
+  const images = await t.run((ctx) => ctx.db.query("images").collect());
+  expect(images).toMatchObject([
+    { hash, store: "blobs", blobKey: first.blobKey, bytes: 9 },
+  ]);
+});
+
+it("rejects a Blobs receipt that the upload route did not sign", async () => {
+  const { t } = await setup({ imageStore: "blobs" });
+  const [header] = await snapshotsOf([
+    { name: "Header", content: "header-v1" },
+  ]);
+  const created = await api(t, "POST", "/builds", {
+    nonce: "run-1",
+    shard: { index: 1, total: 1 },
+    git: {
+      commit: "c1",
+      branch: "main",
+      baselineBranch: "main",
+      ancestors: [],
+    },
+    snapshots: [header],
+  });
+  const { storageId } = await upload(
+    created.body.snapshots[0].uploadUrl,
+    "header-v1",
+  );
+  const completed = await api(
+    t,
+    "POST",
+    `/builds/${created.body.buildId}/shards/1/complete`,
+    {
+      uploads: [
+        {
+          hash: header?.hash,
+          storageId: storageId.replace(/\.9\./, ".8."),
+          kind: "screenshot",
+          width: 10,
+          height: 10,
+        },
+      ],
+      results: [{ name: "Header", hash: header?.hash, status: "added" }],
+    },
+  );
+  expect(completed.body.rejectedUploads).toEqual([header?.hash]);
+  expect(await t.run((ctx) => ctx.db.query("images").collect())).toEqual([]);
+});
+
+it("hands out Convex upload URLs unless the account picked Blobs", async () => {
+  for (const imageStore of [undefined, "convex", "blobs"] as const) {
+    const { t } = await setup({ imageStore });
+    const [header] = await snapshotsOf([
+      { name: "Header", content: "header-v1" },
+    ]);
+    const created = await api(t, "POST", "/builds", {
+      nonce: "run-1",
+      shard: { index: 1, total: 1 },
+      git: {
+        commit: "c1",
+        branch: "main",
+        baselineBranch: "main",
+        ancestors: [],
+      },
+      snapshots: [header],
+    });
+    expect(
+      created.body.snapshots[0].uploadUrl.startsWith(BLOB_UPLOAD_URL),
+    ).toBe(imageStore === "blobs");
+  }
 });

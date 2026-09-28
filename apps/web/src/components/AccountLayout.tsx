@@ -3,6 +3,7 @@ import {
   ArrowUpRightIcon,
   ChartBarIcon,
   CreditCardIcon,
+  GearIcon,
   SquaresFourIcon,
   UsersIcon,
 } from "@phosphor-icons/react/ssr";
@@ -17,7 +18,7 @@ import { Page, PageHeader } from "./Page";
 import { Tab, Tabs } from "./Tabs";
 import { Avatar, accountAvatar, buttonClass, EmptyState } from "./ui";
 
-type AccountTab = "projects" | "members" | "usage" | "billing";
+type AccountTab = "projects" | "members" | "usage" | "billing" | "settings";
 
 const refreshedRoles = new Set<string>();
 
@@ -122,6 +123,18 @@ export function AccountLayout({
           icon={CreditCardIcon}
           label="Billing"
           active={tab === "billing"}
+        />
+        <Tab
+          to="/$owner/settings/general"
+          params={{ owner }}
+          icon={GearIcon}
+          label="Settings"
+          active={tab === "settings"}
+          disabledReason={
+            home?.role === "member"
+              ? `Only owners of ${owner} on GitHub can change settings.`
+              : undefined
+          }
         />
       </Tabs>
       {children}

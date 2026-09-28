@@ -3,15 +3,21 @@ import {
   paginationOptsValidator,
   paginationResultValidator,
 } from "convex/server";
-import { type Infer, v } from "convex/values";
+import { ConvexError, type Infer, v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { internalMutation, type QueryCtx, query } from "./_generated/server";
+import {
+  internalMutation,
+  mutation,
+  type QueryCtx,
+  query,
+} from "./_generated/server";
 import { PLAN_STORAGE_LIMIT_BYTES, withStorageBytes } from "./lib/storage";
 import {
   accountRole,
   buildConclusion,
   buildCounts,
   buildStatus,
+  imageStore,
   plan,
   storageUsage,
 } from "./schema";
@@ -136,6 +142,7 @@ export const home = query({
       subscription,
       billingCustomer: v.boolean(),
       role: v.union(accountRole, v.null()),
+      imageStore,
     }),
   ),
   handler: async (ctx, { login }) => {
@@ -157,7 +164,24 @@ export const home = query({
       subscription: toSubscription(account),
       billingCustomer: account.billingCustomerId !== undefined,
       role: memberRole(account, found.user, found.membership),
+      imageStore: account.imageStore ?? "convex",
     };
+  },
+});
+
+export const setImageStore = mutation({
+  args: { login: v.string(), imageStore },
+  returns: v.null(),
+  handler: async (ctx, { login, imageStore }) => {
+    const found = await findMembership(ctx, login);
+    if (found === null) {
+      throw new ConvexError({ code: "not_found" });
+    }
+    if (memberRole(found.account, found.user, found.membership) !== "owner") {
+      throw new ConvexError({ code: "not_owner" });
+    }
+    await ctx.db.patch("accounts", found.account._id, { imageStore });
+    return null;
   },
 });
 

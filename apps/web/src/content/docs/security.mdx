@@ -25,7 +25,7 @@ Builds of public repositories can be opened by anyone who signs in with GitHub. 
 
 ## Screenshots
 
-Screenshots and diff images are stored in Convex file storage. Every image is stored once per account, keyed by its SHA-256 hash, and an upload is checked against that hash.
+Screenshots and diff images are stored in Convex file storage, or in Netlify Blobs when the account owner picks it. See [Image storage](/docs/limits#image-storage). Every image is stored once per account, keyed by its SHA-256 hash, and an upload is checked against that hash.
 
 Image links of private projects are signed and expire after one to two hours. The site gets a new link only for someone who can read the repository. Image links of public projects do not expire.
 
