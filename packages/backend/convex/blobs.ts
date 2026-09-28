@@ -3,30 +3,21 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   type ActionCtx,
-  env,
-  internalAction,
   internalMutation,
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
-import { privateImageUrl, r2ImageUrl } from "./lib/imageUrls";
+import { privateImageUrl } from "./lib/imageUrls";
 import {
   MAX_IMAGE_BYTES,
   MAX_IMAGE_HEIGHT,
   MAX_IMAGE_WIDTH,
 } from "./lib/limits";
-import {
-  messages,
-  R2_RECEIPT_PREFIX,
-  r2Key,
-  sign,
-  verify,
-} from "./lib/signing";
 import { withStorageBytes } from "./lib/storage";
 import { rateLimiter } from "./rateLimits";
 
 const TOUCH_AFTER_MS = 12 * 60 * 60 * 1000;
-const UPLOAD_URL_TTL_MS = 60 * 60 * 1000;
+const SCAN_PAGE_SIZE = 100;
 
 export const createUploadTargets = internalMutation({
   args: {
@@ -46,7 +37,7 @@ export const createUploadTargets = internalMutation({
         }
         targets.push({
           hash,
-          uploadUrl: await createUploadUrl(ctx, accountId, hash, now),
+          uploadUrl: await ctx.storage.generateUploadUrl(),
         });
       } else if (now - image.lastReferencedAt > TOUCH_AFTER_MS) {
         await ctx.db.patch("images", image._id, { lastReferencedAt: now });
@@ -55,24 +46,6 @@ export const createUploadTargets = internalMutation({
     return targets;
   },
 });
-
-async function createUploadUrl(
-  ctx: MutationCtx,
-  accountId: Id<"accounts">,
-  hash: string,
-  now: number,
-): Promise<string> {
-  if (env.IMAGES_URL === undefined) {
-    return ctx.storage.generateUploadUrl();
-  }
-  const normalized = hash.toLowerCase();
-  const exp = now + UPLOAD_URL_TTL_MS;
-  const sig = await sign(
-    env.IMAGE_URL_SECRET,
-    messages.upload(accountId, normalized, exp),
-  );
-  return `${env.IMAGES_URL}/upload/${accountId}/${normalized}?exp=${exp}&sig=${sig}`;
-}
 
 export async function findImage(
   ctx: QueryCtx,
@@ -100,9 +73,6 @@ export async function confirmUpload(
   accountId: Id<"accounts">,
   upload: Upload,
 ): Promise<Doc<"images"> | null> {
-  if (upload.storageId.startsWith(R2_RECEIPT_PREFIX)) {
-    return confirmR2Upload(ctx, accountId, upload);
-  }
   const storageId = ctx.db.system.normalizeId("_storage", upload.storageId);
   if (storageId === null) {
     return null;
@@ -145,47 +115,11 @@ export async function confirmUpload(
   );
 }
 
-async function confirmR2Upload(
-  ctx: MutationCtx,
-  accountId: Id<"accounts">,
-  upload: Upload,
-): Promise<Doc<"images"> | null> {
-  const key = r2Key(accountId, upload.hash.toLowerCase());
-  const [bytesText, sig, ...rest] = upload.storageId
-    .slice(R2_RECEIPT_PREFIX.length)
-    .split(".");
-  const bytes = Number(bytesText);
-  if (
-    sig === undefined ||
-    rest.length > 0 ||
-    !Number.isSafeInteger(bytes) ||
-    bytes > MAX_IMAGE_BYTES ||
-    upload.width > MAX_IMAGE_WIDTH ||
-    upload.height > MAX_IMAGE_HEIGHT ||
-    !(await verify(env.IMAGE_URL_SECRET, messages.receipt(key, bytes), sig))
-  ) {
-    return null;
-  }
-  const existing = await findImage(ctx, accountId, upload.hash);
-  if (existing !== null) {
-    return existing;
-  }
-  return insertImage(
-    ctx,
-    accountId,
-    upload,
-    { store: "r2", r2Key: key },
-    bytes,
-  );
-}
-
 async function insertImage(
   ctx: MutationCtx,
   accountId: Id<"accounts">,
   upload: Upload,
-  location:
-    | { store: "convex"; storageId: Id<"_storage"> }
-    | { store: "r2"; r2Key: string },
+  location: { store: "convex"; storageId: Id<"_storage"> },
   bytes: number,
 ): Promise<Doc<"images"> | null> {
   const imageId = await ctx.db.insert("images", {
@@ -219,11 +153,6 @@ export async function getUrl(
   image: Doc<"images">,
   project: Doc<"projects">,
 ): Promise<string | null> {
-  if (image.store === "r2") {
-    return image.r2Key === undefined || env.IMAGES_URL === undefined
-      ? null
-      : r2ImageUrl(project, { ...image, r2Key: image.r2Key }, env.IMAGES_URL);
-  }
   if (image.storageId === undefined) {
     return null;
   }
@@ -253,32 +182,47 @@ function normalizeSha256(value: string): string | null {
 }
 
 export async function deleteImage(ctx: MutationCtx, image: Doc<"images">) {
-  if (image.store === "r2" && image.r2Key !== undefined) {
-    await ctx.scheduler.runAfter(0, internal.blobs.deleteR2Object, {
-      key: image.r2Key,
-      before: Date.now(),
-    });
-  }
   if (image.storageId !== undefined) {
     await ctx.storage.delete(image.storageId);
   }
   await ctx.db.delete("images", image._id);
 }
 
-export const deleteR2Object = internalAction({
-  args: { key: v.string(), before: v.number() },
+export const deleteR2Images = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())) },
   returns: v.null(),
-  handler: async (_ctx, { key, before }) => {
-    if (env.IMAGES_URL === undefined) {
-      throw new Error(`IMAGES_URL is not set, cannot delete ${key}`);
+  handler: async (ctx, { cursor }) => {
+    const page = await ctx.db
+      .query("images")
+      .paginate({ numItems: SCAN_PAGE_SIZE, cursor: cursor ?? null });
+    const freedBytes = new Map<Id<"accounts">, number>();
+    for (const image of page.page) {
+      if (image.store === "r2") {
+        await ctx.db.delete("images", image._id);
+        freedBytes.set(
+          image.accountId,
+          (freedBytes.get(image.accountId) ?? 0) + image.bytes,
+        );
+      }
     }
-    const sig = await sign(env.IMAGE_URL_SECRET, messages.delete(key, before));
-    const response = await fetch(
-      `${env.IMAGES_URL}/objects/${key}?before=${before}&sig=${sig}`,
-      { method: "DELETE" },
-    );
-    if (!response.ok) {
-      throw new Error(`Deleting ${key} failed with ${response.status}`);
+    for (const [accountId, bytes] of freedBytes) {
+      const account = await ctx.db.get("accounts", accountId);
+      if (account !== null) {
+        await ctx.db.patch(
+          "accounts",
+          accountId,
+          withStorageBytes(
+            account,
+            Math.max(0, account.storageBytes - bytes),
+            Date.now(),
+          ),
+        );
+      }
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.blobs.deleteR2Images, {
+        cursor: page.continueCursor,
+      });
     }
     return null;
   },

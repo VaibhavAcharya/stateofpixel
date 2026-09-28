@@ -304,8 +304,7 @@ it("flags a snapshot that flips between images or differs on the same commit", a
         bytes: 3,
         width: 40,
         height: 30,
-        store: "r2",
-        r2Key: hash,
+        store: "convex",
         lastReferencedAt: 0,
       });
     const a = await image("a");
