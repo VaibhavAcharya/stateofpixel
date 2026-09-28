@@ -260,6 +260,7 @@ export default function LabBuild({
         rejectedIn: null,
         notReviewedOnPr: false,
         history: [],
+        flaky: null,
       };
     },
     useApplyReview:
