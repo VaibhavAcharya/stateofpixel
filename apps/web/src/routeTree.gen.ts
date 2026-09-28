@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BrandRouteImport } from './routes/brand'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as InstallRouteImport } from './routes/install'
-import { Route as LabRouteImport } from './routes/lab'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RefundsRouteImport } from './routes/refunds'
 import { Route as TermsRouteImport } from './routes/terms'
@@ -51,11 +50,6 @@ const DocsRoute = DocsRouteImport.update({
 const InstallRoute = InstallRouteImport.update({
   id: '/install',
   path: '/install',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabRoute = LabRouteImport.update({
-  id: '/lab',
-  path: '/lab',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -156,7 +150,6 @@ export interface FileRoutesByFullPath {
   '/brand': typeof BrandRoute
   '/docs': typeof DocsRouteWithChildren
   '/install': typeof InstallRoute
-  '/lab': typeof LabRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
@@ -180,7 +173,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/brand': typeof BrandRoute
   '/install': typeof InstallRoute
-  '/lab': typeof LabRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
@@ -205,7 +197,6 @@ export interface FileRoutesById {
   '/brand': typeof BrandRoute
   '/docs': typeof DocsRouteWithChildren
   '/install': typeof InstallRoute
-  '/lab': typeof LabRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
@@ -232,7 +223,6 @@ export interface FileRouteTypes {
     | '/brand'
     | '/docs'
     | '/install'
-    | '/lab'
     | '/privacy'
     | '/refunds'
     | '/terms'
@@ -256,7 +246,6 @@ export interface FileRouteTypes {
     | '/'
     | '/brand'
     | '/install'
-    | '/lab'
     | '/privacy'
     | '/refunds'
     | '/terms'
@@ -280,7 +269,6 @@ export interface FileRouteTypes {
     | '/brand'
     | '/docs'
     | '/install'
-    | '/lab'
     | '/privacy'
     | '/refunds'
     | '/terms'
@@ -306,7 +294,6 @@ export interface RootRouteChildren {
   BrandRoute: typeof BrandRoute
   DocsRoute: typeof DocsRouteWithChildren
   InstallRoute: typeof InstallRoute
-  LabRoute: typeof LabRoute
   PrivacyRoute: typeof PrivacyRoute
   RefundsRoute: typeof RefundsRoute
   TermsRoute: typeof TermsRoute
@@ -351,13 +338,6 @@ declare module '@tanstack/react-router' {
       path: '/install'
       fullPath: '/install'
       preLoaderRoute: typeof InstallRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab': {
-      id: '/lab'
-      path: '/lab'
-      fullPath: '/lab'
-      preLoaderRoute: typeof LabRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -522,7 +502,6 @@ const rootRouteChildren: RootRouteChildren = {
   BrandRoute: BrandRoute,
   DocsRoute: DocsRouteWithChildren,
   InstallRoute: InstallRoute,
-  LabRoute: LabRoute,
   PrivacyRoute: PrivacyRoute,
   RefundsRoute: RefundsRoute,
   TermsRoute: TermsRoute,
