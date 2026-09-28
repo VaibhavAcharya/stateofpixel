@@ -42,7 +42,7 @@ export type RowKey = RowKeyOf<(typeof ROW_GROUPS)[number]>;
 
 export const OURS: Record<RowKey, string> = {
   billing: "Storage. Snapshots, builds and seats are free.",
-  free: "10 GB stored, unlimited snapshots.",
+  free: "10 GB stored. Snapshots are not charged.",
   paid: "$15 a month for 25 GB.",
   limit:
     "Warns at 80%. After 14 days over, new images are not stored and the check passes with a note.",

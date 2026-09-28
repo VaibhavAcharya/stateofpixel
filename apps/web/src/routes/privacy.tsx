@@ -15,7 +15,7 @@ export const Route = createFileRoute("/privacy")({
 
 function Privacy() {
   return (
-    <LegalPage title="Privacy policy" updated="September 25, 2026">
+    <LegalPage title="Privacy policy" updated="September 28, 2026">
       <p>
         This policy explains what data stateofpixel ("we", "us") collects when
         you use stateofpixel.com, the GitHub App and the stateofpixel CLI, and
@@ -54,6 +54,14 @@ function Privacy() {
           request number and recent ancestor commits.
         </li>
         <li>The CI provider and the URL of the CI run.</li>
+      </ul>
+      <p>When you buy a paid plan:</p>
+      <ul>
+        <li>
+          The customer and subscription IDs from our payment provider, the plan,
+          the billing period and when it ends. Card details go to the payment
+          provider and never reach us.
+        </li>
       </ul>
       <p>
         We never receive or run your source code. Screenshots show whatever your
@@ -103,13 +111,12 @@ function Privacy() {
         <li>
           Convex, for the database, file storage and the backend functions.
         </li>
+        <li>Cloudflare R2, to store screenshots and diff images.</li>
+        <li>Dodo Payments, to take payments for paid plans.</li>
         <li>Netlify, to host the website.</li>
         <li>Umami, for the analytics described above.</li>
       </ul>
-      <p>
-        These providers may process data in other countries. Before paid plans
-        start, we will add the payment provider to this list.
-      </p>
+      <p>These providers may process data in other countries.</p>
 
       <h2>How long we keep it</h2>
       <ul>

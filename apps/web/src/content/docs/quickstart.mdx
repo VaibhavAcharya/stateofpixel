@@ -65,3 +65,5 @@ When a pull request changes how something looks, the `stateofpixel` check waits 
 ## 5. Require the check
 
 The check only blocks merges when GitHub requires it. In the repository settings on GitHub, add a branch protection rule or a ruleset for `main` that requires status checks to pass, and pick `stateofpixel`. See [The GitHub check](/docs/checks) for every state it can be in.
+
+Pull requests from forks never get the check, because GitHub gives them no token to sign in with. Once the check is required, they cannot merge until an admin bypasses the rule. See [Authentication](/docs/cli#authentication).

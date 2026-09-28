@@ -44,7 +44,7 @@ Access comes from GitHub. stateofpixel has no invites or roles of its own; the M
 | GitHub permission on the repo | Can do |
 |---|---|
 | none, private repo | nothing, 404 |
-| none, public repo | view builds and baselines (proposal) |
+| none, public repo | view builds and baselines, once signed in |
 | read | view builds and baselines |
 | write, maintain | also review (approve, reject) |
 | admin | also change project settings and tokens |
@@ -202,15 +202,15 @@ A re-run of a failed CI job gets a new `GITHUB_RUN_ATTEMPT`, so it creates a fre
 
 ### 4.11 Removing access
 
-- Repo removed from the installation: project is archived, builds stay readable for org members for 30 days, then deleted with its images (proposal).
-- App uninstalled: same for all projects of the account.
+- Repo removed from the installation: project gets `archivedAt`. It is hidden from lists and pages, CI auth rejects it, no commit status is set and images are not served. Builds, tokens and images stay and count toward storage; retention still runs. Adding the repo again clears `archivedAt`. Nothing deletes archived projects; data is deleted on request.
+- App uninstalled or suspended: same for all projects of the account. The subscription is not cancelled.
 - Project deleted from settings: confirm by typing the repo name, delete right away, images are removed by the next GC run.
 
 ### 4.12 CI on a non-GitHub-Actions runner
 
 1. Admin opens Settings, Tokens, "Create token". Token shown once, stored hashed.
 2. User sets `STATEOFPIXEL_TOKEN` in their CI.
-3. Git info comes from env-ci and local git. If the checkout is shallow and the merge base is not in local history, the server uses the GitHub compare API.
+3. Git info comes from GitHub Actions env vars when set, otherwise local git. If the checkout is shallow and the merge base is not in local history, the server uses the GitHub compare API.
 
 ## 5. Pages
 
@@ -224,7 +224,7 @@ URL scheme mirrors GitHub: `/{owner}/{repo}`. Public pages (5.1) are server-rend
 | `/brand` | Logo files to download, usage rules, colors and type. |
 | `/compare`, `/compare/{competitor}` | Comparisons with Chromatic, Argos, Percy and Lost Pixel. Each page has a headline of its own, a bill or status card, both pipelines, what changes, the review page, a cost calculator for priced competitors, a grouped table with a numbered source for every competitor fact, where the competitor is ahead, before and after workflow snippets, an FAQ with FAQPage JSON-LD, and the sources. The data and the check date are in `apps/web/src/content/compare.ts`, competitor plans in `apps/web/src/lib/competitorPricing.ts`, logos in `public/logos/compare/`. Linked from the header and footer. |
 | `/privacy`, `/terms`, `/refunds` | Legal pages. Support email `hello@stateofpixel.com`. |
-| `/docs`, `/docs/{page}` | User docs: Quickstart; Playwright, Storybook, Any screenshots; Other CI, Sharding, Suites; Reviewing changes, The GitHub check, Baselines; Stable screenshots; CLI, Limits and storage. Linked from the public header and footer and the user menu. The pages are MDX in `apps/web/src/content/docs/`, served by `routes/docs/$slug.tsx`, with the nav in `components/docs/DocsLayout.tsx`. Tables of limits, check states, CLI flags and shortcuts render from the code (`components/docs/generated.tsx`). |
+| `/docs`, `/docs/{page}` | User docs: Quickstart, Moving from another tool; Playwright, Storybook, Any screenshots; Other CI, Sharding, Suites; Reviewing changes, The GitHub check, Baselines; Stable screenshots, Troubleshooting; Accounts and projects, Billing, Security; CLI, Limits and storage. Linked from the public header and footer and the user menu. The pages are MDX in `apps/web/src/content/docs/`, served by `routes/docs/$slug.tsx`, with the nav in `components/docs/DocsLayout.tsx`. Tables of limits, check states, CLI flags and shortcuts render from the code (`components/docs/generated.tsx`). |
 | `/robots.txt`, `/sitemap.xml` | `robots.txt` is static in `apps/web/public` and allows everything. `sitemap.xml` is written at build time by `apps/web/scripts/og-images.ts` from the same page list as the Open Graph images: the public pages, the comparisons and the docs. In dev, a Vite middleware in `vite.config.ts` serves `sitemap.xml` and the Open Graph images from that list on each request. Each of those pages sets a canonical URL on `stateofpixel.com` through `pageLinks` in `src/lib/pageMeta.ts`, so deploy previews do not compete in search. |
 
 Paid plans in the pricing block show "Coming soon" only when `billing.available` returns false; while the query loads, and in the server-rendered page, they show as available. Upgrading happens only from the plan box on the Billing tab (5.10).
@@ -799,7 +799,7 @@ In one internal query:
 1. For each SHA in `ancestors`, newest first, look up `by_projectId_and_buildName_and_commitSha` for this build name.
 2. Take the first build that is finalized, has conclusion `approved` or `no_changes`, and has `fullRows`.
 3. If none matches (shallow checkout, or a branch older than the 90-day full-row window), the `POST /builds` action asks the GitHub compare API (`GET /repos/{owner}/{repo}/compare/{base}...{head}`, status `ahead` or `identical`) whether the newest 5 candidate builds on the baseline branch are ancestors of the head commit, and takes the newest one that is. It runs before the create mutation and only when the nonce has no build yet, so shards that join do not call GitHub.
-4. If still none, the build is an orphan. On a PR this shows a banner: "No baseline found for this branch. Rebase on main to compare."
+4. If still none, the build is an orphan. The build header shows "First build, no baseline".
 
 ### 7.7 Errors
 
