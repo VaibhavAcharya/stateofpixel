@@ -117,10 +117,7 @@ export function DocsLayout() {
       <div
         className={`${WIDE} grid grid-cols-[208px_minmax(0,1fr)] gap-16 max-lg:grid-cols-1 max-lg:gap-0`}
       >
-        <nav
-          aria-label="Docs"
-          className="sticky top-16 h-[calc(100dvh-64px)] overflow-y-auto py-12 max-lg:hidden"
-        >
+        <nav aria-label="Docs" className="py-12 max-lg:hidden">
           <NavGroups />
         </nav>
         <details
