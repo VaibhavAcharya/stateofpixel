@@ -27,7 +27,7 @@ const ACTIONS: Record<CommandSpec["name"], Parameters<Command["action"]>[0]> = {
 
 const program = new Command()
   .name("stateofpixel")
-  .description("Visual regression testing that runs in your CI")
+  .description("Catch UI regressions before they merge")
   .version(packageJson.version);
 
 for (const spec of COMMANDS) {
