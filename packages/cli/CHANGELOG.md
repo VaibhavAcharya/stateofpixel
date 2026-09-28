@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.5.1...v1.6.0) (2026-09-28)
+
+
+### Features
+
+* **cli:** mirror the CLI to a public repo under MIT ([4ad7ecf](https://github.com/VaibhavAcharya/stateofpixel/commit/4ad7ecfe833925cda4abbb7b07c35758e8067287))
+* **cli:** mirror the CLI to a public repo under MIT ([a564af4](https://github.com/VaibhavAcharya/stateofpixel/commit/a564af4efd3c74ce9cdefa9783984564a1fc74cf))
+
 ## [1.5.1](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.5.0...v1.5.1) (2026-09-28)
 
 
