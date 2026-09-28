@@ -42,6 +42,40 @@ function ogImages(): Plugin {
   };
 }
 
+function llmsFiles(): Plugin {
+  return {
+    name: "llms-files",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const path = req.url?.split("?")[0] ?? "";
+        if (!path.endsWith(".md") && !path.startsWith("/llms")) {
+          return next();
+        }
+        try {
+          const { buildLlmsFiles, loadLlmsModules, contentType } =
+            (await server.ssrLoadModule(
+              "/scripts/llms.ts",
+            )) as typeof import("./scripts/llms");
+          const origin = `http://${req.headers.host}`;
+          const files = await buildLlmsFiles(
+            await loadLlmsModules(server),
+            async (page) => (await fetch(`${origin}${page}`)).text(),
+          );
+          const content = files.get(path);
+          if (content === undefined) {
+            return next();
+          }
+          res.setHeader("Content-Type", contentType(path));
+          res.end(content);
+        } catch (error) {
+          next(error);
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const backendEnv = loadEnv(mode, "../../packages/backend", "CONVEX_URL");
   process.env.VITE_CONVEX_URL ??= backendEnv.CONVEX_URL;
@@ -49,6 +83,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       ogImages(),
+      llmsFiles(),
       netlify({ dev: { edgeFunctions: { enabled: false } } }),
       tailwindcss(),
       highlightSnippets(),
