@@ -164,7 +164,8 @@ Missing pages:
 
 ## Later
 
-- [ ] Open-source the CLI and the server
+- [ ] Open-source the CLI as a read-only mirror
+- [ ] Open-source the server
 - [ ] Optional: move images stored before R2 from Convex storage to R2
 - [ ] Per-account egress tracking. Images are served from R2, which has no egress fee.
 - [ ] Optional: make builds of closed pull requests read-only, with a line that the pull request is closed

@@ -67,3 +67,7 @@ Merge scenarios run against the private repo [`VaibhavAcharya/stateofpixel-test`
 ## Releases
 
 release-please opens a release PR for `packages/cli` from conventional commits on `main`. Merging it tags the release, and `release.yml` then tests, builds and publishes the CLI to npm.
+
+## CLI mirror
+
+`packages/cli` is mirrored with its history to the public repo [`VaibhavAcharya/stateofpixel-cli`](https://github.com/VaibhavAcharya/stateofpixel-cli). On every push to `main` that touches `packages/cli`, `mirror-cli.yml` runs `git subtree split` and pushes the result to the mirror's `main`. Never commit to the mirror directly, or the next push is rejected as not a fast-forward. The push uses the deploy key in the `CLI_MIRROR_DEPLOY_KEY` secret. Its public half is a deploy key with write access on the mirror. The CLI builds on its own, so it has its own `tsconfig.json`, `.gitignore` and devDependencies. `packages/cli/.github/workflows/close-pull-requests.yml` runs only in the mirror and closes pull requests with a comment asking for an issue.

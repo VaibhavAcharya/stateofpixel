@@ -88,3 +88,7 @@ See [Storybook](https://stateofpixel.com/docs/storybook).
 - [`compare <dir> <baseline-dir>`](https://stateofpixel.com/docs/cli#compare): compare two folders locally and write an HTML report
 
 Requires Node 20 or newer.
+
+## Source
+
+The source is at [VaibhavAcharya/stateofpixel-cli](https://github.com/VaibhavAcharya/stateofpixel-cli), a read-only mirror under the MIT license. Open an [issue](https://github.com/VaibhavAcharya/stateofpixel-cli/issues) for bugs and feature requests. Pull requests are closed.
