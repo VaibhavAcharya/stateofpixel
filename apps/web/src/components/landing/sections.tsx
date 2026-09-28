@@ -562,7 +562,7 @@ export const FAQ: [string, string][] = [
   ],
   [
     "Is it open source?",
-    "Not yet. The CLI and the server are closed source for now.",
+    "The CLI is. It is MIT licensed, with its source at github.com/VaibhavAcharya/stateofpixel-cli. The server is closed source for now.",
   ],
   [
     "What is in the Free plan?",
@@ -668,12 +668,6 @@ export function Footer() {
               {label}
             </Link>
           ))}
-          <a
-            href="https://github.com/VaibhavAcharya/stateofpixel-cli"
-            className="hover:text-text"
-          >
-            CLI on GitHub
-          </a>
         </nav>
         <a
           href={`mailto:${SUPPORT_EMAIL}`}
