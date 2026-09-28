@@ -491,7 +491,7 @@ PNGs live in Convex File Storage. All storage code sits in `packages/backend/con
 | `readImage(storageId)` | `ctx.storage.get(storageId)`, for the image route |
 | `delete(image)` | `ctx.storage.delete(storageId)` |
 
-Nothing else in the backend touches `ctx.storage`. Rows with `store: "r2"` are left from an earlier Cloudflare R2 store and have no bytes behind them; `getUrl` returns null for them, and `blobs.deleteR2Images` deletes them and frees their bytes.
+Nothing else in the backend touches `ctx.storage`.
 
 Things to know about Convex File Storage URLs ([docs](https://docs.convex.dev/file-storage/serve-files)):
 - "Anyone with the URL can access the file without further authentication from your app." The URL does not expire; only deleting the file revokes it. So `getUrl` URLs go only to public projects, and we never store them.

@@ -1,5 +1,4 @@
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   type ActionCtx,
@@ -17,7 +16,6 @@ import { withStorageBytes } from "./lib/storage";
 import { rateLimiter } from "./rateLimits";
 
 const TOUCH_AFTER_MS = 12 * 60 * 60 * 1000;
-const SCAN_PAGE_SIZE = 100;
 
 export const createUploadTargets = internalMutation({
   args: {
@@ -187,43 +185,3 @@ export async function deleteImage(ctx: MutationCtx, image: Doc<"images">) {
   }
   await ctx.db.delete("images", image._id);
 }
-
-export const deleteR2Images = internalMutation({
-  args: { cursor: v.optional(v.union(v.string(), v.null())) },
-  returns: v.null(),
-  handler: async (ctx, { cursor }) => {
-    const page = await ctx.db
-      .query("images")
-      .paginate({ numItems: SCAN_PAGE_SIZE, cursor: cursor ?? null });
-    const freedBytes = new Map<Id<"accounts">, number>();
-    for (const image of page.page) {
-      if (image.store === "r2") {
-        await ctx.db.delete("images", image._id);
-        freedBytes.set(
-          image.accountId,
-          (freedBytes.get(image.accountId) ?? 0) + image.bytes,
-        );
-      }
-    }
-    for (const [accountId, bytes] of freedBytes) {
-      const account = await ctx.db.get("accounts", accountId);
-      if (account !== null) {
-        await ctx.db.patch(
-          "accounts",
-          accountId,
-          withStorageBytes(
-            account,
-            Math.max(0, account.storageBytes - bytes),
-            Date.now(),
-          ),
-        );
-      }
-    }
-    if (!page.isDone) {
-      await ctx.scheduler.runAfter(0, internal.blobs.deleteR2Images, {
-        cursor: page.continueCursor,
-      });
-    }
-    return null;
-  },
-});
