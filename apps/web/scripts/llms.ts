@@ -353,14 +353,12 @@ function llmsSections(modules: Modules): Section[] {
 }
 
 function homeMarkdown(modules: Modules, link: (path: string) => string) {
-  const { PAGES } = modules.pageMeta;
   const { HOW_STEPS, ACCESS, PIPELINES, PROMISES, FAQ } = modules.landing;
   const { TIERS, monthlyPrice, formatPrice } = modules.pricing;
   const { COMPETITORS } = modules.compare;
   return sections([
     "# stateofpixel",
-    `> ${PAGES.home.description}`,
-    PAGES.home.title,
+    `> ${summary(modules)}`,
     "## How it works",
     numbered(HOW_STEPS.map(([title, text]) => `**${title}.** ${text}`)),
     `Start with the [quickstart](${link("/docs")}).`,
@@ -498,29 +496,63 @@ function compareIndexMarkdown(
   ]);
 }
 
+function summary(modules: Modules): string {
+  const { home } = modules.pageMeta.PAGES;
+  return `${home.title} ${home.description}`;
+}
+
+function entryList(entries: Entry[], link: (path: string) => string): string {
+  return entries
+    .map(
+      (entry) =>
+        `- [${entry.title}](${link(entry.path)}): ${entry.description}`,
+    )
+    .join("\n");
+}
+
+function keyFacts(modules: Modules, link: (path: string) => string): string[] {
+  const { HOW_STEPS, PROMISES } = modules.landing;
+  const { TIERS, monthlyPrice, formatPrice } = modules.pricing;
+  const [free, smallest] = TIERS;
+  if (free === undefined || smallest === undefined) {
+    throw new Error("Pricing needs a free and a paid tier");
+  }
+  return [
+    numbered(HOW_STEPS.map(([title, text]) => `**${title}.** ${text}`)),
+    titledList(PROMISES),
+    `Free up to ${free.gigabytes} GB of stored images. Paid plans start at ${formatPrice(monthlyPrice(smallest, "monthly"))} a month for ${smallest.gigabytes} GB. See [Billing](${link("/docs/billing")}).`,
+  ];
+}
+
 function llmsTxt(
   modules: Modules,
   sectionList: Section[],
   link: (path: string) => string,
 ): string {
-  const { PAGES } = modules.pageMeta;
   const lead = modules.docs.findDoc("quickstart")?.meta.lead;
   return sections([
     "# stateofpixel",
-    `> ${PAGES.home.description}`,
+    `> ${summary(modules)}`,
     lead ?? false,
+    ...keyFacts(modules, link),
     `Every page below is also on the site as HTML, at the same address without \`.md\`. [llms-full.txt](${modules.pageMeta.SITE_URL}/llms-full.txt) has every docs page in one file.`,
     ...sectionList.map((section) =>
-      [
-        `## ${section.title}`,
-        section.entries
-          .map(
-            (entry) =>
-              `- [${entry.title}](${link(entry.path)}): ${entry.description}`,
-          )
-          .join("\n"),
-      ].join("\n\n"),
+      [`## ${section.title}`, entryList(section.entries, link)].join("\n\n"),
     ),
+  ]);
+}
+
+function docsIndex(sectionList: Section[], link: (path: string) => string) {
+  return sections([
+    "## All docs",
+    ...sectionList
+      .filter((section) => section.title.startsWith("Docs: "))
+      .map((section) =>
+        [
+          `### ${section.title.slice("Docs: ".length)}`,
+          entryList(section.entries, link),
+        ].join("\n\n"),
+      ),
   ]);
 }
 
@@ -537,6 +569,7 @@ export async function buildLlmsFiles(
   const link = (path: string) =>
     `${SITE_URL}${markdownPaths.get(path) ?? path}`;
   const { COMPARE_PAGE, COMPETITORS } = modules.compare;
+  const { docsPath, QUICKSTART } = modules.docsLayout;
 
   const files = new Map<string, string>();
   for (const entry of entries) {
@@ -555,11 +588,16 @@ export async function buildLlmsFiles(
                 SITE_URL,
                 markdownPaths,
               );
-    files.set(markdownPath(entry.path), withTitle(markdown, entry.title));
+    files.set(
+      markdownPath(entry.path),
+      entry.path === docsPath(QUICKSTART)
+        ? `${withTitle(markdown, entry.title)}\n${docsIndex(sectionList, link)}`
+        : withTitle(markdown, entry.title),
+    );
   }
   files.set("/llms.txt", llmsTxt(modules, sectionList, link));
   const docsPaths = sectionList
-    .filter((section) => section.title.startsWith("Docs"))
+    .filter((section) => section.title.startsWith("Docs: "))
     .flatMap((section) => section.entries)
     .map((entry) => markdownPath(entry.path));
   files.set(

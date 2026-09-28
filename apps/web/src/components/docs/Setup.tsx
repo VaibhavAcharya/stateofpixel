@@ -60,7 +60,7 @@ export function SetupPaths() {
 }
 
 const AGENT_PROMPT = `Add visual regression testing to this repository with stateofpixel.
-Read ${SITE_URL}/docs and follow it:
+Read ${SITE_URL}/llms.txt, then the quickstart it links, and follow it:
 1. Find where the tests write screenshots, or set up Playwright or Storybook capture.
 2. Add the upload step to the GitHub Actions workflow with id-token: write and fetch-depth: 0.
 3. Run it on pushes to main and on pull requests.
