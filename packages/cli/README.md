@@ -38,14 +38,6 @@ jobs:
 
 On other CI, set `STATEOFPIXEL_TOKEN` to a project token from the project settings on stateofpixel.com.
 
-## Any folder of screenshots
-
-```sh
-npx stateofpixel upload screenshots
-```
-
-Folder paths become snapshot names, so `screenshots/Marketing/Pricing.png` is `Marketing/Pricing`. See [Any screenshots](https://stateofpixel.com/docs/any-screenshots).
-
 ## Playwright
 
 Add the reporter and call `snapshot()` in your tests. The reporter uploads the screenshots when the run ends on CI, so the workflow needs no upload step.
@@ -70,20 +62,7 @@ test("pricing", async ({ page }) => {
 });
 ```
 
-See [Playwright](https://stateofpixel.com/docs/playwright).
-
-## Storybook
-
-Capture every story of a built Storybook at each width and upload them in one command. The capture uses the Playwright in your project:
-
-```sh
-npm install -D stateofpixel playwright
-npx playwright install chromium
-npx storybook build
-npx stateofpixel storybook storybook-static --viewports 375,1280
-```
-
-See [Storybook](https://stateofpixel.com/docs/storybook).
+See [Playwright](https://stateofpixel.com/docs/playwright). For Storybook, `stateofpixel storybook` captures every story of a built Storybook, see [Storybook](https://stateofpixel.com/docs/storybook). Any other tool works too: folder paths become snapshot names, so `screenshots/Marketing/Pricing.png` is `Marketing/Pricing`.
 
 ## Commands
 
@@ -96,4 +75,4 @@ Requires Node 20 or newer.
 
 ## Source
 
-The source is in [`packages/cli`](https://github.com/VaibhavAcharya/stateofpixel/tree/main/packages/cli) of [VaibhavAcharya/stateofpixel](https://github.com/VaibhavAcharya/stateofpixel), under the MIT license. Open an [issue](https://github.com/VaibhavAcharya/stateofpixel/issues) for bugs and feature requests.
+The source is in [`packages/cli`](https://github.com/VaibhavAcharya/stateofpixel/tree/main/packages/cli) of [VaibhavAcharya/stateofpixel](https://github.com/VaibhavAcharya/stateofpixel), under the MIT license. Open an [issue](https://github.com/VaibhavAcharya/stateofpixel/issues) for bugs and feature requests, and see [CONTRIBUTING.md](https://github.com/VaibhavAcharya/stateofpixel/blob/main/CONTRIBUTING.md) to send a change.
