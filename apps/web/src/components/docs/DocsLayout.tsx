@@ -165,6 +165,21 @@ function NavGroups() {
           </ul>
         </div>
       ))}
+      <div>
+        <p className="px-2 pb-1 text-xs font-medium text-muted">For agents</p>
+        <ul>
+          {["/llms.txt", "/llms-full.txt"].map((path) => (
+            <li key={path}>
+              <a
+                href={path}
+                className="flex h-8 items-center rounded-sm px-2 font-mono text-[13px] text-muted transition-colors duration-100 hover:bg-hover hover:text-text"
+              >
+                {path.slice(1)}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

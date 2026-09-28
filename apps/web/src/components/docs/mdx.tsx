@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { MDXComponents } from "mdx/types";
 import { Children, type ReactNode } from "react";
 import { findDoc } from "../../content/docs";
-import { pageLinks, pageMeta } from "../../lib/pageMeta";
+import { pageLinks, pageMeta, SITE_URL } from "../../lib/pageMeta";
 import { CodeBlock as Block, type Snippet } from "../CodeBlock";
 import { Kbd } from "../ui";
 import { Code, DocsPage, DocsPageLink, docsPath, H2 } from "./DocsLayout";
@@ -121,6 +121,13 @@ export function docsHead(slug: string) {
   };
   return {
     meta: [{ title: `${meta.title} / Docs / stateofpixel` }, ...pageMeta(page)],
-    links: pageLinks(page),
+    links: [
+      ...pageLinks(page),
+      {
+        rel: "alternate",
+        type: "text/markdown",
+        href: `${SITE_URL}${page.path}.md`,
+      },
+    ],
   };
 }
