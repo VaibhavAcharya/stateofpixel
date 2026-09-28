@@ -143,28 +143,28 @@ Needed before applying for a payment gateway.
 ## Docs and copy
 
 Stale or wrong claims:
-- [ ] Landing and pricing say "unlimited" builds and snapshots; a build is capped at 20,000 snapshots and an account at 2,000 builds and 20 GB of uploads a day
-- [ ] Pricing lists "longer retention" as a paid feature; every plan can set 7 to 365 days
-- [ ] The privacy page says paid plans have not started
-- [ ] The FAQ says Storybook needs "a capture script"
-- [ ] `baselines.mdx` quotes a "No baseline found" message; the UI shows "First build, no baseline"
-- [ ] SPEC 4.11 describes deleting archived projects after 30 days, which the code does not do
+- [x] Landing and pricing say "unlimited" builds and snapshots; a build is capped at 20,000 snapshots and an account at 2,000 builds and 20 GB of uploads a day
+- [x] Pricing lists "longer retention" as a paid feature; every plan can set 7 to 365 days
+- [x] The privacy page says paid plans have not started
+- [x] The FAQ says Storybook needs "a capture script"
+- [x] `baselines.mdx` quotes a "No baseline found" message; the UI shows "First build, no baseline"
+- [x] SPEC 4.11 describes deleting archived projects after 30 days, which the code does not do
 
 Features with no docs:
-- [ ] Archiving on uninstall
-- [ ] The Members tab
-- [ ] Billing and plan changes
-- [ ] Delete project
-- [ ] Builds list filters, which hide "No changes" and "Expired" builds by default
-- [ ] Baselines search and compare
-- [ ] How fast GitHub permission changes take effect, up to 15 minutes
+- [x] Archiving on uninstall
+- [x] The Members tab
+- [x] Billing and plan changes
+- [x] Delete project
+- [x] Builds list filters, which hide "No changes" and "Expired" builds by default
+- [x] Baselines search and compare
+- [x] How fast GitHub permission changes take effect, up to 15 minutes
 
 Missing pages:
-- [ ] Troubleshooting
-- [ ] Security
-- [ ] Billing
-- [ ] Moving from another tool
-- [ ] Quickstart "Require the check" warns that fork PRs never get a check
+- [x] Troubleshooting
+- [x] Security
+- [x] Billing
+- [x] Moving from another tool
+- [x] Quickstart "Require the check" warns that fork PRs never get a check
 
 ## Later
 
