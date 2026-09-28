@@ -1,7 +1,7 @@
 {
   "name": "stateofpixel",
   "version": "1.5.0",
-  "description": "Visual regression testing that runs in your CI",
+  "description": "Catch UI regressions before they merge. Visual regression testing for GitHub pull requests.",
   "keywords": [
     "visual-regression",
     "visual-testing",

@@ -7,7 +7,7 @@
   </a>
 </p>
 
-<p align="center">Visual regression testing that runs in your CI.</p>
+<p align="center">Catch UI regressions before they merge.</p>
 
 <p align="center">
   <a href="https://stateofpixel.com">Website</a> |
