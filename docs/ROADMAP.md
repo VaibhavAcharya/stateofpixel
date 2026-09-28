@@ -106,7 +106,9 @@ See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (stat
 - [x] Usage page
 - [ ] PR comment summary
 - [ ] Tokenless auth for fork PRs
-- [ ] Flaky snapshot detection
+- [x] Flaky snapshot detection: a "Looks flaky" line in the snapshot detail
+- [ ] Flaky snapshots stored per suite after finalize, with a badge on snapshot rows, a "Looks flaky" filter and the count in the check description
+- [ ] Opt-in auto-approve when a flaky snapshot's new image matches one of its known images, with a per-project list of flaky snapshots
 
 ## Free tier and limits
 
@@ -137,6 +139,32 @@ Needed before applying for a payment gateway.
 - [x] Review the npm keywords of the CLI and the topics of the GitHub repo
 - [x] Images and illustrations in the README instead of the ASCII art
 - [x] Rethink the CLI README that npm shows
+
+## Docs and copy
+
+Stale or wrong claims:
+- [ ] Landing and pricing say "unlimited" builds and snapshots; a build is capped at 20,000 snapshots and an account at 2,000 builds and 20 GB of uploads a day
+- [ ] Pricing lists "longer retention" as a paid feature; every plan can set 7 to 365 days
+- [ ] The privacy page says paid plans have not started
+- [ ] The FAQ says Storybook needs "a capture script"
+- [ ] `baselines.mdx` quotes a "No baseline found" message; the UI shows "First build, no baseline"
+- [ ] SPEC 4.11 describes deleting archived projects after 30 days, which the code does not do
+
+Features with no docs:
+- [ ] Archiving on uninstall
+- [ ] The Members tab
+- [ ] Billing and plan changes
+- [ ] Delete project
+- [ ] Builds list filters, which hide "No changes" and "Expired" builds by default
+- [ ] Baselines search and compare
+- [ ] How fast GitHub permission changes take effect, up to 15 minutes
+
+Missing pages:
+- [ ] Troubleshooting
+- [ ] Security
+- [ ] Billing
+- [ ] Moving from another tool
+- [ ] Quickstart "Require the check" warns that fork PRs never get a check
 
 ## Later
 
