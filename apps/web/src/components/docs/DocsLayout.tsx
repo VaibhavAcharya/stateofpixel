@@ -262,7 +262,7 @@ export function H2({ id, children }: { id: string; children: ReactNode }) {
 
 export function Code({ children }: { children: ReactNode }) {
   return (
-    <code className="mono rounded-xs bg-surface-2 px-1 py-0.5 whitespace-nowrap">
+    <code className="mono rounded-xs bg-surface-2 px-1 py-0.5 wrap-break-word box-decoration-clone">
       {children}
     </code>
   );
