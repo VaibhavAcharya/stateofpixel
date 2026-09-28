@@ -668,6 +668,12 @@ export function Footer() {
               {label}
             </Link>
           ))}
+          <a
+            href="https://github.com/VaibhavAcharya/stateofpixel-cli"
+            className="hover:text-text"
+          >
+            CLI on GitHub
+          </a>
         </nav>
         <a
           href={`mailto:${SUPPORT_EMAIL}`}
