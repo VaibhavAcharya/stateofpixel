@@ -24,12 +24,15 @@ import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner/$repo/index'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner/$repo/settings'
 import { Route as OwnerSettingsBillingRouteImport } from './routes/$owner/settings/billing'
+import { Route as OwnerSettingsGeneralRouteImport } from './routes/$owner/settings/general'
 import { Route as OwnerSettingsMembersRouteImport } from './routes/$owner/settings/members'
 import { Route as OwnerSettingsUsageRouteImport } from './routes/$owner/settings/usage'
+import { Route as ApiImagesSplatRouteImport } from './routes/api/images/$'
 import { Route as OwnerRepoBaselinesIndexRouteImport } from './routes/$owner/$repo/baselines/index'
 import { Route as OwnerRepoBaselinesSplatRouteImport } from './routes/$owner/$repo/baselines/$'
 import { Route as OwnerRepoBuildsNumberRouteImport } from './routes/$owner/$repo/builds/$number'
 import { Route as OwnerRepoBuildsNumberIndexRouteImport } from './routes/$owner/$repo/builds/$number/index'
+import { Route as ApiV1UploadsAccountIdUploadIdRouteImport } from './routes/api/v1/uploads/$accountId/$uploadId'
 import { Route as OwnerRepoBuildsNumberSnapshotsSnapshotIdRouteImport } from './routes/$owner/$repo/builds/$number/snapshots/$snapshotId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -107,6 +110,11 @@ const OwnerSettingsBillingRoute = OwnerSettingsBillingRouteImport.update({
   path: '/$owner/settings/billing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OwnerSettingsGeneralRoute = OwnerSettingsGeneralRouteImport.update({
+  id: '/$owner/settings/general',
+  path: '/$owner/settings/general',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OwnerSettingsMembersRoute = OwnerSettingsMembersRouteImport.update({
   id: '/$owner/settings/members',
   path: '/$owner/settings/members',
@@ -115,6 +123,11 @@ const OwnerSettingsMembersRoute = OwnerSettingsMembersRouteImport.update({
 const OwnerSettingsUsageRoute = OwnerSettingsUsageRouteImport.update({
   id: '/$owner/settings/usage',
   path: '/$owner/settings/usage',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiImagesSplatRoute = ApiImagesSplatRouteImport.update({
+  id: '/api/images/$',
+  path: '/api/images/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OwnerRepoBaselinesIndexRoute = OwnerRepoBaselinesIndexRouteImport.update({
@@ -138,6 +151,12 @@ const OwnerRepoBuildsNumberIndexRoute =
     path: '/',
     getParentRoute: () => OwnerRepoBuildsNumberRoute,
   } as any)
+const ApiV1UploadsAccountIdUploadIdRoute =
+  ApiV1UploadsAccountIdUploadIdRouteImport.update({
+    id: '/api/v1/uploads/$accountId/$uploadId',
+    path: '/api/v1/uploads/$accountId/$uploadId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute =
   OwnerRepoBuildsNumberSnapshotsSnapshotIdRouteImport.update({
     id: '/snapshots/$snapshotId',
@@ -160,12 +179,15 @@ export interface FileRoutesByFullPath {
   '/docs/': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
+  '/$owner/settings/general': typeof OwnerSettingsGeneralRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/$owner/settings/usage': typeof OwnerSettingsUsageRoute
+  '/api/images/$': typeof ApiImagesSplatRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
   '/$owner/$repo/baselines/$': typeof OwnerRepoBaselinesSplatRoute
   '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberRouteWithChildren
   '/$owner/$repo/baselines/': typeof OwnerRepoBaselinesIndexRoute
+  '/api/v1/uploads/$accountId/$uploadId': typeof ApiV1UploadsAccountIdUploadIdRoute
   '/$owner/$repo/builds/$number/': typeof OwnerRepoBuildsNumberIndexRoute
   '/$owner/$repo/builds/$number/snapshots/$snapshotId': typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute
 }
@@ -183,11 +205,14 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
+  '/$owner/settings/general': typeof OwnerSettingsGeneralRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/$owner/settings/usage': typeof OwnerSettingsUsageRoute
+  '/api/images/$': typeof ApiImagesSplatRoute
   '/$owner/$repo': typeof OwnerRepoIndexRoute
   '/$owner/$repo/baselines/$': typeof OwnerRepoBaselinesSplatRoute
   '/$owner/$repo/baselines': typeof OwnerRepoBaselinesIndexRoute
+  '/api/v1/uploads/$accountId/$uploadId': typeof ApiV1UploadsAccountIdUploadIdRoute
   '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberIndexRoute
   '/$owner/$repo/builds/$number/snapshots/$snapshotId': typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute
 }
@@ -207,12 +232,15 @@ export interface FileRoutesById {
   '/docs/': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
+  '/$owner/settings/general': typeof OwnerSettingsGeneralRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/$owner/settings/usage': typeof OwnerSettingsUsageRoute
+  '/api/images/$': typeof ApiImagesSplatRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
   '/$owner/$repo/baselines/$': typeof OwnerRepoBaselinesSplatRoute
   '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberRouteWithChildren
   '/$owner/$repo/baselines/': typeof OwnerRepoBaselinesIndexRoute
+  '/api/v1/uploads/$accountId/$uploadId': typeof ApiV1UploadsAccountIdUploadIdRoute
   '/$owner/$repo/builds/$number/': typeof OwnerRepoBuildsNumberIndexRoute
   '/$owner/$repo/builds/$number/snapshots/$snapshotId': typeof OwnerRepoBuildsNumberSnapshotsSnapshotIdRoute
 }
@@ -233,12 +261,15 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
+    | '/$owner/settings/general'
     | '/$owner/settings/members'
     | '/$owner/settings/usage'
+    | '/api/images/$'
     | '/$owner/$repo/'
     | '/$owner/$repo/baselines/$'
     | '/$owner/$repo/builds/$number'
     | '/$owner/$repo/baselines/'
+    | '/api/v1/uploads/$accountId/$uploadId'
     | '/$owner/$repo/builds/$number/'
     | '/$owner/$repo/builds/$number/snapshots/$snapshotId'
   fileRoutesByTo: FileRoutesByTo
@@ -256,11 +287,14 @@ export interface FileRouteTypes {
     | '/docs'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
+    | '/$owner/settings/general'
     | '/$owner/settings/members'
     | '/$owner/settings/usage'
+    | '/api/images/$'
     | '/$owner/$repo'
     | '/$owner/$repo/baselines/$'
     | '/$owner/$repo/baselines'
+    | '/api/v1/uploads/$accountId/$uploadId'
     | '/$owner/$repo/builds/$number'
     | '/$owner/$repo/builds/$number/snapshots/$snapshotId'
   id:
@@ -279,12 +313,15 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
+    | '/$owner/settings/general'
     | '/$owner/settings/members'
     | '/$owner/settings/usage'
+    | '/api/images/$'
     | '/$owner/$repo/'
     | '/$owner/$repo/baselines/$'
     | '/$owner/$repo/builds/$number'
     | '/$owner/$repo/baselines/'
+    | '/api/v1/uploads/$accountId/$uploadId'
     | '/$owner/$repo/builds/$number/'
     | '/$owner/$repo/builds/$number/snapshots/$snapshotId'
   fileRoutesById: FileRoutesById
@@ -302,12 +339,15 @@ export interface RootRouteChildren {
   CompareIndexRoute: typeof CompareIndexRoute
   OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRoute
   OwnerSettingsBillingRoute: typeof OwnerSettingsBillingRoute
+  OwnerSettingsGeneralRoute: typeof OwnerSettingsGeneralRoute
   OwnerSettingsMembersRoute: typeof OwnerSettingsMembersRoute
   OwnerSettingsUsageRoute: typeof OwnerSettingsUsageRoute
+  ApiImagesSplatRoute: typeof ApiImagesSplatRoute
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
   OwnerRepoBaselinesSplatRoute: typeof OwnerRepoBaselinesSplatRoute
   OwnerRepoBuildsNumberRoute: typeof OwnerRepoBuildsNumberRouteWithChildren
   OwnerRepoBaselinesIndexRoute: typeof OwnerRepoBaselinesIndexRoute
+  ApiV1UploadsAccountIdUploadIdRoute: typeof ApiV1UploadsAccountIdUploadIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -417,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerSettingsBillingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$owner/settings/general': {
+      id: '/$owner/settings/general'
+      path: '/$owner/settings/general'
+      fullPath: '/$owner/settings/general'
+      preLoaderRoute: typeof OwnerSettingsGeneralRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$owner/settings/members': {
       id: '/$owner/settings/members'
       path: '/$owner/settings/members'
@@ -429,6 +476,13 @@ declare module '@tanstack/react-router' {
       path: '/$owner/settings/usage'
       fullPath: '/$owner/settings/usage'
       preLoaderRoute: typeof OwnerSettingsUsageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/images/$': {
+      id: '/api/images/$'
+      path: '/api/images/$'
+      fullPath: '/api/images/$'
+      preLoaderRoute: typeof ApiImagesSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$owner/$repo/baselines/': {
@@ -458,6 +512,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$owner/$repo/builds/$number/'
       preLoaderRoute: typeof OwnerRepoBuildsNumberIndexRouteImport
       parentRoute: typeof OwnerRepoBuildsNumberRoute
+    }
+    '/api/v1/uploads/$accountId/$uploadId': {
+      id: '/api/v1/uploads/$accountId/$uploadId'
+      path: '/api/v1/uploads/$accountId/$uploadId'
+      fullPath: '/api/v1/uploads/$accountId/$uploadId'
+      preLoaderRoute: typeof ApiV1UploadsAccountIdUploadIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/$owner/$repo/builds/$number/snapshots/$snapshotId': {
       id: '/$owner/$repo/builds/$number/snapshots/$snapshotId'
@@ -510,12 +571,15 @@ const rootRouteChildren: RootRouteChildren = {
   CompareIndexRoute: CompareIndexRoute,
   OwnerRepoSettingsRoute: OwnerRepoSettingsRoute,
   OwnerSettingsBillingRoute: OwnerSettingsBillingRoute,
+  OwnerSettingsGeneralRoute: OwnerSettingsGeneralRoute,
   OwnerSettingsMembersRoute: OwnerSettingsMembersRoute,
   OwnerSettingsUsageRoute: OwnerSettingsUsageRoute,
+  ApiImagesSplatRoute: ApiImagesSplatRoute,
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,
   OwnerRepoBaselinesSplatRoute: OwnerRepoBaselinesSplatRoute,
   OwnerRepoBuildsNumberRoute: OwnerRepoBuildsNumberRouteWithChildren,
   OwnerRepoBaselinesIndexRoute: OwnerRepoBaselinesIndexRoute,
+  ApiV1UploadsAccountIdUploadIdRoute: ApiV1UploadsAccountIdUploadIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

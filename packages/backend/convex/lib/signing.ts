@@ -1,5 +1,11 @@
 export const messages = {
-  grant: (projectId: string, exp: number) => `${projectId}.${exp}`,
+  grant: (projectId: string, accountId: string, exp: number) =>
+    `${projectId}.${accountId}.${exp}`,
+  upload: (key: string, hash: string, exp: number) =>
+    `upload.${key}.${hash}.${exp}`,
+  stored: (key: string, hash: string, bytes: number) =>
+    `stored.${key}.${hash}.${bytes}`,
+  delete: (key: string, exp: number) => `delete.${key}.${exp}`,
 };
 
 export async function sign(secret: string, message: string): Promise<string> {

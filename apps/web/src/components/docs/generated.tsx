@@ -21,7 +21,10 @@ export function LimitsTable() {
       rows={[
         ["Snapshots per build", facts.snapshotsPerBuild],
         ["Shards per build", facts.shardsPerBuild],
-        ["Image size", facts.imageSize],
+        [
+          "Image size",
+          `${facts.imageSize}, ${facts.blobImageSize} with Netlify Blobs`,
+        ],
         ["Image dimensions", facts.imageDimensions],
         ["Snapshot name", facts.snapshotNameLength],
         ["Metadata per snapshot", facts.metadataSize],

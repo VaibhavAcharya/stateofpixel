@@ -38,6 +38,9 @@ importers:
       '@fontsource-variable/lilex':
         specifier: 5.3.0
         version: 5.3.0
+      '@netlify/blobs':
+        specifier: ^11.1.1
+        version: 11.1.1(supports-color@10.2.2)
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1023,6 +1026,10 @@ packages:
 
   '@netlify/blobs@11.1.0':
     resolution: {integrity: sha512-CGb+UsFLywJA22bxcdsTmla25w/AK72sVxj+KUkjees2zw717KUBmm3miTFkDA05vZi1MbnCBIxiU0cEwbWg8w==}
+    engines: {node: '>=22.12.0'}
+
+  '@netlify/blobs@11.1.1':
+    resolution: {integrity: sha512-99H0BJlieiWLkTYQ4ACbw5aGlkbpgyJ3TYF1Hb76wU43eO57LnnP/m3cnMZWNWeAwXhiTEjvUTH7ghJTBoSjFQ==}
     engines: {node: '>=22.12.0'}
 
   '@netlify/cache@4.0.0':
@@ -6562,6 +6569,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@netlify/blobs@11.1.1(supports-color@10.2.2)':
+    dependencies:
+      '@netlify/dev-utils': 6.0.1
+      '@netlify/otel': 7.0.2(supports-color@10.2.2)
+      '@netlify/runtime-utils': 3.0.0
+    transitivePeerDependencies:
+      - supports-color
+
   '@netlify/cache@4.0.0':
     dependencies:
       '@netlify/runtime-utils': 3.0.0
@@ -6782,7 +6797,7 @@ snapshots:
 
   '@netlify/runtime@5.0.4(supports-color@10.2.2)':
     dependencies:
-      '@netlify/blobs': 11.1.0(supports-color@10.2.2)
+      '@netlify/blobs': 11.1.1(supports-color@10.2.2)
       '@netlify/cache': 4.0.0
       '@netlify/runtime-utils': 3.0.0
       '@netlify/types': 3.0.0

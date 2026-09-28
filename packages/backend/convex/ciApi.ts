@@ -281,7 +281,10 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
     build,
     lookups.map((lookup) => lookup.hash),
   );
-  const grant = await createGrant(auth.project.id, Date.now());
+  const grant = await createGrant(
+    { _id: auth.project.id, accountId: build.accountId },
+    Date.now(),
+  );
 
   return Response.json({
     buildId: build.buildId,

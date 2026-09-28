@@ -43,6 +43,8 @@ export const plan = v.union(
 
 export const accountRole = v.union(v.literal("owner"), v.literal("member"));
 
+export const imageStore = v.union(v.literal("convex"), v.literal("blobs"));
+
 export const storageUsage = v.object({
   plan,
   storageBytes: v.number(),
@@ -105,6 +107,7 @@ export default defineSchema({
     ),
     billingPeriodEndsAt: v.optional(v.number()),
     billingCancelsAtPeriodEnd: v.optional(v.boolean()),
+    imageStore: v.optional(imageStore),
     deletedAt: v.optional(v.number()),
   })
     .index("by_githubAccountId", ["githubAccountId"])
@@ -291,8 +294,9 @@ export default defineSchema({
     bytes: v.number(),
     width: v.number(),
     height: v.number(),
-    store: v.literal("convex"),
+    store: imageStore,
     storageId: v.optional(v.id("_storage")),
+    blobKey: v.optional(v.string()),
     lastReferencedAt: v.number(),
     projectId: v.optional(v.id("projects")),
     baseline: v.optional(v.boolean()),

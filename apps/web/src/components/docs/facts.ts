@@ -11,6 +11,7 @@ export const facts = {
   snapshotsPerBuild: count(limits.MAX_SNAPSHOTS_PER_BUILD),
   shardsPerBuild: count(limits.MAX_SHARDS),
   imageSize: `${limits.MAX_IMAGE_BYTES / MB} MB`,
+  blobImageSize: `${limits.MAX_BLOB_IMAGE_BYTES / MB} MB`,
   imageDimensions: `${count(limits.MAX_IMAGE_WIDTH)} x ${count(limits.MAX_IMAGE_HEIGHT)} px`,
   snapshotNameLength: `${count(limits.MAX_SNAPSHOT_NAME_LENGTH)} characters`,
   metadataSize: `${limits.MAX_METADATA_BYTES / 1024} KB`,

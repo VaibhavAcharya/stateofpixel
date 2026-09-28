@@ -40,7 +40,7 @@ The build waits until every shard has uploaded. With `(2 of 4 shards)` in the de
 
 ## Snapshots failed
 
-- **An image is too big.** Images over {facts.imageSize} or {facts.imageDimensions} are rejected, their snapshots fail and `upload` exits 1 with "uploads failed". Take a smaller screenshot or split a long page.
+- **An image is too big.** Images over {facts.imageSize} ({facts.blobImageSize} with [Netlify Blobs storage](/docs/limits#image-storage)) or {facts.imageDimensions} are rejected, their snapshots fail and `upload` exits 1 with "uploads failed". Take a smaller screenshot or split a long page.
 - **A file is not a PNG.** A file that ends in `.png` without being a PNG stops the upload with "Not a PNG file".
 - **A name appears twice.** Two files with the same snapshot name in one build are refused with "appears more than once", or "was already sent by shard" across shards. Two Playwright projects with the same browser and width write the same file, so the second one wins. Give the snapshots different names.
 
