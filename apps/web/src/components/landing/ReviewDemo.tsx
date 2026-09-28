@@ -266,6 +266,8 @@ export function ReviewDemo() {
         case "d":
           if (settings.mode === "side") {
             settings.setSideDiff(!settings.sideDiff);
+          } else if (settings.mode === "diff") {
+            settings.setDiffOnly(!settings.diffOnly);
           }
           break;
         case " ":
@@ -308,7 +310,7 @@ export function ReviewDemo() {
     <div ref={root} className="flex flex-col gap-3">
       <section
         aria-label="Interactive review demo"
-        className="flex h-[640px] flex-col overflow-hidden rounded-lg bg-surface text-left shadow-[0_8px_32px_#11151a18,0_1px_4px_#11151a0a] ring-1 ring-border max-md:h-[560px]"
+        className="flex h-[720px] flex-col overflow-hidden rounded-lg bg-surface text-left shadow-[0_8px_32px_#11151a18,0_1px_4px_#11151a0a] ring-1 ring-border max-md:h-[560px]"
       >
         <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-2">
           <span className="text-lg font-semibold tracking-[-0.01em]">

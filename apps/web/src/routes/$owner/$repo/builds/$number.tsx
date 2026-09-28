@@ -454,6 +454,8 @@ function BuildPage({
         case "d":
           if (settings.mode === "side") {
             settings.setSideDiff(!settings.sideDiff);
+          } else if (settings.mode === "diff") {
+            settings.setDiffOnly(!settings.diffOnly);
           }
           break;
         case " ":
