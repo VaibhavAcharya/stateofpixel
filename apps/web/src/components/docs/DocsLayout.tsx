@@ -10,7 +10,10 @@ import { PublicPage, WIDE } from "../landing/sections";
 export const DOCS_NAV = [
   {
     title: "Get started",
-    pages: [{ slug: "quickstart", label: "Quickstart" }],
+    pages: [
+      { slug: "quickstart", label: "Quickstart" },
+      { slug: "moving", label: "Moving from another tool" },
+    ],
   },
   {
     title: "Capture",
@@ -38,7 +41,18 @@ export const DOCS_NAV = [
   },
   {
     title: "Guides",
-    pages: [{ slug: "stable-screenshots", label: "Stable screenshots" }],
+    pages: [
+      { slug: "stable-screenshots", label: "Stable screenshots" },
+      { slug: "troubleshooting", label: "Troubleshooting" },
+    ],
+  },
+  {
+    title: "Manage",
+    pages: [
+      { slug: "accounts", label: "Accounts and projects" },
+      { slug: "billing", label: "Billing" },
+      { slug: "security", label: "Security" },
+    ],
   },
   {
     title: "Reference",

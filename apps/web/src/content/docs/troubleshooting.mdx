@@ -1,0 +1,47 @@
+import { facts } from "../../components/docs/facts";
+
+export const meta = {
+  title: "Troubleshooting",
+  description: "Fixes for missing checks, failed uploads, stuck builds and other common problems.",
+  lead: "Most problems show up as a message from the CLI or a check description on GitHub. Find yours below.",
+};
+
+## No check on the pull request
+
+- **The pull request comes from a fork.** The CLI prints `skipped, GitHub Actions gives no OIDC token to pull requests from forks` and exits 0. GitHub gives fork pull requests no OIDC token and no secrets, so there is nothing to sign in with. See [Authentication](/docs/cli#authentication).
+- **The workflow cannot get a token.** The CLI stops with `No token. On GitHub Actions add permissions: id-token: write, elsewhere set STATEOFPIXEL_TOKEN.` Add the permission to the job or the workflow.
+- **stateofpixel was not reachable.** The CLI prints `skipped, the service is not reachable` after 3 retries and exits 0, so your CI keeps passing. Pass `--strict` to fail the job instead.
+- **The GitHub App does not have the repository.** The server answers `unauthorized`. Add the repository to the installation on GitHub.
+
+## The check says "Build never finished"
+
+A build that is still waiting for screenshots {facts.buildExpiryMinutes} minutes after it started expires. This happens when a shard never uploaded, or when a build with `--shard auto` never ran `stateofpixel finalize`. A shard that arrives later gets `Build <n> is already expired. Use a new nonce for a new build.` On GitHub Actions, re-run the workflow: a new run attempt uses a new nonce and makes a new build. On other CI, use a new `STATEOFPIXEL_NONCE`. See [Sharding](/docs/sharding).
+
+## The check stays at "Waiting for screenshots"
+
+The build waits until every shard has uploaded. With `(2 of 4 shards)` in the description, the other shards have not reported yet. Every shard of one build needs the same nonce and the same shard total, or the server refuses it with `shard_total_mismatch`.
+
+## Every snapshot is new, or the baseline is wrong
+
+- **The default branch has no build yet.** Run the workflow on pushes to your default branch, so there is a baseline to compare with. See [Baselines](/docs/baselines).
+- **The checkout is shallow.** The CLI sends up to {facts.ancestors} commits of history. With a shallow clone, the server asks GitHub instead and only checks the newest builds on the baseline branch. Use `fetch-depth: 0` in `actions/checkout`.
+- **The suite name changed.** Baselines are kept per suite, so a new `--build-name` starts without one. See [Suites](/docs/suites).
+
+## Snapshots failed
+
+- **An image is too big.** Images over {facts.imageSize} or {facts.imageDimensions} are rejected, their snapshots fail and `upload` exits 1 with `<n> uploads failed.` Take a smaller screenshot or split a long page.
+- **A file is not a PNG.** A file that ends in `.png` without being a PNG stops the upload with `Not a PNG file`.
+- **A name appears twice.** Two files with the same snapshot name in one build are refused with `Snapshot "<name>" appears more than once.`, or `was already sent by shard <i>` across shards. Two Playwright projects with the same browser and width write the same file, so the second one wins. Give the snapshots different names.
+
+## The same snapshot changes on every run
+
+See [Stable screenshots](/docs/stable-screenshots). The snapshot detail says "Looks flaky" when stateofpixel has seen it change back and forth.
+
+## Rate limits and storage
+
+- **Too many requests.** The CLI prints `skipped, Too many requests for this token.` or a daily limit message and exits 0. See [Limits and storage](/docs/limits#limits) for the numbers.
+- **"Storage limit reached, not compared".** The account is past its storage limit and the grace period. New images are not stored, so changes are not compared. Upgrade, lower retention or delete a project. See [When an account is over its limit](/docs/limits#when-an-account-is-over-its-limit).
+
+## Test the upload without sending anything
+
+`npx stateofpixel upload screenshots --dry-run` hashes every image and prints the plan, the snapshot count and the number of ancestors it found, and uploads nothing.

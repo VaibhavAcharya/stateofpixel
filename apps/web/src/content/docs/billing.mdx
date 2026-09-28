@@ -1,0 +1,37 @@
+import { facts } from "../../components/docs/facts";
+
+export const meta = {
+  title: "Billing",
+  description: "Upgrade, change or cancel a plan, and what happens when a payment fails.",
+  lead: "Plans differ only in storage. Every plan has the same features, and builds, snapshots and reviewers are not charged.",
+};
+
+## Plans
+
+The Free plan has {facts.freeStorage} of storage. Paid plans have 25 GB, 100 GB or 500 GB, billed monthly or yearly. See [pricing](/#pricing) for the prices, and [Limits and storage](/docs/limits) for how storage is counted.
+
+Only owners of the account on GitHub change the plan. Everyone else sees the buttons disabled, with a note on who can. See [Members](/docs/accounts#members).
+
+## Upgrade
+
+Open the account's Billing tab, press Upgrade and pick a plan and a billing period. Checkout opens with Dodo Payments, our payment provider, and brings you back to the Billing tab when it is done. The new storage limit applies as soon as the payment clears.
+
+## Change plan
+
+On a paid plan, Change plan moves to another size or billing period without cancelling first. Before anything changes, it shows what you pay now. Unused time on the current plan counts toward the new one, and anything left over is credited to later renewals. You cannot move to a plan smaller than what the account stores today, so free some space first.
+
+## Payment method and invoices
+
+Manage billing opens the Dodo Payments customer portal. Update the card and download invoices there.
+
+## Cancel
+
+Cancel from the customer portal under Manage billing. The plan stays until the end of the billing period, and the Billing tab shows the day it ends. Then the account moves to the Free plan. If it stores more than {facts.freeStorage} by then, the {facts.graceDays} day grace period starts that day. See [When an account is over its limit](/docs/limits#when-an-account-is-over-its-limit).
+
+Uninstalling the GitHub App does not cancel the plan. See [Remove a repository or uninstall the app](/docs/accounts#remove-a-repository-or-uninstall-the-app).
+
+## When a payment fails
+
+When a renewal fails, the account pages say that the last payment failed. Update the payment method under Manage billing to keep the plan.
+
+See the [refund policy](/refunds) for refunds.

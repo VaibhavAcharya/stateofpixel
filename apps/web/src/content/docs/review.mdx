@@ -4,6 +4,12 @@ export const meta = {
   lead: "Every build has a page that lists its snapshots next to the baseline. The check on the pull request links to it.",
 };
 
+## The builds list
+
+The project page lists its builds, newest first. Filter picks which states show. By default it hides builds with no changes and expired builds, so the list shows what needs attention. Default and All at the top of the menu reset it.
+
+Click a branch or a pull request number in a row to show only its builds. Each filter shows as a chip you can clear, and Clear filters removes them all. Filters are part of the address, so a filtered list can be shared.
+
 ## The build page
 
 The sidebar groups snapshots into Changed, Added, Removed, Failed and Unchanged. The first changed snapshot opens when the page loads, and each snapshot has its own link you can share.
@@ -26,13 +32,25 @@ Images show at Fit by default. Scroll or drag to pan, and pinch, or scroll with 
 
 ## Approve and reject
 
-Anyone with write access to the repository on GitHub can review. Everyone with read access can open the page. There are no seats.
+Anyone with write access to the repository on GitHub can review. See [Who can review](#who-can-review).
 
 - Approve a snapshot with <kbd>a</kbd>, which also moves to the next pending one, or approve every pending snapshot with Approve all.
 - Reject with <kbd>r</kbd> and an optional comment. One rejection makes the check fail with "1 change rejected".
 - Undo a review with <kbd>u</kbd>.
 
 When every change is approved, the check turns green on GitHub. See [The GitHub check](/docs/checks).
+
+## Who can review
+
+Access follows the repository on GitHub, and there are no seats:
+
+- Read access opens builds and baselines.
+- Write access, including maintain and admin, approves and rejects changes. Everyone else sees "You need write access on GitHub to review".
+- Admin access opens the project settings.
+
+stateofpixel asks GitHub for your permission again when you open a project and the last check is more than 5 minutes old, so a change on GitHub applies within about 5 minutes. If that check cannot run, the last known permission is kept for up to 15 minutes. Links to images of a private project that were already shown keep working for up to 2 hours.
+
+Roles on the account, which decide who changes the plan, are read from GitHub each time you load the site. Changing the plan always checks with GitHub first.
 
 ## New pushes
 
