@@ -15,19 +15,20 @@ export const Route = createFileRoute("/refunds")({
 
 function Refunds() {
   return (
-    <LegalPage title="Refund policy" updated="September 25, 2026">
+    <LegalPage title="Refund policy" updated="September 28, 2026">
       <p>
-        The free plan has no charges. Paid plans, when offered, are
-        subscriptions billed in advance, monthly or yearly, as described in the{" "}
+        The free plan has no charges. Paid plans are subscriptions billed in
+        advance, monthly or yearly, as described in the{" "}
         <Link to="/terms">terms</Link>.
       </p>
 
       <h2>Cancel anytime</h2>
       <p>
-        You can cancel a paid plan at any time by writing to <SupportEmail />.
-        After you cancel, your plan does not renew. It stays active until the
-        end of the period you paid for, then your account moves to the free
-        plan.
+        You can cancel a paid plan at any time under Manage billing, on the
+        account's Billing tab. If you cancel at the next billing date, your plan
+        does not renew. It stays active until the end of the period you paid
+        for, then your account moves to the free plan. If you cancel now, your
+        account moves to the free plan right away.
       </p>
 
       <h2>No refunds</h2>

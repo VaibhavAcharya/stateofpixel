@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { facts } from "../components/docs/facts";
 import { LegalPage, SupportEmail } from "../components/LegalPage";
 import { PAGES, pageLinks, pageMeta } from "../lib/pageMeta";
 
@@ -122,13 +123,14 @@ function Privacy() {
       <ul>
         <li>
           Builds of pull requests and other branches are deleted after the
-          retention period set in the project settings, 60 days by default,
-          counted from when the pull request closes or the branch gets no new
-          builds.
+          retention period set in the project settings, {facts.retentionDays}{" "}
+          days by default, counted from when the pull request closes or the
+          branch gets no new builds.
         </li>
         <li>Screenshots and diffs that no build uses any more are deleted.</li>
         <li>
-          Deleting a project in its settings deletes its builds and images.
+          Deleting a project in its settings deletes its builds, and the images
+          that no other project uses.
         </li>
         <li>
           Uninstalling the GitHub App archives your projects. Their data stays

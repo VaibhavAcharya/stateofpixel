@@ -9,3 +9,7 @@ const modules = import.meta.glob<DocModule>("./*.mdx", { eager: true });
 export function findDoc(slug: string): DocModule | undefined {
   return modules[`./${slug}.mdx`];
 }
+
+export const DOC_SLUGS = Object.keys(modules).map((path) =>
+  path.slice("./".length, -".mdx".length),
+);

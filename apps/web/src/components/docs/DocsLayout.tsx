@@ -252,7 +252,10 @@ export function H2({ id, children }: { id: string; children: ReactNode }) {
         className="text-text! no-underline! hover:no-underline!"
       >
         {children}
-        <span className="ml-2 text-subtle opacity-0 transition-opacity duration-100 group-hover:opacity-100">
+        <span
+          aria-hidden
+          className="ml-2 text-subtle opacity-0 transition-opacity duration-100 group-hover:opacity-100"
+        >
           #
         </span>
       </a>

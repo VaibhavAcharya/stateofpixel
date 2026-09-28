@@ -1,3 +1,5 @@
+import { facts } from "../components/docs/facts";
+
 export const SITE_URL = "https://stateofpixel.com";
 
 export type PageMeta = { path: string; title: string; description: string };
@@ -6,8 +8,7 @@ export const PAGES = {
   home: {
     path: "/",
     title: "Catch UI regressions before they merge.",
-    description:
-      "Visual regression testing for GitHub pull requests. Your CI takes the screenshots, a person approves each change. Free up to 10 GB.",
+    description: `Visual regression testing for GitHub pull requests. Your CI takes the screenshots, a person approves each change. Free up to ${facts.freeStorage}.`,
   },
   brand: {
     path: "/brand",

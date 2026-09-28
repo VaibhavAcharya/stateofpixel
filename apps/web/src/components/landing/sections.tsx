@@ -122,8 +122,8 @@ export function HeroCentered() {
 
 function Checker({ children }: { children: ReactNode }) {
   return (
-    <div className="checker rounded-xl p-12 ring-1 ring-border max-md:p-3">
-      <div className="mx-auto max-w-[1180px]">{children}</div>
+    <div className="checker rounded-xl p-6 ring-1 ring-border max-md:p-3">
+      {children}
     </div>
   );
 }
@@ -133,15 +133,15 @@ export function DemoSection() {
     <section id="demo" className={`${WIDE} scroll-mt-20`}>
       <Checker>
         <ReviewDemo />
-        <DemoKeys />
       </Checker>
+      <DemoKeys />
     </section>
   );
 }
 
 function DemoKeys() {
   return (
-    <p className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted max-lg:hidden">
+    <p className="mx-auto mt-4 flex w-fit flex-wrap items-center justify-center gap-x-4 gap-y-2 rounded-lg bg-surface px-4 py-2 text-xs text-muted ring-1 ring-border max-lg:hidden">
       <span className="font-medium text-text">
         Same review page as the app. Try the keys:
       </span>
@@ -221,6 +221,21 @@ const SETUP_TABS = {
 
 type SetupTabKey = keyof typeof SETUP_TABS;
 
+export const HOW_STEPS: [string, string][] = [
+  [
+    "Install the GitHub App",
+    "Pick the repositories. Each one becomes a project.",
+  ],
+  [
+    "Add the reporter or one CI step",
+    "Playwright, Storybook or any folder of PNGs.",
+  ],
+  [
+    "Open a pull request",
+    "The check links to the review page. Approve, and it turns green.",
+  ],
+];
+
 export function HowSteps() {
   const [tab, setTab] = useState<SetupTabKey>("playwright");
   const current: SetupTab = SETUP_TABS[tab];
@@ -236,20 +251,7 @@ export function HowSteps() {
             branch becomes the baseline.
           </LeadCopy>
           <ol className="mt-10 flex flex-col">
-            {[
-              [
-                "Install the GitHub App",
-                "Pick the repositories. Each one becomes a project.",
-              ],
-              [
-                "Add the reporter or one CI step",
-                "Playwright, Storybook or any folder of PNGs.",
-              ],
-              [
-                "Open a pull request",
-                "The check links to the review page. Approve, and it turns green.",
-              ],
-            ].map(([title, text], index) => (
+            {HOW_STEPS.map(([title, text], index) => (
               <li
                 key={title}
                 className="flex gap-4 border-t border-dotted border-field-border/50 py-5"
@@ -264,6 +266,13 @@ export function HowSteps() {
               </li>
             ))}
           </ol>
+          <p className="border-t border-dotted border-field-border/50 pt-5 text-sm text-muted">
+            Using a coding agent? The{" "}
+            <Link to="/docs" className="text-link">
+              quickstart
+            </Link>{" "}
+            has a prompt that sets it up for you.
+          </p>
         </div>
         <div className="flex min-w-0 flex-col gap-3 lg:pt-2">
           <div
@@ -316,7 +325,7 @@ export function HowSteps() {
   );
 }
 
-const ACCESS: [string, string][] = [
+export const ACCESS: [string, string][] = [
   ["Read", "See builds, baselines and snapshot history"],
   ["Write", "Approve and reject changes"],
   ["Admin", "Change project settings and tokens"],
@@ -358,7 +367,7 @@ export function TeamSection() {
   );
 }
 
-const PIPELINES: [string, string][] = [
+export const PIPELINES: [string, string][] = [
   [
     "Sharded suites",
     "Each shard uploads its part, and the check reports once, after the last one. Use --shard 2/4, or --shard auto with a finalize step.",
@@ -368,16 +377,32 @@ const PIPELINES: [string, string][] = [
     "An image approved once on a pull request stays approved on the next push. A rejected image comes back as pending, with a note.",
   ],
   [
+    "Squash and rebase merges",
+    "The build on main finds the pull request it came from, and marks changes that were never approved there.",
+  ],
+  [
+    "Several suites",
+    "Storybook and Playwright in one repository each get their own baselines and their own check, like stateofpixel/storybook.",
+  ],
+  [
+    "Partial runs",
+    "Pass --subset when only some tests ran, and missing snapshots are not reported as removed. The Playwright reporter does this on its own when a test fails.",
+  ],
+  [
+    "Flaky screenshots",
+    "A snapshot that flips back and forth on main, or differs between two builds of the same commit, is marked as looking flaky on the review page.",
+  ],
+  [
     "Our outages",
     "If stateofpixel is down or rate limited, the upload warns and exits 0. Pass --strict to fail instead.",
   ],
   [
     "Running out of storage",
-    "The CLI warns at 80%. After 14 days over the limit, new images are not stored and the check passes with a note, so CI keeps passing.",
+    `The CLI warns at ${facts.storageWarning}. After ${facts.graceDays} days over the limit, new images are not stored and the check passes with a note, so CI keeps passing.`,
   ],
   [
     "Large suites",
-    "Up to 20,000 snapshots a build. An unchanged screenshot costs one hash, not an upload.",
+    `Up to ${facts.snapshotsPerBuild} snapshots a build. An unchanged screenshot costs one hash, not an upload.`,
   ],
 ];
 
@@ -385,7 +410,7 @@ export function PipelinesSection() {
   return (
     <section className={SECTION}>
       <LeadCopy title="Made for real pipelines." className="max-w-[720px]">
-        Sharding, rebases, outages and limits are handled by default.
+        Sharding, merges, suites, outages and limits are handled by default.
       </LeadCopy>
       <DottedRows items={PIPELINES} />
     </section>
@@ -412,7 +437,7 @@ export function DottedRows({ items }: { items: [string, string][] }) {
 
 /* Promises */
 
-const PROMISES: [string, string][] = [
+export const PROMISES: [string, string][] = [
   [
     "Your code stays in your CI.",
     "The CLI sends PNGs, their names and hashes, diff results, and git and CI metadata.",
@@ -466,7 +491,15 @@ export function SwitchStrip() {
       <div className="flex flex-wrap items-center justify-between gap-8 rounded-xl bg-surface-2 p-8 max-sm:p-5">
         <LeadCopy title="Coming from another tool?" className="max-w-[520px]">
           Switch in one pull request. Your first build on the default branch
-          becomes the baseline.
+          becomes the baseline. The{" "}
+          <Link
+            to="/docs/$slug"
+            params={{ slug: "moving" }}
+            className="text-link"
+          >
+            moving guide
+          </Link>{" "}
+          has the details.
         </LeadCopy>
         <ul className="flex flex-wrap gap-2">
           {COMPETITORS.map((competitor) => (
@@ -498,14 +531,14 @@ export function SwitchStrip() {
 
 /* FAQ */
 
-const FAQ: [string, string][] = [
+export const FAQ: [string, string][] = [
   [
     "What do you receive from my CI?",
     "PNG files, snapshot names and their SHA-256 hashes, diff results from your runner, git metadata (commit, branch, base branch, pull request number, recent ancestor commits) and the CI run URL. We never receive source code, and we never run it.",
   ],
   [
     "What GitHub permissions does the app ask for?",
-    "Commit statuses write, to set the check. Pull requests read, for the PR number and base branch. Contents read, which GitHub requires for the compare API we use to find the baseline commit. Metadata read, which every app has.",
+    "Commit statuses write, to set the check. Pull requests read and write, where read finds the PR number, base branch and squash merges, and write is not used. Contents read, which GitHub requires for the compare API we use to find the baseline commit. Metadata read, which every app has. The app also asks for Checks write and Actions read, which it does not use.",
   ],
   [
     "Who can approve changes?",
@@ -517,7 +550,7 @@ const FAQ: [string, string][] = [
   ],
   [
     "How do you handle flaky screenshots?",
-    "Screenshots render in your own CI, so they match what your tests see. The CLI ignores anti-aliasing by default and has a color threshold. For stable renders, run capture in the Playwright Docker image and disable animations.",
+    "Screenshots render in your own CI, so they match what your tests see. The CLI ignores anti-aliasing by default and has a color threshold. A snapshot that flips back and forth on main is marked as looking flaky, with a link to the fixes. For stable renders, run capture in the Playwright Docker image and disable animations.",
   ],
   [
     "What happens when stateofpixel is down?",
@@ -541,7 +574,7 @@ const FAQ: [string, string][] = [
   ],
   [
     "What happens if I cancel a paid plan?",
-    "The plan stays until the end of the billing period. Then the account moves to the Free plan with 10 GB of storage.",
+    `Cancel at the next billing date and the plan stays until the end of the billing period. Then the account moves to the Free plan with ${facts.freeStorage} of storage.`,
   ],
 ];
 

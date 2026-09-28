@@ -226,6 +226,7 @@ URL scheme mirrors GitHub: `/{owner}/{repo}`. Public pages (5.1) are server-rend
 | `/privacy`, `/terms`, `/refunds` | Legal pages. Support email `hello@stateofpixel.com`. |
 | `/docs`, `/docs/{page}` | User docs: Quickstart, Moving from another tool; Playwright, Storybook, Any screenshots; Other CI, Sharding, Suites; Reviewing changes, The GitHub check, Baselines; Stable screenshots, Troubleshooting; Accounts and projects, Billing, Security; CLI, Limits and storage. Linked from the public header and footer and the user menu. The pages are MDX in `apps/web/src/content/docs/`, served by `routes/docs/$slug.tsx`, with the nav in `components/docs/DocsLayout.tsx`. Tables of limits, check states, CLI flags and shortcuts render from the code (`components/docs/generated.tsx`). |
 | `/robots.txt`, `/sitemap.xml` | `robots.txt` is static in `apps/web/public` and allows everything. `sitemap.xml` is written at build time by `apps/web/scripts/og-images.ts` from the same page list as the Open Graph images: the public pages, the comparisons and the docs. In dev, a Vite middleware in `vite.config.ts` serves `sitemap.xml` and the Open Graph images from that list on each request. Each of those pages sets a canonical URL on `stateofpixel.com` through `pageLinks` in `src/lib/pageMeta.ts`, so deploy previews do not compete in search. |
+| `/llms.txt`, `/llms-full.txt`, `{page}.md` | Written at build time by `apps/web/scripts/llms.ts`, called from `og-images.ts`. `llms.txt` follows [llmstxt.org](https://llmstxt.org): a summary, then a link to the Markdown version of every public page, grouped like the docs nav, with the legal and brand pages under Optional. Each page has a Markdown copy at its path plus `.md`, and `/index.md` for the landing page. Docs, legal and brand pages are rendered by the built server and converted from their `<article>` or `<main>` to Markdown; the landing and comparison pages are written from their data in `sections.tsx`, `Pricing.tsx` and `content/compare.ts`. `llms-full.txt` joins every docs page in nav order. The build fails when a docs page is missing from the nav. In dev, a Vite middleware serves the same files. `netlify.toml` serves `.md` as `text/markdown`. |
 
 Paid plans in the pricing block show "Coming soon" only when `billing.available` returns false; while the query loads, and in the server-rendered page, they show as available. Upgrading happens only from the plan box on the Billing tab (5.10).
 
@@ -255,10 +256,9 @@ Shown when the signed-in user has no installations. One button to the GitHub App
 +--------------------------------------------------------------+
 ```
 
-- Tabs: Projects (this page), Members (5.9) and Billing (5.10). Every account member sees all three. The header, the account banner and the tabs are the same on all three pages.
+- Tabs: Projects (this page), Members (5.9), Usage (5.11) and Billing (5.10). Usage is for owners only. The header, the account banner and the tabs are the same on all of them.
 - Account switcher for users in several orgs. Each account shows its plan in muted text.
 - One row per project: name, latest build number, branch, conclusion pill, relative time.
-- Storage meter links to the Usage page (owners only; others see no meter). It ships with the Usage page (M3).
 - Account banner, one at a time, most urgent first. The same banner shows on project pages to users with write access.
   1. Storage over the limit, in grace or blocked (4.10). Red.
   2. A failed renewal (`on_hold` or `past_due`): "The last payment for the 25 GB plan failed." Red. The plan stays until Dodo cancels the subscription.
@@ -277,7 +277,7 @@ Builds tab:
 +------------------------------------------------------------------+
 | acme / web-app                     Builds  Baselines  Settings   |
 +------------------------------------------------------------------+
-| Branch [all v]  Status [all v]  Build name [all v]               |
+| Branch [all v]  Status [all v]                                   |
 |                                                                  |
 |  #   Status          Branch        Commit              PR   Time |
 | 412  no changes      main          Fix footer (a1b2c3) -    2m   |
@@ -364,6 +364,7 @@ Keyboard shortcuts (`?` shows this list as an overlay):
 | `u` | Undo review on current snapshot |
 | `shift+a` | Approve all pending |
 | `1` `2` `3` `4` | Side by side, Diff, Slider, Flip |
+| `d` | In Side by side, toggle the diff overlay. In Diff, toggle Diff only |
 | `space` | In Flip mode, toggle image |
 | `f` / `0` | Fit / 100% zoom |
 | `+` / `-` | Zoom in / out |
@@ -395,7 +396,7 @@ Browse what is approved on the default branch now.
 | General | Auto-approve branches | `main` plus the default branch | Glob list, like `main, release/*`. |
 | Diff | Threshold | 0.1 | Passed to the CLI in the build response, so config lives in one place. The CLI config overrides it. |
 | Diff | Include anti-aliasing | off | |
-| Checks | Check name | `stateofpixel` | With several build names: `stateofpixel / {build name}`. |
+| Checks | Check name | `stateofpixel` | Other build names: `stateofpixel/{build name}`. |
 | Retention | Keep PR-only images for | 60 days | 7 to 365. The Usage tab (5.11) shows the storage of each project's PR-only images; showing it here is not built yet. |
 | Tokens | Project tokens | none | Create, name, last used time, revoke. Token shown once. |
 | Danger | Delete project | | Type the repo name to confirm. Deletes the project row right away and its builds, snapshots, reviews, approvals and tokens in chunks. A repository still in the installation comes back as an empty project on the next sync. |
@@ -791,7 +792,7 @@ For finalize mode. Body `{ "buildName": "default", "nonce": "...", "skipIfEmpty"
 
 ### 7.5 GET /builds/{id}
 
-Returns status, conclusion, counts, URL and `shards: { done, total }`. The CLI uses it for `--wait` (M3).
+Returns status, conclusion, counts, URL and `shards: { done, total }`. The CLI polls it until the build is finalized.
 
 ### 7.6 Baseline selection
 
@@ -1012,4 +1013,6 @@ The CI API enforces these. A request over a limit gets a 4xx with the codes in b
 - Thumbnails. Generating them needs decoding on the server; the browser scales full images instead. Revisit if the Baselines grid is slow.
 - Ignore regions drawn in the UI. Masks live in test code.
 - Organization-level roles beyond what GitHub gives.
-- Wait-for-review in CI (`--wait`). PR comments and billing are tracked in ROADMAP.md. Flaky detection stores nothing yet: no flaky badge in the snapshot list, no filter and no auto-approve of known variants.
+- Wait-for-review in CI (`--wait`).
+- PR comments.
+- Auto-approve of known flaky variants. Flaky detection stores nothing yet: no flaky badge in the snapshot list and no filter, tracked in ROADMAP.md.

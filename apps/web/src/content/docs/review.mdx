@@ -6,9 +6,9 @@ export const meta = {
 
 ## The builds list
 
-The project page lists its builds, newest first. Filter picks which states show. By default it hides builds with no changes and expired builds, so the list shows what needs attention. Default and All at the top of the menu reset it.
+The project page lists its builds, newest first. Click the Build column header to put the oldest first. Filter picks which states show. By default it hides builds with no changes and expired builds, so the list shows what needs attention. Default and All at the top of the menu reset it.
 
-Click a branch or a pull request number in a row to show only its builds. Each filter shows as a chip you can clear, and Clear filters removes them all. Filters are part of the address, so a filtered list can be shared.
+Click a branch or a pull request number in a row to show only its builds. Each filter shows as a chip you can clear, and Clear filters removes them all. Filters and the order are part of the address, so a filtered list can be shared.
 
 ## The build page
 
@@ -22,7 +22,7 @@ The sidebar groups snapshots into Changed, Added, Removed, Failed and Unchanged.
 ## Compare
 
 - **Side by side**: baseline left, new right, with the diff drawn over the new image. Press <kbd>d</kbd> to hide it.
-- **Diff**: the new image with the changed pixels in green.
+- **Diff**: the new image with the changed pixels in green. Press <kbd>d</kbd> for Diff only, which shows the changed pixels without the image.
 - **Slider**: drag a handle to wipe between the two.
 - **Flip**: one frame that switches between baseline and new when you press <kbd>space</kbd>. The best mode for 1 pixel shifts.
 
@@ -35,10 +35,19 @@ Images show at Fit by default. Scroll or drag to pan, and pinch, or scroll with 
 Anyone with write access to the repository on GitHub can review. See [Who can review](#who-can-review).
 
 - Approve a snapshot with <kbd>a</kbd>, which also moves to the next pending one, or approve every pending snapshot with Approve all.
-- Reject with <kbd>r</kbd> and an optional comment. One rejection makes the check fail with "1 change rejected".
+- Reject with <kbd>r</kbd> and an optional comment. One rejection makes the check fail with "1 change rejected". Reject build rejects every pending snapshot at once.
 - Undo a review with <kbd>u</kbd>.
 
 When every change is approved, the check turns green on GitHub. See [The GitHub check](/docs/checks).
+
+## Snapshot details
+
+Under the image, the snapshot shows what else is known about it:
+
+- **Review**: who approved or rejected it and when, with the comment, or the build an approval carried over from.
+- **Looks flaky**: shown when the snapshot changed back and forth on the default branch, or another build of the same commit has a different image. See [Find flaky snapshots](/docs/stable-screenshots#find-flaky-snapshots).
+- **History**: the recent builds on the default branch where the image changed. History opens the snapshot on the Baselines tab. See [Baselines](/docs/baselines).
+- **Details**: the metadata your test sent, like browser, viewport and test file.
 
 ## Who can review
 
@@ -54,7 +63,7 @@ Roles on the account, which decide who changes the plan, are read from GitHub ea
 
 ## New pushes
 
-A new push on the pull request makes a new build, and the older build is marked superseded, with a link to the newest one. Approvals carry over: if an image was approved in an earlier build of the same pull request and suite, it is approved again, and the page says who approved it and in which build. So a rebase does not ask you to review the same pixels twice.
+A new push on the pull request makes a new build, and the older build is marked superseded, with a link to the newest one. A superseded build cannot be reviewed, so review the newest one. Approvals carry over: if an image was approved in an earlier build of the same pull request and suite, it is approved again, and the page says who approved it and in which build. So a rebase does not ask you to review the same pixels twice.
 
 Rejections do not carry over. A rejected image that shows up again is pending, with a note that it was rejected before.
 

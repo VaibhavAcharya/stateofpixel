@@ -1,5 +1,7 @@
 import { CheckIcon } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
+import { DEFAULT_RETENTION_DAYS } from "@stateofpixel/backend/limits";
+import { PLAN_STORAGE_LIMIT_BYTES } from "@stateofpixel/backend/storage";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useState } from "react";
 import { ARGOS, CHROMATIC, cheapestPlan } from "../../lib/competitorPricing";
@@ -10,11 +12,14 @@ import { LeadCopy } from "../ui";
 
 const SECTION = "mx-auto max-w-[1448px] px-6 py-24 max-sm:px-4 max-sm:py-12";
 
-const RETENTION_DAYS = 60;
+const RETENTION_DAYS = DEFAULT_RETENTION_DAYS;
 const YEARLY_DISCOUNT = 0.1;
 
-const FREE_GIGABYTES = 10;
-const LARGEST_GIGABYTES = 500;
+const gigabytesOf = (plan: keyof typeof PLAN_STORAGE_LIMIT_BYTES) =>
+  PLAN_STORAGE_LIMIT_BYTES[plan] / 1024 ** 3;
+
+const FREE_GIGABYTES = gigabytesOf("free");
+const LARGEST_GIGABYTES = gigabytesOf("500gb");
 
 export type Tier = {
   plan: "free" | PaidPlan;
@@ -24,8 +29,8 @@ export type Tier = {
 
 export const TIERS: Tier[] = [
   { plan: "free", gigabytes: FREE_GIGABYTES, monthly: 0 },
-  { plan: "25gb", gigabytes: 25, monthly: 15 },
-  { plan: "100gb", gigabytes: 100, monthly: 100 },
+  { plan: "25gb", gigabytes: gigabytesOf("25gb"), monthly: 15 },
+  { plan: "100gb", gigabytes: gigabytesOf("100gb"), monthly: 100 },
   { plan: "500gb", gigabytes: LARGEST_GIGABYTES, monthly: 500 },
 ];
 
@@ -211,7 +216,8 @@ export function PricingPlans() {
         className="max-w-[760px]"
       >
         No plan charges for snapshots, seats or builds. {FREE_GIGABYTES} GB is
-        free, which covers most teams.
+        free, which covers most teams. The Usage tab shows what each project
+        stores.
       </LeadCopy>
       <div className="mt-12 flex flex-col gap-4">
         <BillingSwitch billing={billing} onChange={setBilling} />

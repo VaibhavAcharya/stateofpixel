@@ -1,3 +1,4 @@
+import { facts } from "../components/docs/facts";
 import type { PageMeta } from "../lib/pageMeta";
 
 export const CHECKED = "27 September 2026";
@@ -42,18 +43,16 @@ export type RowKey = RowKeyOf<(typeof ROW_GROUPS)[number]>;
 
 export const OURS: Record<RowKey, string> = {
   billing: "Storage. Snapshots, builds and seats are free.",
-  free: "10 GB stored. Snapshots are not charged.",
+  free: `${facts.freeStorage} stored. Snapshots are not charged.`,
   paid: "$15 a month for 25 GB.",
-  limit:
-    "Warns at 80%. After 14 days over, new images are not stored and the check passes with a note.",
+  limit: `Warns at ${facts.storageWarning}. After ${facts.graceDays} days over, new images are not stored and the check passes with a note.`,
   seats: "None. Access comes from GitHub roles.",
   renders: "Your CI.",
-  compares: "Your CI, before anything uploads.",
+  compares: "Your CI. Only the images upload.",
   browsers: "Whatever your CI runs.",
   runners: "Playwright, Storybook, or any tool that writes PNG files.",
   git: "GitHub.",
-  retention:
-    "Default branch builds kept. Pull request builds 60 days after close, 7 to 365 days.",
+  retention: `Default branch builds kept. Pull request builds ${facts.retentionDays} days after close, ${facts.minRetentionDays} to ${facts.maxRetentionDays} days.`,
   openSource: "No. Closed source for now.",
 };
 
@@ -245,7 +244,7 @@ const chromatic: Competitor = {
     ],
     [
       "The free plan never stops CI",
-      "Chromatic's free plan pauses testing and review for the rest of the month. Ours warns, waits 14 days, then passes the check with a note.",
+      `Chromatic's free plan pauses testing and review for the rest of the month. Ours warns, waits ${facts.graceDays} days, then passes the check with a note.`,
     ],
   ],
   ahead: [
@@ -405,7 +404,7 @@ const argos: Competitor = {
     ],
     [
       "The diff runs on your runner",
-      "The CLI compares against the baseline before it uploads, so our server only stores bytes. That is why storage is the only line on the bill.",
+      "The CLI compares with the baseline on your runner and uploads the diff image, so our server only stores bytes. That is why storage is the only line on the bill.",
     ],
     [
       "Free for teams, with no pause",
@@ -420,7 +419,7 @@ const argos: Competitor = {
     ["GitLab", "Argos supports GitLab. stateofpixel works with GitHub only."],
     [
       "Flaky tests and PR comments",
-      "Argos ranks tests by flakiness and comments on the pull request. stateofpixel has neither yet.",
+      "Argos ranks tests by flakiness and comments on the pull request. stateofpixel marks a snapshot that looks flaky on the review page, and reports on the pull request through its check only.",
     ],
     [
       "An SDK per framework",
@@ -456,7 +455,7 @@ const argos: Competitor = {
     ],
     [
       "What happens at the storage limit?",
-      "The CLI warns at 80%. After 14 days over the limit, new images are not stored and the check passes with a note, so CI keeps passing.",
+      `The CLI warns at ${facts.storageWarning}. After ${facts.graceDays} days over the limit, new images are not stored and the check passes with a note, so CI keeps passing.`,
     ],
   ],
 };
@@ -614,7 +613,7 @@ const percy: Competitor = {
     ],
     [
       "How much does stateofpixel cost compared with Percy?",
-      "Percy bills per screenshot after the included amount. stateofpixel bills for storage, with 10 GB free. The calculator on this page compares both for your suite.",
+      `Percy bills per screenshot after the included amount. stateofpixel bills for storage, with ${facts.freeStorage} free. The calculator on this page compares both for your suite.`,
     ],
   ],
 };

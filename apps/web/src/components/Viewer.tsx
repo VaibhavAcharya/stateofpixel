@@ -289,7 +289,7 @@ function modeSwitch(settings: ViewerSettings, snapshot: ViewerSnapshot) {
   if (settings.mode === "diff" && snapshot.diffImage !== null) {
     return {
       label: "Diff only",
-      key: undefined,
+      key: "d",
       on: settings.diffOnly,
       toggle: () => settings.setDiffOnly(!settings.diffOnly),
     };
