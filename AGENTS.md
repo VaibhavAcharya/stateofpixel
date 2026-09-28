@@ -5,7 +5,7 @@ Read these before changing code. Link to them instead of copying their content.
 - [README.md](README.md): layout, development, checks, dogfooding, contributing
 - [docs/OPERATIONS.md](docs/OPERATIONS.md): environments, secrets, billing, the test repo, releases
 - [docs/PLAN.md](docs/PLAN.md): why we build it, the stack, costs and risks
-- [docs/SPEC.md](docs/SPEC.md): source of truth for internals: tables, API, functions, crons and rules behind the docs
+- [docs/SPEC.md](docs/SPEC.md): the rules behind the code: states, flows, the CI API, GitHub, storage, crons and limits
 - [docs/DESIGN.md](docs/DESIGN.md): design system for `apps/web`
 - [docs/ROADMAP.md](docs/ROADMAP.md): progress; check an item off when it is merged to `main`
 - [apps/web/src/content/docs](apps/web/src/content/docs): user docs, rendered at `/docs`; the source of truth for user-facing behavior
@@ -29,5 +29,5 @@ Biome formats and lints; `pnpm format` fixes formatting.
 ## Conventions
 
 - Commit titles are conventional commits, because release-please builds the CLI changelog from them.
-- When user-facing behavior changes, update the docs page in `apps/web/src/content/docs` in the same change. When internals change, update SPEC.md.
+- When user-facing behavior changes, update the docs page in `apps/web/src/content/docs` in the same change. When a state, a flow, the CI API, a GitHub, storage or retention rule, or a limit changes, update SPEC.md. Do not copy fields, function lists or page layouts into it; the code holds those.
 - Limits, check states, CLI flags and shortcuts render in the docs from code (`convex/lib/limits.ts`, `convex/lib/checkStatus.ts`, `packages/cli/src/reference.ts`, `SHORTCUT_GROUPS`). Change the code, not the docs text.

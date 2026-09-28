@@ -83,7 +83,7 @@ The [docs](https://stateofpixel.com/docs) cover the Playwright reporter, Storybo
 Design docs:
 
 - [docs/PLAN.md](docs/PLAN.md): why we build it, the stack, costs and risks
-- [docs/SPEC.md](docs/SPEC.md): internals: tables, API, functions, crons and the rules behind the docs
+- [docs/SPEC.md](docs/SPEC.md): the rules behind the code: states, flows, the CI API, GitHub, storage, crons and limits
 - [docs/DESIGN.md](docs/DESIGN.md): the design system of the web app
 - [docs/ROADMAP.md](docs/ROADMAP.md): what is done and what is next
 - [docs/OPERATIONS.md](docs/OPERATIONS.md): deployments, secrets, billing and releases
@@ -142,6 +142,6 @@ Biome formats and lints; `pnpm format` fixes formatting. `typecheck` in `apps/we
 ## Contributing
 
 - Commit titles are [conventional commits](https://www.conventionalcommits.org), because release-please builds the CLI changelog from them.
-- When user-facing behavior changes, update its page in `apps/web/src/content/docs` in the same change. When internals change, update [SPEC.md](docs/SPEC.md).
+- When user-facing behavior changes, update its page in `apps/web/src/content/docs` in the same change. When a state, a flow, the CI API, a GitHub, storage or retention rule, or a limit changes, update [SPEC.md](docs/SPEC.md). Do not copy fields, function lists or page layouts into it; the code holds those.
 - Limits, check states, CLI flags and keyboard shortcuts render in the docs from code. Change the code, not the docs text.
 - Run the checks above before opening a pull request.

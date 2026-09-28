@@ -164,7 +164,7 @@ Missing pages:
 
 ## Later
 
-- [ ] Open-source the CLI as a read-only mirror
+- [x] Open-source the CLI as a read-only mirror
 - [ ] Open-source the server
 - [ ] Optional: move images stored before R2 from Convex storage to R2
 - [ ] Per-account egress tracking. Images are served from R2, which has no egress fee.

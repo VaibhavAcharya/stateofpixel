@@ -1,6 +1,6 @@
 # stateofpixel: product spec
 
-Companion to [PLAN.md](./PLAN.md). PLAN.md says why; this file says exactly what: pages, tables, API, CLI, states and flows. Items marked (proposal) are defaults that are not final. Items marked (unverified) need a check against GitHub or Convex docs before we build on them.
+Companion to [PLAN.md](./PLAN.md). PLAN.md says why; this file holds the rules the code does not show on its own: states, flows, the CI API, GitHub, storage and limits. The code is the source of truth for tables (`schema.ts`), functions and pages, and the user docs for user-facing behavior. Items marked (proposal) are defaults that are not final. Items marked (unverified) need a check against GitHub or Convex docs before we build on them.
 
 Stack: pnpm monorepo, TanStack Start on Netlify, Convex for database, auth (Convex Auth) and file storage. See the [README](../README.md) for the repo layout and dogfooding.
 
@@ -10,8 +10,8 @@ Stack: pnpm monorepo, TanStack Start on Netlify, Convex for database, auth (Conv
 2. Access model
 3. States
 4. UX flows
-5. Pages
-6. Convex tables
+5. Web app
+6. Data model
 7. CI API
 8. App functions
 9. GitHub integration
@@ -39,7 +39,7 @@ Snapshot identity is only the name. Metadata (browser, viewport, OS, test file) 
 
 ## 2. Access model
 
-Access comes from GitHub. stateofpixel has no invites or roles of its own; the Members tab (5.9) lists the people who signed in and links to GitHub to add or remove them.
+Access comes from GitHub. stateofpixel has no invites or roles of its own; the Members tab lists the people who signed in and links to GitHub to add or remove them.
 
 | GitHub permission on the repo | Can do |
 |---|---|
@@ -122,19 +122,13 @@ The check is a GitHub commit status. GitHub links a status straight to its `targ
 
 1. User opens the landing page and clicks "Sign in with GitHub".
 2. Convex Auth runs GitHub OAuth with the GitHub App's client credentials. We save the user's id, login, avatar and token, then call `me.refreshAccounts` to find their installations.
-3. If the user has no installation, show the Install page with one button: "Install on GitHub". It goes to the GitHub App install screen where they pick an account and repos.
+3. User lands on All projects (`/install`). With no installation it shows one button, "Install on GitHub", to the GitHub App install screen where they pick an account and repos, and "Already installed? Refresh" for when the webhook is slow.
 4. GitHub redirects back with `installation_id`. We already got the `installation` webhook, so accounts and projects exist. If the webhook has not arrived yet, the page waits on a live query and updates as soon as it lands.
-5. User lands on the Account page with the new projects listed. Each project with no builds shows the Setup card.
+5. All projects lists the projects of every account the user can see. A project with no builds shows the Setup card (4.2).
 
 ### 4.2 Setup card (project with no builds)
 
-The project page shows three steps, copy buttons for each, and live state:
-
-1. "Add the permission" with the `permissions: id-token: write` snippet.
-2. "Add the step" with a snippet picked by a tab: Playwright, Storybook, Folder.
-3. "Push a commit". Shows "Waiting for your first build..." and updates the moment the first build arrives, through a live query.
-
-For CI other than GitHub Actions, a link opens the Tokens section of settings.
+The project page shows the GitHub Actions workflow snippet, a link to settings for a project token on other CI, and a waiting line that updates through a live query the moment the first build arrives.
 
 ### 4.3 First build (orphan)
 
@@ -212,460 +206,60 @@ A re-run of a failed CI job gets a new `GITHUB_RUN_ATTEMPT`, so it creates a fre
 2. User sets `STATEOFPIXEL_TOKEN` in their CI.
 3. Git info comes from GitHub Actions env vars when set, otherwise local git. If the checkout is shallow and the merge base is not in local history, the server uses the GitHub compare API.
 
-## 5. Pages
+## 5. Web app
 
-URL scheme mirrors GitHub: `/{owner}/{repo}`. Public pages (5.1) are server-rendered by TanStack Start. Signed-in pages render on the client, because Convex Auth has no TanStack Start SSR support; they show a skeleton until auth and the permission check are ready.
+The routes in `apps/web/src/routes` are the source of truth for the pages, [DESIGN.md](./DESIGN.md) for how they look, and the user docs for what users can do. This section keeps the rules behind the pages.
+
+URL scheme mirrors GitHub: `/{owner}/{repo}`. Public pages are server-rendered by TanStack Start. Signed-in pages render on the client, because Convex Auth has no TanStack Start SSR support; they show a skeleton until auth and the permission check are ready. Top-level paths like `/docs` and `/install` shadow GitHub accounts with the same login. In dev only, `/lab.stateofpixel/web/builds/{1,2}` renders the build page from fixtures for the visual suite (README, Development). GitHub logins cannot contain a dot, so it never shadows an account.
 
 ### 5.1 Public pages
 
-| Path | Content |
-|---|---|
-| `/` | Landing. One-sentence pitch, the review demo, setup snippets per runner, upload times from our own CI, team access, a cost comparison, pricing block, FAQ, Sign in button. |
-| `/brand` | Logo files to download, usage rules, colors and type. |
-| `/compare`, `/compare/{competitor}` | Comparisons with Chromatic, Argos, Percy and Lost Pixel. Each page has a headline of its own, a bill or status card, both pipelines, what changes, the review page, a cost calculator for priced competitors, a grouped table with a numbered source for every competitor fact, where the competitor is ahead, before and after workflow snippets, an FAQ with FAQPage JSON-LD, and the sources. The data and the check date are in `apps/web/src/content/compare.ts`, competitor plans in `apps/web/src/lib/competitorPricing.ts`, logos in `public/logos/compare/`. Linked from the header and footer. |
-| `/privacy`, `/terms`, `/refunds` | Legal pages. Support email `hello@stateofpixel.com`. |
-| `/docs`, `/docs/{page}` | User docs: Quickstart, Moving from another tool; Playwright, Storybook, Any screenshots; Other CI, Sharding, Suites; Reviewing changes, The GitHub check, Baselines; Stable screenshots, Troubleshooting; Accounts and projects, Billing, Security; CLI, Limits and storage. Linked from the public header and footer and the user menu. The pages are MDX in `apps/web/src/content/docs/`, served by `routes/docs/$slug.tsx`, with the nav in `components/docs/DocsLayout.tsx`. Tables of limits, check states, CLI flags and shortcuts render from the code (`components/docs/generated.tsx`). |
-| `/robots.txt`, `/sitemap.xml` | `robots.txt` is static in `apps/web/public` and allows everything. `sitemap.xml` is written at build time by `apps/web/scripts/og-images.ts` from the same page list as the Open Graph images: the public pages, the comparisons and the docs. Each URL has a `<lastmod>` from the last commit that touched its sources, listed by `pageSources` in `scripts/ogImage.ts`; a shallow clone leaves `<lastmod>` out. In dev, a Vite middleware in `vite.config.ts` serves `sitemap.xml` and the Open Graph images from that list on each request. Each of those pages sets a canonical URL on `stateofpixel.com` through `pageLinks` in `src/lib/pageMeta.ts`, so deploy previews do not compete in search. |
-| `/llms.txt`, `/llms-full.txt`, `{page}.md` | Written at build time by `apps/web/scripts/llms.ts`, called from `og-images.ts`. `llms.txt` follows [llmstxt.org](https://llmstxt.org): the tagline and summary, the setup steps, promises and starting price from the landing data, then a link to the Markdown version of every public page, grouped like the docs nav, with the legal and brand pages under Optional. Each page has a Markdown copy at its path plus `.md`, and `/index.md` for the landing page. Docs, legal and brand pages are rendered by the built server and converted from their `<article>` or `<main>` to Markdown; the landing and comparison pages are written from their data in `sections.tsx`, `Pricing.tsx` and `content/compare.ts`. `/docs.md` ends with a list of every docs page. Docs pages link their Markdown copy with `<link rel="alternate" type="text/markdown">`, and the docs nav links `llms.txt` and `llms-full.txt`. `llms-full.txt` joins every docs page in nav order. The build fails when a docs page is missing from the nav. In dev, a Vite middleware serves the same files. `netlify.toml` serves `.md` as `text/markdown`. |
+- `/compare` and `/compare/{competitor}`: the data and the check date are in `apps/web/src/content/compare.ts`, competitor plans in `apps/web/src/lib/competitorPricing.ts`, logos in `public/logos/compare/`. Every competitor fact has a numbered source.
+- `/docs/{page}`: MDX in `apps/web/src/content/docs/`, served by `routes/docs/$slug.tsx`, with the nav in `components/docs/DocsLayout.tsx`. Tables of limits, check states, CLI flags and shortcuts render from the code (`components/docs/generated.tsx`).
+- `/robots.txt` is static in `apps/web/public` and allows everything. `sitemap.xml` is written at build time by `apps/web/scripts/og-images.ts` from the same page list as the Open Graph images: the public pages, the comparisons and the docs. Each URL has a `<lastmod>` from the last commit that touched its sources, listed by `pageSources` in `scripts/ogImage.ts`; a shallow clone leaves `<lastmod>` out. Each of those pages sets a canonical URL on `stateofpixel.com` through `pageLinks` in `src/lib/pageMeta.ts`, so deploy previews do not compete in search.
+- `/llms.txt`, `/llms-full.txt` and `{page}.md` are written at build time by `apps/web/scripts/llms.ts`, called from `og-images.ts`. `llms.txt` follows [llmstxt.org](https://llmstxt.org): the tagline and summary, the setup steps, promises and starting price from the landing data, then a link to the Markdown version of every public page, grouped like the docs nav, with the legal and brand pages under Optional. Each page has a Markdown copy at its path plus `.md`, and `/index.md` for the landing page. Docs, legal and brand pages are rendered by the built server and converted from their `<article>` or `<main>` to Markdown; the landing and comparison pages are written from their data in `sections.tsx`, `Pricing.tsx` and `content/compare.ts`. `/docs.md` ends with a list of every docs page. Docs pages link their Markdown copy with `<link rel="alternate" type="text/markdown">`. `llms-full.txt` joins every docs page in nav order. The build fails when a docs page is missing from the nav. `netlify.toml` serves `.md` as `text/markdown`.
+- In dev, a Vite middleware in `vite.config.ts` serves `sitemap.xml`, the Open Graph images and the llms files on each request.
+- Paid plans in the pricing block show "Coming soon" only when `billing.available` returns false; while the query loads, and in the server-rendered page, they show as available. Upgrading happens only from the plan box on the Billing tab.
 
-Paid plans in the pricing block show "Coming soon" only when `billing.available` returns false; while the query loads, and in the server-rendered page, they show as available. Upgrading happens only from the plan box on the Billing tab (5.10).
+### 5.2 Signed-in pages
 
-These paths shadow GitHub accounts with the same login.
-
-In dev only, `/lab.stateofpixel/web/builds/{1,2}` renders the build page from fixtures for the visual suite (README, Development). GitHub logins cannot contain a dot, so it never shadows an account.
-
-### 5.2 Install (`/install`)
-
-Shown when the signed-in user has no installations. One button to the GitHub App install screen. Below it: "Already installed? Refresh" for when the webhook is slow.
-
-### 5.3 Account home (`/{owner}`)
-
-```
-+--------------------------------------------------------------+
-| stateofpixel      acme v                         [avatar]    |
-+--------------------------------------------------------------+
-| acme                                   [Configure on GitHub] |
-| Organization                                                 |
-| Projects   Members   Billing                                 |
-|                                                              |
-| web-app        #412  main   no changes     2 min ago         |
-| design-system  #88   feat/x 12 to review   1 h ago           |
-| marketing      no builds yet                                 |
-|                                                              |
-| Missing a repo? Configure access on GitHub                   |
-+--------------------------------------------------------------+
-```
-
-- Tabs: Projects (this page), Members (5.9), Usage (5.11) and Billing (5.10). Usage is for owners only. The header, the account banner and the tabs are the same on all of them.
-- Account switcher for users in several orgs. Each account shows its plan in muted text.
-- One row per project: name, latest build number, branch, conclusion pill, relative time.
-- Account banner, one at a time, most urgent first. The same banner shows on project pages to users with write access.
+- Controls a user cannot use stay visible and are disabled, with a tooltip that says who can use them (section 2).
+- Account banner, one at a time, most urgent first, on account pages and on project pages for users with write access:
   1. Storage over the limit, in grace or blocked (4.10). Red.
-  2. A failed renewal (`on_hold` or `past_due`): "The last payment for the 25 GB plan failed." Red. The plan stays until Dodo cancels the subscription.
-  3. A subscription cancelled at the next billing date, when the account stores more than the Free plan allows or the plan ends within 14 days: "The 25 GB plan ends on Oct 25, 2026, then the account moves to the Free plan with 10 GB of storage." When it stores more, it adds "It stores 18 GB, so from Nov 8, 2026 new images are not stored." Yellow when it stores more, blue otherwise.
+  2. A failed renewal (`on_hold` or `past_due`). Red. The plan stays until Dodo cancels the subscription.
+  3. A subscription cancelled at the next billing date, when the account stores more than the Free plan allows or the plan ends within 14 days. Yellow when it stores more, blue otherwise.
   4. Storage from 80% of the limit (4.10). Yellow.
-- The storage banners say how to free space and get more. On a project page, admins get a link to the project settings; everyone else reads that repository admins can lower retention. Owners get a link to the Billing tab ("Upgrade the plan", or "Move to a bigger plan" with a subscription, and "Update the payment method"). Members of an org read "Ask an owner of acme to ...", with "an owner" linking to the Members tab, and collaborators on a user account read "Ask octocat to ...". While the role is not known they read "Owners of acme can ...". When billing is not available the banner points to the support email.
-- "Configure access on GitHub" links to the installation settings.
+- Filters and sorts are in the URL query so a view can be shared.
+- Build page: the selected snapshot is in the path, `/builds/411/snapshots/{snapshot_id}`, so a link opens the same snapshot. The first changed snapshot is selected when there is none in the URL. Review actions are optimistic and send one request each; a failed request reverts the icon and shows a toast. A build that retention deleted shows its branch, date and rule from `deletedBuilds`; a number under `nextBuildNumber` without a row was deleted before `deletedBuilds` existed. Any other missing number shows "Build not found."
+- Viewer: canvas math is in `apps/web/src/lib/canvasView.ts`. The diff PNG is used as a mask: an SVG filter (`feFlood` in the color, `feComposite` `in` `SourceAlpha`) paints each non-transparent pixel in the picked color. A filter needs no CORS on the image, which `mask-image` would. Mode, zoom and diff color are kept in memory only.
+- Baselines: 60 snapshots per page. Snapshot history scans the newest 100 builds on the default branch and returns up to 50 entries where the image changed.
+- Billing: checkout returns to `/{owner}/settings/billing?subscription_id=...&status=...`. The status is a hint from Dodo, never proof of payment, so the plan box only says what happens next until the webhook makes that subscription active.
 
-### 5.4 Project page (`/{owner}/{repo}`)
+## 6. Data model
 
-Tabs: Builds (default), Baselines, Settings. Settings is disabled for users who are not repo admins, with the tooltip "Only admins of this repository on GitHub can change its settings." It stays a link while the permission is not known yet.
-
-Builds tab:
-
-```
-+------------------------------------------------------------------+
-| acme / web-app                     Builds  Baselines  Settings   |
-+------------------------------------------------------------------+
-| Branch [all v]  Status [all v]                                   |
-|                                                                  |
-|  #   Status          Branch        Commit              PR   Time |
-| 412  no changes      main          Fix footer (a1b2c3) -    2m   |
-| 411  12 to review    feat/header   New header (d4e5f6) #88  1h   |
-| 410  approved        feat/header   WIP (0a1b2c)        #88  3h   |
-|      superseded                                                  |
-| 409  rejected        fix/btn       Button pad (99aa00) #87  1d   |
-|                                         [ Load more ]            |
-+------------------------------------------------------------------+
-```
-
-- Columns: build number, conclusion pill with counts, branch, commit message (first line) and short SHA, PR number linking to GitHub, build name as the Suite column if the project has more than one, relative time with absolute time on hover.
-- Filters are in the URL query so they can be shared. The builds list filters by branch (`?branch=`), pull request (`?pr=`) and states (`?state=`), and sorts with `?order=asc`. There is no build name filter yet.
-- 50 rows per page, "Load more" by cursor.
-- Pending builds show a spinner and shard progress, updated live.
-- Empty project shows the Setup card (4.2) instead.
-
-### 5.5 Build page (`/{owner}/{repo}/builds/{number}`)
-
-The main page of the product. Everything is keyboard driven.
-
-```
-+----------------------------------------------------------------------------+
-| #411  feat/header  d4e5f6 "New header"  PR #88   vs baseline #405 (main)   |
-| 10 changed  2 added  1 removed  1,488 unchanged     [Reject] [Approve all] |
-+-------------------------+--------------------------------------------------+
-| Filter [          ]     |  Header/Default [chromium 1280]       changed    |
-|                         |  0.84% diff, 7,742 px          1280x720          |
-| Changed (10)            |  [Side by side] [Diff] [Slider] [Flip]  Fit 100% |
-| > Header/Default [1280] | +---------------------+ +---------------------+  |
-|   Header/Default [375]  | |                     | |                     |  |
-|   Nav/Open [1280]    v  | |      baseline       | |        new          |  |
-|   ...                   | |                     | |                     |  |
-| Added (2)               | +---------------------+ +---------------------+  |
-|   Header/Promo [1280]   |                                                  |
-| Removed (1)             |  [Reject  r]                    [Approve  a]    |
-|   Header/Old [1280]     |                                                  |
-| Unchanged (1,488)  +    |  History: #405 #398 #377   Test: header.spec.ts  |
-+-------------------------+--------------------------------------------------+
-```
-
-Header:
-- Build number, branch, short SHA linking to the GitHub commit, commit message, PR link.
-- "vs baseline #405 (main)" links to the baseline build. For orphans: "First build, no baseline".
-- Counts per diff status. Clicking one scrolls the list to that group.
-- "Approve all" approves every pending snapshot. "Reject" rejects the build as a whole, which rejects every pending snapshot. Both need write permission; for readers the buttons are hidden and a note says "You need write access on GitHub to review".
-- Banners: superseded (link to newest), pending (shard progress, auto-refresh), expired, error, storage limit, "From PR #123" on squash-merged main builds.
-- A build that retention deleted shows "This build was deleted." with its branch and date from `deletedBuilds`: "Build 42 of feat/header was deleted on Sep 3, 2026, 60 days after pull request #88 closed." or "..., after the branch had no new build for 60 days." A number under `nextBuildNumber` without a row, deleted before `deletedBuilds` existed, says it was deleted by retention. A See builds button links to the project. Any other missing number shows "Build not found."
-
-Sidebar:
-- Groups in order: Changed, Added, Removed, Failed, Unchanged. Unchanged is collapsed.
-- Each row: name, review icon (pending, approved, rejected, carried over), diff percent for changed.
-- Filter box matches name substring. `/` focuses it.
-- Sorted by name inside a group.
-
-Viewer:
-- Title row: snapshot name, diff status, diff percent and pixel count, dimensions (both if they differ, like `1280x720 to 1280x812`).
-- Modes:
-  - Side by side: baseline left, new right, zoom and pan synced.
-  - Diff: new image with the diff image overlaid in the diff color at 70% opacity.
-  - Slider: one frame, a vertical handle wipes between baseline and new.
-  - Flip: one frame, space toggles between baseline and new. Best for 1-pixel shifts.
-- Canvas: Fit (default) fits the width, never above 100%. Wheel and trackpad scroll pan, drag pans, pinch or ctrl+wheel zooms at the pointer, `+` / `-` zoom at the center, `0` is 100%, `f` or the Fit button resets. Zoom goes from the whole image in view up to 800%. Panning stops at the image edges plus 16px. A wheel that cannot pan scrolls the page. Opening another snapshot resets to Fit. Math in `apps/web/src/lib/canvasView.ts`.
-- Diff color: green (default), red, magenta or blue, picked in the toolbar while the diff shows (Side by side with the overlay on, and Diff). Kept in the viewer settings, so it stays across snapshots until reload. The diff PNG is used as a mask: an SVG filter (`feFlood` in the color, `feComposite` `in` `SourceAlpha`) paints each non-transparent pixel in the picked color. A filter needs no CORS on the image, which `mask-image` would.
-- Added snapshots show only the new image. Removed snapshots show only the baseline.
-- Different dimensions: images align top-left, the empty area is a checkerboard.
-- Chosen mode and zoom are remembered in localStorage per user.
-
-Detail footer:
-- History: last 10 builds on the baseline branch where this snapshot's hash changed, as links. Ships with snapshot history (M2).
-- Looks flaky: the line from section 4.9, above History.
-- Metadata: browser, viewport, OS, test file and line, anything else the client sent.
-- Review info: "Approved by @alice 3 min ago", "Approved in build #410 by @alice (carried over)", or the reject comment.
-
-URL: selected snapshot is in the path, `/builds/411/snapshots/{snapshot_id}`, so a link opens the same snapshot. The first changed snapshot is selected when there is none in the URL.
-
-Keyboard shortcuts (`?` shows this list as an overlay):
-
-| Key | Action |
-|---|---|
-| `j` / `k` | Next / previous snapshot |
-| `a` | Approve current snapshot, move to next pending |
-| `r` | Reject current snapshot (opens comment box) |
-| `u` | Undo review on current snapshot |
-| `shift+a` | Approve all pending |
-| `1` `2` `3` `4` | Side by side, Diff, Slider, Flip |
-| `d` | In Side by side, toggle the diff overlay. In Diff, toggle Diff only |
-| `space` | In Flip mode, toggle image |
-| `f` / `0` | Fit / 100% zoom |
-| `+` / `-` | Zoom in / out |
-| `/` | Focus filter |
-| `?` | Shortcuts overlay |
-
-Review actions are optimistic in the UI and send one request each. If a request fails, the icon reverts and a toast explains.
-
-### 5.6 Baselines tab (`/{owner}/{repo}/baselines`)
-
-Browse what is approved on the default branch now.
-
-- Suite selector (`?suite=`) if there are several build names. The default, All, shows one section per build name.
-- Filter by name prefix, like `components/`.
-- Grid of snapshots from the newest approved build of each build name on the default branch: image scaled down by the browser, name under it. Lazy loaded, 60 per page.
-- Clicking one opens Snapshot history.
-
-### 5.7 Snapshot history (`/{owner}/{repo}/baselines/{snapshot_name}`)
-
-- Timeline of builds on the default branch where this name's image hash changed, newest first. The query scans the newest 100 builds on the branch and returns up to 50 entries.
-- Each entry: build number, commit, date, who approved on the PR if known, a thumbnail.
-- Clicking two entries compares them in the same viewer as the build page.
-
-### 5.8 Project settings (`/{owner}/{repo}/settings`, admin only)
-
-| Section | Field | Default | Notes |
-|---|---|---|---|
-| General | Default branch | from GitHub | Read-only mirror, updated by webhook. |
-| General | Auto-approve branches | `main` plus the default branch | Glob list, like `main, release/*`. |
-| Diff | Threshold | 0.1 | Passed to the CLI in the build response, so config lives in one place. The CLI config overrides it. |
-| Diff | Include anti-aliasing | off | |
-| Checks | Check name | `stateofpixel` | Other build names: `stateofpixel/{build name}`. |
-| Retention | Keep PR-only images for | 60 days | 7 to 365. The Usage tab (5.11) shows the storage of each project's PR-only images; showing it here is not built yet. |
-| Tokens | Project tokens | none | Create, name, last used time, revoke. Token shown once. |
-| Danger | Delete project | | Type the repo name to confirm. Deletes the project row right away and its builds, snapshots, reviews, approvals and tokens in chunks. A repository still in the installation comes back as an empty project on the next sync. |
-
-Every change is saved on blur with a small "Saved" note. No save button.
-
-### 5.9 Members (`/{owner}/settings/members`)
-
-- A short note: everyone listed signed in to stateofpixel and has access to the account on GitHub, so people are added and removed on GitHub. For an org, a "Manage people on GitHub" button links to `https://github.com/orgs/{org}/people`.
-- A table of the account's `accountMembers`, owners first, then by login: avatar, name and login, role, and when they last signed in. Roles are Owner and Member for an org, and Owner and Collaborator for a user account. A member whose role was never checked shows no role.
-- There is no invite, remove or role change here.
-
-### 5.10 Billing (`/{owner}/settings/billing`)
-
-- Plan box: plan name, storage used and, for an active subscription, "Renews on Oct 25, 2026" or "Ends on Oct 25, 2026". When billing is available, it shows an Upgrade menu (paid plans, monthly and yearly) while the account has no subscription, a Change plan menu with the same items and the current one marked while the subscription is active and not cancelled, and Manage billing once it has a billing customer. Under the box, a line says that Manage billing opens the Dodo Payments portal to update the card, download invoices and cancel. For members who are not owners the buttons are disabled, with the tooltip "Only owners of acme on GitHub can change the plan and billing." While the role is not known they stay enabled, and the actions check for an owner and the box shows the error.
-- Checkout and the customer portal return to `/{owner}/settings/billing`, checkout with `?subscription_id=...&status=...`. The status is a hint from Dodo, never proof of payment, so the plan box only says what happens next: "Payment received. Your plan updates in a few seconds." until the webhook makes that subscription active, then "Payment received. You are on the 25 GB plan."; "Your payment is processing" for `pending`; and for any other status, "The payment did not go through, so your plan did not change." The notice can be dismissed, which removes the query.
-- Choosing a plan in Change plan shows a confirm row under the plan box with the amount charged now from `billing.previewPlanChange` and the new renewal date: "Move to the 100 GB plan, billed yearly? You pay $X now. Unused time on your current plan counts toward it, and any left over is credited to later renewals. The new plan renews on Oct 26, 2027." Confirming runs `billing.changePlan`; if Dodo returns a payment link, the page opens it. After that the box says "Plan change received. Your plan updates in a few seconds." until the webhook moves the account, then "Plan changed. You are on the 100 GB plan."
-- A failed renewal and a cancelled subscription show in the account banner (5.3), so members see them on every account page and writers on project pages.
-- Not built yet (M3): payment method and invoices in the plan box.
-
-### 5.11 Usage (`/{owner}/settings/usage`, owners only)
-
-- A tab between Members and Billing. For members who are not owners it is disabled, with the tooltip "Only owners of acme on GitHub can see usage.", and the page says only owners can see usage.
-- Summary box: storage used of the plan limit from `accounts.storageBytes`, a bar split into baselines, PR-only images and diff images, the size of each, and when the split was last counted. Before the first count it says the split shows after it.
-- A bar chart of daily storage for the last 90 days from `usageDaily`, with the date and size of each day in its title. Days without a count are empty.
-- A table per project, largest first: name (links to its settings; archived projects show "Archived" and no link), storage, share of the counted total, baselines, PR-only images, diff images and the retention setting. Below 768px the three split columns are hidden, and below 640px the retention column.
-- The split comes from the latest `usageDaily` day, so it can be up to a day old, while the total is live.
-
-### 5.12 User menu
-
-Avatar menu with: account switcher, theme, Docs, Sign out. No user settings page in v1.
-
-## 6. Convex tables
-
-Defined in `packages/backend/convex/schema.ts`. Index names list every indexed field (`by_a_and_b`), per the Convex guidelines in `packages/backend/convex/_generated/ai/guidelines.md`. Every document gets `_id` and `_creationTime` from Convex, so tables below leave them out. Field names are camelCase. `Id<"x">` is a Convex reference. Deletes do not cascade in Convex, so GC and project deletion delete children in chunks.
+Tables, fields and indexes are defined in `packages/backend/convex/schema.ts`. Index names list every indexed field (`by_a_and_b`), per the Convex guidelines in `packages/backend/convex/_generated/ai/guidelines.md`. Deletes do not cascade in Convex, so GC and project deletion delete children in chunks.
 
 Documents are capped at 1 MiB and arrays at 8,192 elements ([limits](https://docs.convex.dev/production/state/limits)). No table stores a per-build list of snapshots inside one document; snapshots are their own table.
 
-### Convex Auth tables
+The rules the schema does not show:
 
-`authTables` from `@convex-dev/auth` provides `users`, `authAccounts`, `authSessions`, `authRefreshTokens` and the rest. We extend `users`:
+- `users` extends the Convex Auth table. `githubToken` is the user's GitHub App user token, saved from the provider's `profile(profile, tokens)` callback, read only by internal functions and never returned to the client. The GitHub provider uses the GitHub App's own client ID and secret, so the token can list the user's installations. GitHub App user tokens expire after 8 hours unless expiry is turned off in the app settings (unverified). v1 turns expiry off. If GitHub answers 401, the app signs the user out.
+- `accounts.storageBytes` is added at upload confirm and subtracted by `collectImages`. `overLimitSince` is set when it reaches the limit and cleared when it drops under. The `billing*` fields mirror the Dodo subscription that sets the plan (section 8, Billing).
+- `accountMembers` says which signed-in users can see which account. `me.refreshAccounts` rewrites a user's rows from `GET /user/installations` at sign-in and on All projects. `role` is saved by `members.refreshRole` and is missing until the user opens an account page.
+- `projects.githubRepoId` survives renames; `owner` and `name` are updated by the `repository` webhook. `nextBuildNumber` is read and incremented in the mutation that creates a build, and Convex mutations are serializable, so numbers never collide. `lastBuildAt` sorts the account home and tells whether the project has builds.
+- `projectTokens.tokenHash` is the SHA-256 hex of the token. Tokens are `sop_` plus 43 random base62 characters.
+- `builds.commitSha` is the head SHA, never the synthetic merge SHA. `ancestors` holds up to 100 SHAs and is cleared at finalize. `doneShardIndexes` makes a retried complete count once. `fullRows` is true while every snapshot has a row, including unchanged ones; it is false from the start for subset builds and GC sets it false when it prunes unchanged rows. Only full builds can be baselines. `counts` is kept in sync by every mutation that changes a snapshot, so pages never count rows. `checkVersion`, `checkOutOfSync` and `checkSyncScheduledAt` drive the GitHub sync (section 9); a scheduled sync counts as stuck after 5 minutes. `githubCheckRunId` is left from check runs and no longer written.
+- `deletedBuilds` has one row per build that `deleteOldBuilds` deleted, so an old link can say why it is gone. Deleted with the project.
+- `snapshots.name` is unique in a build; the create mutation checks it. Metadata is at most 4 KB.
+- `reviews` is an append-only audit of every review action. The current state lives on `snapshots.reviewState`. `approvedImages` (`{projectId, buildName, prNumber, imageId, reviewId}`) is written on every approval, so one index range answers "was this exact image approved on this PR" (4.6).
+- `images` are scoped per account, so one account can never reach another's image by guessing a hash; the same PNG in two accounts is stored twice. `by_accountId_and_hash` is unique by code. `bytes` comes from `_storage.size` or the Worker receipt, never from the client; `width` and `height` come from the client and are not checked. An image row is created only after an upload is confirmed (7.3), so there is no pending upload state to clean up. `lastReferencedAt` is set at confirm, and `createUploadTargets` moves it forward when a build reuses an image over 12 hours old, so `collectImages` never deletes an image a pending build relies on. `projectId` is the first project whose snapshot used the image, and `baseline` is true once a build on the default branch or an auto-approve branch uses it; the Usage tab counts by them.
+- `usageDaily` is written by the `usage` cron, one row per project and UTC day.
+- `repoPermissions` caches GitHub permissions (section 8). `freshness` is set to `fresh` on every save, `stale` by a scheduled mutation 5 minutes later and `expired` 10 minutes after that. A missing value counts as `expired`.
+- `githubEvents` dedupes webhooks by `X-GitHub-Delivery`. Rows older than 7 days are deleted by the daily cron.
 
-| Field | Type | Notes |
-|---|---|---|
-| githubUserId | number | From the GitHub profile. Index `by_githubUserId`. |
-| login | string | Updated on each sign-in. |
-| name | string, optional | |
-| image | string, optional | Avatar URL. |
-| githubToken | string | User access token, saved from the provider's `profile(profile, tokens)` callback. Read only by internal functions, never returned to the client. |
-| lastSeenAt | number | |
-
-The GitHub provider uses the GitHub App's own client ID and secret, so the user token is a GitHub App user token and can list the user's installations. GitHub App user tokens expire after 8 hours unless expiry is turned off in the app settings (unverified). v1 turns expiry off. If GitHub answers 401, the app signs the user out and asks them to sign in again.
-
-### accounts
-
-| Field | Type | Notes |
-|---|---|---|
-| githubAccountId | number | User or org id. Index. |
-| login | string | Index. |
-| type | `"user"` or `"org"` | |
-| installationId | number, optional | Missing after uninstall. Index. |
-| plan | `"free"`, `"25gb"`, `"100gb"`, `"500gb"` or `"custom"` | Custom is for accounts above 500 GB, with a limit set by hand. |
-| storageLimitBytes | number | From plan. |
-| storageBytes | number | Added at upload confirm, subtracted by `collectImages`. |
-| overLimitSince | number, optional | Start of grace period. Set when `storageBytes` reaches the limit, cleared when it drops under. |
-| billingCustomerId | string, optional | Dodo Payments customer id, set by the first active subscription. |
-| billingSubscriptionId | string, optional | The Dodo Payments subscription that sets the plan. Cleared when it ends. |
-| billingStatus | string, optional | Dodo status of that subscription, like `active` or `on_hold`. |
-| billingInterval | `"monthly"` or `"yearly"`, optional | Interval of that subscription's product. |
-| billingPeriodEndsAt | number, optional | `next_billing_date` of that subscription: when it renews, or when it ends if it is cancelled at that date. |
-| billingCancelsAtPeriodEnd | boolean, optional | `cancel_at_next_billing_date` of that subscription. |
-| deletedAt | number, optional | |
-
-### accountMembers
-
-Which signed-in users can see which account. `me.refreshAccounts` rewrites a user's rows from `GET /user/installations` with the user's GitHub token, at sign-in and on the Install page.
-
-| Field | Type | Notes |
-|---|---|---|
-| userId | Id<"users"> | Index `by_userId`. |
-| accountId | Id<"accounts"> | Index `by_accountId_and_userId`. |
-| role | `"owner"` or `"member"`, optional | For org accounts, saved by `members.refreshRole` from GitHub. Missing until the user opens an account page. User accounts work it out from the login instead. |
-
-### projects
-
-| Field | Type | Notes |
-|---|---|---|
-| accountId | Id<"accounts"> | Index. |
-| githubRepoId | number | Survives renames. Index. |
-| owner, name | string | For URLs. Index `by_owner_and_name`. Updated by the `repository` webhook. |
-| private | boolean | |
-| defaultBranch | string | |
-| autoApproveBranches | string[] | Glob patterns. |
-| diffThreshold | number | Default 0.1. |
-| diffIncludeAA | boolean | Default false. |
-| prRetentionDays | number | Default 60. |
-| nextBuildNumber | number | Read and incremented in the mutation that creates a build. Convex mutations are serializable, so numbers never collide. |
-| lastBuildAt | number, optional | Set when a build is created. Sorts the account home and tells whether the project has builds. |
-| archivedAt | number, optional | Set when access is removed. |
-
-The account home lists projects through `by_accountId_and_lastBuildAt` or `by_accountId_and_name`, and searches them with the search index `search_name` on `name`, filtered by `accountId`.
-
-### projectTokens
-
-| Field | Type | Notes |
-|---|---|---|
-| projectId | Id<"projects"> | Index. |
-| name | string | |
-| tokenHash | string | SHA-256 hex of the token. Index. Token format `sop_` plus 43 random base62 characters. |
-| createdBy | Id<"users"> | |
-| lastUsedAt | number, optional | |
-| revokedAt | number, optional | |
-
-### builds
-
-| Field | Type | Notes |
-|---|---|---|
-| projectId | Id<"projects"> | |
-| number | number | Unique per project. |
-| buildName | string | Default `default`. |
-| commitSha | string | Head SHA, never the synthetic merge SHA. |
-| commitMessage | string | First line, from the client. |
-| branch | string | |
-| baselineBranch | string | PR base or default branch. |
-| mergeBaseSha | string, optional | From the client or the compare API. |
-| ancestors | string[] | Up to 100 SHAs from the client. Cleared at finalize. |
-| prNumber | number, optional | |
-| prClosedAt | number, optional | Set by the `pull_request` closed webhook, cleared on reopened. Starts the retention clock. |
-| mergedPrNumber | number, optional | For squash-merged main builds. |
-| nonce | string | |
-| shardsTotal | number, optional | Missing in finalize mode. |
-| shardsJoined | number, optional | Shards numbered by the server in `--shard auto` mode. |
-| doneShardIndexes | number[] | Shard indexes that called complete. A retried complete does not count twice. |
-| subset | boolean | True with `--subset`, disables `removed`. |
-| status | `"pending"`, `"finalized"`, `"expired"`, `"error"` | |
-| conclusion | `"no_changes"`, `"changes"`, `"approved"`, `"rejected"`, optional | |
-| autoApproved | boolean | |
-| fullRows | boolean | True while every snapshot has a row, including unchanged ones. False from the start for subset builds. GC sets it false when it prunes unchanged rows. Only full builds can be baselines. |
-| baselineBuildId | Id<"builds">, optional | Missing for orphans. |
-| supersededById | Id<"builds">, optional | |
-| counts | object | `{unchanged, changed, added, removed, failed, pending, approved, rejected}`. Kept in sync by every mutation that changes a snapshot, so pages never count rows. |
-| storageBlocked | boolean | Set at create when the account is over its limit after grace. |
-| expiryJobId | Id<"_scheduled_functions">, optional | The scheduled expiry, cancelled at finalize. |
-| githubCheckRunId | number, optional | Left from check runs. No longer written. |
-| checkVersion | number | Incremented by every change that affects the check. |
-| checkOutOfSync | boolean | True until a sync of the current `checkVersion` lands on GitHub. Index `by_checkOutOfSync`, read by the `syncChecks` cron. |
-| checkSyncScheduledAt | number, optional | Set while a sync action is scheduled, so a build has one sync at a time. Treated as stuck after 5 minutes. |
-| ciProvider, ciRunUrl | string, optional | |
-| finalizedAt | number, optional | |
-
-Indexes:
-- `by_projectId_and_number` on `[projectId, number]`, for build pages.
-- `by_projectId_and_buildName_and_nonce` on `[projectId, buildName, nonce]`, for shards joining a build.
-- `by_projectId_and_buildName_and_commitSha` on `[projectId, buildName, commitSha]`, for baseline lookup.
-- `by_projectId_and_buildName_and_prNumber` on `[projectId, buildName, prNumber]`, for carry-over and superseding.
-- `by_projectId_and_branch` on `[projectId, branch]`, for the branch filter and branch activity in `deleteOldBuilds`.
-- `by_projectId_and_prNumber` on `[projectId, prNumber]`, for the pull request filter and `pull_request` webhooks.
-- `by_projectId_and_status_and_conclusion` on `[projectId, status, conclusion]`, for the states filter.
-- `by_baselineBuildId` on `[baselineBuildId]`, so `deleteOldBuilds` keeps builds that are another build's baseline.
-- The builds list uses `by_projectId_and_number` in descending order.
-
-### deletedBuilds
-
-One row per build that `deleteOldBuilds` deleted, so an old link can say why it is gone. Deleted with the project.
-
-| Field | Type | Notes |
-|---|---|---|
-| projectId | Id<"projects"> | |
-| number | number | The deleted build's number. |
-| branch | string | |
-| prNumber | number, optional | |
-| reason | `pr_closed` or `branch_inactive` | Which retention rule deleted it. |
-| retentionDays | number | `prRetentionDays` when it was deleted. `_creationTime` is when. |
-
-Index: `by_projectId_and_number` on `[projectId, number]`.
-
-### snapshots
-
-| Field | Type | Notes |
-|---|---|---|
-| buildId | Id<"builds"> | |
-| shardIndex | number | |
-| name | string | |
-| imageId | Id<"images">, optional | Missing for `removed`. |
-| baselineSnapshotId | Id<"snapshots">, optional | |
-| baselineImageId | Id<"images">, optional | Copied for fast display. |
-| diffImageId | Id<"images">, optional | Only for `changed`. |
-| diffStatus | `"unchanged"`, `"changed"`, `"added"`, `"removed"`, `"failed"` | |
-| diffRatio | number, optional | 0 to 1. |
-| diffPixels | number, optional | |
-| reviewState | `"none"`, `"pending"`, `"approved"`, `"rejected"` | |
-| metadata | object | `{browser, viewport, os, testFile, testLine, ...}`, max 4 KB. |
-
-Indexes:
-- `by_buildId_and_name` on `[buildId, name]`. Name is unique in a build; the create mutation checks it.
-- `by_buildId_and_diffStatus_and_name` on `[buildId, diffStatus, name]`, for the sidebar groups, sorted by name.
-- `by_imageId` on `[imageId]`, for GC reference checks and snapshot history.
-- `by_baselineImageId` and `by_diffImageId`, for GC reference checks.
-
-Row pruning (the daily cron):
+Row pruning, not built yet (section 11, Crons):
 - PR builds: delete unchanged rows once the PR is closed.
 - Builds on auto-approve branches: keep full rows for the newest 20 per build name and anything newer than 90 days. After that, delete unchanged rows and set `fullRows` false. Changed and added rows stay forever, because snapshot history reads them.
-
-### reviews
-
-Append-only audit of every review action. The current state lives on `snapshots.reviewState`.
-
-| Field | Type | Notes |
-|---|---|---|
-| snapshotId | Id<"snapshots"> | Index. |
-| buildId | Id<"builds"> | Index. |
-| userId | Id<"users">, optional | Missing for automatic actions. |
-| action | `"approve"`, `"reject"`, `"undo"` | |
-| source | `"user"`, `"approve_all"`, `"carry_over"`, `"auto_branch"`, `"orphan"` | |
-| sourceReviewId | Id<"reviews">, optional | For carry-over, the original approval. |
-| comment | string, optional | Max 500 chars. |
-
-For carry-over lookups there is also `by_projectId_and_buildName_and_prNumber_and_imageId` on a small `approvedImages` table: `{projectId, buildName, prNumber, imageId, reviewId}`, written on every approval. One index range answers "was this exact image approved on this PR".
-
-### images
-
-| Field | Type | Notes |
-|---|---|---|
-| accountId | Id<"accounts"> | Images are scoped per account, so one account can never reach another's image by guessing a hash. |
-| hash | string | SHA-256 hex of the file bytes. |
-| kind | `"screenshot"` or `"diff"` | |
-| bytes | number | From `_storage.size`, or from the Worker receipt for R2, not from the client. |
-| width, height | number | Sent by the client, not checked. |
-| store | `"convex"` or `"r2"` | Which store holds the bytes. New uploads go to R2 when `IMAGES_URL` is set. |
-| storageId | Id<"_storage">, optional | Set when `store` is `"convex"` and the upload is confirmed. |
-| r2Key | string, optional | Set when `store` is `"r2"`: `a/{accountId}/img/{hash[0:2]}/{hash}.png`. |
-| lastReferencedAt | number | Set at confirm. `createUploadTargets` moves it forward when a build reuses the image and it is over 12 hours old, so `collectImages` never deletes an image a pending build relies on. |
-| projectId | Id<"projects">, optional | The first project whose snapshot used the image, set by `insertSnapshots`. Usage counts the image for this project only. Rows stored before the fields existed get both from the `usage` cron, since a PR build reusing one cannot tell whether a kept build used it. |
-| baseline | boolean, optional | True once a build on the default branch or an auto-approve branch uses the image, since retention keeps those builds. Usage counts it as a baseline, otherwise as a PR-only image. Diff images count as diffs either way. |
-
-Index `by_accountId_and_hash` on `[accountId, hash]`, unique by code. The same PNG in two accounts is stored twice. Index `by_storageId` lets a confirm check that no image row already uses a `storageId`.
-
-An image row is created only after an upload is confirmed (see 7.3), so there is no "pending upload" state to clean up in this table.
-
-### usageDaily
-
-| Field | Type | Notes |
-|---|---|---|
-| accountId | Id<"accounts"> | |
-| projectId | Id<"projects"> | |
-| day | string | `YYYY-MM-DD`, UTC. Indexes `by_projectId_and_day` and `by_accountId_and_day`. |
-| baselineBytes, prBytes, diffBytes | number | Sum of `images.bytes` for the project's images: diff images, then baseline screenshots, then the rest. Written by the `usage` cron. |
-| builds, snapshots, uploadedImages | number | Builds created in the 24 hours before the count, their snapshots, and images first stored in that time. For our own dashboards, not billing. |
-
-### repoPermissions (cache)
-
-| Field | Type | Notes |
-|---|---|---|
-| userId | Id<"users"> | Index `by_userId_and_projectId`. |
-| projectId | Id<"projects"> | |
-| permission | `"none"`, `"read"`, `"write"`, `"admin"` | |
-| orgOwner | boolean | |
-| checkedAt | number | When GitHub was last asked. |
-| freshness | `"fresh"`, `"stale"`, `"expired"`, optional | Set to `fresh` on every save, `stale` by a scheduled mutation 5 minutes later, `expired` 10 minutes after that. A missing value counts as `expired`. |
-| freshnessJobId | Id<"_scheduled_functions">, optional | The next scheduled change, cancelled when the row is saved again. |
-
-### githubEvents
-
-| Field | Type | Notes |
-|---|---|---|
-| deliveryId | string | `X-GitHub-Delivery`. Index. For idempotency. |
-| event | string | |
-
-Rows older than 7 days are deleted by the daily cron.
 
 ## 7. CI API
 
@@ -751,7 +345,7 @@ Upload URLs are valid for 1 hour, and each upload POST has a 2 minute timeout. T
 
 ### 7.3 POST /builds/{id}/shards/{index}/complete
 
-Sent after uploads and local diffs are done. For diff images the CLI first calls `POST /builds/{id}/upload-urls` with `{ "hashes": [...] }` to get upload URLs, the same way as in 7.2.
+Sent after uploads and local diffs are done. For diff images the CLI first calls `POST /builds/{id}/upload-urls` with `{ "hashes": [...] }` and gets `{ "uploads": [{ "hash", "uploadUrl" }] }`, one URL per hash the account does not have, the same way as in 7.2.
 
 ```json
 {
@@ -788,11 +382,11 @@ Finalize, in chunked mutations:
 
 ### 7.4 POST /builds/finalize
 
-For finalize mode. Body `{ "buildName": "default", "nonce": "...", "skipIfEmpty": false, "git": {...}, "ci": {...} }`, with `git` and `ci` shaped as in 7.2. Finalizes with whatever shards arrived, and returns 404 `build_not_found` when no shard created the build. With `skipIfEmpty` it creates an empty subset build from `git` instead, which finalizes as `no_changes` and is never a baseline.
+For finalize mode. Body `{ "buildName": "default", "nonce": "...", "skipIfEmpty": false, "git": {...}, "ci": {...} }`, with `git` and `ci` shaped as in 7.2. Finalizes with whatever shards arrived, and returns 404 `build_not_found` when no shard created the build. With `skipIfEmpty` it creates an empty subset build from `git` instead, which finalizes as `no_changes` and is never a baseline. Returns `{ buildId, buildNumber, url }`.
 
 ### 7.5 GET /builds/{id}
 
-Returns status, conclusion, counts, URL and `shards: { done, total }`. The CLI polls it until the build is finalized.
+Returns `buildId`, `buildNumber`, `url`, `status`, `conclusion`, `counts` and `shards: { done, total }`. The CLI polls it until the build is finalized.
 
 ### 7.6 Baseline selection
 
@@ -817,42 +411,11 @@ Permission check pattern. Queries cannot call GitHub, so:
 
 Mutations and actions that need a permission throw a `ConvexError` with code `permission_unknown` when the row is missing or expired, `forbidden` when the level is too low, and `not_found` when the level is `none`. Queries do not throw for permissions: they return `null`, or an empty page for paginated queries, and the page shows a skeleton until `projects.access` settles.
 
-| Function | Kind | Permission | Purpose |
-|---|---|---|---|
-| `me.accounts` | query | signed in | The accounts the user can see, and whether each is installed. |
-| `me.installUrl` | query | signed in | The GitHub App install URL. |
-| `me.refreshAccounts` | action | signed in | `GET /user/installations` with the user token, links the user to accounts. Runs at sign-in and from "Refresh" on the Install page. |
-| `permissions.refresh` | action | signed in | See above. Writes `none` when GitHub answers 404. `orgOwner` comes from the org membership role, or from the login for a user account. |
-| `projects.access` | query | signed in | Project id, cached permission, whether it is fresh, `canRead`, `canWrite` and `canAdmin`, and for users who can write the account's type, storage usage, subscription and the user's role in it (`null` while unknown or when the user is not a member). The page calls `permissions.refresh` while it is not fresh. |
-| `accounts.home` | query | account member | The account, its installation settings URL, its storage usage (plan, bytes, limit, `overLimitSince`), its subscription (id, status, interval, period end and whether it cancels then), whether it has a billing customer, and the user's role (`owner`, `member` or `null` while unknown). The page works out the storage state with the clock, since queries do not read it. |
-| `accounts.setPlan` | internal mutation | Convex dashboard or `npx convex run` | Sets `plan` and `storageLimitBytes`. A `custom` plan takes the limit as an argument. For plans set by hand; paid plans come from billing. |
-| `accounts.projects` | query | account member | Paginated projects with their latest build, searchable, sorted by name or last build. |
-| `members.list` | query | account member | Up to 200 members: login, name, avatar, role and last sign-in, owners first. |
-| `members.refreshRole` | action | account member | Asks GitHub whether the user owns the account and saves `role`. The account pages call it once per page load. |
-| `builds.list` | query | read | Paginated with `.paginate()`, filters branch, pull request and a list of states. |
-| `builds.get` | query | read | Build and counts by number. |
-| `builds.deleted` | query | read | For a number under `nextBuildNumber` with no build: its `deletedBuilds` row, or `null` when it has none. `null` for any other number. |
-| `snapshots.list` | query | read | Paginated sidebar list by `by_buildId_and_diffStatus_and_name`: name, statuses and diff ratio, no image URLs. |
-| `snapshots.get` | query | read | One snapshot with metadata, review info, history and whether it looks flaky (section 4.9). |
-| `reviews.apply` | mutation | write | `{ buildId, snapshotIds or "all", action, comment }`. "all" runs in chunks of 1,000 through scheduled mutations; the UI shows progress from `counts`. |
-| `baselines.current` | query | read | Every build name seen on the default branch, each with its newest full approved build. |
-| `baselines.list` | query | read | Paginated snapshots of one build name's baseline, with an optional name prefix. |
-| `baselines.history` | query | read | Changed rows for one name on the default branch. |
-| `projects.settings` | query | admin | The settings page fields. |
-| `projects.updateSettings` | mutation | admin | Partial update. |
-| `tokens.list` | query | admin | Tokens that are not revoked: name, created time, last used time. |
-| `tokens.create` | action | admin | Generates the token, stores the hash through an internal mutation, returns the token once. |
-| `tokens.revoke` | mutation | admin | |
-| `projects.remove` | mutation | admin | Checks the typed name, deletes the project, schedules chunked deletion of its data. |
-| `usage.get` | query | account owner | `{ login, since }` with `since` a `YYYY-MM-DD` day, since queries do not read the clock. Returns the storage usage, the latest counted day, one row per project from that day and the daily account totals from `since`. `null` for anyone who is not an owner. |
-| `images.grant` | mutation | read access | `{ projectId }`. Returns `{ exp, sig }` for the private image links of that project (section 11). |
-| `billing.available` | query | anyone | Whether this deployment has a Dodo API key. |
-| `billing.checkout` | action | account owner | `{ login, plan, interval }`. Returns a Dodo Payments checkout URL for a paid plan, monthly or yearly. Throws `already_subscribed` when the account has a subscription. |
-| `billing.previewPlanChange` | action | account owner | `{ login, plan, interval }`. Returns `{ amount, currency, renewsAt }` for moving the subscription to that product: the amount charged now in minor units and the new next billing date. Throws `not_subscribed` without a subscription, `same_plan` for the current product and `over_plan_limit` when `storageBytes` is above the new plan's limit. |
-| `billing.changePlan` | action | account owner | Same arguments and checks. Moves the subscription to that product with `prorated_immediately` and `on_payment_failure: prevent_change`. Returns a payment link when Dodo needs the customer to pay on a checkout page, otherwise `null`. The webhook sets the new plan. |
-| `billing.portal` | action | account owner | Returns a Dodo Payments customer portal link for payment method, invoices and cancelling. Throws `not_subscribed` without a customer. |
+Every public query, mutation and action in `packages/backend/convex` checks the permission it needs from section 2: signed in, account member, account owner, or read, write or admin on the project. `accounts.setPlan` is an internal mutation, run from the Convex dashboard or `npx convex run`, that sets a plan by hand, for example `custom` with its own limit.
 
-`reviews.apply` on superseded, pending, expired or storage-blocked builds throws a `ConvexError` with code `build_not_reviewable`. `approve` and `reject` apply to snapshots with review state `pending`, `approved` or `rejected`; `undo` sets them back to `pending` and removes the `approvedImages` rows of that image on the PR. `"all"` only touches `pending` snapshots, runs 500 per scheduled mutation (changed first, then added), and cannot undo. Every call recomputes the conclusion and bumps the GitHub check.
+`reviews.apply` takes up to 100 snapshot ids, or `"all"`. On superseded, pending, expired or storage-blocked builds it throws a `ConvexError` with code `build_not_reviewable`. `approve` and `reject` apply to snapshots with review state `pending`, `approved` or `rejected`; `undo` sets them back to `pending` and removes the `approvedImages` rows of that image on the PR. `"all"` only touches `pending` snapshots, runs 500 per scheduled mutation (changed first, then added), and cannot undo; the UI shows progress from `counts`. Every call recomputes the conclusion and bumps the GitHub check.
+
+Flaky detection (4.9) and snapshot history are computed in `snapshots.get` on each read, from `lib/history.ts`; nothing is stored.
 
 ### Billing
 
@@ -868,7 +431,7 @@ Dodo sends subscription events to the HTTP action `POST /dodo/webhook`. It verif
 
 A plan change keeps the subscription id and sends `subscription.plan_changed` with the new `product_id`, which the `active` row handles. With `prorated_immediately` Dodo credits the unused time on the old product, charges a full cycle of the new one and moves the billing date to the day of the change ([docs](https://docs.dodopayments.com/developer-resources/subscription-upgrade-downgrade)). Downgrades work the same way, and a credit larger than the charge pays toward later renewals.
 
-The customer portal offers two ways to cancel. "Cancel now" ends the subscription at once, so the account moves to `free` on that event. "Cancel at next billing date" keeps the subscription `active` with `cancel_at_next_billing_date` until the period ends, so the plan stays until then and the plan box shows the end date (5.10).
+The customer portal offers two ways to cancel. "Cancel now" ends the subscription at once, so the account moves to `free` on that event. "Cancel at next billing date" keeps the subscription `active` with `cancel_at_next_billing_date` until the period ends, so the plan stays until then and the plan box shows the end date.
 
 Moving to `free` can put the account over its limit, which starts the grace period of section 4.10.
 
@@ -891,9 +454,9 @@ Webhooks go to the HTTP action `POST /github/webhook`. It reads the raw body, ve
 
 | Event | Action |
 |---|---|
-| `installation` created, deleted, suspend, unsuspend | Create or archive account and projects. |
-| `installation_repositories` added, removed | Create or archive projects. |
-| `repository` renamed, transferred, edited | Update owner, name, default branch, private flag. |
+| `installation` created, new_permissions_accepted, suspend, unsuspend, deleted | Sync or archive the account and its projects. |
+| `installation_repositories` (any action) | Sync the installation's projects. |
+| `repository` renamed, transferred, edited, privatized, publicized | Update owner, name, default branch, private flag. |
 | `pull_request` closed, reopened | Set or clear `prClosedAt` on that PR's builds. Closing starts their retention clock. The GitHub App must subscribe to the Pull request event. |
 
 GitHub API calls (commit statuses, compare, PR lookup) run in actions with an installation token made from the app's private key. Octokit uses Web Crypto and probably runs in the default Convex runtime (unverified); if not, those actions move to a `"use node"` file. Scheduled actions run at most once and are not retried ([docs](https://docs.convex.dev/scheduling/scheduled-functions)), so every state change bumps `checkVersion` and schedules `checks.sync` unless one is already scheduled. The sync posts a commit status for the build's context, which replaces the previous one, then clears `checkOutOfSync` only when the version it sent is still current; otherwise it runs again. A cron every 5 minutes retries builds that are still out of sync. A 422 from GitHub, for example for a commit GitHub does not have, is not retried. A 403 from an installation that has not accepted the Commit statuses permission keeps retrying, so the check appears once the owner accepts. The check name is `stateofpixel`, or `stateofpixel/<buildName>` for other build names, on the build's head commit.
@@ -902,30 +465,17 @@ Status content: the state and description from the mapping table in section 3, w
 
 ## 10. CLI
 
-Package `stateofpixel`, closed source, published unminified with source maps. Node 20 or newer. `odiff-bin` as optional dependency, pixelmatch and pngjs bundled.
+Package `stateofpixel`, MIT, published unminified with source maps and mirrored to a public repo (OPERATIONS.md, CLI mirror). Node 20 or newer. `odiff-bin` as optional dependency, with pixelmatch and pngjs bundled as the fallback when odiff does not load.
 
-### Commands
+Commands, flags, defaults and env vars are defined once in `packages/cli/src/reference.ts`. `index.ts` builds commander from it, and [/docs/cli](https://stateofpixel.com/docs/cli) renders its tables from it. The user docs describe each command. The rules behind them:
 
-Commands, flags, defaults and env vars are defined once in `packages/cli/src/reference.ts`. `index.ts` builds commander from it, and [/docs/cli](https://stateofpixel.com/docs/cli) renders its tables from it. Commands: `upload <dir>` (hash, upload, diff, complete a shard), `storybook <static-dir>` (capture every story with Playwright, then upload; with `--shard i/n` only every n-th story from the i-th), `finalize` (finish a build in finalize mode) and `compare <dir> <baseline-dir>` (local only, writes `stateofpixel-report/index.html`). Without a nonce on a runner other than GitHub Actions, a single-shard upload uses `local-<timestamp>`, and sharded uploads and `finalize` fail.
+- Without a nonce on a runner other than GitHub Actions, a single-shard upload uses `local-<timestamp>`, and sharded uploads and `finalize` fail. Only GitHub Actions is detected as a CI provider; any other runner with `CI` set is `unknown`.
+- A folder upload names each snapshot by its path relative to `<dir>` without `.png`, and sends a `<name>.meta.json` next to it as metadata.
+- Git info comes from the GitHub Actions env and event payload (the PR head SHA, not the merge SHA) and from local git; `ancestors` is `git rev-list` of the commit, or of `HEAD` without the merge commit when the PR head is not in a shallow checkout.
+- The API base URL is `STATEOFPIXEL_API_URL`, default `https://graceful-dogfish-423.convex.site/api/v1` until a custom domain exists. The token is `STATEOFPIXEL_TOKEN`, or the GitHub Actions OIDC token when it is not set.
+- The Playwright reporter clears `stateofpixel-screenshots` (or `STATEOFPIXEL_DIR`) when the run begins and uploads it once the run ends, per shard when Playwright sharding is on. It uploads only when `CI` is set, unless `uploadOutsideCi` is true, skips the upload when the run is interrupted, and marks the upload as a subset when the run did not pass. A failed upload fails the run. Storybook captures and the Playwright helper use the Playwright the project installs, an optional peer dependency.
 
-Snapshot name from a folder upload is the path relative to `<dir>` without `.png`, like `components/Button/primary`.
-
-A `<name>.meta.json` file next to `<name>.png` is sent as that snapshot's metadata. Git info comes from the GitHub Actions env and event payload (the PR head SHA, not the merge SHA) and from local git; `ancestors` is `git rev-list` of the commit, or of `HEAD` without the merge commit when the PR head is not in a shallow checkout. The API base URL is `STATEOFPIXEL_API_URL`, default `https://graceful-dogfish-423.convex.site/api/v1` until a custom domain exists.
-
-### Playwright integration
-
-A reporter plus a `snapshot(page, name)` helper, with setup in `apps/web/src/content/docs/playwright.mdx`. `snapshot` applies the flakiness defaults (animations disabled, caret hidden, fonts loaded), appends `[browser width]` to the name, saves a full-page PNG into `stateofpixel-screenshots` (or `STATEOFPIXEL_DIR`) and writes metadata next to it. The reporter clears that folder when the run begins and uploads it once the run ends, per shard when Playwright sharding is on. It uploads only when `CI` is set, unless the reporter option `uploadOutsideCi` is true, and marks the upload as a subset when the run did not pass. Reporter options: `buildName`, `nonce`, `baselineBranch`, `subset`, `threshold`, `strict`, `uploadOutsideCi`. Storybook captures and the Playwright helper use the Playwright the project installs, an optional peer dependency.
-
-### Output
-
-```
-stateofpixel  build #411  feat/header vs main (#405)
-  1,500 snapshots  1,488 unchanged  10 changed  2 added  1 removed
-  uploaded 22 images (1.3 MB) in 2.1 s
-  review: https://.../acme/web-app/builds/411
-```
-
-Exit code is 0 when changes exist. The GitHub check decides whether the PR can merge, not the CI job. Exit 1 on config errors, auth errors, or failed uploads.
+Exit codes: `upload`, `storybook` and `finalize` exit 0 when changes exist, because the GitHub check decides whether the PR can merge, not the CI job. They exit 1 on config errors, auth errors and failed uploads, and 0 with a warning on our outage, a rate limit or a fork PR unless `--strict` is set (7.7). `compare` is local only and always exits 0.
 
 ## 11. Storage and retention
 
@@ -973,7 +523,7 @@ Images of private projects go through the HTTP route `GET /images/{projectId}/{i
 
 ### Crons
 
-In `packages/backend/convex/crons.ts` ([docs](https://docs.convex.dev/scheduling/cron-jobs)). Each cron is a small mutation that does one chunk of work and reschedules itself with `runAfter(0)` until done, so no single function hits the 1 s limit.
+In `packages/backend/convex/crons.ts` ([docs](https://docs.convex.dev/scheduling/cron-jobs)). The retention crons do one chunk of work and reschedule themselves with `runAfter(0)` until done, so no single function hits the 1 s limit. `syncChecks` schedules a sync for up to 100 out-of-sync builds and leaves the rest for its next run.
 
 | Cron | Schedule | Work |
 |---|---|---|
@@ -983,7 +533,7 @@ In `packages/backend/convex/crons.ts` ([docs](https://docs.convex.dev/scheduling
 | `cleanupEvents` | daily 04:30 UTC | Deletes `githubEvents` older than 7 days. |
 | `usage` | daily 05:00 UTC | One account at a time, pages through its images and sums their bytes per project and kind. An image without `projectId` gets it and `baseline` from up to 50 snapshots that use it; an image no snapshot uses is skipped until `collectImages` deletes it. Then it writes or replaces one `usageDaily` row per project for the day, skipping archived projects with no images. |
 
-Not built yet: `pruneRows` (daily 03:00 UTC) applies the row pruning rules from the snapshots table. `accounts.storageBytes` and `overLimitSince` are kept current by upload confirm and `collectImages`. Build expiry is not a cron: `builds.expire` is scheduled per build, 60 minutes after creation, and sets `expired` if the build is still pending.
+Not built yet: `pruneRows` (daily 03:00 UTC) applies the row pruning rules in section 6. `accounts.storageBytes` and `overLimitSince` are kept current by upload confirm and `collectImages`. Build expiry is not a cron: `builds.expire` is scheduled per build, 60 minutes after creation, and sets `expired` if the build is still pending.
 
 Storage billed is the sum of `images.bytes` per account. Every image counts once, however many builds reference it.
 
