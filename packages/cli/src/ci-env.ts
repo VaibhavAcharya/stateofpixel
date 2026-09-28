@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { ApiError, retryServerErrors } from "./api";
+import { ENV } from "./reference";
 
 const execFileAsync = promisify(execFile);
 const MAX_ANCESTORS = 100;
@@ -99,8 +100,9 @@ export async function resolveToken(
   fetchImpl: typeof fetch = fetch,
   retryDelayMs = 1000,
 ): Promise<string> {
-  if (env.STATEOFPIXEL_TOKEN) {
-    return env.STATEOFPIXEL_TOKEN;
+  const token = env[ENV.token];
+  if (token) {
+    return token;
   }
   const requestUrl = env.ACTIONS_ID_TOKEN_REQUEST_URL;
   const requestToken = env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;

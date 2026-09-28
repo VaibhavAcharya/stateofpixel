@@ -9,6 +9,7 @@ import { Code, DocsPage, DocsPageLink, docsPath, H2 } from "./DocsLayout";
 import {
   CheckStatesTable,
   CliCommands,
+  CliEnvironment,
   CliOptions,
   LimitsTable,
   ShortcutsTable,
@@ -90,6 +91,7 @@ export const docsComponents: MDXComponents = {
   AgentPrompt,
   CheckStatesTable,
   CliCommands,
+  CliEnvironment,
   CliOptions,
   LimitsTable,
   SetupPaths,

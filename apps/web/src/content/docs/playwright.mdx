@@ -58,7 +58,7 @@ steps:
 
 No upload step is needed. The workflow still needs `id-token: write`, as in the [Quickstart](/docs). With Playwright sharding (`--shard 1/4`), the reporter uploads once per shard and the build finishes when the last shard is done.
 
-When a test fails, the upload is marked as a subset. Snapshots of tests that did not run are then not reported as removed.
+When a test fails, the upload is marked as a subset. Snapshots of tests that did not run are then not reported as removed. A run you stop, for example with Ctrl+C, uploads nothing. When the upload fails, the reporter prints the error and marks the Playwright run as failed.
 
 ## Reporter options
 

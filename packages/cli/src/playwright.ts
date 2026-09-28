@@ -7,12 +7,13 @@ import type {
   Reporter,
 } from "@playwright/test/reporter";
 import { uploadCommand } from "./commands/upload";
+import { ENV } from "./reference";
 import { metadataFile, type Shard } from "./upload";
 
 const DEFAULT_DIR = "stateofpixel-screenshots";
 
 function snapshotDir(): string {
-  return path.resolve(process.env.STATEOFPIXEL_DIR ?? DEFAULT_DIR);
+  return path.resolve(process.env[ENV.dir] ?? DEFAULT_DIR);
 }
 
 export async function snapshot(

@@ -3,7 +3,25 @@ export const ENV = {
   shard: "STATEOFPIXEL_SHARD",
   nonce: "STATEOFPIXEL_NONCE",
   baselineBranch: "STATEOFPIXEL_BASELINE_BRANCH",
+  token: "STATEOFPIXEL_TOKEN",
+  dir: "STATEOFPIXEL_DIR",
 } as const;
+
+export const ENVIRONMENT: { name: string; description: string }[] = [
+  {
+    name: ENV.token,
+    description: "project token, for CI other than GitHub Actions",
+  },
+  {
+    name: ENV.dir,
+    description:
+      "folder that snapshot() writes to and the Playwright reporter uploads, stateofpixel-screenshots by default",
+  },
+  {
+    name: "CI",
+    description: "the Playwright reporter uploads only when it is set",
+  },
+];
 
 export type OptionSpec = {
   flags: string;
