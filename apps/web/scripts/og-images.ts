@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -5,15 +7,28 @@ import { createServer } from "vite";
 
 const OUT_DIR = "dist/client";
 
+function git(args: string[]): string {
+  return execFileSync("git", args, { encoding: "utf8" }).trim();
+}
+
+function hasHistory(): boolean {
+  try {
+    return git(["rev-parse", "--is-shallow-repository"]) === "false";
+  } catch {
+    return false;
+  }
+}
+
 const server = await createServer({
   server: { middlewareMode: true, hmr: false, ws: false },
   appType: "custom",
   logLevel: "error",
 });
 try {
-  const { loadOgPages, renderOgImage, sitemap } = (await server.ssrLoadModule(
-    "/scripts/ogImage.ts",
-  )) as typeof import("./ogImage");
+  const { loadOgPages, renderOgImage, sitemap, pageSources } =
+    (await server.ssrLoadModule(
+      "/scripts/ogImage.ts",
+    )) as typeof import("./ogImage");
   const { pages, ogImagePath, siteUrl } = await loadOgPages(server);
   for (const page of pages) {
     const file = join(OUT_DIR, ogImagePath(page.path));
@@ -22,8 +37,26 @@ try {
   }
   console.log(`Wrote ${pages.length} Open Graph images to ${OUT_DIR}/og`);
 
-  await writeFile(join(OUT_DIR, "sitemap.xml"), sitemap(pages, siteUrl));
-  console.log(`Wrote ${pages.length} URLs to ${OUT_DIR}/sitemap.xml`);
+  const history = hasHistory();
+  const lastModified = (path: string) => {
+    if (!history) {
+      return undefined;
+    }
+    const sources = pageSources(path);
+    for (const source of sources) {
+      if (!existsSync(source)) {
+        throw new Error(`${path} has no source file ${source}`);
+      }
+    }
+    return git(["log", "-1", "--format=%cI", "--", ...sources]) || undefined;
+  };
+  await writeFile(
+    join(OUT_DIR, "sitemap.xml"),
+    sitemap(pages, siteUrl, lastModified),
+  );
+  console.log(
+    `Wrote ${pages.length} URLs to ${OUT_DIR}/sitemap.xml${history ? "" : " without lastmod, the clone is shallow"}`,
+  );
 
   const { buildLlmsFiles, loadLlmsModules } = (await server.ssrLoadModule(
     "/scripts/llms.ts",

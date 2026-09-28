@@ -25,7 +25,7 @@ function ogImages(): Plugin {
           const { pages, ogImagePath, siteUrl } = await loadOgPages(server);
           if (path === "/sitemap.xml") {
             res.setHeader("Content-Type", "application/xml");
-            res.end(sitemap(pages, siteUrl));
+            res.end(sitemap(pages, siteUrl, () => undefined));
             return;
           }
           const page = pages.find((page) => ogImagePath(page.path) === path);

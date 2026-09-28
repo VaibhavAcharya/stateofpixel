@@ -197,11 +197,51 @@ export async function renderOgImage(page: OgPage): Promise<Buffer> {
     .asPng();
 }
 
-export function sitemap(pages: PageMeta[], siteUrl: string): string {
+const BACKEND_FACTS = [
+  "../../packages/backend/convex/lib/limits.ts",
+  "../../packages/backend/convex/lib/storage.ts",
+];
+
+export function pageSources(path: string): string[] {
+  if (path === "/") {
+    return [
+      "src/routes/index.tsx",
+      "src/components/landing",
+      "src/lib/pageMeta.ts",
+      "src/components/docs/facts.ts",
+      ...BACKEND_FACTS,
+    ];
+  }
+  if (path === "/docs") {
+    return ["src/content/docs/quickstart.mdx"];
+  }
+  if (path.startsWith("/docs/")) {
+    return [`src/content/docs/${path.slice("/docs/".length)}.mdx`];
+  }
+  if (path === "/compare" || path.startsWith("/compare/")) {
+    return [
+      "src/content/compare.ts",
+      "src/components/compare",
+      "src/components/docs/facts.ts",
+      ...BACKEND_FACTS,
+    ];
+  }
+  return [`src/routes${path}.tsx`];
+}
+
+export function sitemap(
+  pages: PageMeta[],
+  siteUrl: string,
+  lastModified: (path: string) => string | undefined,
+): string {
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...pages.map((page) => `  <url><loc>${siteUrl}${page.path}</loc></url>`),
+    ...pages.map((page) => {
+      const date = lastModified(page.path);
+      const lastmod = date === undefined ? "" : `<lastmod>${date}</lastmod>`;
+      return `  <url><loc>${siteUrl}${page.path}</loc>${lastmod}</url>`;
+    }),
     "</urlset>",
     "",
   ].join("\n");
