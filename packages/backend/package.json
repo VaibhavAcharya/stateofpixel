@@ -8,7 +8,6 @@
     "./conclude": "./convex/lib/conclude.ts",
     "./dataModel": "./convex/_generated/dataModel.d.ts",
     "./limits": "./convex/lib/limits.ts",
-    "./signing": "./convex/lib/signing.ts",
     "./storage": "./convex/lib/storage.ts"
   },
   "scripts": {

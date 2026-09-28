@@ -15,28 +15,8 @@ export function privateImageUrl(
   return `${env.CONVEX_SITE_URL}${IMAGE_ROUTE}${projectId}/${imageId}`;
 }
 
-export async function r2ImageUrl(
-  project: { _id: Id<"projects">; private: boolean },
-  image: { accountId: Id<"accounts">; hash: string; r2Key: string },
-  imagesUrl: string,
-): Promise<string> {
-  const token = `${image.accountId}.${image.hash}`;
-  return project.private
-    ? `${imagesUrl}${IMAGE_ROUTE}${project._id}/${token}.${await sign(
-        env.IMAGE_URL_SECRET,
-        messages.privateImage(project._id, image.r2Key),
-      )}`
-    : `${imagesUrl}/files/${token}.${await sign(
-        env.IMAGE_URL_SECRET,
-        messages.publicImage(image.r2Key),
-      )}`;
-}
-
 export function withGrant(url: string, grant: ImageGrant): string {
-  const routes = [env.CONVEX_SITE_URL, env.IMAGES_URL].flatMap((base) =>
-    base === undefined ? [] : [`${base}${IMAGE_ROUTE}`],
-  );
-  return routes.some((route) => url.startsWith(route))
+  return url.startsWith(`${env.CONVEX_SITE_URL}${IMAGE_ROUTE}`)
     ? `${url}?exp=${grant.exp}&sig=${grant.sig}`
     : url;
 }

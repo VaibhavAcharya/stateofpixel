@@ -101,7 +101,7 @@ One pnpm monorepo. The layout is in the [README](../README.md).
 - Backend: Convex for database, file storage, scheduled functions and crons. The CI API and GitHub webhooks are Convex HTTP actions ([docs](https://docs.convex.dev/functions/http-actions)). Live queries mean the build page updates by itself while shards arrive, with no polling.
 - Auth: Convex Auth with the GitHub provider ([docs](https://labs.convex.dev/auth/config/oauth/github)). It is beta and may change in backward-incompatible ways ([docs](https://docs.convex.dev/auth/convex-auth)), so pin the version.
 - CI auth: GitHub Actions OIDC tokens verified with `jose` inside the HTTP actions (tested from `visual.yml`), or a hashed project token.
-- Image storage: Convex File Storage now, Cloudflare R2 later. All storage calls go through one module (`packages/backend/convex/blobs.ts`) with four functions: create upload targets, confirm an upload, get a URL, delete. Each image row records which store holds it, so moving to R2 (through the `@convex-dev/r2` component) can happen image by image.
+- Image storage: Convex File Storage. All storage calls go through one module (`packages/backend/convex/blobs.ts`) with four functions: create upload targets, confirm an upload, get a URL, delete. Each image row records which store holds it, so a move to another store can happen image by image.
 - CLI: Node 20+, published to npm, odiff-bin as optional dependency, pixelmatch as fallback.
 - GitHub App with `checks: write`, `pull_requests: write`, `contents: read`, `actions: read`.
 - Deploys: production builds on Netlify run `convex deploy` with a production deploy key, then build the web app ([docs](https://docs.convex.dev/production/hosting/netlify)). Deploy previews and branch deploys build only the web app, against the production Convex URL.
@@ -123,7 +123,7 @@ Convex prices, Starter plan pay-as-you-go ([pricing](https://www.convex.dev/pric
 - Function calls: a few thousand per build, well under 1M/month.
 - Chromatic for the same workload is 640 builds x 1,500 = 960k snapshots/month.
 
-So a mid-size team costs about $3 a month on Convex, and most of it is egress. With R2 the same team costs cents. That is fine while we have few users. Egress is the number to watch; move bytes to R2 when egress becomes the biggest line on the Convex bill.
+So a mid-size team costs about $3 a month on Convex, and most of it is egress. That is fine while we have few users. Egress is the number to watch.
 
 Pricing: a free tier of 10 GB stored per account, then pay only for storage. No per-snapshot, per-build or per-seat fees, so the whole team can review. Storage is the only cost that grows for us, so it is the only thing we bill. PR-only images are kept 60 days by default. Paid plans are storage tiers: 25 GB for $15 a month, 100 GB for $100 and 500 GB for $500, billed monthly or yearly, with yearly 10% cheaper. Above 500 GB, customers contact us. Paid plans show as coming soon until billing ships. Over the limit we warn and soft-fail, we do not block CI.
 
@@ -135,7 +135,7 @@ Storage-only billing means retention is a product feature. Show each project its
 - A CLI running in CI with an OIDC token adds friction with security reviews at larger companies. The public MIT source, readable npm code, source maps and documented requests reduce it.
 - Flaky renders make any visual tool look broken. The Docker and Playwright defaults matter as much as the server.
 - GitHub App permissions scare some orgs. Keep the permission list minimal and documented.
-- Convex egress is $0.12 to $0.13/GB, and review pages are mostly image downloads. Keep the storage module small so the move to R2 stays a contained change.
+- Convex egress is $0.12 to $0.13/GB, and review pages are mostly image downloads. Keep the storage module small so a move to another store stays a contained change.
 - Convex File Storage URLs never expire, and anyone with one can open the file ([docs](https://docs.convex.dev/file-storage/serve-files)). Private repo images go through our own HTTP route with links that expire within 2 hours (SPEC section 11). Every private image view is one function call on top of the egress.
 - The Convex free plan returns errors when over limits. Run production on Starter with a card on file from day one.
 - Concurrency on Starter may be 16 queries and 16 mutations at once (unverified). Many CI shards uploading at once could queue. Move to Pro when that shows up.

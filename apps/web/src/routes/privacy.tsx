@@ -112,7 +112,6 @@ function Privacy() {
         <li>
           Convex, for the database, file storage and the backend functions.
         </li>
-        <li>Cloudflare R2, to store screenshots and diff images.</li>
         <li>Dodo Payments, to take payments for paid plans.</li>
         <li>Netlify, to host the website.</li>
         <li>Umami, for the analytics described above.</li>

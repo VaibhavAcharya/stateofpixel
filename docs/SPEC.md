@@ -252,7 +252,7 @@ The rules the schema does not show:
 - `deletedBuilds` has one row per build that `deleteOldBuilds` deleted, so an old link can say why it is gone. Deleted with the project.
 - `snapshots.name` is unique in a build; the create mutation checks it. Metadata is at most 4 KB.
 - `reviews` is an append-only audit of every review action. The current state lives on `snapshots.reviewState`. `approvedImages` (`{projectId, buildName, prNumber, imageId, reviewId}`) is written on every approval, so one index range answers "was this exact image approved on this PR" (4.6).
-- `images` are scoped per account, so one account can never reach another's image by guessing a hash; the same PNG in two accounts is stored twice. `by_accountId_and_hash` is unique by code. `bytes` comes from `_storage.size` or the Worker receipt, never from the client; `width` and `height` come from the client and are not checked. An image row is created only after an upload is confirmed (7.3), so there is no pending upload state to clean up. `lastReferencedAt` is set at confirm, and `createUploadTargets` moves it forward when a build reuses an image over 12 hours old, so `collectImages` never deletes an image a pending build relies on. `projectId` is the first project whose snapshot used the image, and `baseline` is true once a build on the default branch or an auto-approve branch uses it; the Usage tab counts by them.
+- `images` are scoped per account, so one account can never reach another's image by guessing a hash; the same PNG in two accounts is stored twice. `by_accountId_and_hash` is unique by code. `bytes` comes from `_storage.size`, never from the client; `width` and `height` come from the client and are not checked. An image row is created only after an upload is confirmed (7.3), so there is no pending upload state to clean up. `lastReferencedAt` is set at confirm, and `createUploadTargets` moves it forward when a build reuses an image over 12 hours old, so `collectImages` never deletes an image a pending build relies on. `projectId` is the first project whose snapshot used the image, and `baseline` is true once a build on the default branch or an auto-approve branch uses it; the Usage tab counts by them.
 - `usageDaily` is written by the `usage` cron, one row per project and UTC day.
 - `repoPermissions` caches GitHub permissions (section 8). `freshness` is set to `fresh` on every save, `stale` by a scheduled mutation 5 minutes later and `expired` 10 minutes after that. A missing value counts as `expired`.
 - `githubEvents` dedupes webhooks by `X-GitHub-Delivery`. Rows older than 7 days are deleted by the daily cron.
@@ -481,30 +481,17 @@ Exit codes: `upload`, `storybook` and `finalize` exit 0 when changes exist, beca
 
 ### Where bytes live
 
-PNGs live in Convex File Storage or in Cloudflare R2 behind the Worker in `apps/images`. When the Convex env var `IMAGES_URL` (the Worker's URL) is set, new uploads go to R2; otherwise they go to Convex. Existing images stay where they are, since `images.store` is per row. All storage code sits in `packages/backend/convex/blobs.ts`:
+PNGs live in Convex File Storage. All storage code sits in `packages/backend/convex/blobs.ts`:
 
-| Function | Convex | R2 |
-|---|---|---|
-| `createUploadTargets(hashes)` | `ctx.storage.generateUploadUrl()` per hash | Worker upload link per hash, signed below |
-| `confirmUpload(hash, ref)` | check `_storage.sha256`, return `storageId` | verify the Worker receipt |
-| `getUrl(image, project)` | public project: `ctx.storage.getUrl(storageId)`; private project: the image route below | Worker link with an image signature |
-| `readImage(storageId)` | `ctx.storage.get(storageId)`, for the image route | the Worker reads R2 |
-| `delete(image)` | `ctx.storage.delete(storageId)` | schedules `deleteR2Object`, which calls the Worker |
+| Function | What it does |
+|---|---|
+| `createUploadTargets(hashes)` | `ctx.storage.generateUploadUrl()` per hash |
+| `confirmUpload(hash, ref)` | check `_storage.sha256`, return `storageId` |
+| `getUrl(image, project)` | public project: `ctx.storage.getUrl(storageId)`; private project: the image route below |
+| `readImage(storageId)` | `ctx.storage.get(storageId)`, for the image route |
+| `delete(image)` | `ctx.storage.delete(storageId)` |
 
-Nothing else in the backend touches `ctx.storage` or R2.
-
-### R2 and the images Worker
-
-The Worker (`apps/images/src/index.ts`) holds the R2 binding, so Convex has no R2 credentials. Both sides sign with `IMAGE_URL_SECRET` through `convex/lib/signing.ts`, HMAC-SHA256 in base64url:
-
-| Route | Signed message | Check |
-|---|---|---|
-| `POST /upload/{accountId}/{hash}?exp&sig` | `upload.{accountId}.{hash}.{exp}`, valid 1 hour | Body at most 20 MiB and its SHA-256 equals `hash`, then put to `r2Key`. Returns `{ storageId: "r2:{bytes}.{sig}" }` with `sig` over `stored.{r2Key}.{bytes}`, the same response shape as a Convex upload, so the CLI needs no change. |
-| `GET /images/{projectId}/{accountId}.{hash}.{imageSig}?exp&sig` | grant as below, plus `image.{projectId}.{r2Key}` | Private projects. The image signature ties the image to the project, the grant gives the time limit. |
-| `GET /files/{accountId}.{hash}.{sig}` | `public.{r2Key}` | Public projects. Never expires, like a Convex storage URL. |
-| `DELETE /objects/{r2Key}?before&sig` | `delete.{r2Key}.{before}` | Deletes only if the object was uploaded before `before`, so a pending delete never removes the same hash uploaded again after it. |
-
-Confirm trusts the receipt for the size, since the Worker hashed and measured the body. The Worker keeps objects in the Cloudflare edge cache, which works only on a custom domain; on `workers.dev` every read goes to R2. Unlike the Convex route, the Worker does not check that the project is archived or that the image still exists in Convex, so an archived project's images stay reachable until the grant expires, at most 2 hours. An upload that is never confirmed leaves an object in R2 with no row.
+Nothing else in the backend touches `ctx.storage`. Rows with `store: "r2"` are left from an earlier Cloudflare R2 store and have no bytes behind them; `getUrl` returns null for them, and `blobs.deleteR2Images` deletes them and frees their bytes.
 
 Things to know about Convex File Storage URLs ([docs](https://docs.convex.dev/file-storage/serve-files)):
 - "Anyone with the URL can access the file without further authentication from your app." The URL does not expire; only deleting the file revokes it. So `getUrl` URLs go only to public projects, and we never store them.

@@ -1,37 +1,5 @@
-export const R2_RECEIPT_PREFIX = "r2:";
-
-const HASH = /^[0-9a-f]{64}$/;
-const ID = /^[a-z0-9]+$/;
-
-export function r2Key(accountId: string, hash: string): string {
-  return `a/${accountId}/img/${hash.slice(0, 2)}/${hash}.png`;
-}
-
-export function parseImageToken(
-  token: string,
-): { accountId: string; hash: string; sig: string } | null {
-  const [accountId, hash, sig, ...rest] = token.split(".");
-  if (
-    accountId === undefined ||
-    hash === undefined ||
-    sig === undefined ||
-    rest.length > 0 ||
-    !ID.test(accountId) ||
-    !HASH.test(hash)
-  ) {
-    return null;
-  }
-  return { accountId, hash, sig };
-}
-
 export const messages = {
   grant: (projectId: string, exp: number) => `${projectId}.${exp}`,
-  upload: (accountId: string, hash: string, exp: number) =>
-    `upload.${accountId}.${hash}.${exp}`,
-  receipt: (key: string, bytes: number) => `stored.${key}.${bytes}`,
-  privateImage: (projectId: string, key: string) => `image.${projectId}.${key}`,
-  publicImage: (key: string) => `public.${key}`,
-  delete: (key: string, before: number) => `delete.${key}.${before}`,
 };
 
 export async function sign(secret: string, message: string): Promise<string> {

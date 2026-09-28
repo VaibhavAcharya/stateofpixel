@@ -5,11 +5,8 @@ import { exportPKCS8, generateKeyPair } from "jose";
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { api as functions, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { getUrl } from "./blobs";
-import { withGrant } from "./lib/imageUrls";
 import { DAILY_BUILDS, DAILY_UPLOAD_BYTES } from "./lib/limits";
 import { hashProjectToken } from "./lib/projectTokens";
-import { messages, R2_RECEIPT_PREFIX, r2Key, sign } from "./lib/signing";
 import { rateLimiter as limits } from "./rateLimits";
 import schema from "./schema";
 
@@ -624,95 +621,6 @@ it("marks a snapshot failed when the uploaded bytes do not match the hash", asyn
   expect(
     await t.run((ctx) => ctx.db.system.get("_storage", storageId)),
   ).toBeNull();
-});
-
-it("stores uploads in R2 when IMAGES_URL is set", async () => {
-  vi.stubEnv("IMAGES_URL", "https://images.test");
-  try {
-    const { t, accountId } = await setup();
-    const [header, footer] = await snapshotsOf([
-      { name: "Header", content: "header-v1" },
-      { name: "Footer", content: "footer-v1" },
-    ]);
-    const headerHash = header?.hash as string;
-    const footerHash = footer?.hash as string;
-    const created = await api(t, "POST", "/builds", {
-      nonce: "run-1",
-      shard: { index: 1, total: 1 },
-      git: {
-        commit: "c1",
-        branch: "main",
-        baselineBranch: "main",
-        ancestors: [],
-      },
-      snapshots: [header, footer],
-    });
-    const uploadUrl = new URL(created.body.snapshots[0].uploadUrl);
-    expect(`${uploadUrl.origin}${uploadUrl.pathname}`).toBe(
-      `https://images.test/upload/${accountId}/${headerHash}`,
-    );
-
-    const receipt = async (hash: string) =>
-      `${R2_RECEIPT_PREFIX}9.${await sign(
-        "test-image-secret",
-        messages.receipt(r2Key(accountId, hash), 9),
-      )}`;
-    const completed = await api(
-      t,
-      "POST",
-      `/builds/${created.body.buildId}/shards/1/complete`,
-      {
-        uploads: [
-          {
-            hash: headerHash,
-            storageId: await receipt(headerHash),
-            kind: "screenshot",
-            width: 10,
-            height: 10,
-          },
-          {
-            hash: footerHash,
-            storageId: await receipt(headerHash),
-            kind: "screenshot",
-            width: 10,
-            height: 10,
-          },
-        ],
-        results: [
-          { name: "Header", hash: headerHash, status: "added" },
-          { name: "Footer", hash: footerHash, status: "added" },
-        ],
-      },
-    );
-    expect(completed.body.rejectedUploads).toEqual([footerHash]);
-
-    const { image, url } = await t.run(async (ctx) => {
-      const image = await ctx.db.query("images").unique();
-      const project = await ctx.db.query("projects").unique();
-      return {
-        image,
-        url:
-          image === null || project === null
-            ? null
-            : withGrant((await getUrl(ctx, image, project)) as string, {
-                exp: 1,
-                sig: "s",
-              }),
-      };
-    });
-    expect(image).toMatchObject({
-      store: "r2",
-      r2Key: r2Key(accountId, headerHash),
-      bytes: 9,
-    });
-    expect(url).toMatch(
-      new RegExp(
-        `^https://images\\.test/images/[a-z0-9]+/${accountId}\\.${headerHash}\\.[A-Za-z0-9_-]{43}\\?exp=1&sig=s$`,
-      ),
-    );
-  } finally {
-    vi.stubEnv("IMAGES_URL", undefined);
-  }
 });
 
 it("finalizes on request and expires builds that never finish", async () => {
