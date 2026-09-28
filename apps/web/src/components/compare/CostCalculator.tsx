@@ -7,6 +7,7 @@ import {
   PERCY,
   type Plan,
 } from "../../lib/competitorPricing";
+import { facts } from "../docs/facts";
 import {
   DEFAULT_WORKLOAD,
   estimate,
@@ -229,7 +230,8 @@ export function CostCalculator({ competitors }: { competitors: Priced[] }) {
         Screenshots are stories x viewports x browsers x builds. For
         stateofpixel, {DEFAULT_WORKLOAD.changed}% of screenshots change per
         build at {DEFAULT_WORKLOAD.kilobytes} KB each, and pull request images
-        are kept 60 days. The cheapest list plan for each tool, before tax, from{" "}
+        are kept {facts.retentionDays} days. The cheapest list plan for each
+        tool, before tax, from{" "}
         {competitors.map((key, index) => (
           <span key={key}>
             {index > 0 && ", "}

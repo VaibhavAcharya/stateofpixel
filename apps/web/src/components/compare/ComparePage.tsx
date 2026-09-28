@@ -65,7 +65,7 @@ const SWITCH_SNIPPETS: Record<
   },
 };
 
-const OUR_FLOW = [
+export const OUR_FLOW = [
   "Your tests take screenshots",
   "The CLI hashes and compares them on the runner",
   "Only images we have not seen upload",
@@ -538,7 +538,15 @@ function Switch({ competitor }: { competitor: Competitor }) {
     <section id="switch" className={`${SECTION} scroll-mt-16`}>
       <LeadCopy title="Switch in one pull request." className="max-w-[720px]">
         Keep your tests. Change the step that sends screenshots to{" "}
-        {competitor.name}.
+        {competitor.name}. The{" "}
+        <Link
+          to="/docs/$slug"
+          params={{ slug: "moving" }}
+          className="text-link"
+        >
+          moving guide
+        </Link>{" "}
+        has the details.
       </LeadCopy>
       <ol className="mt-12 grid grid-cols-3 gap-8 max-md:grid-cols-1 max-md:gap-4">
         {competitor.switchSteps.map(([title, text], index) => (

@@ -30,9 +30,9 @@ Use the same values the shards used. See [Sharding](/docs/sharding).
 
 ## Authentication
 
-On GitHub Actions the CLI uses the OIDC token, which needs `permissions: id-token: write`. Anywhere else, set `STATEOFPIXEL_TOKEN` to a project token. See [Other CI](/docs/other-ci).
+On GitHub Actions the CLI uses the OIDC token, which needs `permissions: id-token: write`. Anywhere else, set `STATEOFPIXEL_TOKEN` to a project token. See [Other CI](/docs/other-ci) and [Security](/docs/security#how-ci-signs-in).
 
-GitHub gives pull requests from forks no OIDC token and no secrets, so the CLI skips them with a warning and sets no check. If `stateofpixel` is a required check, those pull requests cannot merge until an admin bypasses the rule.
+GitHub gives pull requests from forks no OIDC token and no secrets, so the CLI skips them with a warning and sets no check. If `stateofpixel` is a required check, those pull requests cannot merge until an admin bypasses the rule. See [No check on the pull request](/docs/troubleshooting#no-check-on-the-pull-request).
 
 ## Output
 
@@ -47,4 +47,4 @@ stateofpixel  build #411  feat/header vs main (#405)
 
 - **0** when the build was reported, with or without changes. The GitHub check decides whether the pull request can merge.
 - **0** with a warning when stateofpixel or the GitHub OIDC token service is down, a rate limit is hit, or the pull request comes from a fork, so an outage does not break your CI. Pass `--strict` to exit 1 instead.
-- **1** on configuration and authentication errors, failed uploads, and images over the [limits](/docs/limits).
+- **1** on configuration and authentication errors, failed uploads, and images over the [limits](/docs/limits). See [Troubleshooting](/docs/troubleshooting) for the common causes.

@@ -15,7 +15,7 @@ export const Route = createFileRoute("/terms")({
 
 function Terms() {
   return (
-    <LegalPage title="Terms and conditions" updated="September 25, 2026">
+    <LegalPage title="Terms and conditions" updated="September 28, 2026">
       <p>
         These terms cover your use of stateofpixel.com, the stateofpixel GitHub
         App and the stateofpixel CLI (the "service"). stateofpixel ("we", "us")
@@ -53,9 +53,9 @@ function Terms() {
 
       <h2>Plans and payment</h2>
       <p>
-        The free plan costs nothing. Paid plans, when offered, are subscriptions
-        for a fixed amount of storage, billed in advance each month or each
-        year, at the prices on the{" "}
+        The free plan costs nothing. Paid plans are subscriptions for a fixed
+        amount of storage, billed in advance each month or each year, at the
+        prices on the{" "}
         <Link to="/" hash="pricing">
           pricing section
         </Link>{" "}

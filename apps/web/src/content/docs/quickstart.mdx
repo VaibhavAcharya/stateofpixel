@@ -48,7 +48,7 @@ jobs:
       - run: npx stateofpixel upload screenshots
 ```
 
-- `id-token: write` lets the CLI sign in with the GitHub Actions OIDC token, so you do not need a secret.
+- `id-token: write` lets the CLI sign in with the GitHub Actions OIDC token, so you do not need a secret. See [Security](/docs/security#how-ci-signs-in).
 - Run it on pushes to `main` too. Builds on your default branch are approved on their own and become the baseline that pull requests compare against.
 - `fetch-depth: 0` gives the CLI the git history it uses to find the baseline. With a shallow clone the server asks the GitHub compare API instead.
 
@@ -66,4 +66,4 @@ When a pull request changes how something looks, the `stateofpixel` check waits 
 
 The check only blocks merges when GitHub requires it. In the repository settings on GitHub, add a branch protection rule or a ruleset for `main` that requires status checks to pass, and pick `stateofpixel`. See [The GitHub check](/docs/checks) for every state it can be in.
 
-Pull requests from forks never get the check, because GitHub gives them no token to sign in with. Once the check is required, they cannot merge until an admin bypasses the rule. See [Authentication](/docs/cli#authentication).
+Pull requests from forks never get the check, because GitHub gives them no token to sign in with. Once the check is required, they cannot merge until an admin bypasses the rule. See [No check on the pull request](/docs/troubleshooting#no-check-on-the-pull-request).
