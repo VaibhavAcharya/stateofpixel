@@ -2,7 +2,8 @@
 
 Read these before changing code. Link to them instead of copying their content.
 
-- [README.md](README.md): layout, development, environment variables, checks, dogfooding, contributing
+- [README.md](README.md): layout
+- [CONTRIBUTING.md](CONTRIBUTING.md): development, environment variables, checks, pull requests
 - [docs/DESIGN.md](docs/DESIGN.md): design system for `apps/web`
 - [apps/web/src/content/docs](apps/web/src/content/docs): user docs, rendered at `/docs`; the source of truth for user-facing behavior
 - [packages/cli/README.md](packages/cli/README.md): the npm page, which links to the docs
