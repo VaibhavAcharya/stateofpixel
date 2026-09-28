@@ -6,6 +6,10 @@ export const meta = {
   lead: "A snapshot that changes on every run asks for review on every run. Most noise comes from a few causes, and each has a fix.",
 };
 
+## Find flaky snapshots
+
+A changed snapshot shows "Looks flaky" in the build page when its image changed at least twice over the last 10 builds on the baseline branch and went back to an image it had before. It also shows when another build of the same commit has a different image, for example after a CI re-run. Fix the cause with the steps below, then approve.
+
 ## Render in the same place
 
 Screenshots render in your CI, so fonts and anti-aliasing depend on the machine. Take them in the same environment every time, for example the Playwright Docker image with the same Playwright version as your project. Do not mix screenshots from your laptop with screenshots from CI.
