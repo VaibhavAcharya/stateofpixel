@@ -43,6 +43,7 @@ export function BuildHeader({
   repo,
   canWrite,
   canReview,
+  links = true,
   onApproveAll,
   onRejectAll,
 }: {
@@ -51,6 +52,7 @@ export function BuildHeader({
   repo: string;
   canWrite: boolean;
   canReview: boolean;
+  links?: boolean;
   onApproveAll: () => void;
   onRejectAll: () => void;
 }) {
@@ -84,15 +86,16 @@ export function BuildHeader({
               to="/$owner/$repo"
               params={{ owner, repo }}
               search={{ branch: build.branch }}
-              className="mono truncate text-text hover:text-link"
+              disabled={!links}
+              className="mono truncate text-text [&[href]]:hover:text-link"
             >
               {build.branch}
             </Link>
           </MetaItem>
           <MetaItem icon={GitCommitIcon} label="Commit">
             <a
-              href={`${github}/commit/${build.commitSha}`}
-              className="mono hover:text-link"
+              href={links ? `${github}/commit/${build.commitSha}` : undefined}
+              className="mono [&[href]]:hover:text-link"
             >
               {shortSha(build.commitSha)}
             </a>
@@ -100,8 +103,8 @@ export function BuildHeader({
           {build.prNumber !== null && (
             <MetaItem icon={GitPullRequestIcon} label="Pull request">
               <a
-                href={`${github}/pull/${build.prNumber}`}
-                className="tabular-nums hover:text-link"
+                href={links ? `${github}/pull/${build.prNumber}` : undefined}
+                className="tabular-nums [&[href]]:hover:text-link"
               >
                 #{build.prNumber}
               </a>
@@ -120,7 +123,8 @@ export function BuildHeader({
                     repo,
                     number: String(build.baseline.number),
                   }}
-                  className="text-text tabular-nums hover:text-link"
+                  disabled={!links}
+                  className="text-text tabular-nums [&[href]]:hover:text-link"
                 >
                   #{build.baseline.number}
                 </Link>{" "}

@@ -11,6 +11,7 @@ import {
   TONE_TEXT,
 } from "../ui";
 
+import type { BuildLinkParams } from "./buildData";
 import type { SnapshotRow } from "./types";
 
 export function SnapshotGroup({
@@ -37,8 +38,8 @@ export function SnapshotGroup({
   canLoadMore: boolean;
   onLoadMore: () => void;
   selectedId: string | undefined;
-  linkParams: { owner: string; repo: string; number: string };
-  onSelect: () => void;
+  linkParams: BuildLinkParams | null;
+  onSelect: (row: SnapshotRow) => void;
 }) {
   const Caret = open ? CaretDownIcon : CaretRightIcon;
   const StatusIcon = DIFF_ICONS[status];
@@ -92,6 +93,16 @@ export function SnapshotGroup({
   );
 }
 
+function scrollIntoList(element: HTMLElement, list: HTMLElement) {
+  const row = element.getBoundingClientRect();
+  const view = list.getBoundingClientRect();
+  if (row.top < view.top) {
+    list.scrollTop -= view.top - row.top;
+  } else if (row.bottom > view.bottom) {
+    list.scrollTop += row.bottom - view.bottom;
+  }
+}
+
 function reviewTone(row: SnapshotRow) {
   return row.reviewState === "none"
     ? TONE_TEXT[row.diffStatus]
@@ -106,13 +117,14 @@ function SnapshotRowLink({
 }: {
   row: SnapshotRow;
   selected: boolean;
-  linkParams: { owner: string; repo: string; number: string };
-  onSelect: () => void;
+  linkParams: BuildLinkParams | null;
+  onSelect: (row: SnapshotRow) => void;
 }) {
   const item = useRef<HTMLLIElement>(null);
   useEffect(() => {
-    if (selected) {
-      item.current?.scrollIntoView({ block: "nearest" });
+    const list = item.current?.closest("nav");
+    if (selected && item.current && list) {
+      scrollIntoList(item.current, list);
     }
   }, [selected]);
   const Icon =
@@ -122,33 +134,52 @@ function SnapshotRowLink({
   const reviewLabel =
     row.reviewState === "none" ? "" : `, ${row.reviewState} review`;
 
+  const props = {
+    title: row.name,
+    "aria-label": `${row.name}, ${row.diffStatus}${row.diffRatio === null ? "" : `, ${formatPercent(row.diffRatio)}`}${reviewLabel}`,
+    onClick: () => onSelect(row),
+    className: `relative flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-sm transition-colors duration-100 hover:bg-hover ${
+      selected
+        ? "bg-hover before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-link"
+        : ""
+    }`,
+  };
+  const content = (
+    <>
+      <Icon
+        size={14}
+        weight={row.reviewState === "approved" ? "bold" : "regular"}
+        className={`shrink-0 ${reviewTone(row)}`}
+      />
+      <SnapshotName name={row.name} className="flex-1" />
+      {row.diffRatio !== null && (
+        <span className="shrink-0 text-xs text-muted tabular-nums">
+          {formatPercent(row.diffRatio)}
+        </span>
+      )}
+    </>
+  );
+
   return (
     <li ref={item}>
-      <Link
-        to="/$owner/$repo/builds/$number/snapshots/$snapshotId"
-        params={{ ...linkParams, snapshotId: row.id }}
-        title={row.name}
-        aria-current={selected ? "page" : undefined}
-        aria-label={`${row.name}, ${row.diffStatus}${row.diffRatio === null ? "" : `, ${formatPercent(row.diffRatio)}`}${reviewLabel}`}
-        onClick={onSelect}
-        className={`relative flex h-8 items-center gap-2 rounded-sm px-2 text-sm transition-colors duration-100 hover:bg-hover ${
-          selected
-            ? "bg-hover before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-link"
-            : ""
-        }`}
-      >
-        <Icon
-          size={14}
-          weight={row.reviewState === "approved" ? "bold" : "regular"}
-          className={`shrink-0 ${reviewTone(row)}`}
-        />
-        <SnapshotName name={row.name} className="flex-1" />
-        {row.diffRatio !== null && (
-          <span className="shrink-0 text-xs text-muted tabular-nums">
-            {formatPercent(row.diffRatio)}
-          </span>
-        )}
-      </Link>
+      {linkParams === null ? (
+        <button
+          type="button"
+          aria-current={selected ? "true" : undefined}
+          {...props}
+        >
+          {content}
+        </button>
+      ) : (
+        <Link
+          to="/$owner/$repo/builds/$number/snapshots/$snapshotId"
+          params={{ ...linkParams, snapshotId: row.id }}
+          aria-current={selected ? "page" : undefined}
+          {...props}
+        >
+          {content}
+        </Link>
+      )}
     </li>
   );
 }

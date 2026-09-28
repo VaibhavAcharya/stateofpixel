@@ -160,6 +160,9 @@ function DemoKeys() {
       <span>
         <Kbd>d</Kbd> diff overlay
       </span>
+      <span>
+        <Kbd>?</Kbd> all keys
+      </span>
     </p>
   );
 }

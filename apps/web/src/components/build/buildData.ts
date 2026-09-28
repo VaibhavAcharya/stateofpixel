@@ -1,6 +1,7 @@
 import { api } from "@stateofpixel/backend/api";
 import { conclude } from "@stateofpixel/backend/conclude";
 import type { Id } from "@stateofpixel/backend/dataModel";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { usePaginatedQuery, useQuery } from "convex-helpers/react/cache/hooks";
 import { createContext, useContext } from "react";
@@ -29,6 +30,13 @@ export type ReviewArgs = {
   comment?: string;
 };
 
+export type BuildLinkParams = { owner: string; repo: string; number: string };
+
+export type Selection = {
+  snapshotId: string | undefined;
+  select: (snapshotId: string, options?: { replace?: boolean }) => void;
+};
+
 export type BuildData = {
   useSnapshotGroups: (
     buildId: Id<"builds">,
@@ -37,6 +45,7 @@ export type BuildData = {
   ) => Record<DiffStatus, SnapshotList>;
   useSnapshot: (args: SnapshotArgs) => Snapshot | null | undefined;
   useApplyReview: () => (args: ReviewArgs) => Promise<unknown>;
+  useSelection: (params: BuildLinkParams) => Selection;
 };
 
 export const NEXT_STATE: Record<ReviewAction, Exclude<ReviewState, "none">> = {
@@ -172,11 +181,28 @@ function useApplyReview() {
   });
 }
 
-export const BuildDataContext = createContext<BuildData>({
+function useSelection(params: BuildLinkParams): Selection {
+  const { snapshotId } = useParams({ strict: false });
+  const navigate = useNavigate();
+  return {
+    snapshotId,
+    select: (id, options) =>
+      void navigate({
+        to: "/$owner/$repo/builds/$number/snapshots/$snapshotId",
+        params: { ...params, snapshotId: id },
+        replace: options?.replace,
+      }),
+  };
+}
+
+export const BUILD_DATA: BuildData = {
   useSnapshotGroups,
   useSnapshot,
   useApplyReview,
-});
+  useSelection,
+};
+
+export const BuildDataContext = createContext<BuildData>(BUILD_DATA);
 
 export function useBuildData(): BuildData {
   return useContext(BuildDataContext);

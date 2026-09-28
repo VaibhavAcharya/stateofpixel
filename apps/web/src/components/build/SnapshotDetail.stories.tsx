@@ -59,6 +59,9 @@ function StoryDetail({
     },
     useSnapshot: () => snapshot,
     useApplyReview: () => async () => {},
+    useSelection: () => {
+      throw new Error("not used");
+    },
   };
   return (
     <BuildDataContext.Provider value={data}>
