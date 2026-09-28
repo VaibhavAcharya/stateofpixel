@@ -2,6 +2,7 @@ import {
   ArrowCounterClockwiseIcon,
   CaretDownIcon,
   CaretRightIcon,
+  WarningIcon,
 } from "@phosphor-icons/react/ssr";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { Link } from "@tanstack/react-router";
@@ -129,6 +130,24 @@ export function SnapshotDetail({
           </>
         )}
       </div>
+      {snapshot.flaky !== null && (
+        <p className="flex shrink-0 flex-wrap items-center gap-x-1.5 border-t border-border px-4 py-2 text-xs text-muted">
+          <WarningIcon size={14} className="shrink-0 text-pending" />
+          <span>
+            Looks flaky:{" "}
+            {snapshot.flaky.sameCommitBuild === null
+              ? `flipped ${snapshot.flaky.flips} times in ${snapshot.flaky.builds} builds.`
+              : `build #${snapshot.flaky.sameCommitBuild} of the same commit has a different image.`}
+          </span>
+          <Link
+            to="/docs/$slug"
+            params={{ slug: "stable-screenshots" }}
+            className="text-link"
+          >
+            Make it stable
+          </Link>
+        </p>
+      )}
       {snapshot.history.length > 0 && (
         <p className="flex shrink-0 flex-wrap items-center gap-x-2 border-t border-border px-4 py-2 text-xs text-muted">
           <Link

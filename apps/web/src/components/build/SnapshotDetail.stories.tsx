@@ -30,6 +30,7 @@ const pending: Snapshot = {
   rejectedIn: null,
   notReviewedOnPr: false,
   history: [],
+  flaky: null,
 };
 
 const review: NonNullable<Snapshot["lastReview"]> = {
@@ -232,6 +233,25 @@ export const WithHistoryAndDetails: Story = {
         storyId: "pricing--plans",
         importPath: "./src/Pricing.stories.tsx",
       },
+    },
+  },
+};
+
+export const LooksFlaky: Story = {
+  args: {
+    snapshot: {
+      ...pending,
+      history: [405, 398, 371],
+      flaky: { flips: 3, builds: 10, sameCommitBuild: null },
+    },
+  },
+};
+
+export const LooksFlakyOnTheSameCommit: Story = {
+  args: {
+    snapshot: {
+      ...pending,
+      flaky: { flips: 0, builds: 1, sameCommitBuild: 410 },
     },
   },
 };

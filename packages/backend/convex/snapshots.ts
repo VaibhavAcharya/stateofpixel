@@ -5,7 +5,7 @@ import {
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
-import { findChanges } from "./lib/history";
+import { findChanges, findFlaky } from "./lib/history";
 import { imageInfo, toImageInfo } from "./lib/images";
 import { findAllowedProject, findReadableBuild } from "./lib/permissions";
 import { diffStatus, reviewState } from "./schema";
@@ -108,6 +108,14 @@ export const get = query({
       rejectedIn: v.union(v.number(), v.null()),
       notReviewedOnPr: v.boolean(),
       history: v.array(v.number()),
+      flaky: v.union(
+        v.null(),
+        v.object({
+          flips: v.number(),
+          builds: v.number(),
+          sameCommitBuild: v.union(v.number(), v.null()),
+        }),
+      ),
     }),
   ),
   handler: async (ctx, { snapshotId, ...buildArgs }) => {
@@ -144,6 +152,7 @@ export const get = query({
           : null,
       notReviewedOnPr: await isNotReviewedOnPr(ctx, build, snapshot),
       history: await findHistory(ctx, build, snapshot),
+      flaky: await findFlaky(ctx, project, build, snapshot),
     };
   },
 });

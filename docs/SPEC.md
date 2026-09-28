@@ -190,7 +190,7 @@ A re-run of a failed CI job gets a new `GITHUB_RUN_ATTEMPT`, so it creates a fre
 
 1. A snapshot shows 3 pixels different, caused by anti-aliasing noise.
 2. Reviewer approves it. Next build it might flip back, and it would need review again.
-3. The snapshot detail panel shows its history. If the hash alternates between two values across recent builds, it shows "Looks flaky: flipped 3 times in 10 builds" and a link to the docs on masks and thresholds (M3).
+3. The snapshot detail panel shows its history. A changed snapshot shows "Looks flaky: flipped 3 times in 10 builds" and a link to the stable screenshots docs when, in its image and the images of the last 9 earlier builds of the suite on the baseline branch, the image changes at least 2 times and at least once goes back to an earlier image. It shows "Looks flaky: build #410 of the same commit has a different image" instead when another finalized build of the suite on the same commit has a different image. Computed in `snapshots.get` from `findFlaky` in `lib/history.ts`; nothing is stored and the check does not change.
 4. Fix is in the user's config: raise the threshold for that snapshot, or mask the region.
 
 ### 4.10 Storage limit reached
@@ -348,6 +348,7 @@ Viewer:
 
 Detail footer:
 - History: last 10 builds on the baseline branch where this snapshot's hash changed, as links. Ships with snapshot history (M2).
+- Looks flaky: the line from section 4.9, above History.
 - Metadata: browser, viewport, OS, test file and line, anything else the client sent.
 - Review info: "Approved by @alice 3 min ago", "Approved in build #410 by @alice (carried over)", or the reject comment.
 
@@ -831,7 +832,7 @@ Mutations and actions that need a permission throw a `ConvexError` with code `pe
 | `builds.get` | query | read | Build and counts by number. |
 | `builds.deleted` | query | read | For a number under `nextBuildNumber` with no build: its `deletedBuilds` row, or `null` when it has none. `null` for any other number. |
 | `snapshots.list` | query | read | Paginated sidebar list by `by_buildId_and_diffStatus_and_name`: name, statuses and diff ratio, no image URLs. |
-| `snapshots.get` | query | read | One snapshot with metadata, review info and history. |
+| `snapshots.get` | query | read | One snapshot with metadata, review info, history and whether it looks flaky (section 4.9). |
 | `reviews.apply` | mutation | write | `{ buildId, snapshotIds or "all", action, comment }`. "all" runs in chunks of 1,000 through scheduled mutations; the UI shows progress from `counts`. |
 | `baselines.current` | query | read | Every build name seen on the default branch, each with its newest full approved build. |
 | `baselines.list` | query | read | Paginated snapshots of one build name's baseline, with an optional name prefix. |
@@ -1011,4 +1012,4 @@ The CI API enforces these. A request over a limit gets a 4xx with the codes in b
 - Thumbnails. Generating them needs decoding on the server; the browser scales full images instead. Revisit if the Baselines grid is slow.
 - Ignore regions drawn in the UI. Masks live in test code.
 - Organization-level roles beyond what GitHub gives.
-- Wait-for-review in CI (`--wait`). PR comments, flaky detection and billing are tracked in ROADMAP.md.
+- Wait-for-review in CI (`--wait`). PR comments and billing are tracked in ROADMAP.md. Flaky detection stores nothing yet: no flaky badge in the snapshot list, no filter and no auto-approve of known variants.

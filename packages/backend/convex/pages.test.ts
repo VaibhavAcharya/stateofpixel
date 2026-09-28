@@ -282,7 +282,77 @@ it("lists builds by branch and returns build and snapshot details", async () => 
     baselineImage: { url: expect.any(String) },
     diffImage: null,
     lastReview: null,
+    flaky: null,
   });
+});
+
+it("flags a snapshot that flips between images or differs on the same commit", async () => {
+  const { t, user, grant, projectId } = await setup();
+  await grant("read");
+  const ids = await t.run(async (ctx) => {
+    const project = await ctx.db.get("projects", projectId);
+    const first = await ctx.db.query("builds").first();
+    if (project === null || first === null) {
+      throw new Error("missing fixture");
+    }
+    const { _id, _creationTime, baselineBuildId, prNumber, ...base } = first;
+    const image = (hash: string) =>
+      ctx.db.insert("images", {
+        accountId: project.accountId,
+        hash,
+        kind: "screenshot",
+        bytes: 3,
+        width: 40,
+        height: 30,
+        store: "r2",
+        r2Key: hash,
+        lastReferencedAt: 0,
+      });
+    const a = await image("a");
+    const b = await image("b");
+    const insert = async (
+      number: number,
+      imageId: Id<"images">,
+      fields: { branch?: string; commitSha?: string } = {},
+    ) => {
+      const buildId = await ctx.db.insert("builds", {
+        ...base,
+        number,
+        commitSha: `c${number}`,
+        nonce: `n${number}`,
+        ...fields,
+      });
+      return ctx.db.insert("snapshots", {
+        buildId,
+        shardIndex: 1,
+        name: "Header",
+        imageId,
+        baselineImageId: imageId === a ? b : a,
+        diffStatus: "changed",
+        reviewState: "pending",
+        metadata: {},
+      });
+    };
+    await insert(3, a);
+    await insert(4, b);
+    await insert(5, a);
+    const flipped = await insert(6, b, { branch: "feature" });
+    const sameCommit = await insert(7, a, {
+      branch: "feature",
+      commitSha: "c6",
+    });
+    return { flipped, sameCommit };
+  });
+  const flaky = async (number: number, snapshotId: Id<"snapshots">) =>
+    (await user.query(api.snapshots.get, { ...repo, number, snapshotId }))
+      ?.flaky;
+
+  expect(await flaky(6, ids.flipped)).toEqual({
+    flips: 3,
+    builds: 4,
+    sameCommitBuild: 7,
+  });
+  expect(await flaky(7, ids.sameCommit)).toMatchObject({ sameCommitBuild: 6 });
 });
 
 it("serves private images only through a signed link", async () => {
