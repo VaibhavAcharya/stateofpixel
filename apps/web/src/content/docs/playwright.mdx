@@ -1,0 +1,75 @@
+export const meta = {
+  title: "Playwright",
+  description: "Take snapshots in Playwright tests and upload them with the stateofpixel reporter.",
+  lead: "Call snapshot() in your tests. The reporter uploads the screenshots when the run ends.",
+};
+
+## Install
+
+```sh terminal
+npm install -D stateofpixel
+```
+
+## Add the reporter
+
+```ts playwright.config.ts
+import { defineConfig } from "@playwright/test";
+
+export default defineConfig({
+  reporter: [
+    ["list"],
+    ["stateofpixel/playwright", { buildName: "e2e" }],
+  ],
+});
+```
+
+The reporter clears `stateofpixel-screenshots` when the run begins and uploads it when the run ends. It uploads on CI only, when `CI` is set. A local run leaves the screenshots in the folder so you can look at them.
+
+## Take snapshots
+
+```ts tests/pricing.spec.ts
+import { test } from "@playwright/test";
+import { snapshot } from "stateofpixel/playwright";
+
+test("pricing", async ({ page }) => {
+  await page.goto("/pricing");
+  await snapshot(page, "Marketing/Pricing");
+  await snapshot(page, "Marketing/Pricing fold", { fullPage: false });
+});
+```
+
+`snapshot(page, name)` waits for fonts, disables animations, hides the caret and saves a full-page screenshot. Pass `{ fullPage: false }` to capture only the viewport.
+
+The browser and viewport width are added to the name, so `Marketing/Pricing` in Chromium at 1280px becomes `Marketing/Pricing [chromium 1280]`. Running the same test in several Playwright projects gives one snapshot per browser and width. The name is how stateofpixel matches snapshots across builds, so renaming a snapshot makes it a new one.
+
+Next to each PNG, `snapshot` writes the browser, viewport, Playwright project, test file and line. The build page shows them under the snapshot.
+
+## Run it on CI
+
+```yaml .github/workflows/visual.yml
+steps:
+  - uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
+  - run: npm ci
+  - run: npx playwright install --with-deps chromium
+  - run: npx playwright test
+```
+
+No upload step is needed. The workflow still needs `id-token: write`, as in the [Quickstart](/docs). With Playwright sharding (`--shard 1/4`), the reporter uploads once per shard and the build finishes when the last shard is done.
+
+When a test fails, the upload is marked as a subset. Snapshots of tests that did not run are then not reported as removed. A run you stop, for example with Ctrl+C, uploads nothing. When the upload fails, the reporter prints the error and marks the Playwright run as failed.
+
+## Reporter options
+
+| Option | What it does |
+|---|---|
+| `buildName` | Separate suite with its own baselines and check. See [Suites](/docs/suites). |
+| `baselineBranch` | Branch to compare against. |
+| `threshold` | Color difference threshold from 0 to 1. Overrides the project setting. |
+| `subset` | Always mark the upload as a subset, so missing snapshots are never removed. |
+| `strict` | Fail the run instead of skipping the upload on an outage, a rate limit or a pull request from a fork. |
+| `uploadOutsideCi` | Upload from your machine too. Needs `STATEOFPIXEL_TOKEN`. |
+| `nonce` | Id shared by every shard of one build. |
+
+`STATEOFPIXEL_DIR` changes the folder that `snapshot` writes to and the reporter uploads.

@@ -1,0 +1,32 @@
+{
+  "name": "@stateofpixel/backend",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./api": "./convex/_generated/api.js",
+    "./checkStatus": "./convex/lib/checkStatus.ts",
+    "./conclude": "./convex/lib/conclude.ts",
+    "./dataModel": "./convex/_generated/dataModel.d.ts",
+    "./limits": "./convex/lib/limits.ts",
+    "./storage": "./convex/lib/storage.ts"
+  },
+  "scripts": {
+    "dev": "convex dev",
+    "typecheck": "tsc -p convex",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@auth/core": "^0.41.3",
+    "@convex-dev/auth": "^0.0.95",
+    "@convex-dev/rate-limiter": "^0.4.0",
+    "convex": "^1.46.0",
+    "convex-helpers": "0.1.124",
+    "dodopayments": "^2.51.0",
+    "jose": "^6.2.12"
+  },
+  "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
+    "convex-test": "^0.0.59",
+    "vite": "^8.3.0"
+  }
+}

@@ -1,0 +1,30 @@
+export const meta = {
+  title: "The GitHub check",
+  description: "What the stateofpixel check on a commit means and how to require it.",
+  lead: "Every build sets a commit status on its commit. Details on GitHub opens the build page.",
+};
+
+## States
+
+<CheckStatesTable />
+
+A build with changes to review stays pending until someone approves or rejects them, however long that takes. When the storage limit is reached, builds pass without being compared, so CI keeps passing. See [Limits and storage](/docs/limits).
+
+## Check name
+
+The check is `stateofpixel`. Each extra suite gets its own, like `stateofpixel/storybook`. See [Suites](/docs/suites).
+
+## Require it
+
+The CLI exits 0 when there are changes, so the CI job passes and the check decides. It blocks a merge only when GitHub requires it:
+
+1. Open the repository's settings on GitHub and add a branch protection rule or a ruleset for your default branch.
+2. Turn on required status checks and add `stateofpixel`, plus the check of each suite that should block.
+
+A pending check blocks the merge too, so a pull request with changes nobody reviewed cannot merge. Changes that land without review still become the baseline on the default branch. See [Baselines](/docs/baselines).
+
+Pull requests from forks get no check, because GitHub gives them no token to sign in with. See [No check on the pull request](/docs/troubleshooting#no-check-on-the-pull-request).
+
+## GitHub App permissions
+
+The app uses Commit statuses write to set the check, Pull requests read for the pull request number, base branch and squash merges, Contents read for the compare API, and Metadata read, which every app has. It also asks for Pull requests write, Checks write and Actions read, which it does not use.

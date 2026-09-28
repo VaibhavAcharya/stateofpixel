@@ -1,0 +1,75 @@
+{
+  "name": "stateofpixel",
+  "version": "1.6.0",
+  "description": "Catch UI regressions before they merge. Visual regression testing for GitHub pull requests.",
+  "keywords": [
+    "visual-regression",
+    "visual-testing",
+    "screenshot-testing",
+    "screenshot-comparison",
+    "pixel-diff",
+    "snapshot-testing",
+    "playwright",
+    "playwright-reporter",
+    "storybook",
+    "github-actions",
+    "ci"
+  ],
+  "homepage": "https://stateofpixel.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VaibhavAcharya/stateofpixel.git",
+    "directory": "packages/cli"
+  },
+  "bugs": "https://github.com/VaibhavAcharya/stateofpixel/issues",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "stateofpixel": "dist/index.mjs"
+  },
+  "exports": {
+    "./playwright": "./dist/playwright.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0"
+  },
+  "peerDependencies": {
+    "@playwright/test": "*",
+    "playwright": "*"
+  },
+  "peerDependenciesMeta": {
+    "@playwright/test": {
+      "optional": true
+    },
+    "playwright": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.0.0",
+    "@types/pngjs": "^6.0.5",
+    "playwright": "^1.63.0",
+    "tsdown": "^0.23.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.1"
+  },
+  "optionalDependencies": {
+    "odiff-bin": "^4.5.0"
+  }
+}

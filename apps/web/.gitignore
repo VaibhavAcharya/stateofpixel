@@ -1,0 +1,9 @@
+# Local Netlify folder
+.netlify
+
+# Visual tests
+stateofpixel-screenshots
+test-results
+
+# Storybook
+storybook-static

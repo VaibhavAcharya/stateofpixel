@@ -1,0 +1,44 @@
+export const meta = {
+  title: "Security",
+  description: "How CI signs in, who can see a project, and how screenshots and tokens are stored.",
+  lead: "stateofpixel never receives your source code. It stores the screenshots your CI uploads, and access to them follows your permissions on GitHub.",
+};
+
+## How CI signs in
+
+On GitHub Actions the CLI asks GitHub for an OIDC token with the audience `stateofpixel`. The server checks its signature against GitHub's keys, its issuer and audience, and finds the project from the `repository_id` claim. The token is also tied to its commit: a build has to be for the commit of the run, or for the pull request the run belongs to. There is no secret to store or leak.
+
+On other CI, the CLI sends a project token. Tokens start with `sop_` and are random. Only a SHA-256 hash of each token is stored, so a token is shown once when it is created and never again. Repository admins create and revoke tokens under Settings, Tokens, and see when each one was last used. See [Other CI](/docs/other-ci).
+
+A CI token can only create builds for its own project. It cannot sign in to the site, review builds or change settings.
+
+## Who can see and do what
+
+Access comes from GitHub and there are no separate accounts or seats:
+
+- **Read** access to the repository opens its builds and baselines.
+- **Write** access approves and rejects changes.
+- **Admin** access opens the project settings, where tokens, retention and project deletion live.
+- **Owners** of the GitHub account or organization manage the plan and see usage.
+
+Builds of public repositories can be opened by anyone who signs in with GitHub. Builds of private repositories show only to people who can read the repository on GitHub. See [how fast permission changes apply](/docs/review#who-can-review).
+
+## Screenshots
+
+Screenshots and diff images are stored in Convex file storage. Every image is stored once per account, keyed by its SHA-256 hash, and an upload is checked against that hash.
+
+Image links of private projects are signed and expire after one to two hours. The site gets a new link only for someone who can read the repository. Image links of public projects do not expire.
+
+Screenshots show whatever your pages render. Do not capture pages with data you are not allowed to share, such as real customer data.
+
+## Webhooks
+
+GitHub webhooks are checked against their `X-Hub-Signature-256` signature and refused when it does not match.
+
+## Deleting data
+
+- Builds of pull requests and other branches are deleted after the retention period in the project settings. See [Retention](/docs/limits#retention).
+- Deleting a project in its settings deletes its builds, reviews and tokens right away. Images that no build uses any more are deleted by the next daily cleanup.
+- Removing a repository from the GitHub App, or uninstalling it, archives the project. CI can no longer upload to it. Its data stays until you ask for it to be deleted.
+
+The [privacy policy](/privacy) lists what is collected and which providers process it.

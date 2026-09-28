@@ -1,0 +1,60 @@
+export const meta = {
+  title: "CLI",
+  description: "Commands, flags, environment variables and exit codes of the stateofpixel CLI.",
+  lead: "The stateofpixel package on npm. Node 20 or newer. Run npx stateofpixel <command> --help for the same list.",
+};
+
+The source is in [`packages/cli`](https://github.com/VaibhavAcharya/stateofpixel/tree/main/packages/cli) of [VaibhavAcharya/stateofpixel](https://github.com/VaibhavAcharya/stateofpixel) under the MIT license. Open an [issue](https://github.com/VaibhavAcharya/stateofpixel/issues) for bugs and feature requests.
+
+## Commands
+
+<CliCommands />
+
+## upload
+
+<CliOptions name="upload" />
+
+## storybook
+
+Takes every flag of `upload`, plus these. See [Storybook](/docs/storybook).
+
+<CliOptions name="storybook" only={["--viewports", "--include", "--exclude", "--wait-for-selector", "--delay"]} />
+
+## finalize
+
+Use the same values the shards used. See [Sharding](/docs/sharding).
+
+<CliOptions name="finalize" />
+
+## compare
+
+<CliOptions name="compare" />
+
+## Environment variables
+
+The flags above list the variable that sets each of them. The CLI also reads these.
+
+<CliEnvironment />
+
+## Authentication
+
+On GitHub Actions the CLI uses the OIDC token, which needs `permissions: id-token: write`. Anywhere else, set `STATEOFPIXEL_TOKEN` to a project token. See [Other CI](/docs/other-ci) and [Security](/docs/security#how-ci-signs-in).
+
+GitHub gives pull requests from forks no OIDC token and no secrets, so the CLI skips them with a warning and sets no check. If `stateofpixel` is a required check, those pull requests cannot merge until an admin bypasses the rule. See [No check on the pull request](/docs/troubleshooting#no-check-on-the-pull-request).
+
+## Output
+
+```text terminal
+stateofpixel  build #411  feat/header vs main (#405)
+  1,500 snapshots  1,488 unchanged  10 changed  2 added  1 removed
+  uploaded 22 images (1.3 MB) in 2.1 s
+  review: https://stateofpixel.com/acme/web-app/builds/411
+```
+
+## Exit codes
+
+- **0** when the build was reported, with or without changes. The GitHub check decides whether the pull request can merge.
+- **0** with a warning when stateofpixel or the GitHub OIDC token service is down, a rate limit is hit, or the pull request comes from a fork, so an outage does not break your CI. Pass `--strict` to exit 1 instead.
+- **1** on configuration and authentication errors, failed uploads, and images over the [limits](/docs/limits). See [Troubleshooting](/docs/troubleshooting) for the common causes.
+
+`compare` runs on your machine and exits 0 when images differ. Open its report to see the changes.

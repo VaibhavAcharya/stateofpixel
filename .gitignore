@@ -1,0 +1,11 @@
+node_modules
+dist
+.DS_Store
+*.local
+.env
+.netlify
+.tanstack
+.output
+coverage
+.convex
+.claude/worktrees

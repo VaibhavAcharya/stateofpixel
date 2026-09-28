@@ -1,0 +1,52 @@
+export const meta = {
+  title: "Moving from another tool",
+  description: "Switch to stateofpixel from Chromatic, Argos, Percy or Lost Pixel.",
+  lead: "stateofpixel compares PNG files your CI takes. Moving over means making your CI write PNG files, then replacing the upload step.",
+};
+
+## What carries over
+
+Baselines do not carry over. The first build on your default branch has nothing to compare with, so every snapshot is added and the build becomes the first baseline. Run the new workflow on your default branch once before you rely on the check in pull requests.
+
+Snapshot names come from file paths, so keep the paths stable. A folder `checkout/empty-cart.png` becomes the snapshot `checkout/empty-cart`. See [Snapshot names](/docs/any-screenshots#snapshot-names).
+
+## Chromatic and Lost Pixel with Storybook
+
+Replace the Chromatic or Lost Pixel step with a Storybook build and one capture command:
+
+```yaml .github/workflows/visual.yml
+permissions:
+  contents: read
+  id-token: write
+
+steps:
+  - uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
+  - run: npm ci
+  - run: npx playwright install --with-deps chromium
+  - run: npx storybook build
+  - run: npx stateofpixel storybook storybook-static --viewports 375,1280
+```
+
+Screenshots render in Chromium on your CI, not in the other tool's browsers. Remove the project token secret, since GitHub Actions signs in with OIDC. For Lost Pixel, also delete `.lostpixel/baseline` from the repository. See [Storybook](/docs/storybook).
+
+## Argos and Percy with Playwright
+
+Replace `argosScreenshot()` or `percySnapshot()` with `snapshot()` from `stateofpixel/playwright`, and add its reporter. The reporter uploads when the run ends, so the separate upload step or `percy exec` goes away. See [Playwright](/docs/playwright).
+
+## Any other folder of images
+
+If you upload a folder of PNG files with `argos upload` or `percy upload`, upload the same folder instead:
+
+```sh terminal
+npx stateofpixel upload screenshots
+```
+
+See [Any screenshots](/docs/any-screenshots).
+
+## Check the result before you switch
+
+`npx stateofpixel compare <dir> <baseline-dir>` compares two folders on your machine without an account and writes an HTML report. Use it to see how screenshots from your old tool compare with new ones. See [compare](/docs/cli#compare).
+
+Each comparison page lists what changes in more detail: [Chromatic](/compare/chromatic), [Argos](/compare/argos), [Percy](/compare/percy) and [Lost Pixel](/compare/lost-pixel).

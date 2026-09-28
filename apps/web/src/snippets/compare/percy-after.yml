@@ -1,0 +1,5 @@
+permissions:
+  id-token: write
+
+steps:
+  - run: npx playwright test

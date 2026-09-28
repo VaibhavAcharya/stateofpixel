@@ -1,0 +1,23 @@
+export const meta = {
+  title: "Suites",
+  description: "Run separate visual suites in one repository, each with its own baselines and check.",
+  lead: "One repository can run several suites, like end-to-end tests and Storybook. Each suite has its own baselines and its own check.",
+};
+
+## Name the suite
+
+Pass `--build-name` to `upload` or `storybook`, or `buildName` to the [Playwright reporter](/docs/playwright):
+
+```yaml .github/workflows/visual.yml
+steps:
+  - run: npx playwright test
+  - run: npx stateofpixel upload screenshots --build-name e2e
+  - run: npx storybook build
+  - run: npx stateofpixel storybook storybook-static --build-name storybook
+```
+
+Without a name the suite is `default` and its check is `stateofpixel`. Other suites report as `stateofpixel/<name>`, like `stateofpixel/storybook`. Require each one on GitHub if it should block merges.
+
+## Baselines per suite
+
+Snapshots only compare with the same suite, so the same snapshot name in two suites never collides. Run every suite on pushes to your default branch too, so each one gets its own baseline.

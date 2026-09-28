@@ -1,0 +1,56 @@
+export const meta = {
+  title: "Accounts and projects",
+  description: "Accounts, members, project settings, and what happens when you delete a project or uninstall the app.",
+  lead: "An account is the GitHub user or organization that installed the app. Each repository in the installation is a project.",
+};
+
+## All projects
+
+After you sign in, All projects lists the projects of every account you can see, grouped by account. Search filters them by name, and Overview opens the account page. An account shows "App not installed" when the GitHub App is not installed on it anymore. With no projects yet, the page has the button to install the app.
+
+## The account page
+
+The account page has four tabs:
+
+- **Projects**: every repository in the installation, with its latest build. Search by name, and sort by project or by last update. Press <kbd>j</kbd> and <kbd>k</kbd> to move between rows in the project and build lists, and Enter to open one.
+- **Members**: who has signed in to the account.
+- **Usage**: storage per project, for owners only. See [The Usage tab](/docs/limits#the-usage-tab).
+- **Billing**: the plan and its buttons. See [Billing](/docs/billing).
+
+## Members
+
+The Members tab lists everyone who has signed in to stateofpixel and has access to the account on GitHub, with their role and when they last signed in. Someone who never signed in is not listed.
+
+Access comes from GitHub, so add or remove people there. In an organization, owners on GitHub are Owner and everyone else is Member. On a personal account, the account's user is Owner and everyone else is Collaborator. Owners change the plan and see usage. Repository permissions decide who can review builds and change project settings. See [Who can review](/docs/review#who-can-review).
+
+## Project settings
+
+Admins of the repository on GitHub open the project's Settings tab. Everyone else sees it disabled.
+
+- **General**: the default branch, which mirrors GitHub, and the auto-approve branches. See [Baselines](/docs/baselines#the-default-branch).
+- **Diff**: the threshold and whether anti-aliased pixels count. See [Tune the threshold](/docs/stable-screenshots#tune-the-threshold).
+- **Checks**: the name of the check, `stateofpixel`. Other suites get their own check, like `stateofpixel/storybook`. See [Suites](/docs/suites).
+- **Retention**: how long images kept only for pull requests stay. See [Retention](/docs/limits#retention).
+- **Tokens**: project tokens for CI other than GitHub Actions. See [Other CI](/docs/other-ci).
+- **Danger**: Delete project.
+
+## Delete a project
+
+Under Settings, Danger, type the repository name and press Delete project. Every build, review and token of the project is deleted right away, and this cannot be undone. Images that no other project uses are deleted by the next daily cleanup, which frees their storage.
+
+CI uploads to the repository are refused after that. If the repository is still in the GitHub App installation, it comes back as an empty project after the next sync with GitHub, for example when you change the repositories of the installation. Remove the repository from the installation on GitHub to keep it out.
+
+## Remove a repository or uninstall the app
+
+Removing a repository from the installation on GitHub archives its project. Uninstalling or suspending the app archives every project of the account.
+
+An archived project:
+
+- does not show in the project list, and its pages say "Project not found."
+- refuses uploads from CI, and gets no check on new commits
+- keeps its builds, baselines and tokens, and its images still count toward storage. Retention still deletes old builds of pull requests and branches.
+- still shows on the Usage tab while it holds images, marked "Archived"
+
+Uninstalling does not cancel a paid plan. Cancel it under Billing first. See [Cancel](/docs/billing#cancel).
+
+Add the repository again, or install the app again, and the project comes back with its builds, baselines and settings. To have an archived project's data deleted, write to us. See the [privacy policy](/privacy).

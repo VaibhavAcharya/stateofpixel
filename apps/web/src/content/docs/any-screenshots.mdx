@@ -1,0 +1,49 @@
+import { facts } from "../../components/docs/facts";
+
+export const meta = {
+  title: "Any screenshots",
+  description: "Upload a folder of PNG files from any test runner.",
+  lead: "Anything that writes PNG files works: Cypress, BackstopJS, a script, or screenshots of a native app.",
+};
+
+## Upload a folder
+
+Run `npx stateofpixel upload screenshots` after the step that writes the files, as in the [Quickstart](/docs). The CLI hashes every PNG and uploads only the images the server does not have yet.
+
+## Snapshot names
+
+A snapshot's name is its path inside the folder without `.png`:
+
+```text screenshots
+screenshots/
+  header.png                      header
+  checkout/empty-cart.png         checkout/empty-cart
+  checkout/empty-cart.meta.json   metadata for checkout/empty-cart
+```
+
+The name is how stateofpixel matches a snapshot with the same snapshot in the baseline. Keep names stable between runs. Renaming a file makes it a new snapshot, and the old one shows as removed. If you capture several browsers or widths, put them in the name, like `header [chromium 1280].png`.
+
+## Metadata
+
+A `.meta.json` file next to a PNG is sent as that snapshot's metadata and shown on the build page. It is for display only and never changes how snapshots match. Up to {facts.metadataSize} per snapshot.
+
+```json checkout/empty-cart.meta.json
+{
+  "browser": "chromium",
+  "viewport": 1280,
+  "testFile": "tests/cart.spec.ts"
+}
+```
+
+## Partial runs
+
+When only some tests ran, pass `--subset`. Snapshots that are missing from the folder are then not reported as removed.
+
+## Compare on your machine
+
+`compare` diffs two folders and writes an HTML report. It needs no account and uploads nothing. The report lists the snapshots and has the same Side by side, Diff, Slider and Flip views as the build page, with <kbd>j</kbd>, <kbd>k</kbd> and <kbd>1</kbd> to <kbd>4</kbd>.
+
+```sh terminal
+npx stateofpixel compare screenshots baseline --threshold 0.2
+# Writes stateofpixel-report/index.html
+```
