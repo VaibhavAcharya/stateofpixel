@@ -1,5 +1,8 @@
 # stateofpixel
 
+[![npm version](https://img.shields.io/npm/v/stateofpixel)](https://www.npmjs.com/package/stateofpixel)
+[![license](https://img.shields.io/github/license/VaibhavAcharya/stateofpixel-cli)](https://github.com/VaibhavAcharya/stateofpixel-cli/blob/main/LICENSE)
+
 Catch UI regressions before they merge. Upload a folder of screenshots, review the changes on [stateofpixel.com](https://stateofpixel.com), and a GitHub check waits until every change is approved. [Require the check](https://stateofpixel.com/docs/checks#require-it) to block the merge until then.
 
 ![The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in green](https://stateofpixel.com/readme/review-page.png)
