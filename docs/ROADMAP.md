@@ -102,13 +102,9 @@ See the README, Dogfooding. `visual.yml` uploads four builds: `playground` (stat
 - [x] Account tabs: Projects, Members with roles from GitHub, and Billing with the plan box
 - [x] Change between paid plans without cancelling first; `billing.checkout` refuses with `already_subscribed` today
 - [x] Disable Upgrade and Manage billing for members who are not owners, and the project Settings tab for users who are not repo admins, each with a tooltip
-- [ ] Plan box details from SPEC 5.10: payment method and invoices
 - [x] Usage page
-- [ ] PR comment summary
-- [ ] Tokenless auth for fork PRs
 - [x] Flaky snapshot detection: a "Looks flaky" line in the snapshot detail
 - [ ] Flaky snapshots stored per suite after finalize, with a badge on snapshot rows, a "Looks flaky" filter and the count in the check description
-- [ ] Opt-in auto-approve when a flaky snapshot's new image matches one of its known images, with a per-project list of flaky snapshots
 
 ## Free tier and limits
 
@@ -172,3 +168,4 @@ Missing pages:
 - [ ] Optional: move images stored before R2 from Convex storage to R2
 - [ ] Per-account egress tracking. Images are served from R2, which has no egress fee.
 - [ ] Optional: make builds of closed pull requests read-only, with a line that the pull request is closed
+- [ ] Optional: tokenless auth for fork PRs
