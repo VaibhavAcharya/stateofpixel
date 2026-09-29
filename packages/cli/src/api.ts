@@ -53,20 +53,25 @@ export type BuildResponse = {
 type ApiClientOptions = {
   baseUrl: string;
   token: string;
+  refreshToken?: () => Promise<string>;
   fetch?: typeof fetch;
   retries?: number;
   retryDelayMs?: number;
+  transferTimeoutMs?: number;
 };
 
 export type ApiClient = ReturnType<typeof createApiClient>;
 
 export function createApiClient({
   baseUrl,
-  token,
+  token: initialToken,
+  refreshToken,
   fetch: rawFetch = globalThis.fetch,
   retries = 3,
   retryDelayMs = 1000,
+  transferTimeoutMs = 30_000,
 }: ApiClientOptions) {
+  let token = initialToken;
   const fetch: typeof globalThis.fetch = async (input, init) => {
     const url = new URL(String(input));
     const label = `${init?.method ?? "GET"} ${url.host}${url.pathname}`;
@@ -89,7 +94,26 @@ export function createApiClient({
     return retryServerErrors(fn, retries, retryDelayMs);
   }
 
-  function request<Result>(
+  async function request<Result>(
+    method: "GET" | "POST",
+    path: string,
+    body?: unknown,
+  ): Promise<Result> {
+    try {
+      return await send<Result>(method, path, body);
+    } catch (error) {
+      if (
+        refreshToken === undefined ||
+        !(error instanceof ApiError && error.status === 401)
+      ) {
+        throw error;
+      }
+      token = await refreshToken();
+      return send<Result>(method, path, body);
+    }
+  }
+
+  function send<Result>(
     method: "GET" | "POST",
     path: string,
     body?: unknown,
@@ -116,6 +140,7 @@ export function createApiClient({
         method: "POST",
         headers: { "Content-Type": "image/png" },
         body: new Uint8Array(bytes),
+        signal: AbortSignal.timeout(transferTimeoutMs),
       });
       if (!response.ok) {
         throw await toApiError(response);
@@ -127,7 +152,9 @@ export function createApiClient({
 
   function download(url: string): Promise<Buffer> {
     return withRetries(async () => {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(transferTimeoutMs),
+      });
       if (!response.ok) {
         throw await toApiError(response);
       }
@@ -174,7 +201,8 @@ async function toApiError(response: Response): Promise<ApiError> {
 export function isServerError(error: unknown): boolean {
   return (
     (error instanceof ApiError && error.status >= 500) ||
-    error instanceof TypeError
+    error instanceof TypeError ||
+    (error instanceof Error && error.name === "TimeoutError")
   );
 }
 
