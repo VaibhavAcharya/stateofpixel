@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.2](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.6.1...v1.6.2) (2026-09-29)
+
+
+### Bug Fixes
+
+* retry blob deletes, join re-runs to the pending build and show upload errors ([ccb88ae](https://github.com/VaibhavAcharya/stateofpixel/commit/ccb88ae12dd1ea15aef366ee83fe6800f91e5cf2))
+* retry blob deletes, join re-runs to the pending build and show upload errors ([0ebd5cc](https://github.com/VaibhavAcharya/stateofpixel/commit/0ebd5ccf689268258aa1f9e1a8808f0c7bc385ba))
+
 ## [1.6.1](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.6.0...v1.6.1) (2026-09-29)
 
 
