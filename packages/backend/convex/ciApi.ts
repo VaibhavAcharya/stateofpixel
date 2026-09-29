@@ -238,12 +238,14 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
       projectId: auth.project.id,
       buildName,
       nonce: body.nonce,
+      previousNonces: body.previousNonces ?? [],
     })) !== null;
 
   const build = await ctx.runMutation(internal.builds.createOrJoin, {
     projectId: auth.project.id,
     buildName,
     nonce: body.nonce,
+    previousNonces: body.previousNonces ?? [],
     shardIndex: body.shard.index,
     shardsTotal: body.shard.total,
     subset: body.subset ?? false,
@@ -512,6 +514,7 @@ export const finalizeBuild = ciRoute(async (ctx, request, auth) => {
       projectId: auth.project.id,
       buildName,
       nonce: body.nonce,
+      previousNonces: body.previousNonces ?? [],
     })) ?? (await createEmptyBuild(ctx, auth, buildName, body));
   await ctx.runMutation(internal.builds.requestFinalize, { buildId });
   const build = await getBuildForCi(ctx, auth, buildId);
@@ -535,6 +538,7 @@ async function createEmptyBuild(
     projectId: auth.project.id,
     buildName,
     nonce: body.nonce,
+    previousNonces: [],
     shardIndex: null,
     shardsTotal: null,
     subset: true,

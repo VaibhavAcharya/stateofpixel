@@ -7,6 +7,7 @@ import { isServerError } from "./api";
 import {
   defaultNonce,
   ForkPullRequestError,
+  previousNonces,
   readGitInfo,
   resolveToken,
 } from "./ci-env";
@@ -97,6 +98,16 @@ it("builds the nonce from the GitHub run", () => {
     "123-2",
   );
   expect(defaultNonce({})).toBeNull();
+});
+
+it("lists the nonces of earlier attempts, newest first", () => {
+  expect(
+    previousNonces({ GITHUB_RUN_ID: "123", GITHUB_RUN_ATTEMPT: "3" }),
+  ).toEqual(["123-2", "123-1"]);
+  expect(
+    previousNonces({ GITHUB_RUN_ID: "123", GITHUB_RUN_ATTEMPT: "1" }),
+  ).toEqual([]);
+  expect(previousNonces({})).toEqual([]);
 });
 
 it("requests a GitHub Actions OIDC token for the stateofpixel audience", async () => {

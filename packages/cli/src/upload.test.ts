@@ -2,12 +2,12 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, expect, it } from "vitest";
-import type { ApiClient, CreateBuildResponse } from "./api";
+import { type ApiClient, ApiError, type CreateBuildResponse } from "./api";
 import { parseShard } from "./commands/upload";
 import { createPixelmatchEngine } from "./diff/pixelmatch";
 import { sha256 } from "./png";
 import { blackSquare, encodePng, writeFixture } from "./test/png-fixtures";
-import { uploadDirectory } from "./upload";
+import { summarizeUploadErrors, uploadDirectory } from "./upload";
 
 const white = encodePng(40, 30);
 const recompressed = encodePng(40, 30, undefined, 0);
@@ -241,4 +241,43 @@ it("sends metadata from a sidecar file with the result", async () => {
     ],
   });
   expect(complete.results[0]).not.toHaveProperty("metadata");
+});
+
+it("keeps the reason of each failed upload", async () => {
+  const dir = path.join(root, "shots");
+  await writeFixture(dir, "one", white);
+  await writeFixture(dir, "two", changed);
+  const { api } = fakeApi([
+    { name: "one", status: "added", uploadUrl: "u-one" },
+    { name: "two", status: "added", uploadUrl: "u-two" },
+  ]);
+  api.upload = async () => {
+    throw new ApiError(403, "forbidden", "Upload link is invalid or expired.");
+  };
+
+  const output = await uploadDirectory({
+    dir,
+    workDir: root,
+    api,
+    engine: createPixelmatchEngine(),
+    buildName: "default",
+    nonce: "run-1",
+    shard: { index: 1, total: 1 },
+    subset: false,
+    git: {
+      commit: "c2",
+      commitMessage: "Change",
+      branch: "feature",
+      baselineBranch: "main",
+      prNumber: 7,
+      mergeBase: null,
+      ancestors: ["c1"],
+    },
+    ci: {},
+  });
+
+  expect(output.failedUploads).toHaveLength(2);
+  expect(summarizeUploadErrors(output.uploadErrors)).toBe(
+    "  2 x HTTP 403, Upload link is invalid or expired.",
+  );
 });

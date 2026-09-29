@@ -30,6 +30,7 @@ let checkCalls: {
   body: Record<string, unknown>;
 }[] = [];
 let blobDeletes: string[] = [];
+let failingBlobDeletes = 0;
 
 beforeAll(async () => {
   const { privateKey } = await generateKeyPair("RS256", { extractable: true });
@@ -47,10 +48,15 @@ beforeEach(() => {
   commitPulls = {};
   checkCalls = [];
   blobDeletes = [];
+  failingBlobDeletes = 0;
   vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
     const { host, pathname } = new URL(input);
     if (host === "stateofpixel.test" && init?.method === "DELETE") {
       blobDeletes.push(pathname.slice("/api/v1/uploads/".length));
+      if (failingBlobDeletes > 0) {
+        failingBlobDeletes--;
+        return new Response("down", { status: 502 });
+      }
       return new Response(null, { status: 204 });
     }
     if (pathname.startsWith("/repos/acme/web-app/statuses/")) {
@@ -1316,4 +1322,85 @@ it("hands out Convex upload URLs unless the account picked Blobs", async () => {
       created.body.snapshots[0].uploadUrl.startsWith(BLOB_UPLOAD_URL),
     ).toBe(imageStore === "blobs");
   }
+});
+
+async function createShard(
+  t: Test,
+  nonce: string,
+  shard: { index: number; total: number },
+  previousNonces?: string[],
+) {
+  const snapshots = await snapshotsOf([
+    { name: `Page ${shard.index}`, content: `page-${shard.index}` },
+  ]);
+  return api(t, "POST", "/builds", {
+    nonce,
+    previousNonces,
+    shard,
+    git: {
+      commit: "c1",
+      branch: "main",
+      baselineBranch: "main",
+      ancestors: [],
+    },
+    snapshots,
+  });
+}
+
+async function completeShard(t: Test, buildId: string, index: number) {
+  const [snapshot] = await snapshotsOf([
+    { name: `Page ${index}`, content: `page-${index}` },
+  ]);
+  return api(t, "POST", `/builds/${buildId}/shards/${index}/complete`, {
+    uploads: [],
+    results: [{ name: snapshot?.name, hash: snapshot?.hash, status: "added" }],
+  });
+}
+
+it("joins the pending build of an earlier attempt when a shard is re-run", async () => {
+  const { t } = await setup();
+  const first = await createShard(t, "run-1", { index: 1, total: 2 });
+  await completeShard(t, first.body.buildId, 1);
+
+  const rerun = await createShard(t, "run-2", { index: 2, total: 2 }, [
+    "run-1",
+  ]);
+  expect(rerun.body.buildId).toBe(first.body.buildId);
+  await completeShard(t, rerun.body.buildId, 2);
+  const build = await api(t, "GET", `/builds/${first.body.buildId}`);
+  expect(build.body).toMatchObject({
+    status: "finalized",
+    shards: { done: 2, total: 2 },
+  });
+});
+
+it("starts a new build when the earlier attempt already finished", async () => {
+  const { t } = await setup();
+  const first = await createShard(t, "run-1", { index: 1, total: 1 });
+  await completeShard(t, first.body.buildId, 1);
+
+  const rerun = await createShard(t, "run-2", { index: 1, total: 1 }, [
+    "run-1",
+  ]);
+  expect(rerun.status).toBe(200);
+  expect(rerun.body.buildId).not.toBe(first.body.buildId);
+});
+
+it("retries a failed blob delete later", async () => {
+  const { t } = await setup();
+  failingBlobDeletes = 2;
+  await t.action(internal.blobs.deleteBlob, { blobKey: "acct/1" });
+  expect(blobDeletes).toEqual(["acct/1"]);
+
+  vi.advanceTimersByTime(60 * 1000);
+  await t.finishInProgressScheduledFunctions();
+  expect(blobDeletes).toEqual(["acct/1", "acct/1"]);
+
+  vi.advanceTimersByTime(10 * 60 * 1000);
+  await t.finishInProgressScheduledFunctions();
+  expect(blobDeletes).toEqual(["acct/1", "acct/1", "acct/1"]);
+
+  vi.advanceTimersByTime(60 * 60 * 1000);
+  await t.finishInProgressScheduledFunctions();
+  expect(blobDeletes).toHaveLength(3);
 });

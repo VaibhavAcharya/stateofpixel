@@ -95,6 +95,17 @@ export function defaultNonce(env: Env): string | null {
   return null;
 }
 
+export function previousNonces(env: Env): string[] {
+  const attempt = Number(env.GITHUB_RUN_ATTEMPT ?? "1");
+  if (!env.GITHUB_RUN_ID || !Number.isInteger(attempt)) {
+    return [];
+  }
+  return Array.from(
+    { length: Math.min(Math.max(attempt - 1, 0), 10) },
+    (_, index) => `${env.GITHUB_RUN_ID}-${attempt - 1 - index}`,
+  );
+}
+
 export async function resolveToken(
   env: Env,
   fetchImpl: typeof fetch = fetch,
