@@ -22,6 +22,7 @@ const ciInfo = v.object({
 export const createBuildRequest = v.object({
   buildName: v.optional(v.string()),
   nonce: v.string(),
+  previousNonces: v.optional(v.array(v.string())),
   shard: v.object({
     index: v.union(v.number(), v.null()),
     total: v.union(v.number(), v.null()),
@@ -77,6 +78,7 @@ export const uploadUrlsRequest = v.object({ hashes: v.array(sha256Hex) });
 export const finalizeRequest = v.object({
   buildName: v.optional(v.string()),
   nonce: v.string(),
+  previousNonces: v.optional(v.array(v.string())),
   skipIfEmpty: v.optional(v.boolean()),
   git: v.optional(gitInfo),
   ci: v.optional(ciInfo),

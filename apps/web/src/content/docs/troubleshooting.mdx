@@ -26,7 +26,7 @@ export const meta = {
 
 ## The check says "Build never finished"
 
-A build that is still waiting for screenshots {facts.buildExpiryMinutes} minutes after it started expires. This happens when a shard never uploaded, or when a build with `--shard auto` never ran `stateofpixel finalize`. A shard that arrives later is refused because the build "is already expired". On GitHub Actions, re-run the workflow: a new run attempt uses a new nonce and makes a new build. On other CI, use a new `STATEOFPIXEL_NONCE`. See [Sharding](/docs/sharding).
+A build that is still waiting for screenshots {facts.buildExpiryMinutes} minutes after it started expires. This happens when a shard never uploaded, or when a build with `--shard auto` never ran `stateofpixel finalize`. A shard that arrives later is refused because the build "is already expired". On GitHub Actions, re-run the workflow: the expired build takes no more shards, so the new run attempt makes a new build. On other CI, use a new `STATEOFPIXEL_NONCE`. See [Sharding](/docs/sharding).
 
 ## The check stays at "Waiting for screenshots"
 
@@ -40,7 +40,7 @@ The build waits until every shard has uploaded. With `(2 of 4 shards)` in the de
 
 ## Snapshots failed
 
-- **An image is too big.** Images over {facts.imageSize} ({facts.blobImageSize} with [Netlify Blobs storage](/docs/limits#image-storage)) or {facts.imageDimensions} are rejected, their snapshots fail and `upload` exits 1 with "uploads failed". Take a smaller screenshot or split a long page.
+- **An image is too big.** Images over {facts.imageSize} ({facts.blobImageSize} with [Netlify Blobs storage](/docs/limits#image-storage)) or {facts.imageDimensions} are rejected, their snapshots fail and `upload` exits 1 with "uploads failed" and the reason for each, such as "HTTP 413, Image is too large." Take a smaller screenshot or split a long page.
 - **A file is not a PNG.** A file that ends in `.png` without being a PNG stops the upload with "Not a PNG file".
 - **A name appears twice.** Two files with the same snapshot name in one build are refused with "appears more than once", or "was already sent by shard" across shards. Two Playwright projects with the same browser and width write the same file, so the second one wins. Give the snapshots different names.
 

@@ -1,11 +1,12 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { availableParallelism } from "node:os";
 import path from "node:path";
-import type {
-  ApiClient,
-  BuildResponse,
-  CreateBuildResponse,
-  SnapshotLookup,
+import {
+  type ApiClient,
+  ApiError,
+  type BuildResponse,
+  type CreateBuildResponse,
+  type SnapshotLookup,
 } from "./api";
 import type { CiInfo, GitInfo } from "./ci-env";
 import type { DiffEngine } from "./diff/engine";
@@ -54,6 +55,7 @@ export type UploadInput = {
   engine: DiffEngine;
   buildName: string;
   nonce: string;
+  previousNonces?: string[];
   shard: Shard;
   subset: boolean;
   threshold?: number;
@@ -67,6 +69,7 @@ export type UploadOutput = {
   uploadedImages: number;
   uploadedBytes: number;
   failedUploads: string[];
+  uploadErrors: string[];
   final: BuildResponse | null;
 };
 
@@ -113,6 +116,9 @@ export async function uploadDirectory(
     {
       buildName: input.buildName,
       nonce: input.nonce,
+      ...(input.previousNonces?.length
+        ? { previousNonces: input.previousNonces }
+        : {}),
       shard: input.shard,
       subset: input.subset,
       git: input.git,
@@ -131,6 +137,7 @@ export async function uploadDirectory(
   );
 
   const failedUploads: string[] = [];
+  const uploadErrors: string[] = [];
   const uploads: Upload[] = [];
   let uploadedBytes = 0;
   const pendingUploads = uniqueByHash(
@@ -148,8 +155,9 @@ export async function uploadDirectory(
         height: snapshot.height,
       });
       uploadedBytes += bytes.length;
-    } catch {
+    } catch (error) {
       failedUploads.push(snapshot.hash);
+      uploadErrors.push(describeError(error));
     }
   });
 
@@ -237,8 +245,9 @@ export async function uploadDirectory(
             height: diff.height,
           });
           uploadedBytes += bytes.length;
-        } catch {
+        } catch (error) {
           failedUploads.push(hash);
+          uploadErrors.push(describeError(error));
         }
       },
     );
@@ -251,6 +260,11 @@ export async function uploadDirectory(
     results,
   });
   failedUploads.push(...rejectedUploads);
+  uploadErrors.push(
+    ...rejectedUploads.map(
+      () => "stateofpixel rejected the image: its size, dimensions or hash",
+    ),
+  );
 
   return {
     build,
@@ -258,6 +272,7 @@ export async function uploadDirectory(
     uploadedImages: uploads.length,
     uploadedBytes,
     failedUploads,
+    uploadErrors,
     final: await waitForFinalize(input.api, build.buildId, false),
   };
 }
@@ -283,4 +298,21 @@ function uniqueByHash(snapshots: LocalSnapshot[]): LocalSnapshot[] {
   return [
     ...new Map(snapshots.map((snapshot) => [snapshot.hash, snapshot])).values(),
   ];
+}
+
+function describeError(error: unknown): string {
+  if (error instanceof ApiError) {
+    return `HTTP ${error.status}, ${error.message}`;
+  }
+  return error instanceof Error ? error.message : String(error);
+}
+
+export function summarizeUploadErrors(errors: string[]): string {
+  const counts = new Map<string, number>();
+  for (const error of errors) {
+    counts.set(error, (counts.get(error) ?? 0) + 1);
+  }
+  return [...counts]
+    .map(([error, count]) => `  ${count} x ${error}`)
+    .join("\n");
 }

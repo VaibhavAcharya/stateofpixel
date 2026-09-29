@@ -55,7 +55,7 @@ jobs:
 
 ## How shards find each other
 
-Shards of one build share a nonce. On GitHub Actions it is the run id plus the attempt, so every job of a run joins the same build, and a re-run starts a fresh build instead of mixing with the old one. Elsewhere, set it yourself:
+Shards of one build share a nonce. On GitHub Actions it is the run id plus the attempt, so every job of a run joins the same build. When you re-run failed jobs, they join the build of the earlier attempt while it is still waiting for shards. Once that build has finished or expired, a re-run starts a fresh build. Elsewhere, set it yourself:
 
 ```sh ci.sh
 export STATEOFPIXEL_TOKEN=sop_...

@@ -12,6 +12,7 @@ import {
 import {
   defaultNonce,
   ForkPullRequestError,
+  previousNonces,
   readCiInfo,
   readGitInfo,
   resolveToken,
@@ -22,6 +23,7 @@ import { ENV } from "../reference";
 import {
   readSnapshots,
   type Shard,
+  summarizeUploadErrors,
   type UploadOutput,
   uploadDirectory,
 } from "../upload";
@@ -85,6 +87,8 @@ export async function uploadCommand(
       engine: await createDiffEngine(),
       buildName,
       nonce: nonce ?? `local-${Date.now()}`,
+      previousNonces:
+        (options.nonce ?? env[ENV.nonce]) ? [] : previousNonces(env),
       shard,
       subset: options.subset,
       threshold: options.threshold,
@@ -120,7 +124,9 @@ export async function uploadCommand(
 
   printSummary(output, git.branch, git.baselineBranch, startedAt);
   if (output.failedUploads.length > 0) {
-    throw new Error(`${output.failedUploads.length} uploads failed.`);
+    throw new Error(
+      `${output.failedUploads.length} uploads failed:\n${summarizeUploadErrors(output.uploadErrors)}`,
+    );
   }
 }
 

@@ -51,11 +51,14 @@ const EMPTY_COUNTS: Counts = {
   rejected: 0,
 };
 
+const MAX_PREVIOUS_NONCES = 10;
+
 export const createOrJoin = internalMutation({
   args: {
     projectId: v.id("projects"),
     buildName: v.string(),
     nonce: v.string(),
+    previousNonces: v.array(v.string()),
     shardIndex: v.union(v.number(), v.null()),
     shardsTotal: v.union(v.number(), v.null()),
     subset: v.boolean(),
@@ -98,15 +101,13 @@ export const createOrJoin = internalMutation({
     validateShard(args.shardIndex, args.shardsTotal);
     const now = Date.now();
 
-    const existing = await ctx.db
-      .query("builds")
-      .withIndex("by_projectId_and_buildName_and_nonce", (q) =>
-        q
-          .eq("projectId", project._id)
-          .eq("buildName", args.buildName)
-          .eq("nonce", args.nonce),
-      )
-      .unique();
+    const existing = await findBuildForNonce(
+      ctx,
+      project._id,
+      args.buildName,
+      args.nonce,
+      args.previousNonces,
+    );
     const build =
       existing === null
         ? await createBuild(ctx, project, args, {
@@ -556,21 +557,50 @@ export const buildIdByNonce = internalQuery({
     projectId: v.id("projects"),
     buildName: v.string(),
     nonce: v.string(),
+    previousNonces: v.array(v.string()),
   },
   returns: v.union(v.id("builds"), v.null()),
-  handler: async (ctx, { projectId, buildName, nonce }) => {
-    const build = await ctx.db
+  handler: async (ctx, { projectId, buildName, nonce, previousNonces }) => {
+    const build = await findBuildForNonce(
+      ctx,
+      projectId,
+      buildName,
+      nonce,
+      previousNonces,
+    );
+    return build?._id ?? null;
+  },
+});
+
+async function findBuildForNonce(
+  ctx: QueryCtx,
+  projectId: Id<"projects">,
+  buildName: string,
+  nonce: string,
+  previousNonces: string[],
+): Promise<Doc<"builds"> | null> {
+  const byNonce = (value: string) =>
+    ctx.db
       .query("builds")
       .withIndex("by_projectId_and_buildName_and_nonce", (q) =>
         q
           .eq("projectId", projectId)
           .eq("buildName", buildName)
-          .eq("nonce", nonce),
+          .eq("nonce", value),
       )
       .unique();
-    return build?._id ?? null;
-  },
-});
+  const build = await byNonce(nonce);
+  if (build !== null) {
+    return build;
+  }
+  for (const previous of previousNonces.slice(0, MAX_PREVIOUS_NONCES)) {
+    const earlier = await byNonce(previous);
+    if (earlier?.status === "pending") {
+      return earlier;
+    }
+  }
+  return null;
+}
 
 async function getPendingBuild(
   ctx: QueryCtx,

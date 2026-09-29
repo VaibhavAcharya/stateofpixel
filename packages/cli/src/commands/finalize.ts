@@ -8,6 +8,7 @@ import {
 import {
   defaultNonce,
   ForkPullRequestError,
+  previousNonces,
   readCiInfo,
   readGitInfo,
   resolveToken,
@@ -52,6 +53,9 @@ export async function finalizeCommand(
     build = await api.request("POST", "/builds/finalize", {
       buildName,
       nonce,
+      ...((options.nonce ?? env[ENV.nonce])
+        ? {}
+        : { previousNonces: previousNonces(env) }),
       skipIfEmpty: options.skipIfEmpty,
       git,
       ci: readCiInfo(env),

@@ -3,6 +3,10 @@ packages:
   - packages/*
   - examples/*
 
+overrides:
+  "fflate@<0.7.5": ^0.7.5
+  "sharp@<0.35.4": ^0.35.4
+
 allowBuilds:
   esbuild: true
   lightningcss: true

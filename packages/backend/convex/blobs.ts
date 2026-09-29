@@ -25,6 +25,14 @@ import { withStorageBytes } from "./lib/storage";
 import { rateLimiter } from "./rateLimits";
 
 const TOUCH_AFTER_MS = 12 * 60 * 60 * 1000;
+const MINUTE_MS = 60 * 1000;
+const DELETE_RETRY_DELAYS_MS = [
+  MINUTE_MS,
+  10 * MINUTE_MS,
+  60 * MINUTE_MS,
+  6 * 60 * MINUTE_MS,
+  24 * 60 * MINUTE_MS,
+];
 const BLOB_RECEIPT = /^blob\.([0-9a-f-]{36})\.(\d+)\.([A-Za-z0-9_-]{43})$/;
 
 export const createUploadTargets = internalMutation({
@@ -258,15 +266,24 @@ function scheduleBlobDelete(ctx: MutationCtx, blobKey: string) {
 }
 
 export const deleteBlob = internalAction({
-  args: { blobKey: v.string() },
+  args: { blobKey: v.string(), attempt: v.optional(v.number()) },
   returns: v.null(),
-  handler: async (_ctx, { blobKey }) => {
+  handler: async (ctx, { blobKey, attempt = 0 }) => {
     const response = await fetch(await blobDeleteUrl(blobKey, Date.now()), {
       method: "DELETE",
-    });
-    if (!response.ok) {
-      throw new Error(`Deleting blob ${blobKey} failed: ${response.status}`);
+    }).catch(() => null);
+    if (response?.ok) {
+      return null;
     }
+    const status = response?.status ?? "network error";
+    const delay = DELETE_RETRY_DELAYS_MS[attempt];
+    if (delay === undefined) {
+      throw new Error(`Deleting blob ${blobKey} failed: ${status}`);
+    }
+    await ctx.scheduler.runAfter(delay, internal.blobs.deleteBlob, {
+      blobKey,
+      attempt: attempt + 1,
+    });
     return null;
   },
 });
