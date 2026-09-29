@@ -219,6 +219,27 @@ it("ignores the end of a subscription the account no longer uses", async () => {
   });
 });
 
+it("keeps the tracked subscription when a second one becomes active", async () => {
+  const { t, accountId, account } = await setup();
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  for (const subscriptionId of ["sub_1", "sub_2"]) {
+    await deliver(
+      t,
+      subscriptionEvent("subscription.active", {
+        accountId,
+        subscriptionId,
+        status: "active",
+      }),
+    );
+  }
+  expect(await account()).toMatchObject({
+    plan: "25gb",
+    billingSubscriptionId: "sub_1",
+  });
+  expect(console.error).toHaveBeenCalledWith(expect.stringContaining("sub_2"));
+  vi.restoreAllMocks();
+});
+
 it("is available when the deployment has an API key", async () => {
   const t = convexTest(schema, modules);
   expect(await t.query(api.billing.available, {})).toBe(true);

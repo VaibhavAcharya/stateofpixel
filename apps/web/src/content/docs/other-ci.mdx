@@ -26,7 +26,7 @@ On other CI the CLI reads the commit, branch and history from the local checkout
 - Check out the branch by name. On a detached `HEAD` the branch is recorded as `HEAD`.
 - Fetch enough history to reach your default branch. When the baseline is not in the local history, the server asks the GitHub compare API.
 - The baseline branch is `origin/HEAD`, or `main` when that is not set. Pass `--baseline-branch` to pick another one.
-- The commit has to be on GitHub, because the check is set on it there.
+- stateofpixel works with GitHub repositories only. The commit has to be on GitHub, because the check is set on it there.
 
 The pull request number comes from the GitHub Actions event, so on other CI builds are linked to their branch and commit only. A new push does not carry over approvals from the last build, and builds are not marked superseded.
 

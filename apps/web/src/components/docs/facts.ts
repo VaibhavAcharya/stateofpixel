@@ -28,4 +28,5 @@ export const facts = {
   planEndNoticeDays: limits.PLAN_END_NOTICE_MS / DAY_MS,
   diffThreshold: limits.DEFAULT_DIFF_THRESHOLD,
   freeStorage: `${PLAN_STORAGE_LIMIT_BYTES.free / GB} GB`,
+  paidStorage: `${PLAN_STORAGE_LIMIT_BYTES["25gb"] / GB} GB, ${PLAN_STORAGE_LIMIT_BYTES["100gb"] / GB} GB or ${PLAN_STORAGE_LIMIT_BYTES["500gb"] / GB} GB`,
 };

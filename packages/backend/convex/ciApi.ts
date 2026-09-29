@@ -333,19 +333,26 @@ async function findFallbackBaseline(
   if (repository === null) {
     return undefined;
   }
-  const token = await createInstallationToken(repository.installationId);
-  for (const candidate of candidates) {
-    if (
-      await isAncestor(
-        token,
-        repository.owner,
-        repository.name,
-        candidate.commitSha,
-        body.git.commit,
-      )
-    ) {
-      return candidate.buildId;
+  try {
+    const token = await createInstallationToken(repository.installationId);
+    for (const candidate of candidates) {
+      if (
+        await isAncestor(
+          token,
+          repository.owner,
+          repository.name,
+          candidate.commitSha,
+          body.git.commit,
+        )
+      ) {
+        return candidate.buildId;
+      }
     }
+  } catch (error) {
+    if (error instanceof GithubError) {
+      return undefined;
+    }
+    throw error;
   }
   return undefined;
 }

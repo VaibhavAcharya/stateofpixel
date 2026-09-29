@@ -3,6 +3,7 @@ import {
   CaretDownIcon,
   CheckIcon,
   GearSixIcon,
+  ListIcon,
   TerminalWindowIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
@@ -18,6 +19,7 @@ import storybook from "../../snippets/storybook.yml?highlight";
 import workflow from "../../snippets/workflow.yml?highlight";
 import { CodeBlock, type Snippet } from "../CodeBlock";
 import { facts } from "../docs/facts";
+import { Menu, menuItemClass, useCloseMenu } from "../Menu";
 import { AuthButton, SignInButton } from "../SignIn";
 import { buttonClass, Kbd, LeadCopy, Wordmark } from "../ui";
 import { ReviewDemo } from "./ReviewDemo";
@@ -34,6 +36,7 @@ export const DISPLAY =
 /* Header */
 
 const REPO_URL = "https://github.com/VaibhavAcharya/stateofpixel";
+export const CHANGELOG_URL = `${REPO_URL}/blob/main/packages/cli/CHANGELOG.md`;
 
 const NAV = [
   ["Demo", "/#demo"],
@@ -82,7 +85,31 @@ function HeaderActions() {
         </>
       )}
       <AuthButton label="Start free" />
+      <div className="md:hidden">
+        <Menu
+          label="Menu"
+          align="end"
+          width="w-48"
+          triggerClassName={buttonClass("ghost", "icon")}
+          trigger={<ListIcon size={16} />}
+        >
+          {NAV.map(([label, href]) => (
+            <MobileNavLink key={href} href={href}>
+              {label}
+            </MobileNavLink>
+          ))}
+        </Menu>
+      </div>
     </div>
+  );
+}
+
+function MobileNavLink({ href, children }: { href: string; children: string }) {
+  const close = useCloseMenu();
+  return (
+    <a href={href} className={menuItemClass} onClick={close}>
+      {children}
+    </a>
   );
 }
 
@@ -345,8 +372,8 @@ export function TeamSection() {
     >
       <LeadCopy title="Your team is already set up." className="max-w-[520px]">
         Access comes from GitHub, so there are no invites and no seats to buy.
-        Remove someone from the repository and they lose access here within 5
-        minutes.
+        Remove someone from the repository and they lose access here in about 5
+        minutes, 15 at most.
       </LeadCopy>
       <table className="w-full text-sm">
         <thead>
@@ -647,6 +674,15 @@ export function FinalStartFree() {
               Read the quickstart
             </Link>
           </div>
+          <p className="mt-4 text-xs text-muted">
+            <a
+              href={REPO_URL}
+              data-umami-event="GitHub"
+              className="hover:text-text"
+            >
+              Open source, MIT.
+            </a>
+          </p>
         </div>
         <CodeBlock fileName=".github/workflows/visual.yml" {...workflow} />
       </div>
@@ -680,6 +716,9 @@ export function Footer() {
             className="hover:text-text"
           >
             Open source
+          </a>
+          <a href={CHANGELOG_URL} className="hover:text-text">
+            Changelog
           </a>
         </nav>
         <a

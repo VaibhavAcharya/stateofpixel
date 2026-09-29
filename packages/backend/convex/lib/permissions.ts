@@ -60,18 +60,28 @@ export function allows(
   );
 }
 
+function isArchivedForWrite(
+  project: Doc<"projects">,
+  needed: Exclude<RepoPermission, "none">,
+): boolean {
+  return needed !== "read" && project.archivedAt !== undefined;
+}
+
 export async function findProject(
   ctx: QueryCtx,
   owner: string,
   name: string,
 ): Promise<Doc<"projects"> | null> {
-  const project = await ctx.db
+  for await (const project of ctx.db
     .query("projects")
     .withIndex("by_owner_and_name", (q) =>
       q.eq("owner", owner).eq("name", name),
-    )
-    .first();
-  return project === null || project.archivedAt !== undefined ? null : project;
+    )) {
+    if (project.archivedAt === undefined) {
+      return project;
+    }
+  }
+  return null;
 }
 
 export async function findReadableProject(
@@ -93,7 +103,7 @@ export async function findAllowedProject(
   needed: Exclude<RepoPermission, "none">,
 ): Promise<Doc<"projects"> | null> {
   const project = await ctx.db.get("projects", projectId);
-  if (project === null) {
+  if (project === null || isArchivedForWrite(project, needed)) {
     return null;
   }
   const access = await readAccess(ctx, projectId);
@@ -122,7 +132,7 @@ export async function requirePermission(
   needed: Exclude<RepoPermission, "none">,
 ): Promise<{ userId: Id<"users"> | null; project: Doc<"projects"> }> {
   const project = await ctx.db.get("projects", projectId);
-  if (project === null) {
+  if (project === null || isArchivedForWrite(project, needed)) {
     throw new ConvexError({ code: "not_found" });
   }
   const access = await readAccess(ctx, projectId);

@@ -70,6 +70,7 @@ export type UploadOutput = {
   uploadedBytes: number;
   failedUploads: string[];
   uploadErrors: string[];
+  compareErrors: string[];
   final: BuildResponse | null;
 };
 
@@ -103,7 +104,16 @@ async function readMetadata(
   const text = await readFile(metadataFile(pngFile), "utf8").catch(
     () => undefined,
   );
-  return text === undefined ? undefined : JSON.parse(text);
+  if (text === undefined) {
+    return undefined;
+  }
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new Error(
+      `${metadataFile(pngFile)} is not valid JSON: ${describeError(error)}`,
+    );
+  }
 }
 
 export async function uploadDirectory(
@@ -138,6 +148,7 @@ export async function uploadDirectory(
 
   const failedUploads: string[] = [];
   const uploadErrors: string[] = [];
+  const compareErrors: string[] = [];
   const uploads: Upload[] = [];
   let uploadedBytes = 0;
   const pendingUploads = uniqueByHash(
@@ -215,7 +226,10 @@ export async function uploadDirectory(
           ...readPngSize(diffBytes),
         });
         return { ...base, status: "changed", diffHash, diffRatio, diffPixels };
-      } catch {
+      } catch (error) {
+        compareErrors.push(
+          `could not compare ${snapshot.name}: ${describeError(error)}`,
+        );
         return { ...base, status: "failed" };
       }
     },
@@ -258,6 +272,9 @@ export async function uploadDirectory(
   }>("POST", `/builds/${build.buildId}/shards/${build.shardIndex}/complete`, {
     uploads,
     results,
+    ...(uploadErrors.length > 0
+      ? { errors: [summarizeUploadErrors(uploadErrors)] }
+      : {}),
   });
   failedUploads.push(...rejectedUploads);
   uploadErrors.push(
@@ -273,6 +290,7 @@ export async function uploadDirectory(
     uploadedBytes,
     failedUploads,
     uploadErrors,
+    compareErrors,
     final: await waitForFinalize(input.api, build.buildId, false),
   };
 }

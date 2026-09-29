@@ -11,6 +11,8 @@ Catch UI regressions before they merge. Upload a folder of screenshots, review t
 
 The docs are at [stateofpixel.com/docs](https://stateofpixel.com/docs).
 
+The Free plan needs no card. Paid plans are priced by storage only. See [pricing](https://stateofpixel.com/#pricing).
+
 ## GitHub Actions
 
 Install the GitHub App from [stateofpixel.com](https://stateofpixel.com), then add a step after the one that writes your screenshots:
@@ -29,7 +31,7 @@ jobs:
   visual:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - run: npx playwright test

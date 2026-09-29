@@ -4,7 +4,7 @@ export const meta = {
   lead: "The stateofpixel package on npm. Node 20 or newer. Run npx stateofpixel <command> --help for the same list.",
 };
 
-The source is in [`packages/cli`](https://github.com/VaibhavAcharya/stateofpixel/tree/main/packages/cli) of [VaibhavAcharya/stateofpixel](https://github.com/VaibhavAcharya/stateofpixel) under the MIT license. Open an [issue](https://github.com/VaibhavAcharya/stateofpixel/issues) for bugs and feature requests.
+The source is in [`packages/cli`](https://github.com/VaibhavAcharya/stateofpixel/tree/main/packages/cli) of [VaibhavAcharya/stateofpixel](https://github.com/VaibhavAcharya/stateofpixel) under the MIT license. Open an [issue](https://github.com/VaibhavAcharya/stateofpixel/issues) for bugs and feature requests. The [changelog](https://github.com/VaibhavAcharya/stateofpixel/blob/main/packages/cli/CHANGELOG.md) lists the changes in each release.
 
 ## Commands
 
@@ -29,6 +29,10 @@ Use the same values the shards used. See [Sharding](/docs/sharding).
 ## compare
 
 <CliOptions name="compare" />
+
+## Diff engine
+
+The CLI diffs changed snapshots on your machine, both before an upload and in `compare`. It uses odiff from the `odiff-bin` package, an optional dependency. When `odiff-bin` or its binary is missing, it falls back to pixelmatch. `compare` prints the engine it used, like `compared with odiff in 1.2 s`.
 
 ## Environment variables
 

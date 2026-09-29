@@ -73,6 +73,9 @@ beforeEach(() => {
     const compare = /^\/repos\/acme\/web-app\/compare\/(.+)$/.exec(pathname);
     if (compare?.[1] !== undefined) {
       compareCalls.push(compare[1]);
+      if (compareStatus === "down") {
+        return new Response("down", { status: 502 });
+      }
       return Response.json({ status: compareStatus });
     }
     const pulls = /^\/repos\/acme\/web-app\/commits\/(.+)\/pulls$/.exec(
@@ -453,6 +456,16 @@ it("asks GitHub for a baseline when no ancestor has a build", async () => {
   compareStatus = "diverged";
   const unrelated = await runBuild(t, { commit: "c3", images, prNumber: 8 });
   expect(unrelated.created.baseline).toBeNull();
+});
+
+it("creates the build without a baseline when GitHub is down", async () => {
+  const { t } = await setup();
+  const images = [{ name: "Header", content: "header-v1" }];
+  await runBuild(t, { commit: "c1", images });
+  compareStatus = "down";
+  const { created } = await runBuild(t, { commit: "c2", images, prNumber: 7 });
+  expect(compareCalls).toEqual(["c1...c2"]);
+  expect(created.baseline).toBeNull();
 });
 
 it("treats byte-different but pixel-identical images as unchanged", async () => {

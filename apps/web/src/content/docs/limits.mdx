@@ -32,7 +32,7 @@ A plan cancelled at the next billing date stays until the end of its billing per
 
 ## Retention
 
-Builds of pull requests are deleted a set time after the pull request closes, {facts.retentionDays} days by default. Builds of branches without a pull request are deleted when the branch had no new build for that long. Admins set it from {facts.minRetentionDays} to {facts.maxRetentionDays} days under Settings, Retention, in Keep PR-only images for.
+A build is deleted when its pull request closed more than a set time ago, {facts.retentionDays} days by default. A build is also deleted when its branch had no new build for that long, even if the pull request is still open. Admins set it from {facts.minRetentionDays} to {facts.maxRetentionDays} days under Settings, Retention, in Keep PR-only images for.
 
 Builds on the default branch and on auto-approve branches are kept, and so is any build that another build uses as its baseline. A daily cleanup removes images that no build has used for 24 hours, and frees their storage. A link to a deleted build says when it was deleted and which rule deleted it.
 

@@ -3,7 +3,12 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { httpAction, internalQuery, mutation } from "./_generated/server";
 import { readImage } from "./blobs";
-import { createGrant, IMAGE_ROUTE, verifyGrant } from "./lib/imageUrls";
+import {
+  createGrant,
+  IMAGE_ROUTE,
+  verifyGrant,
+  verifyImageToken,
+} from "./lib/imageUrls";
 import { requirePermission } from "./lib/permissions";
 
 export const grant = mutation({
@@ -49,7 +54,16 @@ export const serve = httpAction(async (ctx, request) => {
     .split("/");
   const exp = Number(url.searchParams.get("exp"));
   const sig = url.searchParams.get("sig") ?? "";
-  if (projectId === undefined || imageId === undefined || rest.length > 0) {
+  if (
+    projectId === undefined ||
+    imageId === undefined ||
+    rest.length > 0 ||
+    !(await verifyImageToken(
+      projectId,
+      imageId,
+      url.searchParams.get("t") ?? "",
+    ))
+  ) {
     return new Response("Forbidden", { status: 403 });
   }
   const file: { storageId: Id<"_storage">; accountId: Id<"accounts"> } | null =
