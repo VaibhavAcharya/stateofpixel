@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.3](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.6.2...v1.6.3) (2026-09-29)
+
+
+### Bug Fixes
+
+* close image link, billing and CI gaps, and fill docs and landing gaps ([0650672](https://github.com/VaibhavAcharya/stateofpixel/commit/0650672d8e6f3ec02348f85a01ad8e50a56026e4))
+* close image link, billing and CI gaps, and fill docs and landing gaps ([d7c4121](https://github.com/VaibhavAcharya/stateofpixel/commit/d7c412166635eedd5f39122e208e41ac50ace4f3))
+
 ## [1.6.2](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.6.1...v1.6.2) (2026-09-29)
 
 
