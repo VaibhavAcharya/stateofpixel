@@ -80,6 +80,7 @@ export async function uploadCommand(
       api: createApiClient({
         baseUrl: env.STATEOFPIXEL_API_URL ?? DEFAULT_API_URL,
         token: await resolveToken(env),
+        refreshToken: env[ENV.token] ? undefined : () => resolveToken(env),
       }),
       engine: await createDiffEngine(),
       buildName,

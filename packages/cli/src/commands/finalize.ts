@@ -47,6 +47,7 @@ export async function finalizeCommand(
     const api = createApiClient({
       baseUrl: env.STATEOFPIXEL_API_URL ?? DEFAULT_API_URL,
       token: await resolveToken(env),
+      refreshToken: env[ENV.token] ? undefined : () => resolveToken(env),
     });
     build = await api.request("POST", "/builds/finalize", {
       buildName,
