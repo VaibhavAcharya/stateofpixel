@@ -1,7 +1,7 @@
 :root {
-  --accent: #171717;
+  --accent: #7c3aed;
   --accent-fg: #ffffff;
-  --border: #ebebeb;
+  --border: #c4b5fd;
   --muted: #666666;
   --radius: 11px;
 }
@@ -15,7 +15,7 @@ body {
   padding: 32px;
   background: #fafafa;
   color: #171717;
-  font: 14px / 20px sans-serif;
+  font: 15px / 22px serif;
 }
 
 .row {
