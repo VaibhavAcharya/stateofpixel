@@ -14,6 +14,7 @@ import { Route as BrandRouteImport } from './routes/brand'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as InstallRouteImport } from './routes/install'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RefundsRouteImport } from './routes/refunds'
 import { Route as TermsRouteImport } from './routes/terms'
@@ -59,6 +60,11 @@ const DocsRoute = DocsRouteImport.update({
 const InstallRoute = InstallRouteImport.update({
   id: '/install',
   path: '/install',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -176,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/changelog': typeof ChangelogRoute
   '/docs': typeof DocsRouteWithChildren
   '/install': typeof InstallRoute
+  '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
@@ -203,6 +210,7 @@ export interface FileRoutesByTo {
   '/brand': typeof BrandRoute
   '/changelog': typeof ChangelogRoute
   '/install': typeof InstallRoute
+  '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
@@ -231,6 +239,7 @@ export interface FileRoutesById {
   '/changelog': typeof ChangelogRoute
   '/docs': typeof DocsRouteWithChildren
   '/install': typeof InstallRoute
+  '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
@@ -261,6 +270,7 @@ export interface FileRouteTypes {
     | '/changelog'
     | '/docs'
     | '/install'
+    | '/pricing'
     | '/privacy'
     | '/refunds'
     | '/terms'
@@ -288,6 +298,7 @@ export interface FileRouteTypes {
     | '/brand'
     | '/changelog'
     | '/install'
+    | '/pricing'
     | '/privacy'
     | '/refunds'
     | '/terms'
@@ -315,6 +326,7 @@ export interface FileRouteTypes {
     | '/changelog'
     | '/docs'
     | '/install'
+    | '/pricing'
     | '/privacy'
     | '/refunds'
     | '/terms'
@@ -344,6 +356,7 @@ export interface RootRouteChildren {
   ChangelogRoute: typeof ChangelogRoute
   DocsRoute: typeof DocsRouteWithChildren
   InstallRoute: typeof InstallRoute
+  PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   RefundsRoute: typeof RefundsRoute
   TermsRoute: typeof TermsRoute
@@ -398,6 +411,13 @@ declare module '@tanstack/react-router' {
       path: '/install'
       fullPath: '/install'
       preLoaderRoute: typeof InstallRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -584,6 +604,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChangelogRoute: ChangelogRoute,
   DocsRoute: DocsRouteWithChildren,
   InstallRoute: InstallRoute,
+  PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   RefundsRoute: RefundsRoute,
   TermsRoute: TermsRoute,
