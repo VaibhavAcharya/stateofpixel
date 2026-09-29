@@ -718,7 +718,7 @@ export function Footer() {
             Open source
           </a>
           <a href={CHANGELOG_URL} className="hover:text-text">
-            Changelog
+            CLI changelog
           </a>
         </nav>
         <a
