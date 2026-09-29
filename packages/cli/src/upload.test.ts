@@ -247,7 +247,7 @@ it("keeps the reason of each failed upload", async () => {
   const dir = path.join(root, "shots");
   await writeFixture(dir, "one", white);
   await writeFixture(dir, "two", changed);
-  const { api } = fakeApi([
+  const { api, calls } = fakeApi([
     { name: "one", status: "added", uploadUrl: "u-one" },
     { name: "two", status: "added", uploadUrl: "u-two" },
   ]);
@@ -280,4 +280,75 @@ it("keeps the reason of each failed upload", async () => {
   expect(summarizeUploadErrors(output.uploadErrors)).toBe(
     "  2 x HTTP 403, Upload link is invalid or expired.",
   );
+  const complete = calls.find((call) => call.path.endsWith("/complete"));
+  expect(complete?.body).toMatchObject({
+    errors: ["  2 x HTTP 403, Upload link is invalid or expired."],
+  });
+});
+
+it("names the sidecar file that is not valid JSON", async () => {
+  const dir = path.join(root, "shots");
+  await writeFixture(dir, "one", white);
+  await writeFile(path.join(dir, "one.meta.json"), "{ broken");
+  const { api } = fakeApi([{ name: "one", status: "unchanged" }]);
+
+  await expect(
+    uploadDirectory({
+      dir,
+      workDir: root,
+      api,
+      engine: createPixelmatchEngine(),
+      buildName: "default",
+      nonce: "run-1",
+      shard: { index: 1, total: 1 },
+      subset: false,
+      git: {
+        commit: "c2",
+        commitMessage: "Change",
+        branch: "feature",
+        baselineBranch: "main",
+        prNumber: 7,
+        mergeBase: null,
+        ancestors: ["c1"],
+      },
+      ci: {},
+    }),
+  ).rejects.toThrow(/one\.meta\.json is not valid JSON/);
+});
+
+it("keeps the reason a snapshot could not be compared", async () => {
+  const dir = path.join(root, "shots");
+  await writeFixture(dir, "one", changed);
+  const { api } = fakeApi([
+    { name: "one", status: "changed", baselineUrl: "baseline:white" },
+  ]);
+  api.download = async () => {
+    throw new ApiError(404, "not_found", "Image not found.");
+  };
+
+  const output = await uploadDirectory({
+    dir,
+    workDir: root,
+    api,
+    engine: createPixelmatchEngine(),
+    buildName: "default",
+    nonce: "run-1",
+    shard: { index: 1, total: 1 },
+    subset: false,
+    git: {
+      commit: "c2",
+      commitMessage: "Change",
+      branch: "feature",
+      baselineBranch: "main",
+      prNumber: 7,
+      mergeBase: null,
+      ancestors: ["c1"],
+    },
+    ci: {},
+  });
+
+  expect(output.results).toMatchObject([{ name: "one", status: "failed" }]);
+  expect(output.compareErrors).toEqual([
+    "could not compare one: HTTP 404, Image not found.",
+  ]);
 });

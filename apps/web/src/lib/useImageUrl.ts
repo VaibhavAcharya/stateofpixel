@@ -3,7 +3,7 @@ import type { Id } from "@stateofpixel/backend/dataModel";
 import { useMutation } from "convex/react";
 import { useEffect, useSyncExternalStore } from "react";
 
-const PRIVATE_IMAGE = /\/images\/([^/?]+)\/[^/?]+$/;
+const PRIVATE_IMAGE = /\/images\/([^/?]+)\/[^/?]+(?:\?|$)/;
 const REFRESH_BEFORE_MS = 30 * 60 * 1000;
 
 type Grant = { exp: number; sig: string };
@@ -75,5 +75,5 @@ export function useImageUrl(url: string | undefined): string | undefined {
   }
   return grant === undefined
     ? undefined
-    : `${url}?exp=${grant.exp}&sig=${grant.sig}`;
+    : `${url}${url?.includes("?") ? "&" : "?"}exp=${grant.exp}&sig=${grant.sig}`;
 }

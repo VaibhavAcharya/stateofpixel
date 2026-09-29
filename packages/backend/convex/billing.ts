@@ -65,7 +65,10 @@ export const checkout = action({
   returns: v.string(),
   handler: async (ctx, { login, plan, interval }) => {
     const target = await requireBillingOwner(ctx, login);
-    if (target.billingSubscriptionId !== null) {
+    if (
+      target.billingSubscriptionId !== null ||
+      (await hasActiveSubscription(target.billingCustomerId, target.accountId))
+    ) {
       throw new ConvexError({ code: "already_subscribed" });
     }
     const session = await dodo().checkoutSessions.create({
@@ -88,6 +91,24 @@ export const checkout = action({
     return session.checkout_url;
   },
 });
+
+async function hasActiveSubscription(
+  customerId: string | null,
+  accountId: string,
+): Promise<boolean> {
+  if (customerId === null) {
+    return false;
+  }
+  for await (const subscription of dodo().subscriptions.list({
+    customer_id: customerId,
+    status: "active",
+  })) {
+    if (subscription.metadata.accountId === accountId) {
+      return true;
+    }
+  }
+  return false;
+}
 
 export const previewPlanChange = action({
   args: { login: v.string(), plan: paidPlan, interval },
@@ -303,6 +324,16 @@ export const syncSubscription = internalMutation({
       return null;
     }
 
+    if (
+      args.status === "active" &&
+      account.billingSubscriptionId !== undefined &&
+      account.billingSubscriptionId !== args.subscriptionId
+    ) {
+      console.error(
+        `Subscription ${args.subscriptionId} is active, but account ${account._id} already has subscription ${account.billingSubscriptionId}`,
+      );
+      return null;
+    }
     if (args.status === "active") {
       const product = productPlan(billingEnvironment(), args.productId);
       if (product === null) {

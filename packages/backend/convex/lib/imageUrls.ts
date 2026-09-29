@@ -1,6 +1,6 @@
 import type { Id } from "../_generated/dataModel";
 import { env } from "../_generated/server";
-import { messages, sign, verify } from "./signing";
+import { messages, PUBLIC_IMAGE_SCOPE, sign, verify } from "./signing";
 
 export const IMAGE_ROUTE = "/images/";
 const BLOB_IMAGE_ROUTE = "/api/images/";
@@ -10,21 +10,37 @@ const HOUR_MS = 60 * 60 * 1000;
 
 export type ImageGrant = { exp: number; sig: string };
 
-export function privateImageUrl(
+export async function privateImageUrl(
   projectId: Id<"projects">,
   imageId: Id<"images">,
-): string {
-  return `${env.CONVEX_SITE_URL}${IMAGE_ROUTE}${projectId}/${imageId}`;
+): Promise<string> {
+  const token = await imageToken(projectId, imageId);
+  return `${env.CONVEX_SITE_URL}${IMAGE_ROUTE}${projectId}/${imageId}?t=${token}`;
 }
 
-export function blobImageUrl(
+export async function blobImageUrl(
   project: { _id: Id<"projects">; private: boolean },
   blobKey: string,
-): string {
+): Promise<string> {
   const file = blobKey.replace("/", ".");
-  return project.private
-    ? `${env.SITE_URL}${BLOB_IMAGE_ROUTE}${project._id}/${file}`
-    : `${env.SITE_URL}${BLOB_IMAGE_ROUTE}${file}`;
+  if (!project.private) {
+    const token = await imageToken(PUBLIC_IMAGE_SCOPE, blobKey);
+    return `${env.SITE_URL}${BLOB_IMAGE_ROUTE}${file}?t=${token}`;
+  }
+  const token = await imageToken(project._id, blobKey);
+  return `${env.SITE_URL}${BLOB_IMAGE_ROUTE}${project._id}/${file}?t=${token}`;
+}
+
+function imageToken(scope: string, key: string): Promise<string> {
+  return sign(env.IMAGE_URL_SECRET, messages.image(scope, key));
+}
+
+export function verifyImageToken(
+  scope: string,
+  key: string,
+  token: string,
+): Promise<boolean> {
+  return verify(env.IMAGE_URL_SECRET, messages.image(scope, key), token);
 }
 
 export async function blobUploadUrl(
@@ -65,7 +81,7 @@ export function verifyStored(
 export function withGrant(url: string, grant: ImageGrant): string {
   return url.startsWith(`${env.CONVEX_SITE_URL}${IMAGE_ROUTE}`) ||
     url.startsWith(`${env.SITE_URL}${BLOB_IMAGE_ROUTE}`)
-    ? `${url}?exp=${grant.exp}&sig=${grant.sig}`
+    ? `${url}${url.includes("?") ? "&" : "?"}exp=${grant.exp}&sig=${grant.sig}`
     : url;
 }
 

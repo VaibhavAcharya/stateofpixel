@@ -4,6 +4,7 @@ import {
   parseViewports,
   type Story,
   shardStories,
+  storybookCommand,
   storySnapshotName,
 } from "./storybook";
 
@@ -40,4 +41,15 @@ it("names a story snapshot after its title, name and viewport", () => {
 it("parses viewport widths", () => {
   expect(parseViewports("375, 1280")).toEqual([375, 1280]);
   expect(() => parseViewports("wide")).toThrow("Must look like 375,1280.");
+});
+
+it("refuses --shard auto, which cannot split stories", async () => {
+  await expect(
+    storybookCommand("storybook-static", {
+      shard: { index: null, total: null },
+      viewports: [1280],
+      waitForSelector: "#storybook-root",
+      delay: 0,
+    } as Parameters<typeof storybookCommand>[1]),
+  ).rejects.toThrow(/--shard i\/n/);
 });

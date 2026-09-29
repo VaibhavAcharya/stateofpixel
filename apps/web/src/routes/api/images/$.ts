@@ -1,6 +1,10 @@
-import { messages } from "@stateofpixel/backend/signing";
+import {
+  messages,
+  PUBLIC_IMAGE_SCOPE,
+  verify,
+} from "@stateofpixel/backend/signing";
 import { createFileRoute } from "@tanstack/react-router";
-import { imageStore, verifyUntil } from "../../../lib/imageStore";
+import { imageSecret, imageStore, verifyUntil } from "../../../lib/imageStore";
 
 const FILE = /^([a-z0-9]+)\.([0-9a-f-]{36})$/;
 const PUBLIC_CACHE = "public, max-age=31536000, immutable";
@@ -16,6 +20,18 @@ export const Route = createFileRoute("/api/images/$")({
           return new Response("Not found", { status: 404 });
         }
         const [, accountId, uploadId] = file;
+        const key = `${accountId}/${uploadId}`;
+        const scope =
+          segments.length === 2 ? (segments[0] ?? "") : PUBLIC_IMAGE_SCOPE;
+        if (
+          !(await verify(
+            imageSecret(),
+            messages.image(scope, key),
+            url.searchParams.get("t") ?? "",
+          ))
+        ) {
+          return new Response("Forbidden", { status: 403 });
+        }
         let cacheControl = PUBLIC_CACHE;
         if (segments.length === 2) {
           const projectId = segments[0] ?? "";
@@ -32,7 +48,7 @@ export const Route = createFileRoute("/api/images/$")({
           }
           cacheControl = `private, max-age=${Math.floor((exp - Date.now()) / 1000)}, immutable`;
         }
-        const image = await imageStore().get(`${accountId}/${uploadId}`, {
+        const image = await imageStore().get(key, {
           type: "stream",
         });
         if (image === null) {

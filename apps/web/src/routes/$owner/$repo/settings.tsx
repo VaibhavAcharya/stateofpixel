@@ -32,6 +32,8 @@ const ERRORS: Record<string, string> = {
   invalid_threshold: "Use a number from 0 to 1.",
   invalid_retention: "Use a whole number of days from 7 to 365.",
   invalid_name: "Use a name of 1 to 100 characters.",
+  too_many_tokens:
+    "Revoke a token before you create another. The limit is 100.",
   confirm_name_mismatch: "The name does not match.",
 };
 

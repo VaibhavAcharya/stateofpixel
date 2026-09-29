@@ -1,6 +1,13 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action, internalMutation, mutation, query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import {
+  action,
+  internalMutation,
+  mutation,
+  type QueryCtx,
+  query,
+} from "./_generated/server";
 import { findAllowedProject, requirePermission } from "./lib/permissions";
 import { generateProjectToken, hashProjectToken } from "./lib/projectTokens";
 
@@ -24,18 +31,13 @@ export const list = query({
     if ((await findAllowedProject(ctx, projectId, "admin")) === null) {
       return null;
     }
-    const tokens = await ctx.db
-      .query("projectTokens")
-      .withIndex("by_projectId", (q) => q.eq("projectId", projectId))
-      .take(MAX_TOKENS);
-    return tokens
-      .filter((token) => token.revokedAt === undefined)
-      .map((token) => ({
-        id: token._id,
-        name: token.name,
-        createdAt: token._creationTime,
-        lastUsedAt: token.lastUsedAt ?? null,
-      }));
+    const tokens = await activeTokens(ctx, projectId);
+    return tokens.map((token) => ({
+      id: token._id,
+      name: token.name,
+      createdAt: token._creationTime,
+      lastUsedAt: token.lastUsedAt ?? null,
+    }));
   },
 });
 
@@ -69,6 +71,9 @@ export const insert = internalMutation({
     if (trimmedName === "" || trimmedName.length > MAX_NAME_LENGTH) {
       throw new ConvexError({ code: "invalid_name" });
     }
+    if ((await activeTokens(ctx, projectId)).length >= MAX_TOKENS) {
+      throw new ConvexError({ code: "too_many_tokens" });
+    }
     return ctx.db.insert("projectTokens", {
       projectId,
       name: trimmedName,
@@ -77,6 +82,24 @@ export const insert = internalMutation({
     });
   },
 });
+
+async function activeTokens(
+  ctx: QueryCtx,
+  projectId: Id<"projects">,
+): Promise<Doc<"projectTokens">[]> {
+  const tokens: Doc<"projectTokens">[] = [];
+  for await (const token of ctx.db
+    .query("projectTokens")
+    .withIndex("by_projectId", (q) => q.eq("projectId", projectId))) {
+    if (token.revokedAt === undefined) {
+      tokens.push(token);
+      if (tokens.length === MAX_TOKENS) {
+        break;
+      }
+    }
+  }
+  return tokens;
+}
 
 export const revoke = mutation({
   args: { tokenId: v.id("projectTokens") },

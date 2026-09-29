@@ -1,4 +1,7 @@
+export const PUBLIC_IMAGE_SCOPE = "public";
+
 export const messages = {
+  image: (scope: string, key: string) => `image.${scope}.${key}`,
   grant: (projectId: string, accountId: string, exp: number) =>
     `${projectId}.${accountId}.${exp}`,
   upload: (key: string, hash: string, exp: number) =>

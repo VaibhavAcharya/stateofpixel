@@ -3,12 +3,14 @@ import { convexTest } from "convex-test";
 import { beforeAll, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { messages, PUBLIC_IMAGE_SCOPE, verify } from "./lib/signing";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
+const SECRET = "test-image-secret";
 
 beforeAll(() => {
-  vi.stubEnv("IMAGE_URL_SECRET", "test-image-secret");
+  vi.stubEnv("IMAGE_URL_SECRET", SECRET);
   vi.stubEnv("CONVEX_SITE_URL", "https://test.convex.site");
   vi.stubEnv("SITE_URL", "https://stateofpixel.test");
 });
@@ -365,19 +367,27 @@ it("serves private images only through a signed link", async () => {
   });
   const url = new URL(detail?.image?.url ?? "");
   expect(url.pathname).toMatch(new RegExp(`^/images/${projectId}/[^/]+$`));
-  expect(url.search).toBe("");
+  const token = url.searchParams.get("t");
+  expect(token).not.toBeNull();
 
-  expect((await t.fetch(url.pathname)).status).toBe(403);
+  expect((await t.fetch(`${url.pathname}${url.search}`)).status).toBe(403);
   const signed = await user.mutation(api.images.grant, { projectId });
-  const path = `${url.pathname}?exp=${signed.exp}&sig=${signed.sig}`;
+  const path = `${url.pathname}?t=${token}&exp=${signed.exp}&sig=${signed.sig}`;
+  expect(
+    (await t.fetch(`${url.pathname}?exp=${signed.exp}&sig=${signed.sig}`))
+      .status,
+  ).toBe(403);
   const response = await t.fetch(path);
   expect(response.status).toBe(200);
   expect(await response.text()).toBe("png");
   expect(response.headers.get("Cache-Control")).toMatch(/^private/);
 
   expect(
-    (await t.fetch(`${url.pathname}?exp=${signed.exp + 1}&sig=${signed.sig}`))
-      .status,
+    (
+      await t.fetch(
+        `${url.pathname}?t=${token}&exp=${signed.exp + 1}&sig=${signed.sig}`,
+      )
+    ).status,
   ).toBe(403);
   vi.useFakeTimers({ now: signed.exp });
   expect((await t.fetch(path)).status).toBe(403);
@@ -405,11 +415,28 @@ it("links Blobs images through the site, private ones under the project", async 
       snapshotId,
     });
     const file = `${accountId}.0b9f4e1c-2d3a-4b5c-8d6e-7f8091a2b3c4`;
-    expect(detail?.image?.url).toBe(
+    const url = new URL(detail?.image?.url ?? "");
+    expect(`${url.origin}${url.pathname}`).toBe(
       isPrivate
         ? `https://stateofpixel.test/api/images/${projectId}/${file}`
         : `https://stateofpixel.test/api/images/${file}`,
     );
+    const key = `${accountId}/0b9f4e1c-2d3a-4b5c-8d6e-7f8091a2b3c4`;
+    const token = url.searchParams.get("t") ?? "";
+    expect(
+      await verify(
+        SECRET,
+        messages.image(isPrivate ? projectId : PUBLIC_IMAGE_SCOPE, key),
+        token,
+      ),
+    ).toBe(true);
+    expect(
+      await verify(
+        SECRET,
+        messages.image(isPrivate ? PUBLIC_IMAGE_SCOPE : projectId, key),
+        token,
+      ),
+    ).toBe(false);
   }
 });
 

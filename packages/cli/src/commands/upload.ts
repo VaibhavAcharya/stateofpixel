@@ -149,7 +149,7 @@ function printSummary(
   console.log(
     `  uploaded ${formatCount(output.uploadedImages)} images (${megabytes} MB) in ${seconds} s`,
   );
-  for (const warning of build.warnings) {
+  for (const warning of [...build.warnings, ...output.compareErrors]) {
     console.log(`  warning: ${warning}`);
   }
   console.log(`  review: ${build.url}`);

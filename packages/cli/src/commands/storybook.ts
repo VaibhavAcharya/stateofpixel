@@ -57,6 +57,11 @@ export async function storybookCommand(
   options: StorybookCommandOptions,
 ): Promise<void> {
   const shard = options.shard ?? parseShard(process.env[ENV.shard] ?? "1/1");
+  if (shard.total === null) {
+    throw new Error(
+      "storybook does not split stories with --shard auto. Use --shard i/n, like --shard 2/4.",
+    );
+  }
   const stories = shardStories(
     filterStories(
       await readStories(staticDir),

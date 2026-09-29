@@ -1,6 +1,10 @@
 import { CheckIcon } from "@phosphor-icons/react/ssr";
 import { api } from "@stateofpixel/backend/api";
-import { DEFAULT_RETENTION_DAYS } from "@stateofpixel/backend/limits";
+import {
+  DEFAULT_RETENTION_DAYS,
+  MAX_RETENTION_DAYS,
+  MIN_RETENTION_DAYS,
+} from "@stateofpixel/backend/limits";
 import { PLAN_STORAGE_LIMIT_BYTES } from "@stateofpixel/backend/storage";
 import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useState } from "react";
@@ -102,7 +106,7 @@ export function formatPrice(value: number) {
 const FREE_FEATURES = [
   "No charge for snapshots, builds or projects",
   "Everyone with write access can review",
-  `Pull request images kept ${RETENTION_DAYS} days`,
+  `Pull request images kept ${RETENTION_DAYS} days, adjustable from ${MIN_RETENTION_DAYS} to ${MAX_RETENTION_DAYS}`,
 ];
 
 const PAID_FEATURES = ["Everything in Free"];

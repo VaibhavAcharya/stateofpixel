@@ -18,7 +18,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - run: npm ci
@@ -27,7 +27,7 @@ jobs:
       - run: npx stateofpixel upload screenshots --shard ${{ matrix.shard }}/4
 ```
 
-While shards upload, the check says "Waiting for screenshots (2 of 4 shards)". The [Playwright reporter](/docs/playwright) reads Playwright's own `--shard`, so with it you skip the upload step. [Storybook](/docs/storybook) capture splits the stories by the same `--shard`.
+While shards upload, the check says "Waiting for screenshots (2 of 4 shards)". The [Playwright reporter](/docs/playwright) reads Playwright's own `--shard`, so with it you skip the upload step. [Storybook](/docs/storybook) capture splits the stories only with `--shard i/n`, like `--shard 2/4`. It does not take `--shard auto`.
 
 ## When you do not
 
@@ -45,7 +45,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - run: npx stateofpixel finalize --skip-if-empty

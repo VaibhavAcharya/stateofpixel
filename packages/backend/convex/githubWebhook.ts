@@ -37,7 +37,7 @@ export const handle = httpAction(async (ctx, request) => {
     return new Response("Missing delivery headers", { status: 400 });
   }
 
-  const payload: unknown = JSON.parse(body);
+  const payload = parseJson(body);
   if (!isObject(payload)) {
     return new Response("Invalid payload", { status: 400 });
   }
@@ -164,4 +164,12 @@ function readRepository(payload: Record<string, unknown>) {
     private: repository.private,
     default_branch: repository.default_branch,
   });
+}
+
+function parseJson(body: string): unknown {
+  try {
+    return JSON.parse(body);
+  } catch {
+    return null;
+  }
 }
