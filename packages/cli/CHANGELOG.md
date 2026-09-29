@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.1](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.6.0...v1.6.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **cli:** time out stalled uploads and refresh the OIDC token after a 401 ([36e22b7](https://github.com/VaibhavAcharya/stateofpixel/commit/36e22b744c79091da802ddba67876e6aa352fba0))
+* **cli:** time out stalled uploads and refresh the OIDC token after a 401 ([e220540](https://github.com/VaibhavAcharya/stateofpixel/commit/e2205401e37135794462fecfda71926b664b17d4))
+
 ## [1.6.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.5.1...v1.6.0) (2026-09-28)
 
 
