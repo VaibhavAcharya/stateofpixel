@@ -18,6 +18,7 @@
 <p align="center">
   <a href="https://github.com/VaibhavAcharya/stateofpixel/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/VaibhavAcharya/stateofpixel/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://www.npmjs.com/package/stateofpixel"><img alt="npm version" src="https://img.shields.io/npm/v/stateofpixel"></a>
+  <a href="https://app.netlify.com/projects/stateofpixel/deploys"><img alt="Netlify status" src="https://api.netlify.com/api/v1/badges/2038e0c8-2708-494b-b881-1b70f9b7b0e6/deploy-status"></a>
 </p>
 
 Your CI takes the screenshots. stateofpixel compares them with the last approved ones, shows every change on a review page, and sets a GitHub check that waits until someone approves them.
@@ -61,10 +62,10 @@ The [docs](https://stateofpixel.com/docs) cover the Playwright reporter, Storybo
 
 | Path | What it is |
 |---|---|
-| `apps/web` | The web app on [TanStack Start](https://tanstack.com/start), deployed on Netlify |
+| `apps/web` | The web app on [Netlify](https://www.netlify.com), built with [TanStack Start](https://tanstack.com/start). Image uploads run in Netlify Functions, and new accounts store images in Netlify Blobs |
 | `apps/web/src/content/docs` | The docs at `/docs`, in MDX |
 | `apps/web/visual` | Playwright tests that capture the web app for dogfooding |
-| `packages/backend` | [Convex](https://convex.dev) functions and schema: the CI API, GitHub webhooks, billing and storage |
+| `packages/backend` | The CI API, GitHub webhooks, billing and the database schema |
 | `packages/cli` | The `stateofpixel` CLI and Playwright reporter, published to npm |
 | `examples/playground` | Static pages and Storybook stories that the test pull requests change |
 | `scripts` | `test-pr.sh` opens the dogfooding test pull requests |
