@@ -33,6 +33,8 @@ export const DISPLAY =
 
 /* Header */
 
+const REPO_URL = "https://github.com/VaibhavAcharya/stateofpixel";
+
 const NAV = [
   ["Demo", "/#demo"],
   ["How it works", "/#how"],
@@ -40,6 +42,7 @@ const NAV = [
   ["FAQ", "/#faq"],
   ["Compare", "/compare"],
   ["Docs", "/docs"],
+  ["Open source", REPO_URL],
 ] as const;
 
 export function HeaderNav() {
@@ -671,6 +674,13 @@ export function Footer() {
               {label}
             </Link>
           ))}
+          <a
+            href={REPO_URL}
+            data-umami-event="GitHub"
+            className="hover:text-text"
+          >
+            Open source
+          </a>
         </nav>
         <a
           href={`mailto:${SUPPORT_EMAIL}`}
