@@ -113,10 +113,7 @@ function Privacy() {
           Convex, for the database, file storage and the backend functions.
         </li>
         <li>Dodo Payments, to take payments for paid plans.</li>
-        <li>
-          Netlify, to host the website and, for accounts that pick it, to store
-          screenshots.
-        </li>
+        <li>Netlify, to host the website and store screenshots.</li>
         <li>Umami, for the analytics described above.</li>
       </ul>
       <p>These providers may process data in other countries.</p>

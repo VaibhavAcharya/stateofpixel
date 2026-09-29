@@ -119,6 +119,7 @@ export const upsertAccount = internalMutation({
       plan: "free",
       storageLimitBytes: PLAN_STORAGE_LIMIT_BYTES.free,
       storageBytes: 0,
+      imageStore: "blobs",
     });
   },
 });

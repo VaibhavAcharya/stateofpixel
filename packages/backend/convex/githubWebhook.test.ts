@@ -160,6 +160,7 @@ it("creates the account and projects when the app is installed", async () => {
     login: "acme",
     type: "org",
     installationId: 10,
+    imageStore: "blobs",
   });
   expect(await listProjects(t)).toEqual([
     { name: "web-app", archived: false },
