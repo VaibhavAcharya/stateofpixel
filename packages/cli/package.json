@@ -1,6 +1,6 @@
 {
   "name": "stateofpixel",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Catch UI regressions before they merge. Visual regression testing for GitHub pull requests.",
   "keywords": [
     "visual-regression",
