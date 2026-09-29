@@ -190,11 +190,15 @@ export async function uploadDirectory(
           baselineFile,
           await input.api.download(lookup.baselineUrl),
         );
+        const diffStart = Date.now();
         const { diffPixels, diffRatio } = await input.engine.diff(
           baselineFile,
           snapshot.file,
           diffFile,
           options,
+        );
+        console.error(
+          `stateofpixel debug: diff ${snapshot.name} ${Date.now() - diffStart}ms`,
         );
         if (diffPixels === 0) {
           return { ...base, status: "unchanged" };

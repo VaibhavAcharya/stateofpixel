@@ -63,10 +63,28 @@ export type ApiClient = ReturnType<typeof createApiClient>;
 export function createApiClient({
   baseUrl,
   token,
-  fetch = globalThis.fetch,
+  fetch: rawFetch = globalThis.fetch,
   retries = 3,
   retryDelayMs = 1000,
 }: ApiClientOptions) {
+  const fetch: typeof globalThis.fetch = async (input, init) => {
+    const url = new URL(String(input));
+    const label = `${init?.method ?? "GET"} ${url.host}${url.pathname}`;
+    const start = Date.now();
+    console.error(`stateofpixel debug: -> ${label}`);
+    try {
+      const response = await rawFetch(input, init);
+      console.error(
+        `stateofpixel debug: <- ${label} ${response.status} ${Date.now() - start}ms`,
+      );
+      return response;
+    } catch (error) {
+      console.error(
+        `stateofpixel debug: !! ${label} ${error instanceof Error ? error.message : error} ${Date.now() - start}ms`,
+      );
+      throw error;
+    }
+  };
   function withRetries<Result>(fn: () => Promise<Result>): Promise<Result> {
     return retryServerErrors(fn, retries, retryDelayMs);
   }
@@ -113,7 +131,12 @@ export function createApiClient({
       if (!response.ok) {
         throw await toApiError(response);
       }
-      return Buffer.from(await response.arrayBuffer());
+      const start = Date.now();
+      const bytes = Buffer.from(await response.arrayBuffer());
+      console.error(
+        `stateofpixel debug: body ${new URL(url).pathname} ${bytes.length} bytes ${Date.now() - start}ms`,
+      );
+      return bytes;
     });
   }
 
