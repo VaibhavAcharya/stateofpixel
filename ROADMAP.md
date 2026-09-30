@@ -4,9 +4,8 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 
 ## Faster updates
 
-- Read the per-request durations in the function logs after a CI run, and find what is left of the 3.5 second upload with no new images. Look at cold starts and the job worker kick inside requests.
-- Poll faster while a build is pending or a review is open, and slower on idle pages. Pages refresh every 5 seconds today.
-- Batch the queries of one page into one `/api/rpc` request.
+- Find why the web job that finishes a main build waits about 30 seconds in the upload. It happened on the pushes of 7d39e14 (34.4 s) and e56833c (33.7 s); the other shard of the same runs took about 2 seconds.
+- The first upload after a production deploy takes 9 to 12 seconds, and a server function invocation right after a deploy took about 7 seconds. The database sleeps after 5 minutes without queries, and turning that off needs a Pro plan. Check how much of the delay is the database waking up and how much is the server function starting.
 
 ## Jobs
 
@@ -27,7 +26,6 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 
 ## Landing and marketing
 
-- Re-measure the median upload on the landing page from `visual.yml` runs after the speed work, or hide it until then. Its data predates the move.
 - Say in the FAQ whether self-hosting is supported.
 - Mention on the landing that GitHub tokens are stored encrypted and private image links expire within two hours.
 
