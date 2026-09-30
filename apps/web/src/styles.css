@@ -5,7 +5,7 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
-  --font-sans: "IBM Plex Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: ui-serif, Georgia, ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Lilex Variable", ui-monospace, "SF Mono", monospace;
 
   --text-2xs: 11px;
@@ -27,15 +27,15 @@
   --color-surface: #ffffff;
   --color-surface-2: #f2f2f2;
   --color-hover: #ebebeb;
-  --color-border: #ebebeb;
+  --color-border: #c4b5fd;
   --color-field-border: #8f8f8f;
   --color-text: #171717;
   --color-muted: #666666;
   --color-subtle: #767676;
-  --color-accent: #171717;
+  --color-accent: #7c3aed;
   --color-accent-fg: #ffffff;
   --color-accent-hover: #333333;
-  --color-link: #0068d6;
+  --color-link: #db2777;
   --color-focus: #0068d6;
 
   --color-unchanged: #666666;
