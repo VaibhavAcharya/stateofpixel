@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.6.3...v1.7.0) (2026-09-30)
+
+
+### Features
+
+* move the backend to Netlify Database, Functions and Identity ([4f1022e](https://github.com/VaibhavAcharya/stateofpixel/commit/4f1022e70830295ee455082bfa9ee90a518fc376))
+* move the backend to Netlify Database, Functions and Identity ([af829a2](https://github.com/VaibhavAcharya/stateofpixel/commit/af829a2e6442ddf079c4581874eec94a9dd26a20))
+
 ## [1.6.3](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.6.2...v1.6.3) (2026-09-29)
 
 
