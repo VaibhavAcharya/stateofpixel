@@ -1,3 +1,4 @@
+import "@stateofpixel/backend/api";
 import { userIdForIdentity } from "@stateofpixel/backend/auth";
 import { handleHttp } from "@stateofpixel/backend/http";
 import { configureHost } from "@stateofpixel/backend/server";

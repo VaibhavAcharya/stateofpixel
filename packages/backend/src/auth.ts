@@ -1,6 +1,5 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { internal } from "./api.ts";
 import { first, one } from "./db/index.ts";
 import { users } from "./schema.ts";
 import {
@@ -22,13 +21,13 @@ const identity = {
 export async function userIdForIdentity(
   args: z.input<z.ZodObject<typeof identity>>,
 ): Promise<string> {
-  const user = await runQuery(internal.auth.findByIdentity, {
+  const user = await runQuery(findByIdentity, {
     identityId: args.identityId,
   });
   if (user !== null && Date.now() - user.lastSeenAt <= LAST_SEEN_INTERVAL_MS) {
     return user._id;
   }
-  return runMutation(internal.auth.userForIdentity, args);
+  return runMutation(userForIdentity, args);
 }
 
 export const findByIdentity = internalQuery({
