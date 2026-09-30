@@ -19,7 +19,6 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 ## Onboarding
 
 - Check whether connecting GitHub after signing in with GitHub skips the second consent screen, and skip the Connect GitHub screen when it can.
-- Enable Google sign-in in Identity, then say "GitHub or Google" again in the quickstart, security docs and privacy policy, and change the "Start free with GitHub" buttons.
 - Add "Disconnect GitHub" and "Delete account" to the user menu. Today both go through email.
 
 ## Data
@@ -32,17 +31,6 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 - Re-measure the median upload on the landing page from `visual.yml` runs after the speed work, or hide it until then. Its data predates the move.
 - Say in the FAQ whether self-hosting is supported.
 - Mention on the landing that GitHub tokens are stored encrypted and private image links expire within two hours.
-
-## Legal and privacy
-
-These need a lawyer's judgment before the pages change:
-
-- Name the operator (legal entity and address), the legal basis for processing, where data is stored and the transfer mechanism.
-- Decide whether the sign-in cookies need a notice or consent anywhere we have users.
-- Decide whether deletion on request by email is enough, or a self-serve path is needed.
-- Confirm whether Dodo Payments is the merchant of record, and say so in the terms and refunds pages if it is.
-- State how long user, connection, usage and deleted-build records are kept.
-- Check whether deploy previews run for pull requests from forks, since preview database branches copy production data.
 
 ## Local development
 
