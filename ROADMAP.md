@@ -4,10 +4,9 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 
 ## Faster updates
 
-- Find what slows CI uploads since the move. The `playground` upload step went from 1 to 2 seconds to up to 22 seconds, and the server function's p99 is about 7 seconds. Log route, duration and query count per request, then batch the query loops in the upload and finalize paths and look at cold starts.
+- Find why the `storybook` upload step still takes about 6 seconds while `playground` takes about 3, after batching the upload queries. Log route and duration per request and look at the finalize job start and cold starts.
 - Poll faster while a build is pending or a review is open, and slower on idle pages. Pages refresh every 5 seconds today.
 - Batch the queries of one page into one `/api/rpc` request.
-- Cache the Identity user for a request instead of calling `/.netlify/identity/user` on every RPC.
 
 ## Jobs
 
