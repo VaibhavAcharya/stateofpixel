@@ -1,7 +1,7 @@
-import { and, asc, desc, eq, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { internal } from "./api.ts";
-import { confirmUpload, findImage, getUrl } from "./blobs.ts";
+import { confirmUploadedImages, findImages, getUrl } from "./blobs.ts";
 import { touchCheck } from "./checks.ts";
 import type { Doc, Id } from "./dataModel.ts";
 import { first, one } from "./db/index.ts";
@@ -462,13 +462,18 @@ export const lookupSnapshots = internalQuery({
       baselineBuild === null
         ? null
         : await getProject(ctx, baselineBuild.projectId);
+    const baselineImages =
+      baselineBuildId === null
+        ? new Map<string, Doc<"images">>()
+        : await findBaselineImages(
+            ctx,
+            baselineBuildId,
+            snapshots.map((snapshot) => snapshot.name),
+          );
     return Promise.all(
       snapshots.map(async ({ name, hash }) => {
-        const baselineImage =
-          baselineBuildId === null
-            ? null
-            : await findBaselineImage(ctx, baselineBuildId, name);
-        if (baselineImage === null) {
+        const baselineImage = baselineImages.get(name);
+        if (baselineImage === undefined) {
           return { name, hash, status: "added" as const };
         }
         if (baselineImage.hash === hash) {
@@ -489,43 +494,68 @@ export const lookupSnapshots = internalQuery({
   },
 });
 
-async function findBaselineSnapshot(
+async function findBaselineSnapshots(
   ctx: QueryCtx,
   baselineBuildId: Id<"builds">,
-  name: string,
-): Promise<Doc<"snapshots"> | null> {
-  const snapshot = await findSnapshot(ctx, baselineBuildId, name);
-  return snapshot === null || snapshot.diffStatus === "removed"
-    ? null
-    : snapshot;
-}
-
-async function findBaselineImage(
-  ctx: QueryCtx,
-  baselineBuildId: Id<"builds">,
-  name: string,
-): Promise<Doc<"images"> | null> {
-  const snapshot = await findBaselineSnapshot(ctx, baselineBuildId, name);
-  if (snapshot === null || snapshot.imageId === null) {
-    return null;
+  names: string[],
+): Promise<Map<string, Doc<"snapshots">>> {
+  const found = await findSnapshots(ctx, baselineBuildId, names);
+  for (const [name, snapshot] of found) {
+    if (snapshot.diffStatus === "removed") {
+      found.delete(name);
+    }
   }
-  return first(
-    await ctx.db.select().from(images).where(eq(images._id, snapshot.imageId)),
-  );
+  return found;
 }
 
-async function findSnapshot(
+async function findBaselineImages(
+  ctx: QueryCtx,
+  baselineBuildId: Id<"builds">,
+  names: string[],
+): Promise<Map<string, Doc<"images">>> {
+  const baselines = await findBaselineSnapshots(ctx, baselineBuildId, names);
+  const imageIds = [...baselines.values()].flatMap((snapshot) =>
+    snapshot.imageId === null ? [] : [snapshot.imageId],
+  );
+  const found = new Map<string, Doc<"images">>();
+  if (imageIds.length === 0) {
+    return found;
+  }
+  const byId = new Map(
+    (
+      await ctx.db.select().from(images).where(inArray(images._id, imageIds))
+    ).map((image) => [image._id, image]),
+  );
+  for (const [name, snapshot] of baselines) {
+    const image =
+      snapshot.imageId === null ? undefined : byId.get(snapshot.imageId);
+    if (image !== undefined) {
+      found.set(name, image);
+    }
+  }
+  return found;
+}
+
+async function findSnapshots(
   ctx: QueryCtx,
   buildId: Id<"builds">,
-  name: string,
-): Promise<Doc<"snapshots"> | null> {
-  return first(
-    await ctx.db
-      .select()
-      .from(snapshots)
-      .where(and(eq(snapshots.buildId, buildId), eq(snapshots.name, name)))
-      .limit(1),
-  );
+  names: string[],
+): Promise<Map<string, Doc<"snapshots">>> {
+  const found = new Map<string, Doc<"snapshots">>();
+  if (names.length === 0) {
+    return found;
+  }
+  const rows = await ctx.db
+    .select()
+    .from(snapshots)
+    .where(and(eq(snapshots.buildId, buildId), inArray(snapshots.name, names)))
+    .orderBy(asc(snapshots._creationTime), asc(snapshots._id));
+  for (const row of rows) {
+    if (!found.has(row.name)) {
+      found.set(row.name, row);
+    }
+  }
+  return found;
 }
 
 export const forCi = internalQuery({
@@ -646,12 +676,7 @@ export const confirmUploads = internalMutation({
   },
   handler: async (ctx, { buildId, accountId, uploads }) => {
     await getPendingBuild(ctx, buildId);
-    const results = [];
-    for (const item of uploads) {
-      const image = await confirmUpload(ctx, accountId, item);
-      results.push({ hash: item.hash, confirmed: image !== null });
-    }
-    return results;
+    return confirmUploadedImages(ctx, accountId, uploads);
   },
 });
 
@@ -667,82 +692,143 @@ export const insertSnapshots = internalMutation({
     const project = await getProject(ctx, build.projectId);
     const baseline = project !== null && isKeptBranch(project, build.branch);
     const counts = { ...build.counts };
-    for (const result of results) {
-      const existing = await findSnapshot(ctx, buildId, result.name);
-      if (existing !== null) {
-        if (existing.shardIndex !== shardIndex) {
-          throw ciError(
-            409,
-            "duplicate_snapshot_name",
-            `Snapshot "${result.name}" was already sent by shard ${existing.shardIndex}.`,
-          );
-        }
-        continue;
+    const existing = await findSnapshots(
+      ctx,
+      buildId,
+      results.map((result) => result.name),
+    );
+    const fresh = results.filter((result) => {
+      const snapshot = existing.get(result.name);
+      if (snapshot !== undefined && snapshot.shardIndex !== shardIndex) {
+        throw ciError(
+          409,
+          "duplicate_snapshot_name",
+          `Snapshot "${result.name}" was already sent by shard ${snapshot.shardIndex}.`,
+        );
       }
-      const compared = await toSnapshot(ctx, build, accountId, result);
+      return snapshot === undefined;
+    });
+    if (fresh.length === 0) {
+      return null;
+    }
+    const found = await findComparisonRows(ctx, build, accountId, fresh);
+    const compared = fresh.map((result) => ({
+      result,
+      compared: toSnapshot(build, result, found),
+    }));
+    const carriedApprovals = build.autoApproved
+      ? new Map<Id<"images">, Doc<"approvedImages">>()
+      : await findCarriedApprovals(
+          ctx,
+          build,
+          compared.flatMap(({ compared }) =>
+            compared.reviewState === "pending" && compared.imageId != null
+              ? [compared.imageId]
+              : [],
+          ),
+        );
+    const rows = compared.map(({ result, compared }) => {
       const carriedApproval =
-        compared.reviewState === "pending" && !build.autoApproved
-          ? await findCarriedApproval(ctx, build, compared.imageId)
+        compared.reviewState === "pending" && compared.imageId != null
+          ? (carriedApprovals.get(compared.imageId) ?? null)
           : null;
       const snapshot =
         compared.reviewState === "pending" &&
         (build.autoApproved || carriedApproval !== null)
           ? { ...compared, reviewState: "approved" as const }
           : compared;
-      const { _id: snapshotId } = one(
-        await ctx.db
-          .insert(snapshots)
-          .values({
-            buildId,
-            shardIndex,
-            name: result.name,
-            metadata: result.metadata ?? {},
-            ...snapshot,
-          })
-          .returning({ _id: snapshots._id }),
-      );
-      await tagImage(ctx, snapshot.imageId, build, baseline);
-      await tagImage(ctx, snapshot.diffImageId, build, baseline);
       counts[snapshot.diffStatus]++;
       if (snapshot.reviewState !== "none") {
         counts[snapshot.reviewState]++;
       }
-      if (carriedApproval !== null) {
-        await ctx.db.insert(reviews).values({
-          snapshotId,
-          buildId,
-          action: "approve",
-          source: "carry_over",
-          sourceReviewId: carriedApproval.reviewId,
-        });
-      } else if (snapshot.reviewState === "approved" && snapshot.imageId) {
-        await recordApproval(ctx, build, snapshotId, snapshot.imageId);
-      }
-    }
+      return { result, snapshot, carriedApproval };
+    });
+    const inserted = new Map(
+      (
+        await ctx.db
+          .insert(snapshots)
+          .values(
+            rows.map(({ result, snapshot }) => ({
+              buildId,
+              shardIndex,
+              name: result.name,
+              metadata: result.metadata ?? {},
+              ...snapshot,
+            })),
+          )
+          .returning({ _id: snapshots._id, name: snapshots.name })
+      ).map((row) => [row.name, row._id]),
+    );
+    await tagImages(
+      ctx,
+      rows.flatMap(({ snapshot }) => [snapshot.imageId, snapshot.diffImageId]),
+      found.images,
+      build,
+      baseline,
+    );
+    await recordReviews(
+      ctx,
+      build,
+      rows.map(({ result, snapshot, carriedApproval }) => ({
+        snapshotId: inserted.get(result.name) as Id<"snapshots">,
+        snapshot,
+        carriedApproval,
+      })),
+    );
     await ctx.db.update(builds).set({ counts }).where(eq(builds._id, buildId));
     return null;
   },
 });
 
-async function toSnapshot(
+type ComparisonRows = {
+  images: Map<string, Doc<"images">>;
+  baselines: Map<string, Doc<"snapshots">>;
+};
+
+async function findComparisonRows(
   ctx: QueryCtx,
   build: Doc<"builds">,
   accountId: Id<"accounts">,
+  results: z.infer<typeof snapshotResult>[],
+): Promise<ComparisonRows> {
+  return {
+    images: await findImages(
+      ctx,
+      accountId,
+      results.flatMap((result) => [
+        result.hash.toLowerCase(),
+        ...(result.diffHash === undefined
+          ? []
+          : [result.diffHash.toLowerCase()]),
+      ]),
+    ),
+    baselines:
+      build.baselineBuildId === null
+        ? new Map()
+        : await findBaselineSnapshots(
+            ctx,
+            build.baselineBuildId,
+            results.map((result) => result.name),
+          ),
+  };
+}
+
+function toSnapshot(
+  build: Doc<"builds">,
   result: z.infer<typeof snapshotResult>,
-): Promise<
-  Pick<
-    typeof snapshots.$inferInsert,
-    | "imageId"
-    | "baselineSnapshotId"
-    | "baselineImageId"
-    | "diffImageId"
-    | "diffStatus"
-    | "diffRatio"
-    | "diffPixels"
-    | "reviewState"
-  >
+  found: ComparisonRows,
+): Pick<
+  typeof snapshots.$inferInsert,
+  | "imageId"
+  | "baselineSnapshotId"
+  | "baselineImageId"
+  | "diffImageId"
+  | "diffStatus"
+  | "diffRatio"
+  | "diffPixels"
+  | "reviewState"
 > {
-  const image = await findImage(ctx, accountId, result.hash.toLowerCase());
+  const image = found.images.get(result.hash.toLowerCase()) ?? null;
   if (result.status === "failed" || (image === null && !build.storageBlocked)) {
     return { imageId: image?._id, diffStatus: "failed", reviewState: "none" };
   }
@@ -750,11 +836,7 @@ async function toSnapshot(
   if (build.baselineBuildId === null) {
     return { imageId: image?._id, diffStatus: "added", reviewState };
   }
-  const baseline = await findBaselineSnapshot(
-    ctx,
-    build.baselineBuildId,
-    result.name,
-  );
+  const baseline = found.baselines.get(result.name) ?? null;
   if (baseline === null || baseline.imageId === null) {
     return { imageId: image?._id, diffStatus: "added", reviewState };
   }
@@ -769,7 +851,7 @@ async function toSnapshot(
   const diffImage =
     result.diffHash === undefined
       ? null
-      : await findImage(ctx, accountId, result.diffHash.toLowerCase());
+      : (found.images.get(result.diffHash.toLowerCase()) ?? null);
   return {
     ...baselineFields,
     diffImageId: diffImage?._id,
@@ -780,87 +862,130 @@ async function toSnapshot(
   };
 }
 
-async function tagImage(
+async function tagImages(
   ctx: MutationCtx,
-  imageId: Id<"images"> | null | undefined,
+  imageIds: (Id<"images"> | null | undefined)[],
+  found: Map<string, Doc<"images">>,
   build: Doc<"builds">,
   baseline: boolean,
 ) {
-  const image =
-    imageId == null
-      ? null
-      : first(
-          await ctx.db.select().from(images).where(eq(images._id, imageId)),
-        );
-  if (
-    image === null ||
-    (image.projectId === null && image._creationTime < build._creationTime)
-  ) {
+  const ids = new Set(imageIds);
+  const untagged = [...found.values()]
+    .filter(
+      (image) =>
+        ids.has(image._id) &&
+        !(
+          image.projectId === null && image._creationTime < build._creationTime
+        ) &&
+        (image.projectId === null || (baseline && image.baseline !== true)),
+    )
+    .map((image) => image._id);
+  if (untagged.length === 0) {
     return;
   }
-  if (image.projectId === null || (baseline && image.baseline !== true)) {
-    await ctx.db
-      .update(images)
-      .set({
-        projectId: image.projectId ?? build.projectId,
-        baseline: image.baseline === true || baseline,
-      })
-      .where(eq(images._id, image._id));
-  }
+  await ctx.db
+    .update(images)
+    .set({
+      projectId: sql`coalesce(${images.projectId}, ${build.projectId})`,
+      baseline: sql`coalesce(${images.baseline}, false) or ${baseline}`,
+    })
+    .where(inArray(images._id, untagged));
 }
 
-async function findCarriedApproval(
+async function findCarriedApprovals(
   ctx: QueryCtx,
   build: Doc<"builds">,
-  imageId: Id<"images"> | null | undefined,
-): Promise<Doc<"approvedImages"> | null> {
+  imageIds: Id<"images">[],
+): Promise<Map<Id<"images">, Doc<"approvedImages">>> {
+  const found = new Map<Id<"images">, Doc<"approvedImages">>();
   const { prNumber } = build;
-  if (prNumber === null || imageId == null) {
-    return null;
+  if (prNumber === null || imageIds.length === 0) {
+    return found;
   }
-  return first(
-    await ctx.db
-      .select()
-      .from(approvedImages)
-      .where(
-        and(
-          eq(approvedImages.projectId, build.projectId),
-          eq(approvedImages.buildName, build.buildName),
-          eq(approvedImages.prNumber, prNumber),
-          eq(approvedImages.imageId, imageId),
-        ),
-      )
-      .orderBy(asc(approvedImages._creationTime), asc(approvedImages._id))
-      .limit(1),
-  );
+  const rows = await ctx.db
+    .select()
+    .from(approvedImages)
+    .where(
+      and(
+        eq(approvedImages.projectId, build.projectId),
+        eq(approvedImages.buildName, build.buildName),
+        eq(approvedImages.prNumber, prNumber),
+        inArray(approvedImages.imageId, [...new Set(imageIds)]),
+      ),
+    )
+    .orderBy(asc(approvedImages._creationTime), asc(approvedImages._id));
+  for (const row of rows) {
+    if (!found.has(row.imageId)) {
+      found.set(row.imageId, row);
+    }
+  }
+  return found;
 }
 
-async function recordApproval(
+async function recordReviews(
   ctx: MutationCtx,
   build: Doc<"builds">,
-  snapshotId: Id<"snapshots">,
-  imageId: Id<"images">,
+  rows: {
+    snapshotId: Id<"snapshots">;
+    snapshot: { reviewState: string; imageId?: Id<"images"> | null };
+    carriedApproval: Doc<"approvedImages"> | null;
+  }[],
 ) {
-  const { _id: reviewId } = one(
-    await ctx.db
-      .insert(reviews)
-      .values({
+  const carried = rows.flatMap(({ snapshotId, carriedApproval }) =>
+    carriedApproval === null
+      ? []
+      : [
+          {
+            snapshotId,
+            buildId: build._id,
+            action: "approve" as const,
+            source: "carry_over" as const,
+            sourceReviewId: carriedApproval.reviewId,
+          },
+        ],
+  );
+  if (carried.length > 0) {
+    await ctx.db.insert(reviews).values(carried);
+  }
+  const approved = rows.flatMap(({ snapshotId, snapshot, carriedApproval }) =>
+    carriedApproval === null &&
+    snapshot.reviewState === "approved" &&
+    snapshot.imageId
+      ? [{ snapshotId, imageId: snapshot.imageId }]
+      : [],
+  );
+  if (approved.length === 0) {
+    return;
+  }
+  const reviewIds = await ctx.db
+    .insert(reviews)
+    .values(
+      approved.map(({ snapshotId }) => ({
         snapshotId,
         buildId: build._id,
-        action: "approve",
-        source: build.baselineBuildId === null ? "orphan" : "auto_branch",
-      })
-      .returning({ _id: reviews._id }),
+        action: "approve" as const,
+        source:
+          build.baselineBuildId === null
+            ? ("orphan" as const)
+            : ("auto_branch" as const),
+      })),
+    )
+    .returning({ _id: reviews._id, snapshotId: reviews.snapshotId });
+  if (build.prNumber === null) {
+    return;
+  }
+  const imageIds = new Map(
+    approved.map(({ snapshotId, imageId }) => [snapshotId, imageId]),
   );
-  if (build.prNumber !== null) {
-    await ctx.db.insert(approvedImages).values({
+  await ctx.db.insert(approvedImages).values(
+    reviewIds.map(({ _id, snapshotId }) => ({
       projectId: build.projectId,
       buildName: build.buildName,
-      prNumber: build.prNumber,
-      imageId,
-      reviewId,
-    });
-  }
+      prNumber: build.prNumber as number,
+      imageId: imageIds.get(snapshotId) as Id<"images">,
+      reviewId: _id,
+    })),
+  );
 }
 
 export const completeShard = internalMutation({
@@ -928,24 +1053,29 @@ export const finalize = internalMutation({
             .limit(limit)
             .offset(offset),
       );
-      for (const baseline of page.page) {
-        if (
-          baseline.diffStatus === "removed" ||
-          (await findSnapshot(ctx, buildId, baseline.name)) !== null
-        ) {
-          continue;
-        }
-        await ctx.db.insert(snapshots).values({
-          buildId,
-          shardIndex: 0,
-          name: baseline.name,
-          baselineSnapshotId: baseline._id,
-          baselineImageId: baseline.imageId,
-          diffStatus: "removed",
-          reviewState: "none",
-          metadata: baseline.metadata,
-        });
-        counts.removed++;
+      const current = await findSnapshots(
+        ctx,
+        buildId,
+        page.page.map((baseline) => baseline.name),
+      );
+      const removed = page.page.filter(
+        (baseline) =>
+          baseline.diffStatus !== "removed" && !current.has(baseline.name),
+      );
+      if (removed.length > 0) {
+        await ctx.db.insert(snapshots).values(
+          removed.map((baseline) => ({
+            buildId,
+            shardIndex: 0,
+            name: baseline.name,
+            baselineSnapshotId: baseline._id,
+            baselineImageId: baseline.imageId,
+            diffStatus: "removed" as const,
+            reviewState: "none" as const,
+            metadata: baseline.metadata,
+          })),
+        );
+        counts.removed += removed.length;
       }
       if (!page.isDone) {
         await ctx.db

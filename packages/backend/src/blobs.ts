@@ -1,8 +1,8 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { internal } from "./api.ts";
 import type { Doc, Id } from "./dataModel.ts";
-import { first, one } from "./db/index.ts";
+import { first } from "./db/index.ts";
 import { imageStore } from "./lib/imageStore.ts";
 import { blobImageUrl, blobUploadUrl, verifyStored } from "./lib/imageUrls.ts";
 import {
@@ -39,10 +39,12 @@ export const createUploadTargets = internalMutation({
   },
   handler: async (ctx, { accountId, storageBlocked, hashes }) => {
     const targets = [];
+    const staleImageIds = [];
     const now = Date.now();
+    const existing = await findImages(ctx, accountId, hashes);
     for (const hash of new Set(hashes)) {
-      const image = await findImage(ctx, accountId, hash);
-      if (image === null) {
+      const image = existing.get(hash);
+      if (image === undefined) {
         if (storageBlocked) {
           continue;
         }
@@ -55,29 +57,44 @@ export const createUploadTargets = internalMutation({
           ),
         });
       } else if (now - image.lastReferencedAt > TOUCH_AFTER_MS) {
-        await ctx.db
-          .update(images)
-          .set({ lastReferencedAt: now })
-          .where(eq(images._id, image._id));
+        staleImageIds.push(image._id);
       }
+    }
+    if (staleImageIds.length > 0) {
+      await ctx.db
+        .update(images)
+        .set({ lastReferencedAt: now })
+        .where(inArray(images._id, staleImageIds));
     }
     return targets;
   },
 });
 
-export async function findImage(
+export async function findImages(
   ctx: QueryCtx,
   accountId: Id<"accounts">,
-  hash: string,
-): Promise<Doc<"images"> | null> {
-  return first(
-    await ctx.db
-      .select()
-      .from(images)
-      .where(and(eq(images.accountId, accountId), eq(images.hash, hash)))
-      .orderBy(asc(images._creationTime), asc(images._id))
-      .limit(1),
-  );
+  hashes: string[],
+): Promise<Map<string, Doc<"images">>> {
+  const found = new Map<string, Doc<"images">>();
+  if (hashes.length === 0) {
+    return found;
+  }
+  const rows = await ctx.db
+    .select()
+    .from(images)
+    .where(
+      and(
+        eq(images.accountId, accountId),
+        inArray(images.hash, [...new Set(hashes)]),
+      ),
+    )
+    .orderBy(asc(images._creationTime), asc(images._id));
+  for (const row of rows) {
+    if (!found.has(row.hash)) {
+      found.set(row.hash, row);
+    }
+  }
+  return found;
 }
 
 export type Upload = {
@@ -88,16 +105,36 @@ export type Upload = {
   height: number;
 };
 
-export async function confirmUpload(
+export async function confirmUploadedImages(
   ctx: MutationCtx,
   accountId: Id<"accounts">,
-  upload: Upload,
-): Promise<Doc<"images"> | null> {
-  const receipt = BLOB_RECEIPT.exec(upload.storageId);
-  if (receipt === null) {
-    return null;
+  uploads: Upload[],
+): Promise<{ hash: string; confirmed: boolean }[]> {
+  const existing = await findImages(
+    ctx,
+    accountId,
+    uploads.map((upload) => upload.hash.toLowerCase()),
+  );
+  const results = [];
+  const inserts: (typeof images.$inferInsert)[] = [];
+  for (const upload of uploads) {
+    const receipt = BLOB_RECEIPT.exec(upload.storageId);
+    const confirmed =
+      receipt !== null &&
+      (await confirmBlobUpload(
+        ctx,
+        accountId,
+        upload,
+        receipt,
+        existing,
+        inserts,
+      ));
+    results.push({ hash: upload.hash, confirmed });
   }
-  return confirmBlobUpload(ctx, accountId, upload, receipt);
+  if (inserts.length > 0) {
+    await insertImages(ctx, accountId, inserts);
+  }
+  return results;
 }
 
 async function confirmBlobUpload(
@@ -105,12 +142,14 @@ async function confirmBlobUpload(
   accountId: Id<"accounts">,
   upload: Upload,
   [, uploadId, bytesText, sig]: RegExpExecArray,
-): Promise<Doc<"images"> | null> {
+  existing: Map<string, { blobKey: string }>,
+  inserts: (typeof images.$inferInsert)[],
+): Promise<boolean> {
   const blobKey = `${accountId}/${uploadId}`;
   const hash = upload.hash.toLowerCase();
   const bytes = Number(bytesText);
   if (!(await verifyStored(blobKey, hash, bytes, sig ?? ""))) {
-    return null;
+    return false;
   }
   if (
     bytes > MAX_IMAGE_BYTES ||
@@ -118,41 +157,38 @@ async function confirmBlobUpload(
     upload.height > MAX_IMAGE_HEIGHT
   ) {
     await scheduleBlobDelete(ctx, blobKey);
-    return null;
+    return false;
   }
 
-  const existing = await findImage(ctx, accountId, hash);
-  if (existing !== null) {
-    if (existing.blobKey !== blobKey) {
+  const image = existing.get(hash);
+  if (image !== undefined) {
+    if (image.blobKey !== blobKey) {
       await scheduleBlobDelete(ctx, blobKey);
     }
-    return existing;
+    return true;
   }
-  return insertImage(ctx, accountId, upload, blobKey, bytes);
+  const insert = {
+    accountId,
+    hash,
+    kind: upload.kind,
+    bytes,
+    width: upload.width,
+    height: upload.height,
+    blobKey,
+    lastReferencedAt: Date.now(),
+  };
+  existing.set(hash, insert);
+  inserts.push(insert);
+  return true;
 }
 
-async function insertImage(
+async function insertImages(
   ctx: MutationCtx,
   accountId: Id<"accounts">,
-  upload: Upload,
-  blobKey: string,
-  bytes: number,
-): Promise<Doc<"images"> | null> {
-  const image = one(
-    await ctx.db
-      .insert(images)
-      .values({
-        accountId,
-        hash: upload.hash.toLowerCase(),
-        kind: upload.kind,
-        bytes,
-        width: upload.width,
-        height: upload.height,
-        blobKey,
-        lastReferencedAt: Date.now(),
-      })
-      .returning(),
-  );
+  inserts: (typeof images.$inferInsert)[],
+) {
+  await ctx.db.insert(images).values(inserts);
+  const bytes = inserts.reduce((total, image) => total + image.bytes, 0);
   await rateLimiter.limit(ctx, "uploadedBytes", {
     key: accountId,
     count: bytes,
@@ -167,7 +203,6 @@ async function insertImage(
       .set(withStorageBytes(account, account.storageBytes + bytes, Date.now()))
       .where(eq(accounts._id, accountId));
   }
-  return image;
 }
 
 export async function getUrl(
