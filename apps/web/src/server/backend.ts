@@ -95,7 +95,11 @@ export async function currentUserId(request: Request): Promise<string | null> {
 
 export async function handleBackendHttp(request: Request) {
   withBackend(request.url);
-  return (
-    (await handleHttp(request)) ?? new Response("Not found", { status: 404 })
+  const startedAt = performance.now();
+  const response =
+    (await handleHttp(request)) ?? new Response("Not found", { status: 404 });
+  console.log(
+    `${request.method} ${new URL(request.url).pathname} ${response.status} ${Math.round(performance.now() - startedAt)}ms`,
   );
+  return response;
 }

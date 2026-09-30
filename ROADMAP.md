@@ -4,7 +4,7 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 
 ## Faster updates
 
-- Find why the `storybook` upload step still takes about 6 seconds while `playground` takes about 3, after batching the upload queries. Log route and duration per request and look at the finalize job start and cold starts.
+- Read the per-request durations in the function logs after a CI run, and find what is left of the 3.5 second upload with no new images. Look at cold starts and the job worker kick inside requests.
 - Poll faster while a build is pending or a review is open, and slower on idle pages. Pages refresh every 5 seconds today.
 - Batch the queries of one page into one `/api/rpc` request.
 
