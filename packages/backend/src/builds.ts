@@ -1018,10 +1018,7 @@ export const completeShard = internalMutation({
       build.shardsTotal !== null &&
       doneShardIndexes.length >= build.shardsTotal
     ) {
-      await ctx.scheduler.runAfter(0, internal.builds.finalize, {
-        buildId,
-        cursor: null,
-      });
+      await finalize.handler(ctx, { buildId, cursor: null });
     }
     return null;
   },
@@ -1165,10 +1162,7 @@ export const requestFinalize = internalMutation({
   args: { buildId: z.string() },
   handler: async (ctx, { buildId }) => {
     await getPendingBuild(ctx, buildId);
-    await ctx.scheduler.runAfter(0, internal.builds.finalize, {
-      buildId,
-      cursor: null,
-    });
+    await finalize.handler(ctx, { buildId, cursor: null });
     return null;
   },
 });
