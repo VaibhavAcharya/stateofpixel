@@ -1,5 +1,5 @@
 import { imageStore } from "@stateofpixel/backend/imageStore";
-import { MAX_BLOB_IMAGE_BYTES } from "@stateofpixel/backend/limits";
+import { MAX_IMAGE_BYTES } from "@stateofpixel/backend/limits";
 import { messages, sign } from "@stateofpixel/backend/signing";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -27,8 +27,12 @@ export const Route = createFileRoute("/api/v1/uploads/$accountId/$uploadId")({
           );
         }
         const bytes = await request.arrayBuffer();
-        if (bytes.byteLength > MAX_BLOB_IMAGE_BYTES) {
-          return errorResponse(413, "image_too_large", "Image is too large.");
+        if (bytes.byteLength > MAX_IMAGE_BYTES) {
+          return errorResponse(
+            413,
+            "image_too_large",
+            `Image is over ${MAX_IMAGE_BYTES / 1024 / 1024} MB.`,
+          );
         }
         if ((await sha256(bytes)) !== hash) {
           return errorResponse(

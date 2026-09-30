@@ -40,7 +40,7 @@ The build waits until every shard has uploaded. With `(2 of 4 shards)` in the de
 
 ## Snapshots failed
 
-- **An image is too big.** Images over {facts.blobImageSize} or {facts.imageDimensions} are rejected, their snapshots fail and `upload` exits 1 with "uploads failed" and the reason for each, such as "HTTP 413, Image is too large." Take a smaller screenshot or split a long page.
+- **An image is too big.** Images over {facts.imageSize} or {facts.imageDimensions} are rejected, their snapshots fail and `upload` exits 1 with "uploads failed" and the reason for each, such as "HTTP 413, Image is over {facts.imageSize}." Take a smaller screenshot or split a long page.
 - **A file is not a PNG.** A file that ends in `.png` without being a PNG stops the upload with "Not a PNG file".
 - **A name appears twice.** Two files with the same snapshot name in one build are refused with "appears more than once", or "was already sent by shard" across shards. Two Playwright projects with the same browser and width write the same file, so the second one wins. Give the snapshots different names.
 
@@ -52,6 +52,15 @@ See [Stable screenshots](/docs/stable-screenshots). The snapshot detail says "Lo
 
 - **Too many requests.** The CLI prints "skipped, Too many requests for this token." or a daily limit message and exits 0. See [Limits and storage](/docs/limits#limits) for the numbers.
 - **"Storage limit reached, not compared".** The account is past its storage limit and the grace period. New images are not stored, so changes are not compared. Upgrade, lower retention or delete a project. See [When an account is over its limit](/docs/limits#when-an-account-is-over-its-limit).
+
+## Could not connect GitHub
+
+- **"Your GitHub connection expired."** GitHub stopped accepting the connection, for example after you revoked the app's access or the refresh token expired. Connect GitHub again.
+- **"This GitHub account is connected to another stateofpixel user."** You signed in another way before and connected this GitHub account there. Sign out, sign in the way you used before, or write to [hello@stateofpixel.com](mailto:hello@stateofpixel.com) to move the connection.
+
+## The CLI cannot reach the API
+
+Use stateofpixel 1.7.0 or newer. Older versions send builds to a previous API address that stays available for a while and then goes away. See [CLI](/docs/cli).
 
 ## Test the upload without sending anything
 

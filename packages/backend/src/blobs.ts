@@ -6,7 +6,7 @@ import { first, one } from "./db/index.ts";
 import { imageStore } from "./lib/imageStore.ts";
 import { blobImageUrl, blobUploadUrl, verifyStored } from "./lib/imageUrls.ts";
 import {
-  MAX_BLOB_IMAGE_BYTES,
+  MAX_IMAGE_BYTES,
   MAX_IMAGE_HEIGHT,
   MAX_IMAGE_WIDTH,
 } from "./lib/limits.ts";
@@ -113,7 +113,7 @@ async function confirmBlobUpload(
     return null;
   }
   if (
-    bytes > MAX_BLOB_IMAGE_BYTES ||
+    bytes > MAX_IMAGE_BYTES ||
     upload.width > MAX_IMAGE_WIDTH ||
     upload.height > MAX_IMAGE_HEIGHT
   ) {
