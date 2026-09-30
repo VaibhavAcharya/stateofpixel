@@ -7,8 +7,23 @@
   [headers.values]
     Content-Type = "text/markdown; charset=utf-8"
 
-[functions]
-  node_bundler = "esbuild"
+[functions."jobs-tick"]
+  schedule = "* * * * *"
+
+[functions."sync-checks"]
+  schedule = "*/5 * * * *"
+
+[functions."delete-old-builds"]
+  schedule = "30 3 * * *"
+
+[functions."collect-images"]
+  schedule = "0 4 * * *"
+
+[functions."cleanup-events"]
+  schedule = "30 4 * * *"
+
+[functions."count-usage"]
+  schedule = "0 5 * * *"
 
 [db.migrations]
   path = "netlify/database/migrations"

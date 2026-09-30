@@ -7,3 +7,6 @@ test-results
 
 # Storybook
 storybook-static
+
+# Bundled Netlify Functions, built from functions/
+netlify/functions
