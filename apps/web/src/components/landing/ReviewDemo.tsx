@@ -107,7 +107,7 @@ function DemoRun({ onReset }: { onReset: () => void }) {
         >
           <section
             aria-label="Interactive review demo"
-            className="relative flex h-[720px] flex-col overflow-hidden rounded-lg bg-surface text-left shadow-[0_8px_32px_#11151a18,0_1px_4px_#11151a0a] ring-1 ring-border max-md:h-[560px]"
+            className="relative flex h-[720px] flex-col overflow-hidden rounded-lg bg-surface text-left shadow-[0_8px_32px_#11151a18,0_1px_4px_#11151a0a] ring-1 ring-border"
           >
             <BuildPage
               build={build}
