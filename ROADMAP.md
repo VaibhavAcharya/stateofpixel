@@ -40,6 +40,4 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 
 ## Clean up after the move
 
-- Remove the forwarding proxy for the old API host once CI runs use CLI 1.7 or newer.
-- Remove the one-off data import script in `packages/backend/scripts` after the import.
 - Add upgrade notes to the CLI 1.7.0 release: the new default API address and the 4 MB image limit.
