@@ -7,6 +7,9 @@
   [headers.values]
     Content-Type = "text/markdown; charset=utf-8"
 
+[functions]
+  directory = "netlify/functions"
+
 [functions."jobs-tick"]
   schedule = "* * * * *"
 
