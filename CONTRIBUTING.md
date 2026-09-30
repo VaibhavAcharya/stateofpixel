@@ -60,7 +60,7 @@ pnpm test
 pnpm build
 ```
 
-Biome formats and lints; `pnpm format` fixes formatting. Backend tests start a local Postgres from `@netlify/database-dev` and apply the migrations, so they need no setup.
+Biome formats and lints; `pnpm format` fixes formatting. Backend tests run the migrations on an in-process Postgres ([PGlite](https://pglite.dev)), so they need no setup.
 
 After changing `packages/backend/src/schema.ts`, run `pnpm --filter @stateofpixel/backend db:generate --name <change>` to write a migration to `apps/web/netlify/database/migrations`. Netlify applies new migrations before it publishes a deploy. `typecheck` in `apps/web` reads the types from `packages/cli/dist`, so build the CLI first on a fresh checkout.
 

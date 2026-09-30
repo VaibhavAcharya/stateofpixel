@@ -1,9 +1,11 @@
-import { NetlifyDB } from "@netlify/database-dev";
+import { PGlite } from "@electric-sql/pglite";
+import { applyMigrations } from "@netlify/database-dev";
 import { sql } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/pglite";
 import { afterAll, beforeAll, beforeEach } from "vitest";
 import "../api.ts";
-import pg from "pg";
 import { type Database, useDatabase } from "../db/index.ts";
+import * as schema from "../schema.ts";
 import { TEST_CONNECTION_SECRET } from "./fixtures.ts";
 
 const MIGRATIONS = new URL(
@@ -11,19 +13,17 @@ const MIGRATIONS = new URL(
   import.meta.url,
 ).pathname;
 
-let server: NetlifyDB;
-let pool: pg.Pool;
+let client: PGlite;
 let db: Database;
 let tables: string;
 
 beforeAll(async () => {
   process.env.CONNECTION_SECRET = TEST_CONNECTION_SECRET;
-  server = new NetlifyDB();
-  const connectionString = await server.start();
-  await server.applyMigrations(MIGRATIONS);
-  pool = new pg.Pool({ connectionString });
-  db = useDatabase(pool);
-  const { rows } = await server.query<{ tablename: string }>(
+  client = new PGlite();
+  await applyMigrations(client, MIGRATIONS);
+  db = drizzle({ client, schema, casing: "snake_case" }) as unknown as Database;
+  useDatabase(db);
+  const { rows } = await client.query<{ tablename: string }>(
     "select tablename from pg_tables where schemaname = 'public'",
   );
   tables = rows.map(({ tablename }) => `"${tablename}"`).join(", ");
@@ -34,6 +34,5 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await pool.end();
-  await server.stop();
+  await client.close();
 });
