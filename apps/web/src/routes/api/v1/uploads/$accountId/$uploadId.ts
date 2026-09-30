@@ -1,10 +1,10 @@
+import { imageStore } from "@stateofpixel/backend/imageStore";
 import { MAX_BLOB_IMAGE_BYTES } from "@stateofpixel/backend/limits";
 import { messages, sign } from "@stateofpixel/backend/signing";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   errorResponse,
   imageSecret,
-  imageStore,
   verifyUntil,
 } from "../../../../../lib/imageStore";
 
@@ -45,21 +45,6 @@ export const Route = createFileRoute("/api/v1/uploads/$accountId/$uploadId")({
         return Response.json({
           storageId: `blob.${params.uploadId}.${bytes.byteLength}.${stored}`,
         });
-      },
-      DELETE: async ({ request, params }) => {
-        const url = new URL(request.url);
-        const blobKey = `${params.accountId}/${params.uploadId}`;
-        const exp = Number(url.searchParams.get("exp"));
-        const sig = url.searchParams.get("sig") ?? "";
-        if (!(await verifyUntil(messages.delete(blobKey, exp), exp, sig))) {
-          return errorResponse(
-            403,
-            "forbidden",
-            "Delete link is invalid or expired.",
-          );
-        }
-        await imageStore().delete(blobKey);
-        return new Response(null, { status: 204 });
       },
     },
   },

@@ -1,9 +1,7 @@
-import { api } from "@stateofpixel/backend/api";
-import type { Id } from "@stateofpixel/backend/dataModel";
-import { useMutation } from "convex/react";
 import { useEffect, useSyncExternalStore } from "react";
+import { api, useMutation } from "./backend";
 
-const PRIVATE_IMAGE = /\/images\/([^/?]+)\/[^/?]+(?:\?|$)/;
+const PRIVATE_IMAGE = /\/api\/images\/([^/?]+)\/[^/?]+(?:\?|$)/;
 const REFRESH_BEFORE_MS = 30 * 60 * 1000;
 
 type Grant = { exp: number; sig: string };
@@ -53,7 +51,7 @@ export function useImageUrl(url: string | undefined): string | undefined {
         return;
       }
       requested.add(projectId);
-      requestGrant({ projectId: projectId as Id<"projects"> })
+      requestGrant({ projectId })
         .then((next) => {
           grants.set(projectId, next);
           notify();

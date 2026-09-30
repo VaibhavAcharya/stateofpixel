@@ -1,11 +1,10 @@
-import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import { AccountLayout } from "../../../components/AccountLayout";
 import { AppHeader } from "../../../components/AppHeader";
 import { PlanBox } from "../../../components/PlanBox";
 import { RequireAuth } from "../../../components/RequireAuth";
 import { Skeleton } from "../../../components/ui";
+import { api, useQuery } from "../../../lib/backend";
 import { prefetchAccount } from "../../../lib/prefetch";
 
 export const Route = createFileRoute("/$owner/settings/billing")({
@@ -19,7 +18,7 @@ export const Route = createFileRoute("/$owner/settings/billing")({
     status: typeof search.status === "string" ? search.status : undefined,
   }),
   loader: ({ context, params }) =>
-    prefetchAccount(context.convex, params.owner),
+    prefetchAccount(context.queryClient, params.owner),
   component: BillingPage,
 });
 

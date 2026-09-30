@@ -133,12 +133,12 @@ function DemoRun({ onReset }: { onReset: () => void }) {
 function CheckRun({ build, onReset }: { build: Build; onReset: () => void }) {
   const { state, description } = toStatus({
     status: build.status,
-    conclusion: build.conclusion ?? undefined,
+    conclusion: build.conclusion,
     counts: build.counts,
-    shardsTotal: build.shards.total ?? undefined,
+    shardsTotal: build.shards.total,
     doneShardIndexes: [],
     storageBlocked: build.storageBlocked,
-    baselineBuildId: build.baseline === null ? undefined : build.buildId,
+    baselineBuildId: build.baseline === null ? null : build.buildId,
     autoApproved: build.autoApproved,
   });
   const tone =

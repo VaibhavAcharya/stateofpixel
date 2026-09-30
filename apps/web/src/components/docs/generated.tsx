@@ -83,7 +83,7 @@ const CHECK_CASES: [string, StatusBuild][] = [
     "First build of a suite",
     {
       ...reviewed,
-      baselineBuildId: undefined,
+      baselineBuildId: null,
       counts: { ...counts, added: 40, approved: 40 },
     },
   ],

@@ -24,5 +24,3 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
-        env:
-          VITE_CONVEX_URL: https://graceful-dogfish-423.convex.cloud

@@ -3,31 +3,38 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./api": "./convex/_generated/api.js",
-    "./checkStatus": "./convex/lib/checkStatus.ts",
-    "./conclude": "./convex/lib/conclude.ts",
-    "./dataModel": "./convex/_generated/dataModel.d.ts",
-    "./limits": "./convex/lib/limits.ts",
-    "./signing": "./convex/lib/signing.ts",
-    "./storage": "./convex/lib/storage.ts"
+    "./api": "./src/api.ts",
+    "./auth": "./src/auth.ts",
+    "./checkStatus": "./src/lib/checkStatus.ts",
+    "./conclude": "./src/lib/conclude.ts",
+    "./dataModel": "./src/dataModel.ts",
+    "./env": "./src/env.ts",
+    "./http": "./src/http.ts",
+    "./imageStore": "./src/lib/imageStore.ts",
+    "./limits": "./src/lib/limits.ts",
+    "./server": "./src/server.ts",
+    "./signing": "./src/lib/signing.ts",
+    "./storage": "./src/lib/storage.ts"
   },
   "scripts": {
-    "dev": "convex dev",
-    "typecheck": "tsc -p convex",
+    "db:generate": "drizzle-kit generate",
+    "typecheck": "tsc",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@auth/core": "^0.41.3",
-    "@convex-dev/auth": "^0.0.95",
-    "@convex-dev/rate-limiter": "^0.4.0",
-    "convex": "^1.46.0",
-    "convex-helpers": "0.1.124",
+    "@netlify/blobs": "^11.1.1",
+    "@netlify/database": "^2.0.1",
     "dodopayments": "^2.51.0",
-    "jose": "^6.2.12"
+    "drizzle-orm": "^0.45.3",
+    "jose": "^6.2.12",
+    "pg": "^8.23.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@edge-runtime/vm": "^5.0.0",
-    "convex-test": "^0.0.59",
+    "@electric-sql/pglite": "^0.3.16",
+    "@netlify/database-dev": "^1.0.1",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
     "vite": "^8.3.0"
   }
 }

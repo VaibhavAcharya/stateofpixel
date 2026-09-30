@@ -72,6 +72,7 @@ The [docs](https://stateofpixel.com/docs) cover the Playwright reporter, Storybo
 
 - [docs/DESIGN.md](docs/DESIGN.md): the design system of the web app
 - [CONTRIBUTING.md](CONTRIBUTING.md): development, environment variables, checks and pull requests
+- [ROADMAP.md](ROADMAP.md): planned improvements
 - [AGENTS.md](AGENTS.md): rules for coding agents working in this repo
 
 ## License

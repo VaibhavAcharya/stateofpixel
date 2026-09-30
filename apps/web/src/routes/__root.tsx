@@ -5,14 +5,12 @@ import {
   Outlet,
   Scripts,
 } from "@tanstack/react-router";
-import type { ConvexReactClient } from "convex/react";
 import type { ReactNode } from "react";
 import { UMAMI_BEFORE_SEND_SCRIPT } from "../lib/analytics";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
-  convex: ConvexReactClient;
 }>()({
   head: () => ({
     meta: [

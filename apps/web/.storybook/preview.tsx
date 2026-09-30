@@ -1,23 +1,20 @@
-import { useAuthActions } from "@convex-dev/auth/react";
 import type { Decorator, Preview } from "@storybook/react-vite";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createMemoryHistory,
   createRootRoute,
   createRouter,
   RouterContextProvider,
 } from "@tanstack/react-router";
-import { ConvexProviderWithAuth, type ConvexReactClient } from "convex/react";
-import { getFunctionName } from "convex/server";
-import { usePaginatedQuery, useQuery } from "convex-helpers/react/cache/hooks";
 import { useMemo } from "react";
-import { mocked, sb } from "storybook/test";
+import { mocked, sb, spyOn } from "storybook/test";
 import { accountAvatar } from "../src/components/ui";
+import { AuthContext, authActions } from "../src/lib/auth";
+import { queryKey } from "../src/lib/backend";
 import { avatar, STORY_NOW } from "../src/lib/storyFixtures";
 import { useBilling } from "../src/lib/useBilling";
 import "../src/styles.css";
 
-sb.mock(import("convex-helpers/react/cache/hooks"));
-sb.mock(import("@convex-dev/auth/react"));
 sb.mock("../src/lib/useBilling.ts");
 sb.mock("../src/components/ui.tsx", { spy: true });
 
@@ -38,25 +35,28 @@ const withRouter: Decorator = (Story, { parameters }) => {
   );
 };
 
-const client = {
-  setAuth: (_fetchToken: unknown, onChange: (authenticated: boolean) => void) =>
-    onChange(true),
-  clearAuth: () => {},
-  mutation: async () => null,
-  action: async () => null,
-} as unknown as ConvexReactClient;
-
-const fetchAccessToken = async () => null;
-
-const withConvex: Decorator = (Story, { parameters }) => {
+const withBackend: Decorator = (Story, { parameters }) => {
+  const queryClient = useMemo(() => {
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: {
+          queryKeyHashFn: (key) => String(key[1]),
+          staleTime: Number.POSITIVE_INFINITY,
+        },
+      },
+    });
+    for (const [name, value] of Object.entries(parameters.backend ?? {})) {
+      client.setQueryData(queryKey({ name }, {}), value);
+    }
+    return client;
+  }, [parameters.backend]);
   const auth = { isLoading: false, isAuthenticated: false, ...parameters.auth };
   return (
-    <ConvexProviderWithAuth
-      client={client}
-      useAuth={() => ({ ...auth, fetchAccessToken })}
-    >
-      <Story />
-    </ConvexProviderWithAuth>
+    <QueryClientProvider client={queryClient}>
+      <AuthContext.Provider value={auth}>
+        <Story />
+      </AuthContext.Provider>
+    </QueryClientProvider>
   );
 };
 
@@ -66,7 +66,7 @@ const withTheme: Decorator = (Story, { globals, parameters }) => {
 };
 
 const preview: Preview = {
-  decorators: [withConvex, withRouter, withTheme],
+  decorators: [withBackend, withRouter, withTheme],
   globalTypes: {
     theme: {
       description: "Color theme",
@@ -77,23 +77,15 @@ const preview: Preview = {
   beforeEach({ parameters }) {
     const now = Date.now;
     Date.now = () => STORY_NOW;
-    const queries = parameters.convex ?? {};
-    mocked(useQuery).mockImplementation(
-      (query, ..._args) => queries[getFunctionName(query)],
+    const fetch = window.fetch;
+    window.fetch = (input, init) =>
+      String(input) === "/api/rpc" ? new Promise(() => {}) : fetch(input, init);
+    const signIn = spyOn(authActions, "signIn").mockImplementation(
+      async () => {},
     );
-    mocked(usePaginatedQuery).mockImplementation(
-      (query, ..._args) =>
-        queries[getFunctionName(query)] ?? {
-          results: [],
-          status: "LoadingFirstPage",
-          isLoading: true,
-          loadMore: () => {},
-        },
+    const signOut = spyOn(authActions, "signOut").mockImplementation(
+      async () => {},
     );
-    mocked(useAuthActions).mockReturnValue({
-      signIn: async () => ({ signingIn: true }),
-      signOut: async () => {},
-    });
     mocked(accountAvatar).mockImplementation(avatar);
     mocked(useBilling).mockReturnValue({
       pending: false,
@@ -108,6 +100,9 @@ const preview: Preview = {
     });
     return () => {
       Date.now = now;
+      window.fetch = fetch;
+      signIn.mockRestore();
+      signOut.mockRestore();
     };
   },
 };

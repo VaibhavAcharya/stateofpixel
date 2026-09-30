@@ -5,14 +5,13 @@ import {
   WarningIcon,
   XIcon,
 } from "@phosphor-icons/react/ssr";
-import { api } from "@stateofpixel/backend/api";
 import {
   formatGigabytes,
   type StorageUsage,
 } from "@stateofpixel/backend/storage";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import type { ReactNode } from "react";
 import type { Subscription } from "../lib/accountAlert";
+import { api, useQuery } from "../lib/backend";
 import { formatDate } from "../lib/format";
 import {
   type BillingInterval,

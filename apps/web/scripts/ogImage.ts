@@ -198,8 +198,8 @@ export async function renderOgImage(page: OgPage): Promise<Buffer> {
 }
 
 const BACKEND_FACTS = [
-  "../../packages/backend/convex/lib/limits.ts",
-  "../../packages/backend/convex/lib/storage.ts",
+  "../../packages/backend/src/lib/limits.ts",
+  "../../packages/backend/src/lib/storage.ts",
 ];
 
 export function pageSources(path: string): string[] {

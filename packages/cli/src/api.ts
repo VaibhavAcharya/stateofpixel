@@ -1,5 +1,4 @@
-export const DEFAULT_API_URL =
-  "https://graceful-dogfish-423.convex.site/api/v1";
+export const DEFAULT_API_URL = "https://stateofpixel.com/api/v1";
 
 export class ApiError extends Error {
   constructor(

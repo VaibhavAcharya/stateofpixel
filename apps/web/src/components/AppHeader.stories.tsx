@@ -10,8 +10,8 @@ const meta = {
   component: AppHeader,
   parameters: {
     layout: "fullscreen",
-    convex: {
-      "me:accounts": [
+    backend: {
+      "me.accounts": [
         { login: "octocat", type: "user", installed: true, plan: "free" },
         { login: "acme", type: "org", installed: true, plan: "100gb" },
         {
@@ -21,8 +21,8 @@ const meta = {
           plan: "25gb",
         },
       ],
-      "me:installUrl": "https://github.com/apps/stateofpixel/installations/new",
-      "users:viewer": {
+      "me.installUrl": "https://github.com/apps/stateofpixel/installations/new",
+      "users.viewer": {
         login: "octocat",
         name: "Mona Octocat",
         image: avatar("octocat"),

@@ -1,8 +1,7 @@
 import { LockSimpleIcon } from "@phosphor-icons/react/ssr";
-import type { api } from "@stateofpixel/backend/api";
 import { formatGigabytes } from "@stateofpixel/backend/storage";
 import { Link } from "@tanstack/react-router";
-import type { FunctionReturnType } from "convex/server";
+import type { api, FunctionReturnType } from "../lib/backend";
 import { formatBytes } from "../lib/format";
 import { columnHelper, DataTable } from "./DataTable";
 import { listRowLinkClass } from "./ui";

@@ -1,8 +1,5 @@
-import { api } from "@stateofpixel/backend/api";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useAction, useMutation } from "convex/react";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useEffect, useState } from "react";
 import { AppHeader } from "../../../components/AppHeader";
 import { CodeBlock } from "../../../components/CodeBlock";
@@ -17,6 +14,7 @@ import {
   RelativeTime,
   SkeletonRows,
 } from "../../../components/ui";
+import { api, useAction, useMutation, useQuery } from "../../../lib/backend";
 import { errorCode } from "../../../lib/errorCode";
 import { useProjectAccess } from "../../../lib/useProjectAccess";
 

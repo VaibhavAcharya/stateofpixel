@@ -16,7 +16,7 @@ export const Route = createFileRoute("/privacy")({
 
 function Privacy() {
   return (
-    <LegalPage title="Privacy policy" updated="September 28, 2026">
+    <LegalPage title="Privacy policy" updated="September 30, 2026">
       <p>
         This policy explains what data stateofpixel ("we", "us") collects when
         you use stateofpixel.com, the GitHub App and the stateofpixel CLI, and
@@ -24,17 +24,20 @@ function Privacy() {
       </p>
 
       <h2>What we collect</h2>
-      <p>When you sign in with GitHub:</p>
+      <p>When you sign in with GitHub or Google:</p>
       <ul>
         <li>
-          Your GitHub user ID, login, name, avatar URL and email address, if
-          GitHub shares them.
-        </li>
-        <li>
-          A GitHub access token, used to check which repositories you can read,
-          review or administer.
+          Your email address, name and avatar URL, if the provider shares them.
         </li>
         <li>The time you last used the app.</li>
+      </ul>
+      <p>When you connect your GitHub account:</p>
+      <ul>
+        <li>Your GitHub user ID and login.</li>
+        <li>
+          A GitHub access token, stored encrypted and used to check which
+          repositories you can read, review or administer.
+        </li>
       </ul>
       <p>When you install the GitHub App:</p>
       <ul>
@@ -109,11 +112,12 @@ function Privacy() {
       <p>We use these providers to run stateofpixel:</p>
       <ul>
         <li>GitHub, for sign-in, the GitHub App and commit statuses.</li>
-        <li>
-          Convex, for the database, file storage and the backend functions.
-        </li>
+        <li>Google, for sign-in.</li>
         <li>Dodo Payments, to take payments for paid plans.</li>
-        <li>Netlify, to host the website and store screenshots.</li>
+        <li>
+          Netlify, to host the website, run sign-in and the database, and store
+          screenshots.
+        </li>
         <li>Umami, for the analytics described above.</li>
       </ul>
       <p>These providers may process data in other countries.</p>

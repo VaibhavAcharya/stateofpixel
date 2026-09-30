@@ -1,8 +1,5 @@
 import { ArrowUpRightIcon } from "@phosphor-icons/react/ssr";
-import { api } from "@stateofpixel/backend/api";
 import { createFileRoute } from "@tanstack/react-router";
-import type { FunctionReturnType } from "convex/server";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import { AccountLayout } from "../../../components/AccountLayout";
 import { AppHeader } from "../../../components/AppHeader";
 import { columnHelper, DataTable } from "../../../components/DataTable";
@@ -13,11 +10,12 @@ import {
   RelativeTime,
   SkeletonRows,
 } from "../../../components/ui";
+import { api, type FunctionReturnType, useQuery } from "../../../lib/backend";
 import { prefetchAccount } from "../../../lib/prefetch";
 
 export const Route = createFileRoute("/$owner/settings/members")({
   loader: ({ context, params }) =>
-    prefetchAccount(context.convex, params.owner),
+    prefetchAccount(context.queryClient, params.owner),
   component: MembersPage,
 });
 

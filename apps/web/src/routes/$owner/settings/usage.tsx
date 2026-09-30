@@ -1,19 +1,18 @@
-import { api } from "@stateofpixel/backend/api";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useState } from "react";
 import { AccountLayout } from "../../../components/AccountLayout";
 import { AppHeader } from "../../../components/AppHeader";
 import { RequireAuth } from "../../../components/RequireAuth";
 import { USAGE_DAYS, UsageView } from "../../../components/Usage";
 import { EmptyState, Skeleton } from "../../../components/ui";
+import { api, useQuery } from "../../../lib/backend";
 import { prefetchAccount } from "../../../lib/prefetch";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const Route = createFileRoute("/$owner/settings/usage")({
   loader: ({ context, params }) =>
-    prefetchAccount(context.convex, params.owner),
+    prefetchAccount(context.queryClient, params.owner),
   component: UsagePage,
 });
 

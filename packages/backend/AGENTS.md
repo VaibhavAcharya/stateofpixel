@@ -1,13 +1,10 @@
-<!-- convex-ai-start -->
+# Backend
 
-This project uses [Convex](https://convex.dev) as its backend.
+`packages/backend/src` holds the backend that the web app runs: queries, mutations and actions in `src/*.ts`, the Postgres schema in `src/schema.ts` and the HTTP routes in `src/http.ts`.
 
-When working on Convex code, **always read
-`convex/_generated/ai/guidelines.md` first** for important guidelines on
-how to correctly use Convex APIs and patterns. The file contains rules that
-override what you may have learned about Convex from training data.
-
-Convex agent skills for common tasks can be installed by running
-`npx convex ai-files install`.
-
-<!-- convex-ai-end -->
+- Functions are defined with `query`, `mutation` and `action` (and their `internal*` versions) from `src/server.ts` and registered in `src/api.ts`. Public ones are callable from the browser through `/api/rpc`, so check permissions in every public function.
+- Mutations run in a serializable transaction that is retried on conflict. Actions call GitHub, Dodo or Blobs and use `ctx.runQuery` and `ctx.runMutation` for the database.
+- `ctx.scheduler` writes jobs to the `jobs` table in the same transaction. The `jobs-background` Netlify Function runs due jobs; scheduled functions in `apps/web/netlify/functions` enqueue the daily jobs.
+- The database is Netlify Database (Postgres), accessed with Drizzle. Optional columns are `null`, never `undefined`. Use `first` and `one` from `src/db` instead of non-null assertions.
+- Schema changes need a migration: `pnpm --filter @stateofpixel/backend db:generate --name <change>`.
+- Tests use `testBackend()` from `src/test/backend.ts` against a local Postgres.

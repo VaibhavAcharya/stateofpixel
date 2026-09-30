@@ -1,8 +1,10 @@
 import { LockSimpleIcon } from "@phosphor-icons/react/ssr";
-import { api } from "@stateofpixel/backend/api";
 import { Link } from "@tanstack/react-router";
-import type { FunctionReturnType } from "convex/server";
-import { usePaginatedQuery } from "convex-helpers/react/cache/hooks";
+import {
+  api,
+  type FunctionReturnType,
+  usePaginatedQuery,
+} from "../lib/backend";
 import {
   DEFAULT_ORDER,
   type ProjectSearch,

@@ -19,6 +19,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RefundsRouteImport } from './routes/refunds'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as OwnerIndexRouteImport } from './routes/$owner/index'
+import { Route as ApiRpcRouteImport } from './routes/api/rpc'
 import { Route as CompareIndexRouteImport } from './routes/compare/index'
 import { Route as CompareSlugRouteImport } from './routes/compare/$slug'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
@@ -26,10 +27,13 @@ import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner/$repo/index'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner/$repo/settings'
 import { Route as OwnerSettingsBillingRouteImport } from './routes/$owner/settings/billing'
-import { Route as OwnerSettingsGeneralRouteImport } from './routes/$owner/settings/general'
 import { Route as OwnerSettingsMembersRouteImport } from './routes/$owner/settings/members'
 import { Route as OwnerSettingsUsageRouteImport } from './routes/$owner/settings/usage'
+import { Route as ApiDodoWebhookRouteImport } from './routes/api/dodo/webhook'
+import { Route as ApiGithubCallbackRouteImport } from './routes/api/github/callback'
+import { Route as ApiGithubWebhookRouteImport } from './routes/api/github/webhook'
 import { Route as ApiImagesSplatRouteImport } from './routes/api/images/$'
+import { Route as ApiV1SplatRouteImport } from './routes/api/v1/$'
 import { Route as OwnerRepoBaselinesIndexRouteImport } from './routes/$owner/$repo/baselines/index'
 import { Route as OwnerRepoBaselinesSplatRouteImport } from './routes/$owner/$repo/baselines/$'
 import { Route as OwnerRepoBuildsNumberRouteImport } from './routes/$owner/$repo/builds/$number'
@@ -87,6 +91,11 @@ const OwnerIndexRoute = OwnerIndexRouteImport.update({
   path: '/$owner/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRpcRoute = ApiRpcRouteImport.update({
+  id: '/api/rpc',
+  path: '/api/rpc',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CompareIndexRoute = CompareIndexRouteImport.update({
   id: '/compare/',
   path: '/compare/',
@@ -122,11 +131,6 @@ const OwnerSettingsBillingRoute = OwnerSettingsBillingRouteImport.update({
   path: '/$owner/settings/billing',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OwnerSettingsGeneralRoute = OwnerSettingsGeneralRouteImport.update({
-  id: '/$owner/settings/general',
-  path: '/$owner/settings/general',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const OwnerSettingsMembersRoute = OwnerSettingsMembersRouteImport.update({
   id: '/$owner/settings/members',
   path: '/$owner/settings/members',
@@ -137,9 +141,29 @@ const OwnerSettingsUsageRoute = OwnerSettingsUsageRouteImport.update({
   path: '/$owner/settings/usage',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDodoWebhookRoute = ApiDodoWebhookRouteImport.update({
+  id: '/api/dodo/webhook',
+  path: '/api/dodo/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGithubCallbackRoute = ApiGithubCallbackRouteImport.update({
+  id: '/api/github/callback',
+  path: '/api/github/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGithubWebhookRoute = ApiGithubWebhookRouteImport.update({
+  id: '/api/github/webhook',
+  path: '/api/github/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiImagesSplatRoute = ApiImagesSplatRouteImport.update({
   id: '/api/images/$',
   path: '/api/images/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1SplatRoute = ApiV1SplatRouteImport.update({
+  id: '/api/v1/$',
+  path: '/api/v1/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OwnerRepoBaselinesIndexRoute = OwnerRepoBaselinesIndexRouteImport.update({
@@ -186,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
+  '/api/rpc': typeof ApiRpcRoute
   '/compare/$slug': typeof CompareSlugRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/$owner/': typeof OwnerIndexRoute
@@ -193,10 +218,13 @@ export interface FileRoutesByFullPath {
   '/docs/': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
-  '/$owner/settings/general': typeof OwnerSettingsGeneralRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/$owner/settings/usage': typeof OwnerSettingsUsageRoute
+  '/api/dodo/webhook': typeof ApiDodoWebhookRoute
+  '/api/github/callback': typeof ApiGithubCallbackRoute
+  '/api/github/webhook': typeof ApiGithubWebhookRoute
   '/api/images/$': typeof ApiImagesSplatRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
   '/$owner/$repo/baselines/$': typeof OwnerRepoBaselinesSplatRoute
   '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberRouteWithChildren
@@ -214,6 +242,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
+  '/api/rpc': typeof ApiRpcRoute
   '/compare/$slug': typeof CompareSlugRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/$owner': typeof OwnerIndexRoute
@@ -221,10 +250,13 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
-  '/$owner/settings/general': typeof OwnerSettingsGeneralRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/$owner/settings/usage': typeof OwnerSettingsUsageRoute
+  '/api/dodo/webhook': typeof ApiDodoWebhookRoute
+  '/api/github/callback': typeof ApiGithubCallbackRoute
+  '/api/github/webhook': typeof ApiGithubWebhookRoute
   '/api/images/$': typeof ApiImagesSplatRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
   '/$owner/$repo': typeof OwnerRepoIndexRoute
   '/$owner/$repo/baselines/$': typeof OwnerRepoBaselinesSplatRoute
   '/$owner/$repo/baselines': typeof OwnerRepoBaselinesIndexRoute
@@ -243,6 +275,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
+  '/api/rpc': typeof ApiRpcRoute
   '/compare/$slug': typeof CompareSlugRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/$owner/': typeof OwnerIndexRoute
@@ -250,10 +283,13 @@ export interface FileRoutesById {
   '/docs/': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
-  '/$owner/settings/general': typeof OwnerSettingsGeneralRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/$owner/settings/usage': typeof OwnerSettingsUsageRoute
+  '/api/dodo/webhook': typeof ApiDodoWebhookRoute
+  '/api/github/callback': typeof ApiGithubCallbackRoute
+  '/api/github/webhook': typeof ApiGithubWebhookRoute
   '/api/images/$': typeof ApiImagesSplatRoute
+  '/api/v1/$': typeof ApiV1SplatRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
   '/$owner/$repo/baselines/$': typeof OwnerRepoBaselinesSplatRoute
   '/$owner/$repo/builds/$number': typeof OwnerRepoBuildsNumberRouteWithChildren
@@ -274,6 +310,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refunds'
     | '/terms'
+    | '/api/rpc'
     | '/compare/$slug'
     | '/docs/$slug'
     | '/$owner/'
@@ -281,10 +318,13 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
-    | '/$owner/settings/general'
     | '/$owner/settings/members'
     | '/$owner/settings/usage'
+    | '/api/dodo/webhook'
+    | '/api/github/callback'
+    | '/api/github/webhook'
     | '/api/images/$'
+    | '/api/v1/$'
     | '/$owner/$repo/'
     | '/$owner/$repo/baselines/$'
     | '/$owner/$repo/builds/$number'
@@ -302,6 +342,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refunds'
     | '/terms'
+    | '/api/rpc'
     | '/compare/$slug'
     | '/docs/$slug'
     | '/$owner'
@@ -309,10 +350,13 @@ export interface FileRouteTypes {
     | '/docs'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
-    | '/$owner/settings/general'
     | '/$owner/settings/members'
     | '/$owner/settings/usage'
+    | '/api/dodo/webhook'
+    | '/api/github/callback'
+    | '/api/github/webhook'
     | '/api/images/$'
+    | '/api/v1/$'
     | '/$owner/$repo'
     | '/$owner/$repo/baselines/$'
     | '/$owner/$repo/baselines'
@@ -330,6 +374,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refunds'
     | '/terms'
+    | '/api/rpc'
     | '/compare/$slug'
     | '/docs/$slug'
     | '/$owner/'
@@ -337,10 +382,13 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
-    | '/$owner/settings/general'
     | '/$owner/settings/members'
     | '/$owner/settings/usage'
+    | '/api/dodo/webhook'
+    | '/api/github/callback'
+    | '/api/github/webhook'
     | '/api/images/$'
+    | '/api/v1/$'
     | '/$owner/$repo/'
     | '/$owner/$repo/baselines/$'
     | '/$owner/$repo/builds/$number'
@@ -360,15 +408,19 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   RefundsRoute: typeof RefundsRoute
   TermsRoute: typeof TermsRoute
+  ApiRpcRoute: typeof ApiRpcRoute
   CompareSlugRoute: typeof CompareSlugRoute
   OwnerIndexRoute: typeof OwnerIndexRoute
   CompareIndexRoute: typeof CompareIndexRoute
   OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRoute
   OwnerSettingsBillingRoute: typeof OwnerSettingsBillingRoute
-  OwnerSettingsGeneralRoute: typeof OwnerSettingsGeneralRoute
   OwnerSettingsMembersRoute: typeof OwnerSettingsMembersRoute
   OwnerSettingsUsageRoute: typeof OwnerSettingsUsageRoute
+  ApiDodoWebhookRoute: typeof ApiDodoWebhookRoute
+  ApiGithubCallbackRoute: typeof ApiGithubCallbackRoute
+  ApiGithubWebhookRoute: typeof ApiGithubWebhookRoute
   ApiImagesSplatRoute: typeof ApiImagesSplatRoute
+  ApiV1SplatRoute: typeof ApiV1SplatRoute
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
   OwnerRepoBaselinesSplatRoute: typeof OwnerRepoBaselinesSplatRoute
   OwnerRepoBuildsNumberRoute: typeof OwnerRepoBuildsNumberRouteWithChildren
@@ -448,6 +500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/rpc': {
+      id: '/api/rpc'
+      path: '/api/rpc'
+      fullPath: '/api/rpc'
+      preLoaderRoute: typeof ApiRpcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/compare/': {
       id: '/compare/'
       path: '/compare'
@@ -497,13 +556,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerSettingsBillingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/$owner/settings/general': {
-      id: '/$owner/settings/general'
-      path: '/$owner/settings/general'
-      fullPath: '/$owner/settings/general'
-      preLoaderRoute: typeof OwnerSettingsGeneralRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/$owner/settings/members': {
       id: '/$owner/settings/members'
       path: '/$owner/settings/members'
@@ -518,11 +570,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerSettingsUsageRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/dodo/webhook': {
+      id: '/api/dodo/webhook'
+      path: '/api/dodo/webhook'
+      fullPath: '/api/dodo/webhook'
+      preLoaderRoute: typeof ApiDodoWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/github/callback': {
+      id: '/api/github/callback'
+      path: '/api/github/callback'
+      fullPath: '/api/github/callback'
+      preLoaderRoute: typeof ApiGithubCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/github/webhook': {
+      id: '/api/github/webhook'
+      path: '/api/github/webhook'
+      fullPath: '/api/github/webhook'
+      preLoaderRoute: typeof ApiGithubWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/images/$': {
       id: '/api/images/$'
       path: '/api/images/$'
       fullPath: '/api/images/$'
       preLoaderRoute: typeof ApiImagesSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/$': {
+      id: '/api/v1/$'
+      path: '/api/v1/$'
+      fullPath: '/api/v1/$'
+      preLoaderRoute: typeof ApiV1SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$owner/$repo/baselines/': {
@@ -608,15 +688,19 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   RefundsRoute: RefundsRoute,
   TermsRoute: TermsRoute,
+  ApiRpcRoute: ApiRpcRoute,
   CompareSlugRoute: CompareSlugRoute,
   OwnerIndexRoute: OwnerIndexRoute,
   CompareIndexRoute: CompareIndexRoute,
   OwnerRepoSettingsRoute: OwnerRepoSettingsRoute,
   OwnerSettingsBillingRoute: OwnerSettingsBillingRoute,
-  OwnerSettingsGeneralRoute: OwnerSettingsGeneralRoute,
   OwnerSettingsMembersRoute: OwnerSettingsMembersRoute,
   OwnerSettingsUsageRoute: OwnerSettingsUsageRoute,
+  ApiDodoWebhookRoute: ApiDodoWebhookRoute,
+  ApiGithubCallbackRoute: ApiGithubCallbackRoute,
+  ApiGithubWebhookRoute: ApiGithubWebhookRoute,
   ApiImagesSplatRoute: ApiImagesSplatRoute,
+  ApiV1SplatRoute: ApiV1SplatRoute,
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,
   OwnerRepoBaselinesSplatRoute: OwnerRepoBaselinesSplatRoute,
   OwnerRepoBuildsNumberRoute: OwnerRepoBuildsNumberRouteWithChildren,

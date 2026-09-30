@@ -4,9 +4,8 @@ import {
   ImagesIcon,
   StackIcon,
 } from "@phosphor-icons/react/ssr";
-import { api } from "@stateofpixel/backend/api";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "convex-helpers/react/cache/hooks";
+import { api, useQuery } from "../lib/backend";
 import { AccountBanner } from "./AccountBanner";
 import { PageHeader } from "./Page";
 import { Tab, Tabs } from "./Tabs";

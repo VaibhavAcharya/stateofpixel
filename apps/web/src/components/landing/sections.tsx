@@ -7,9 +7,9 @@ import {
   TerminalWindowIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
-import { useConvexAuth } from "convex/react";
 import { type ReactNode, useState } from "react";
 import { COMPETITORS } from "../../content/compare";
+import { useAuth } from "../../lib/auth";
 import { SUPPORT_EMAIL } from "../../lib/supportEmail";
 import checkoutTest from "../../snippets/checkout-test.ts?highlight";
 import local from "../../snippets/local.sh?highlight";
@@ -69,7 +69,7 @@ export function HeaderNav() {
 }
 
 function HeaderActions() {
-  const { isLoading, isAuthenticated } = useConvexAuth();
+  const { isLoading, isAuthenticated } = useAuth();
   return (
     <div className="ml-auto flex items-center gap-2">
       {!isLoading && !isAuthenticated && (
