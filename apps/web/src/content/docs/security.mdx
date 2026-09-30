@@ -14,16 +14,16 @@ A CI token can only create builds for its own project. It cannot sign in to the 
 
 ## Who can see and do what
 
-You sign in with GitHub or Google, then connect your GitHub account. Access comes from that GitHub account and there are no separate seats:
+You sign in with GitHub, then connect your GitHub account. Access comes from that GitHub account and there are no separate seats:
 
 - **Read** access to the repository opens its builds and baselines.
 - **Write** access approves and rejects changes.
 - **Admin** access opens the project settings, where tokens, retention and project deletion live.
 - **Owners** of the GitHub account or organization manage the plan and see usage.
 
-Builds of public repositories can be opened by anyone who signs in. Builds of private repositories show only to people who can read the repository on GitHub. See [how fast permission changes apply](/docs/review#who-can-review).
+Builds of public repositories can be opened by anyone who signs in and connects a GitHub account. Builds of private repositories show only to people who can read the repository on GitHub. See [how fast permission changes apply](/docs/review#who-can-review).
 
-The GitHub token from your connection is stored encrypted. It is used only to read your installations, your repository permissions and your role in an organization.
+Connecting GitHub stores a GitHub access token and the refresh token that renews it, both encrypted with AES-GCM. They are used only to read your GitHub user, your installations, your repository permissions and your role in an organization.
 
 ## Screenshots
 
@@ -35,7 +35,7 @@ Screenshots show whatever your pages render. Do not capture pages with data you 
 
 ## Webhooks
 
-GitHub webhooks are checked against their `X-Hub-Signature-256` signature and refused when it does not match.
+GitHub webhooks are checked against their `X-Hub-Signature-256` signature, and Dodo Payments webhooks against their `webhook-signature` header. Both are refused when the signature does not match.
 
 ## Deleting data
 

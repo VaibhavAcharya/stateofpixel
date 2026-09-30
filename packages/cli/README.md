@@ -15,7 +15,7 @@ The Free plan needs no card. Paid plans are priced by storage only. See [pricing
 
 ## GitHub Actions
 
-Install the GitHub App from [stateofpixel.com](https://stateofpixel.com), then add a step after the one that writes your screenshots:
+Sign in on [stateofpixel.com](https://stateofpixel.com), connect GitHub and install the GitHub App, then add a step after the one that writes your screenshots:
 
 ```yaml
 on:

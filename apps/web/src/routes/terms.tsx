@@ -15,7 +15,7 @@ export const Route = createFileRoute("/terms")({
 
 function Terms() {
   return (
-    <LegalPage title="Terms and conditions" updated="September 28, 2026">
+    <LegalPage title="Terms and conditions" updated="September 30, 2026">
       <p>
         These terms cover your use of stateofpixel.com, the stateofpixel GitHub
         App and the stateofpixel CLI (the "service"). stateofpixel ("we", "us")
@@ -78,7 +78,7 @@ function Terms() {
         We work to keep the service running, but we do not promise it will be
         available at all times or free of errors. We may change, add or remove
         features. If we shut the service down, we will tell you at least 30 days
-        before, so you can download your data.
+        before, so you can ask us for a copy of your data.
       </p>
 
       <h2>Ending your use</h2>

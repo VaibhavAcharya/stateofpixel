@@ -4,6 +4,12 @@ export const meta = {
   lead: "An account is the GitHub user or organization that installed the app. Each repository in the installation is a project.",
 };
 
+## Signing in
+
+Sign in with GitHub, then connect your GitHub account on the next screen. Signing in tells stateofpixel who you are. The connection lets it read your installations and repository permissions, so what you can see and review follows your access on GitHub. If you used stateofpixel before, connecting the same GitHub account brings back your projects, reviews and tokens.
+
+When GitHub stops accepting the connection, for example after you revoke the app's access, stateofpixel removes it and asks you to connect again. A GitHub account can be connected to one stateofpixel user only. See [Could not connect GitHub](/docs/troubleshooting#could-not-connect-github).
+
 ## All projects
 
 After you sign in, All projects lists the projects of every account you can see, grouped by account. Search filters them by name, and Overview opens the account page. An account shows "App not installed" when the GitHub App is not installed on it anymore. With no projects yet, the page has the button to install the app.
@@ -13,13 +19,13 @@ After you sign in, All projects lists the projects of every account you can see,
 The account page has four tabs:
 
 - **Projects**: every repository in the installation, with its latest build. Search by name, and sort by project or by last update. Press <kbd>j</kbd> and <kbd>k</kbd> to move between rows in the project and build lists, and Enter to open one.
-- **Members**: who has signed in to the account.
+- **Members**: who has connected GitHub and has access to the account.
 - **Usage**: storage per project, for owners only. See [The Usage tab](/docs/limits#the-usage-tab).
 - **Billing**: the plan and its buttons. See [Billing](/docs/billing).
 
 ## Members
 
-The Members tab lists everyone who has signed in to stateofpixel and has access to the account on GitHub, with their role and when they last signed in. Someone who never signed in is not listed.
+The Members tab lists everyone who has connected GitHub to stateofpixel and has access to the account on GitHub, with their role and when they were last active. Someone who never connected GitHub is not listed.
 
 Access comes from GitHub, so add or remove people there. In an organization, owners on GitHub are Owner and everyone else is Member. On a personal account, the account's user is Owner and everyone else is Collaborator. Owners change the plan and see usage. Repository permissions decide who can review builds and change project settings. See [Who can review](/docs/review#who-can-review).
 

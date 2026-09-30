@@ -24,7 +24,7 @@ function Privacy() {
       </p>
 
       <h2>What we collect</h2>
-      <p>When you sign in with GitHub or Google:</p>
+      <p>When you sign in with GitHub:</p>
       <ul>
         <li>
           Your email address, name and avatar URL, if the provider shares them.
@@ -35,8 +35,13 @@ function Privacy() {
       <ul>
         <li>Your GitHub user ID and login.</li>
         <li>
-          A GitHub access token, stored encrypted and used to check which
-          repositories you can read, review or administer.
+          A GitHub access token and the refresh token that renews it, stored
+          encrypted and used to check which repositories you can read, review or
+          administer.
+        </li>
+        <li>
+          Your permission on each repository and your role in each account, as
+          GitHub reports them, to decide what you can see and do.
         </li>
       </ul>
       <p>When you install the GitHub App:</p>
@@ -58,6 +63,7 @@ function Privacy() {
           request number and recent ancestor commits.
         </li>
         <li>The CI provider and the URL of the CI run.</li>
+        <li>Metadata your tests attach to snapshots in .meta.json files.</li>
       </ul>
       <p>When you buy a paid plan:</p>
       <ul>
@@ -81,8 +87,10 @@ function Privacy() {
 
       <h2>Cookies and browser storage</h2>
       <p>
-        The site stores your sign-in session and your theme choice in your
-        browser's local storage. We do not use advertising or tracking cookies.
+        Signing in sets two cookies, nf_jwt and nf_refresh, that keep you signed
+        in. The site also keeps your session, your theme choice and the page to
+        return to after sign-in in your browser's storage. We do not use
+        advertising or tracking cookies.
       </p>
 
       <h2>Analytics</h2>
@@ -146,15 +154,16 @@ function Privacy() {
       <p>
         You can ask for a copy of your data, a correction or its deletion by
         writing to <SupportEmail />. We will delete your user and account data
-        on request. You can also revoke the app's access at any time in your
-        GitHub settings.
+        on request, including your sign-in record. You can also revoke the app's
+        access at any time in your GitHub settings.
       </p>
 
       <h2>Security</h2>
       <p>
         Data moves over HTTPS. Project tokens are stored as hashes, so we cannot
-        show them again after you create them. Access to a project follows your
-        permissions on its GitHub repository.
+        show them again after you create them. GitHub tokens are stored
+        encrypted. Access to a project follows your permissions on its GitHub
+        repository.
       </p>
 
       <h2>Children</h2>

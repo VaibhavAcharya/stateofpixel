@@ -229,7 +229,7 @@ Compare (`/compare/{competitor}`): the public header and footer. Hero: our mark,
 
 Open Graph images: every public page and docs page gets a 1200x630 PNG at `/og/<path>.png`, rendered by `apps/web/scripts/ogImage.ts` with satori and resvg, at build time by `scripts/og-images.ts` and on request in dev, from the title and description in `src/lib/pageMeta.ts` and the docs meta. The card is `bg` with the wordmark and the page path in Lilex `muted` at the top, the title at 72px weight 600 with -0.045em tracking and the description at 30px `muted` at the bottom, and the pricing pixel texture on the right at 50% opacity, unsmoothed. Both use `textWrap: balance`. The landing card shows the title only. Compare cards replace the path with "vs" and the competitor logo, and use the page headline as the title. `visual/og.visual.ts` captures every card on the desktop project, so the `web` build reviews them.
 
-Sign-in (any signed-in page while signed out): centered 360px column, 32px logo, `text-xl` title, one `text-sm muted` line, and a full-width primary "Continue with GitHub" button. While auth loads, the page shows a skeleton of the 48px app header only.
+Sign-in (any signed-in page while signed out): centered 360px column, 32px logo, `text-xl` title, one `text-sm muted` line, and a full-width primary "Continue with GitHub" button, with a secondary "Continue with Google" button under it when Identity has Google enabled. While auth loads, the page shows a skeleton of the 48px app header only. Connect GitHub (signed in, no GitHub connection yet): the same column with a "Connect GitHub" title, one `text-sm muted` line and a full-width primary "Connect GitHub" button; an error shows under it on `failed-bg`.
 
 ## Accessibility
 

@@ -18,8 +18,9 @@
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",
-    "typecheck": "tsc",
-    "test": "vitest run --passWithNoTests"
+    "db:migrate": "node scripts/migrate-dev.ts",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc"
   },
   "dependencies": {
     "@netlify/blobs": "^11.1.1",

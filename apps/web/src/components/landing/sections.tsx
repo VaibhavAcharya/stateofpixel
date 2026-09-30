@@ -473,7 +473,7 @@ export function DottedRows({ items }: { items: [string, string][] }) {
 export const PROMISES: [string, string][] = [
   [
     "Your code stays in your CI.",
-    "The CLI sends PNGs, their names and hashes, diff results, and git and CI metadata.",
+    "The CLI sends PNGs, their names and hashes, diff results, snapshot metadata, and git and CI metadata.",
   ],
   [
     "Your pipeline never waits on us.",
@@ -567,11 +567,11 @@ export function SwitchStrip() {
 export const FAQ: [string, string][] = [
   [
     "What do you receive from my CI?",
-    "PNG files, snapshot names and their SHA-256 hashes, diff results from your runner, git metadata (commit, branch, base branch, pull request number, recent ancestor commits) and the CI run URL. We never receive source code, and we never run it.",
+    "PNG files, snapshot names and their SHA-256 hashes, diff results from your runner, metadata your tests attach to snapshots, git metadata (commit, commit message, branch, base branch, pull request number, recent ancestor commits) and the CI run URL. We never receive source code, and we never run it.",
   ],
   [
     "What GitHub permissions does the app ask for?",
-    "Commit statuses write, to set the check. Pull requests read and write, where read finds the PR number, base branch and squash merges, and write is not used. Contents read, which GitHub requires for the compare API we use to find the baseline commit. Metadata read, which every app has. The app also asks for Checks write and Actions read, which it does not use.",
+    "Commit statuses write, to set the check. Pull requests read and write, where read finds the PR number, base branch and squash merges, and write is not used. Contents read, which GitHub requires for the compare API we use to find the baseline commit. Metadata read, which every app has. Email addresses read, so you can sign in with GitHub. The app also asks for Checks write and Actions read, which it does not use.",
   ],
   [
     "Who can approve changes?",

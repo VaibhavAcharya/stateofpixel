@@ -7,4 +7,4 @@
 - `ctx.scheduler` writes jobs to the `jobs` table in the same transaction. The `jobs-background` Netlify Function runs due jobs; scheduled functions in `apps/web/functions` enqueue the daily jobs. The web build bundles them into `apps/web/netlify/functions`.
 - The database is Netlify Database (Postgres), accessed with Drizzle. Optional columns are `null`, never `undefined`. Use `first` and `one` from `src/db` instead of non-null assertions.
 - Schema changes need a migration: `pnpm --filter @stateofpixel/backend db:generate --name <change>`.
-- Tests use `testBackend()` from `src/test/backend.ts` against a local Postgres.
+- Tests use `testBackend()` from `src/test/backend.ts` against an in-process Postgres (PGlite).

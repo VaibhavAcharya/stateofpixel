@@ -8,7 +8,6 @@ Node 22 or newer. CI uses the version in `.node-version`.
 
 ```sh
 pnpm install
-pnpm dev
 ```
 
 Run the app with the [Netlify CLI](https://docs.netlify.com/cli/get-started/) from `apps/web`, linked to a Netlify site of your own:
@@ -19,9 +18,11 @@ netlify link
 netlify dev
 ```
 
-`netlify dev` needs Netlify CLI 27 or newer. It runs `pnpm dev` behind http://localhost:8888 with a local Postgres database, Netlify Blobs and Netlify Identity. Delete `apps/web/.netlify/v1` after a local `pnpm build`, or `netlify dev` serves that build instead of the dev server.
+`netlify dev` needs Netlify CLI 27 or newer. It runs `pnpm dev` behind http://localhost:8888 with a local Postgres database, Netlify Blobs and Netlify Identity. `pnpm dev` alone has none of those, so use `netlify dev`. Delete `apps/web/.netlify/v1` after a local `pnpm build`, or `netlify dev` serves that build instead of the dev server.
 
-In this monorepo, `netlify database migrations apply` writes to `.netlify/db` at the repo root, while `netlify dev` uses `apps/web/.netlify/db`, so migrations applied with the CLI do not reach the dev server. Apply them to the database in `NETLIFY_DB_URL` of the running dev server instead, and again after pulling schema changes. Signing in needs Identity enabled on your site with the GitHub and Google providers, and repositories need a GitHub App of your own, see [Environment variables](#environment-variables).
+Apply the migrations with `pnpm --filter @stateofpixel/backend db:migrate` while `netlify dev` is stopped, and again after pulling schema changes. In this monorepo, `netlify database migrations apply` writes to a different local database than the one `netlify dev` uses, so do not use it here.
+
+Signing in needs Identity enabled on your site with the GitHub provider, and optionally Google. Repositories need a GitHub App of your own, see [Environment variables](#environment-variables).
 
 In dev, `/lab.stateofpixel/web/builds/1` renders the build page from the fixtures in `apps/web/src/components/build/LabBuild.tsx`, without GitHub. Reviews there change local state only.
 
@@ -42,11 +43,11 @@ Without `STATEOFPIXEL_API_URL` it talks to production.
 Set these on your Netlify site with `netlify env:set`; `netlify dev` loads them. `packages/backend/src/env.ts` reads them and throws when a required one is missing.
 
 - `SITE_URL`: `http://localhost:8888` in dev
-- `GITHUB_APP_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_PRIVATE_KEY` (PKCS#8), `GITHUB_WEBHOOK_SECRET`: your GitHub App. Its webhook URL is `<SITE_URL>/api/github/webhook`.
-- `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`: the same GitHub App, for connecting a GitHub account. Its callback URL is `<SITE_URL>/api/github/callback`.
+- `GITHUB_APP_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_PRIVATE_KEY` (PKCS#8), `GITHUB_WEBHOOK_SECRET`: your GitHub App. Its webhook URL is `<SITE_URL>/api/github/webhook`, which GitHub cannot reach on localhost without a tunnel. It needs these permissions: Commit statuses write, Pull requests read, Contents read, Metadata read and, on the account, Email addresses read. Subscribe it to the `pull_request` and `repository` events.
+- `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`: the same GitHub App, for connecting a GitHub account. Its callback URLs are `<SITE_URL>/api/github/callback` and `https://identity.services.netlify.com/callback`, for signing in with GitHub through Identity. Keep user-to-server token expiration on, so connections get refresh tokens.
 - `CONNECTION_SECRET`: a random string that encrypts GitHub tokens in the database. Set it for the production context only, so deploy previews, whose database branches copy production data, cannot read the tokens.
 - `IMAGE_URL_SECRET`: a random string that signs image uploads and private image links.
-- `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_SECRET`, `DODO_PAYMENTS_ENVIRONMENT` (`test_mode` or `live_mode`): optional. Without them the pricing section shows paid plans as coming soon.
+- `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_SECRET`, `DODO_PAYMENTS_ENVIRONMENT` (`test_mode` or `live_mode`): optional. Without them the pricing section shows paid plans as coming soon. The Dodo webhook URL is `<SITE_URL>/api/dodo/webhook`.
 
 ## Checks
 

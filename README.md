@@ -33,7 +33,7 @@ Your CI takes the screenshots. stateofpixel compares them with the last approved
 
 ## Quick start
 
-Install the GitHub App from [stateofpixel.com](https://stateofpixel.com), then add a step after the one that writes your screenshots:
+Sign in on [stateofpixel.com](https://stateofpixel.com), connect GitHub and install the GitHub App, then add a step after the one that writes your screenshots:
 
 ```yaml
 on:
@@ -62,13 +62,13 @@ The [docs](https://stateofpixel.com/docs) cover the Playwright reporter, Storybo
 
 | Path | What it is |
 |---|---|
-| `apps/web` | The web app on [Netlify](https://www.netlify.com), built with [TanStack Start](https://tanstack.com/start). Image uploads run in Netlify Functions, and new accounts store images in Netlify Blobs |
+| `apps/web` | The web app on [Netlify](https://www.netlify.com), built with [TanStack Start](https://tanstack.com/start). It runs the backend in Netlify Functions, with Netlify Database, Netlify Blobs for images and Netlify Identity for sign-in |
 | `apps/web/src/content/docs` | The docs at `/docs`, in MDX |
 | `apps/web/visual` | Playwright tests that capture the web app for dogfooding |
-| `packages/backend` | The CI API, GitHub webhooks, billing and the database schema |
+| `packages/backend` | The CI API, GitHub webhooks, billing, background jobs and the database schema |
 | `packages/cli` | The `stateofpixel` CLI and Playwright reporter, published to npm |
 | `examples/playground` | Static pages and Storybook stories that the test pull requests change |
-| `scripts` | `test-pr.sh` opens the dogfooding test pull requests |
+| `scripts` | `test-pr.sh` opens the dogfooding test pull requests. A small proxy there forwards the old API address for CLI versions before 1.7.0 |
 
 - [docs/DESIGN.md](docs/DESIGN.md): the design system of the web app
 - [CONTRIBUTING.md](CONTRIBUTING.md): development, environment variables, checks and pull requests
