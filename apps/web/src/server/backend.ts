@@ -33,16 +33,51 @@ function readCookie(request: Request, name: string): string | null {
   return null;
 }
 
+const IDENTITY_CACHE_MS = 60 * 1000;
+const IDENTITY_CACHE_SIZE = 1000;
+
+const identityCache = new Map<
+  string,
+  { user: IdentityUser; expiresAt: number }
+>();
+
 async function identityUser(request: Request): Promise<IdentityUser | null> {
   const jwt = readCookie(request, "nf_jwt");
   if (jwt === null) {
     return null;
   }
+  const cached = identityCache.get(jwt);
+  if (cached !== undefined && cached.expiresAt > Date.now()) {
+    return cached.user;
+  }
+  identityCache.delete(jwt);
   const response = await fetch(
     new URL("/.netlify/identity/user", request.url),
     { headers: { Authorization: `Bearer ${jwt}` } },
   );
-  return response.ok ? ((await response.json()) as IdentityUser) : null;
+  if (!response.ok) {
+    return null;
+  }
+  const user = (await response.json()) as IdentityUser;
+  if (identityCache.size >= IDENTITY_CACHE_SIZE) {
+    identityCache.clear();
+  }
+  identityCache.set(jwt, {
+    user,
+    expiresAt: Math.min(Date.now() + IDENTITY_CACHE_MS, tokenExpiry(jwt)),
+  });
+  return user;
+}
+
+function tokenExpiry(jwt: string): number {
+  try {
+    const payload = JSON.parse(
+      atob(jwt.split(".")[1]?.replace(/-/g, "+").replace(/_/g, "/") ?? ""),
+    ) as { exp?: unknown };
+    return typeof payload.exp === "number" ? payload.exp * 1000 : 0;
+  } catch {
+    return 0;
+  }
 }
 
 export async function currentUserId(request: Request): Promise<string | null> {
