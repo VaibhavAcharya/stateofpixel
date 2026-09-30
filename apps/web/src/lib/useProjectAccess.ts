@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { api, useAction, useMutation, useQuery } from "./backend";
+import { api, useAction, useQuery } from "./backend";
 import { errorCode } from "./errorCode";
+import { useDisconnectExpiredGithub } from "./useDisconnectExpiredGithub";
 
 export function useProjectAccess(owner: string, name: string) {
   const access = useQuery(api.projects.access, { owner, name });
   const refresh = useAction(api.permissions.refresh);
-  const disconnectGithub = useMutation(api.connections.disconnectGithub);
+  const disconnectGithub = useDisconnectExpiredGithub();
   const [failed, setFailed] = useState(false);
   const projectId = access?.projectId;
   const fresh = access?.fresh;
@@ -16,7 +17,7 @@ export function useProjectAccess(owner: string, name: string) {
     }
     refresh({ projectId }).catch((error: unknown) => {
       if (errorCode(error) === "github_token_invalid") {
-        void disconnectGithub({});
+        void disconnectGithub();
         return;
       }
       setFailed(true);

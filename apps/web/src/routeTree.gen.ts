@@ -27,6 +27,7 @@ import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner/$repo/index'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner/$repo/settings'
 import { Route as OwnerSettingsBillingRouteImport } from './routes/$owner/settings/billing'
+import { Route as OwnerSettingsGeneralRouteImport } from './routes/$owner/settings/general'
 import { Route as OwnerSettingsMembersRouteImport } from './routes/$owner/settings/members'
 import { Route as OwnerSettingsUsageRouteImport } from './routes/$owner/settings/usage'
 import { Route as ApiDodoWebhookRouteImport } from './routes/api/dodo/webhook'
@@ -131,6 +132,11 @@ const OwnerSettingsBillingRoute = OwnerSettingsBillingRouteImport.update({
   path: '/$owner/settings/billing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OwnerSettingsGeneralRoute = OwnerSettingsGeneralRouteImport.update({
+  id: '/$owner/settings/general',
+  path: '/$owner/settings/general',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OwnerSettingsMembersRoute = OwnerSettingsMembersRouteImport.update({
   id: '/$owner/settings/members',
   path: '/$owner/settings/members',
@@ -218,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/docs/': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
+  '/$owner/settings/general': typeof OwnerSettingsGeneralRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/$owner/settings/usage': typeof OwnerSettingsUsageRoute
   '/api/dodo/webhook': typeof ApiDodoWebhookRoute
@@ -250,6 +257,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
+  '/$owner/settings/general': typeof OwnerSettingsGeneralRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/$owner/settings/usage': typeof OwnerSettingsUsageRoute
   '/api/dodo/webhook': typeof ApiDodoWebhookRoute
@@ -283,6 +291,7 @@ export interface FileRoutesById {
   '/docs/': typeof DocsIndexRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/settings/billing': typeof OwnerSettingsBillingRoute
+  '/$owner/settings/general': typeof OwnerSettingsGeneralRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/$owner/settings/usage': typeof OwnerSettingsUsageRoute
   '/api/dodo/webhook': typeof ApiDodoWebhookRoute
@@ -318,6 +327,7 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
+    | '/$owner/settings/general'
     | '/$owner/settings/members'
     | '/$owner/settings/usage'
     | '/api/dodo/webhook'
@@ -350,6 +360,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
+    | '/$owner/settings/general'
     | '/$owner/settings/members'
     | '/$owner/settings/usage'
     | '/api/dodo/webhook'
@@ -382,6 +393,7 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/$owner/$repo/settings'
     | '/$owner/settings/billing'
+    | '/$owner/settings/general'
     | '/$owner/settings/members'
     | '/$owner/settings/usage'
     | '/api/dodo/webhook'
@@ -414,6 +426,7 @@ export interface RootRouteChildren {
   CompareIndexRoute: typeof CompareIndexRoute
   OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRoute
   OwnerSettingsBillingRoute: typeof OwnerSettingsBillingRoute
+  OwnerSettingsGeneralRoute: typeof OwnerSettingsGeneralRoute
   OwnerSettingsMembersRoute: typeof OwnerSettingsMembersRoute
   OwnerSettingsUsageRoute: typeof OwnerSettingsUsageRoute
   ApiDodoWebhookRoute: typeof ApiDodoWebhookRoute
@@ -556,6 +569,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerSettingsBillingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$owner/settings/general': {
+      id: '/$owner/settings/general'
+      path: '/$owner/settings/general'
+      fullPath: '/$owner/settings/general'
+      preLoaderRoute: typeof OwnerSettingsGeneralRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$owner/settings/members': {
       id: '/$owner/settings/members'
       path: '/$owner/settings/members'
@@ -694,6 +714,7 @@ const rootRouteChildren: RootRouteChildren = {
   CompareIndexRoute: CompareIndexRoute,
   OwnerRepoSettingsRoute: OwnerRepoSettingsRoute,
   OwnerSettingsBillingRoute: OwnerSettingsBillingRoute,
+  OwnerSettingsGeneralRoute: OwnerSettingsGeneralRoute,
   OwnerSettingsMembersRoute: OwnerSettingsMembersRoute,
   OwnerSettingsUsageRoute: OwnerSettingsUsageRoute,
   ApiDodoWebhookRoute: ApiDodoWebhookRoute,

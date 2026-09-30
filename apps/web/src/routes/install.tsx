@@ -18,9 +18,10 @@ import {
   SkeletonRows,
   Spinner,
 } from "../components/ui";
-import { api, useAction, useMutation, useQuery } from "../lib/backend";
+import { api, useAction, useQuery } from "../lib/backend";
 import { errorCode } from "../lib/errorCode";
 import { validateProjectSearch } from "../lib/projectSearch";
+import { useDisconnectExpiredGithub } from "../lib/useDisconnectExpiredGithub";
 import { useListKeys } from "../lib/useListKeys";
 
 export const Route = createFileRoute("/install")({
@@ -43,7 +44,7 @@ function Accounts() {
   const refreshAccounts = useAction(api.me.refreshAccounts);
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const disconnectGithub = useMutation(api.connections.disconnectGithub);
+  const disconnectGithub = useDisconnectExpiredGithub();
   const [refreshing, setRefreshing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   useListKeys();
@@ -54,7 +55,7 @@ function Accounts() {
     refreshAccounts({})
       .catch((reason: unknown) => {
         if (errorCode(reason) === "github_token_invalid") {
-          void disconnectGithub({});
+          void disconnectGithub();
           return;
         }
         setError("Could not load your GitHub installations.");

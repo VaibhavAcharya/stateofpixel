@@ -7,8 +7,9 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
-import { api, useAction, useMutation, useQuery } from "../lib/backend";
+import { api, useAction, useQuery } from "../lib/backend";
 import { errorCode } from "../lib/errorCode";
+import { useDisconnectExpiredGithub } from "../lib/useDisconnectExpiredGithub";
 import { AccountBanner } from "./AccountBanner";
 import { Page, PageHeader } from "./Page";
 import { Tab, Tabs } from "./Tabs";
@@ -20,7 +21,7 @@ const refreshedRoles = new Set<string>();
 
 function useRoleRefresh(owner: string) {
   const refresh = useAction(api.members.refreshRole);
-  const disconnectGithub = useMutation(api.connections.disconnectGithub);
+  const disconnectGithub = useDisconnectExpiredGithub();
   useEffect(() => {
     if (refreshedRoles.has(owner)) {
       return;
@@ -29,7 +30,7 @@ function useRoleRefresh(owner: string) {
     refresh({ login: owner }).catch((error: unknown) => {
       refreshedRoles.delete(owner);
       if (errorCode(error) === "github_token_invalid") {
-        void disconnectGithub({});
+        void disconnectGithub();
       }
     });
   }, [owner, refresh, disconnectGithub]);

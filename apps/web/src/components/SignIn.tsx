@@ -144,7 +144,8 @@ export function SigningIn() {
 
 const CONNECT_ERRORS: Record<string, string> = {
   github_account_in_use:
-    "This GitHub account is connected to another stateofpixel user.",
+    "This GitHub account is connected to another stateofpixel user. Sign in the way you used before, or write to us to move it.",
+  github_token_invalid: "Your GitHub connection expired. Connect again.",
 };
 
 function useConnectError() {

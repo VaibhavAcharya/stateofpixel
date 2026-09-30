@@ -54,7 +54,7 @@ function memberColumns(accountType: "user" | "org") {
         ROLE_LABELS[accountType][row.original.role],
     }),
     helper.accessor("lastSeenAt", {
-      header: "Last signed in",
+      header: "Last active",
       meta: { className: "w-40 text-right text-muted max-sm:hidden" },
       cell: ({ row }) => <RelativeTime timestamp={row.original.lastSeenAt} />,
     }),
