@@ -1,5 +1,5 @@
 [build]
-  command = "pnpm --filter @stateofpixel/web build"
+  command = "pnpm --filter @stateofpixel/web build && node apps/web/scripts/stage-migrations.ts"
   publish = "apps/web/dist/client"
 
 [[headers]]
