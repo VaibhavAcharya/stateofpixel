@@ -1,10 +1,11 @@
+import { imageStore } from "@stateofpixel/backend/imageStore";
 import {
   messages,
   PUBLIC_IMAGE_SCOPE,
   verify,
 } from "@stateofpixel/backend/signing";
 import { createFileRoute } from "@tanstack/react-router";
-import { imageSecret, imageStore, verifyUntil } from "../../../lib/imageStore";
+import { imageSecret, verifyUntil } from "../../../lib/imageStore";
 
 const FILE = /^([a-z0-9]+)\.([0-9a-f-]{36})$/;
 const PUBLIC_CACHE = "public, max-age=31536000, immutable";

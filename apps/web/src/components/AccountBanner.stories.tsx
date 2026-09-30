@@ -5,7 +5,7 @@ import { AccountBanner } from "./AccountBanner";
 const meta = {
   title: "Account/Banner",
   component: AccountBanner,
-  parameters: { convex: { "billing:available": true } },
+  parameters: { backend: { "billing.available": true } },
   args: {
     owner: "acme",
     account: {
@@ -65,7 +65,7 @@ export const StorageBlocked: Story = {
 };
 
 export const StorageBlockedWithoutBilling: Story = {
-  parameters: { convex: { "billing:available": false } },
+  parameters: { backend: { "billing.available": false } },
   args: StorageBlocked.args,
 };
 

@@ -1,6 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { userEvent, within } from "storybook/test";
-import { AuthButton, SignInButton, SignInScreen, SigningIn } from "./SignIn";
+import {
+  AuthButton,
+  ConnectGithubScreen,
+  SignInButton,
+  SignInScreen,
+  SigningIn,
+} from "./SignIn";
 
 const meta = {
   title: "App/Sign in",
@@ -28,6 +34,10 @@ export const RedirectingToGitHub: Story = {
 };
 
 export const ExchangingCode: Story = { render: () => <SigningIn /> };
+
+export const ConnectGithub: Story = {
+  render: () => <ConnectGithubScreen redirectTo="/install" />,
+};
 
 export const AuthButtons: Story = {
   parameters: { layout: "padded" },

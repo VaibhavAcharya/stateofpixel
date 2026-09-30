@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import remarkGfm from "remark-gfm";
-import { defineConfig, loadEnv, type Plugin } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import { highlightSnippets, remarkCodeBlocks } from "./highlightSnippets";
 
 function ogImages(): Plugin {
@@ -76,25 +76,20 @@ function llmsFiles(): Plugin {
   };
 }
 
-export default defineConfig(({ mode }) => {
-  const backendEnv = loadEnv(mode, "../../packages/backend", "CONVEX_URL");
-  process.env.VITE_CONVEX_URL ??= backendEnv.CONVEX_URL;
-
-  return {
-    plugins: [
-      ogImages(),
-      llmsFiles(),
-      netlify({ dev: { edgeFunctions: { enabled: false } } }),
-      tailwindcss(),
-      highlightSnippets(),
-      {
-        enforce: "pre",
-        ...mdx({
-          remarkPlugins: [remarkGfm, remarkCodeBlocks],
-        }),
-      },
-      tanstackStart(),
-      viteReact(),
-    ],
-  };
+export default defineConfig({
+  plugins: [
+    ogImages(),
+    llmsFiles(),
+    netlify({ dev: { edgeFunctions: { enabled: false } } }),
+    tailwindcss(),
+    highlightSnippets(),
+    {
+      enforce: "pre",
+      ...mdx({
+        remarkPlugins: [remarkGfm, remarkCodeBlocks],
+      }),
+    },
+    tanstackStart(),
+    viteReact(),
+  ],
 });

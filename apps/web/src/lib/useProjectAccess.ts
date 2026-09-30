@@ -1,14 +1,11 @@
-import { useAuthActions } from "@convex-dev/auth/react";
-import { api } from "@stateofpixel/backend/api";
-import { useAction } from "convex/react";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useEffect, useState } from "react";
+import { api, useAction, useMutation, useQuery } from "./backend";
 import { errorCode } from "./errorCode";
 
 export function useProjectAccess(owner: string, name: string) {
   const access = useQuery(api.projects.access, { owner, name });
   const refresh = useAction(api.permissions.refresh);
-  const { signOut } = useAuthActions();
+  const disconnectGithub = useMutation(api.connections.disconnectGithub);
   const [failed, setFailed] = useState(false);
   const projectId = access?.projectId;
   const fresh = access?.fresh;
@@ -19,12 +16,12 @@ export function useProjectAccess(owner: string, name: string) {
     }
     refresh({ projectId }).catch((error: unknown) => {
       if (errorCode(error) === "github_token_invalid") {
-        void signOut();
+        void disconnectGithub({});
         return;
       }
       setFailed(true);
     });
-  }, [projectId, fresh, refresh, signOut]);
+  }, [projectId, fresh, refresh, disconnectGithub]);
 
   if (
     access === undefined ||

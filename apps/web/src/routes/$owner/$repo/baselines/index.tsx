@@ -1,6 +1,4 @@
-import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { usePaginatedQuery, useQuery } from "convex-helpers/react/cache/hooks";
 import type { ReactNode } from "react";
 import { AppHeader } from "../../../../components/AppHeader";
 import {
@@ -20,6 +18,7 @@ import {
   SnapshotImage,
   Spinner,
 } from "../../../../components/ui";
+import { api, usePaginatedQuery, useQuery } from "../../../../lib/backend";
 import { shortSha } from "../../../../lib/format";
 import { useProjectAccess } from "../../../../lib/useProjectAccess";
 

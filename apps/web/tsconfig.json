@@ -1,9 +1,16 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["**/*.ts", "**/*.tsx", ".storybook/*.ts", ".storybook/*.tsx"],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.mts",
+    ".storybook/*.ts",
+    ".storybook/*.tsx"
+  ],
   "exclude": ["dist", "node_modules"],
   "compilerOptions": {
     "jsx": "react-jsx",
+    "allowImportingTsExtensions": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"]
   }

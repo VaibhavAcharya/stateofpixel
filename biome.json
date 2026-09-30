@@ -8,7 +8,7 @@
   "files": {
     "includes": [
       "**",
-      "!**/convex/_generated",
+      "!**/netlify/database/migrations/meta",
       "!**/routeTree.gen.ts",
       "!**/skills-lock.json"
     ]

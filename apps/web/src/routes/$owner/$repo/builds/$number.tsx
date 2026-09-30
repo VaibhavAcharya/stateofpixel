@@ -1,8 +1,6 @@
 import { KeyboardIcon } from "@phosphor-icons/react/ssr";
-import { api } from "@stateofpixel/backend/api";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { createFileRoute, useParams } from "@tanstack/react-router";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import { lazy, Suspense, useState } from "react";
 import { AppHeader } from "../../../../components/AppHeader";
 import {
@@ -17,13 +15,16 @@ import {
 import { RequireAuth } from "../../../../components/RequireAuth";
 import { ShortcutsDialog } from "../../../../components/ShortcutsDialog";
 import { buttonClass, Skeleton } from "../../../../components/ui";
+import { api, useQuery } from "../../../../lib/backend";
 import { isLab } from "../../../../lib/lab";
 import { prefetchBuild } from "../../../../lib/prefetch";
 import { useProjectAccess } from "../../../../lib/useProjectAccess";
 
 export const Route = createFileRoute("/$owner/$repo/builds/$number")({
   loader: ({ context, params }) =>
-    isLab(params.owner) ? undefined : prefetchBuild(context.convex, params),
+    isLab(params.owner)
+      ? undefined
+      : prefetchBuild(context.queryClient, params),
   component: BuildRoute,
 });
 

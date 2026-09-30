@@ -1,9 +1,5 @@
 import { GitBranchIcon, GitPullRequestIcon } from "@phosphor-icons/react/ssr";
-import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import type { UsePaginatedQueryReturnType } from "convex/react";
-import type { FunctionArgs, FunctionReturnType } from "convex/server";
-import { usePaginatedQuery } from "convex-helpers/react/cache/hooks";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { AppHeader } from "../../../components/AppHeader";
 import { CodeBlock } from "../../../components/CodeBlock";
@@ -27,6 +23,13 @@ import {
   Spinner,
   SupersededPill,
 } from "../../../components/ui";
+import {
+  api,
+  type FunctionArgs,
+  type FunctionReturnType,
+  type UsePaginatedQueryReturnType,
+  usePaginatedQuery,
+} from "../../../lib/backend";
 import { shortSha } from "../../../lib/format";
 import { prefetchBuild } from "../../../lib/prefetch";
 import { useListKeys } from "../../../lib/useListKeys";
@@ -98,7 +101,7 @@ export const Route = createFileRoute("/$owner/$repo/")({
       order: search.order === "asc" ? "asc" : undefined,
     };
   },
-  loader: ({ context, params }) => prefetchBuild(context.convex, params),
+  loader: ({ context, params }) => prefetchBuild(context.queryClient, params),
   component: ProjectPage,
 });
 

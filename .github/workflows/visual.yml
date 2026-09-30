@@ -65,8 +65,6 @@ jobs:
       - if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter @stateofpixel/web exec playwright install-deps chromium
       - run: pnpm --filter @stateofpixel/web visual --shard ${{ matrix.shard }}/2
-        env:
-          VITE_CONVEX_URL: https://graceful-dogfish-423.convex.cloud
 
   web-storybook:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository

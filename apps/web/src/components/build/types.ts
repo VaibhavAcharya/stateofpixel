@@ -1,5 +1,4 @@
-import type { api } from "@stateofpixel/backend/api";
-import type { FunctionReturnType } from "convex/server";
+import type { api, FunctionReturnType } from "../../lib/backend";
 
 export type Build = NonNullable<FunctionReturnType<typeof api.builds.get>>;
 export type SnapshotRow = FunctionReturnType<

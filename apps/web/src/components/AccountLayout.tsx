@@ -1,30 +1,26 @@
-import { useAuthActions } from "@convex-dev/auth/react";
 import {
   ArrowUpRightIcon,
   ChartBarIcon,
   CreditCardIcon,
-  GearIcon,
   SquaresFourIcon,
   UsersIcon,
 } from "@phosphor-icons/react/ssr";
-import { api } from "@stateofpixel/backend/api";
 import { Link } from "@tanstack/react-router";
-import { useAction } from "convex/react";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import { type ReactNode, useEffect } from "react";
+import { api, useAction, useMutation, useQuery } from "../lib/backend";
 import { errorCode } from "../lib/errorCode";
 import { AccountBanner } from "./AccountBanner";
 import { Page, PageHeader } from "./Page";
 import { Tab, Tabs } from "./Tabs";
 import { Avatar, accountAvatar, buttonClass, EmptyState } from "./ui";
 
-type AccountTab = "projects" | "members" | "usage" | "billing" | "settings";
+type AccountTab = "projects" | "members" | "usage" | "billing";
 
 const refreshedRoles = new Set<string>();
 
 function useRoleRefresh(owner: string) {
   const refresh = useAction(api.members.refreshRole);
-  const { signOut } = useAuthActions();
+  const disconnectGithub = useMutation(api.connections.disconnectGithub);
   useEffect(() => {
     if (refreshedRoles.has(owner)) {
       return;
@@ -33,10 +29,10 @@ function useRoleRefresh(owner: string) {
     refresh({ login: owner }).catch((error: unknown) => {
       refreshedRoles.delete(owner);
       if (errorCode(error) === "github_token_invalid") {
-        void signOut();
+        void disconnectGithub({});
       }
     });
-  }, [owner, refresh, signOut]);
+  }, [owner, refresh, disconnectGithub]);
 }
 
 export function AccountLayout({
@@ -123,18 +119,6 @@ export function AccountLayout({
           icon={CreditCardIcon}
           label="Billing"
           active={tab === "billing"}
-        />
-        <Tab
-          to="/$owner/settings/general"
-          params={{ owner }}
-          icon={GearIcon}
-          label="Settings"
-          active={tab === "settings"}
-          disabledReason={
-            home?.role === "member"
-              ? `Only owners of ${owner} on GitHub can change settings.`
-              : undefined
-          }
         />
       </Tabs>
       {children}

@@ -1,13 +1,9 @@
-import { useAuthActions } from "@convex-dev/auth/react";
 import {
   ArrowRightIcon,
   GithubLogoIcon,
   PlusIcon,
 } from "@phosphor-icons/react/ssr";
-import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useAction } from "convex/react";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useCallback, useEffect, useState } from "react";
 import { AppHeader } from "../components/AppHeader";
 import { ListToolbar, SearchField } from "../components/ListControls";
@@ -22,6 +18,7 @@ import {
   SkeletonRows,
   Spinner,
 } from "../components/ui";
+import { api, useAction, useMutation, useQuery } from "../lib/backend";
 import { errorCode } from "../lib/errorCode";
 import { validateProjectSearch } from "../lib/projectSearch";
 import { useListKeys } from "../lib/useListKeys";
@@ -46,7 +43,7 @@ function Accounts() {
   const refreshAccounts = useAction(api.me.refreshAccounts);
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const { signOut } = useAuthActions();
+  const disconnectGithub = useMutation(api.connections.disconnectGithub);
   const [refreshing, setRefreshing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   useListKeys();
@@ -57,13 +54,13 @@ function Accounts() {
     refreshAccounts({})
       .catch((reason: unknown) => {
         if (errorCode(reason) === "github_token_invalid") {
-          void signOut();
+          void disconnectGithub({});
           return;
         }
         setError("Could not load your GitHub installations.");
       })
       .finally(() => setRefreshing(false));
-  }, [refreshAccounts, signOut]);
+  }, [refreshAccounts, disconnectGithub]);
 
   useEffect(() => {
     refresh();

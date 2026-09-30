@@ -1,4 +1,3 @@
-import { useAuthActions } from "@convex-dev/auth/react";
 import {
   BookOpenIcon,
   CaretUpDownIcon,
@@ -10,10 +9,10 @@ import {
   SquaresFourIcon,
   SunIcon,
 } from "@phosphor-icons/react/ssr";
-import { api } from "@stateofpixel/backend/api";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import type { ReactNode } from "react";
+import { useAuthActions } from "../lib/auth";
+import { api, useQuery } from "../lib/backend";
 import { type Theme, useTheme } from "../lib/theme";
 import { Menu, MenuLabel, MenuSeparator, menuItemClass } from "./Menu";
 import { PLAN_NAMES } from "./PlanBox";

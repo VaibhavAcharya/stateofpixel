@@ -12,7 +12,7 @@ import { PlanBox } from "./PlanBox";
 const meta = {
   title: "Account/Plan box",
   component: PlanBox,
-  parameters: { convex: { "billing:available": true } },
+  parameters: { backend: { "billing.available": true } },
   args: {
     login: "acme",
     accountType: "org",
@@ -63,7 +63,7 @@ export const FreePersonalMember: Story = {
 };
 
 export const BillingUnavailable: Story = {
-  parameters: { convex: { "billing:available": false } },
+  parameters: { backend: { "billing.available": false } },
 };
 
 export const Paid: Story = { args: paid };

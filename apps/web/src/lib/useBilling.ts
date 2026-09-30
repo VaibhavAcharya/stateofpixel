@@ -1,6 +1,5 @@
-import { api } from "@stateofpixel/backend/api";
-import { useAction } from "convex/react";
 import { useState } from "react";
+import { api, useAction } from "./backend";
 import { errorCode } from "./errorCode";
 
 export type PaidPlan = "25gb" | "100gb" | "500gb";

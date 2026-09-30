@@ -1,0 +1,11 @@
+{
+  "name": "stateofpixel-convex-proxy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "convex deploy"
+  },
+  "dependencies": {
+    "convex": "^1.46.0"
+  }
+}

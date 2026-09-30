@@ -6,6 +6,8 @@ export const Route = createFileRoute(
   "/$owner/$repo/builds/$number/snapshots/$snapshotId",
 )({
   loader: ({ context, params }) =>
-    isLab(params.owner) ? undefined : prefetchBuild(context.convex, params),
+    isLab(params.owner)
+      ? undefined
+      : prefetchBuild(context.queryClient, params),
   component: () => null,
 });

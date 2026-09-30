@@ -1,7 +1,4 @@
-import { api } from "@stateofpixel/backend/api";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import type { FunctionReturnType } from "convex/server";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useState } from "react";
 import { AppHeader } from "../../../../components/AppHeader";
 import { Page } from "../../../../components/Page";
@@ -17,6 +14,11 @@ import {
   SnapshotName,
 } from "../../../../components/ui";
 import { useViewerSettings, Viewer } from "../../../../components/Viewer";
+import {
+  api,
+  type FunctionReturnType,
+  useQuery,
+} from "../../../../lib/backend";
 import { shortSha } from "../../../../lib/format";
 import { useProjectAccess } from "../../../../lib/useProjectAccess";
 

@@ -1,13 +1,12 @@
 import { CheckIcon } from "@phosphor-icons/react/ssr";
-import { api } from "@stateofpixel/backend/api";
 import {
   DEFAULT_RETENTION_DAYS,
   MAX_RETENTION_DAYS,
   MIN_RETENTION_DAYS,
 } from "@stateofpixel/backend/limits";
 import { PLAN_STORAGE_LIMIT_BYTES } from "@stateofpixel/backend/storage";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import { useState } from "react";
+import { api, useQuery } from "../../lib/backend";
 import { ARGOS, CHROMATIC, cheapestPlan } from "../../lib/competitorPricing";
 import { SUPPORT_EMAIL } from "../../lib/supportEmail";
 import type { PaidPlan } from "../../lib/useBilling";

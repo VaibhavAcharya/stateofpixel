@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fn } from "storybook/test";
+import { fn, userEvent, within } from "storybook/test";
 import { STORY_NOW } from "../lib/storyFixtures";
 import { ProjectTable } from "./ProjectTable";
 
@@ -75,19 +75,16 @@ const rows = [
   { owner: "acme", name: "sandbox", private: false, latestBuild: null },
 ];
 
-const page = (status: string, results = rows) => ({
-  "accounts:projects": {
-    results,
-    status,
-    isLoading: status.startsWith("Loading"),
-    loadMore: fn(),
+const page = (isDone: boolean, results = rows) => ({
+  "accounts.projects": {
+    pages: [{ page: results, isDone, continueCursor: String(results.length) }],
+    pageParams: [{ numItems: 25, cursor: null }],
   },
 });
 
 const meta = {
   title: "Account/Project table",
   component: ProjectTable,
-  parameters: { convex: page("Exhausted") },
   args: {
     login: "acme",
     search: {},
@@ -101,31 +98,37 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Projects: Story = {};
+export const Projects: Story = { parameters: { backend: page(true) } };
 
-export const ProjectsDark: Story = { parameters: { theme: "dark" } };
+export const ProjectsDark: Story = {
+  parameters: { backend: page(true), theme: "dark" },
+};
 
 export const SortedByUpdated: Story = {
   args: { search: { sort: "updated" } },
+  parameters: { backend: page(true) },
 };
 
-export const Loading: Story = {
-  parameters: { convex: page("LoadingFirstPage", []) },
-};
+export const Loading: Story = {};
 
 export const CanLoadMore: Story = {
-  parameters: { convex: page("CanLoadMore") },
+  parameters: { backend: page(false) },
 };
 
 export const LoadingMore: Story = {
-  parameters: { convex: page("LoadingMore") },
+  parameters: { backend: page(false) },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(
+      within(canvasElement).getByRole("button", { name: "Load more" }),
+    );
+  },
 };
 
 export const Empty: Story = {
-  parameters: { convex: page("Exhausted", []) },
+  parameters: { backend: page(true, []) },
 };
 
 export const NoMatch: Story = {
   args: { search: { q: "billing" } },
-  parameters: { convex: page("Exhausted", []) },
+  parameters: { backend: page(true, []) },
 };

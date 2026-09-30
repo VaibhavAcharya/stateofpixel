@@ -1,5 +1,4 @@
 import { InfoIcon, WarningIcon } from "@phosphor-icons/react/ssr";
-import { api } from "@stateofpixel/backend/api";
 import {
   formatGigabytes,
   graceEndsAt,
@@ -7,13 +6,13 @@ import {
   type StorageUsage,
 } from "@stateofpixel/backend/storage";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "convex-helpers/react/cache/hooks";
 import type { ReactNode } from "react";
 import {
   type AccountAlert,
   accountAlert,
   type Subscription,
 } from "../lib/accountAlert";
+import { api, useQuery } from "../lib/backend";
 import { formatDate } from "../lib/format";
 import { SUPPORT_EMAIL } from "../lib/supportEmail";
 import { PLAN_NAMES } from "./PlanBox";

@@ -1,46 +1,29 @@
-import { api } from "@stateofpixel/backend/api";
 import type { Id } from "@stateofpixel/backend/dataModel";
-import type { ConvexReactClient } from "convex/react";
-import type {
-  FunctionArgs,
-  FunctionReference,
-  FunctionReturnType,
-} from "convex/server";
-
-const HOLD_MS = 60_000;
+import type { QueryClient } from "@tanstack/react-query";
+import {
+  api,
+  type FunctionArgs,
+  type FunctionReference,
+  queryOptions,
+} from "./backend";
 
 function prefetch<Query extends FunctionReference<"query">>(
-  convex: ConvexReactClient,
+  queryClient: QueryClient,
   query: Query,
   args: FunctionArgs<Query>,
-): Promise<FunctionReturnType<Query> | undefined> {
+) {
   if (typeof window === "undefined") {
-    return Promise.resolve(undefined);
+    return;
   }
-  const watch = convex.watchQuery(query, args);
-  return new Promise((resolve) => {
-    const read = () => {
-      try {
-        const result = watch.localQueryResult();
-        if (result !== undefined) {
-          resolve(result);
-        }
-      } catch {
-        resolve(undefined);
-      }
-    };
-    const unsubscribe = watch.onUpdate(read);
-    setTimeout(unsubscribe, HOLD_MS);
-    read();
-  });
+  void queryClient.prefetchQuery(queryOptions(query, args));
 }
 
-export function prefetchAccount(convex: ConvexReactClient, owner: string) {
-  void prefetch(convex, api.accounts.home, { login: owner });
+export function prefetchAccount(queryClient: QueryClient, owner: string) {
+  prefetch(queryClient, api.accounts.home, { login: owner });
 }
 
 export function prefetchBuild(
-  convex: ConvexReactClient,
+  queryClient: QueryClient,
   {
     owner,
     repo,
@@ -48,15 +31,15 @@ export function prefetchBuild(
     snapshotId,
   }: { owner: string; repo: string; number?: string; snapshotId?: string },
 ) {
-  void prefetch(convex, api.projects.access, { owner, name: repo });
+  prefetch(queryClient, api.projects.access, { owner, name: repo });
   const buildNumber = Number(number);
   if (!Number.isInteger(buildNumber)) {
     return;
   }
   const build = { owner, name: repo, number: buildNumber };
-  void prefetch(convex, api.builds.get, build);
+  prefetch(queryClient, api.builds.get, build);
   if (snapshotId !== undefined) {
-    void prefetch(convex, api.snapshots.get, {
+    prefetch(queryClient, api.snapshots.get, {
       ...build,
       snapshotId: snapshotId as Id<"snapshots">,
     });

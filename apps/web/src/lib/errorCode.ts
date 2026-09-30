@@ -1,10 +1,5 @@
-import { ConvexError } from "convex/values";
+import { BackendError } from "./backend";
 
 export function errorCode(error: unknown): string | null {
-  return error instanceof ConvexError &&
-    typeof error.data === "object" &&
-    error.data !== null &&
-    "code" in error.data
-    ? String(error.data.code)
-    : null;
+  return error instanceof BackendError ? String(error.data.code) : null;
 }

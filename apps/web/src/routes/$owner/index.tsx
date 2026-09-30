@@ -15,7 +15,7 @@ export const Route = createFileRoute("/$owner/")({
   validateSearch: (search: Record<string, unknown>): ProjectSearch =>
     validateProjectSearch(search),
   loader: ({ context, params }) =>
-    prefetchAccount(context.convex, params.owner),
+    prefetchAccount(context.queryClient, params.owner),
   head: () => ({ meta: [{ name: "robots", content: "noindex" }] }),
   component: AccountPage,
 });
