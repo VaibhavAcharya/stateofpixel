@@ -526,7 +526,7 @@ const percy: Competitor = {
       ],
     },
     git: {
-      text: "GitHub, GitLab, Bitbucket and Azure DevOps.",
+      text: "GitHub, GitLab and Bitbucket.",
       sources: [
         {
           label: "Percy source control",
@@ -572,8 +572,8 @@ const percy: Competitor = {
       "Percy's Visual Review Agent highlights meaningful changes on paid plans. stateofpixel compares pixels with a color threshold.",
     ],
     [
-      "GitLab, Bitbucket and Azure DevOps",
-      "Percy supports all of them. stateofpixel works with GitHub only.",
+      "GitLab and Bitbucket",
+      "Percy supports both. stateofpixel works with GitHub only.",
     ],
     [
       "Selenium in any language",

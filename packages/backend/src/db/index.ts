@@ -1,5 +1,5 @@
 import { getDatabase } from "@netlify/database";
-import { drizzle as neonDrizzle } from "drizzle-orm/neon-serverless";
+import { drizzle as serverlessDrizzle } from "drizzle-orm/neon-serverless";
 import { drizzle as pgDrizzle } from "drizzle-orm/node-postgres";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import * as schema from "../schema.ts";
@@ -13,7 +13,11 @@ export function database(): Database {
     const connection = getDatabase();
     current =
       connection.driver === "serverless"
-        ? neonDrizzle({ client: connection.pool, schema, casing: "snake_case" })
+        ? serverlessDrizzle({
+            client: connection.pool,
+            schema,
+            casing: "snake_case",
+          })
         : pgDrizzle({ client: connection.pool, schema, casing: "snake_case" });
   }
   return current;
