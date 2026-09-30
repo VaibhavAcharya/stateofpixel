@@ -263,7 +263,7 @@ export async function transaction<T>(
         throw error;
       }
       await new Promise((resolve) =>
-        setTimeout(resolve, Math.random() * 20 * attempt),
+        setTimeout(resolve, Math.random() * Math.min(1000, 25 * 2 ** attempt)),
       );
     }
   }
