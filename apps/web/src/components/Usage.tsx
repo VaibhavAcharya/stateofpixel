@@ -109,6 +109,8 @@ export function UsageView({
       share: counted === 0 ? 0 : totalBytes(project) / counted,
     }))
     .sort((a, b) => totalBytes(b) - totalBytes(a));
+  const unlimited = storage.plan === "unlimited";
+  const barBytes = unlimited ? Math.max(1, counted) : storage.storageLimitBytes;
 
   return (
     <div className="flex flex-col gap-8">
@@ -117,7 +119,9 @@ export function UsageView({
           <span className="text-2xl font-semibold text-text tabular-nums">
             {formatGigabytes(storage.storageBytes)}
           </span>{" "}
-          of {formatGigabytes(storage.storageLimitBytes)} stored
+          {unlimited
+            ? "stored"
+            : `of ${formatGigabytes(storage.storageLimitBytes)} stored`}
         </p>
         <div
           role="img"
@@ -134,7 +138,7 @@ export function UsageView({
                 key={part.key}
                 className={part.color}
                 style={{
-                  width: `${Math.min(100, (bytes / storage.storageLimitBytes) * 100)}%`,
+                  width: `${Math.min(100, (bytes / barBytes) * 100)}%`,
                 }}
               />
             );

@@ -1228,6 +1228,35 @@ it("limits builds and uploaded bytes per account per day", async () => {
   expect(uploads.body.error.code).toBe("upload_limit_reached");
 });
 
+it("skips the daily limits on a self-hosted server", async () => {
+  const { t, accountId } = await setup();
+  await t.run(async (ctx) => {
+    await limits.limit(ctx, "builds", { key: accountId, count: DAILY_BUILDS });
+    await limits.limit(ctx, "uploadedBytes", {
+      key: accountId,
+      count: DAILY_UPLOAD_BYTES + 1,
+      reserve: true,
+    });
+  });
+  vi.stubEnv("STATEOFPIXEL_SELF_HOSTED", "true");
+  try {
+    const build = await api(t, "POST", "/builds", {
+      nonce: "run-1",
+      shard: { index: 1, total: 1 },
+      git: {
+        commit: "c1",
+        branch: "main",
+        baselineBranch: "main",
+        ancestors: [],
+      },
+      snapshots: [],
+    });
+    expect(build.status).toBe(200);
+  } finally {
+    vi.stubEnv("STATEOFPIXEL_SELF_HOSTED", undefined);
+  }
+});
+
 async function uploadTargets(t: Test, buildId: string, hash: string) {
   const targets = await api(t, "POST", `/builds/${buildId}/upload-urls`, {
     hashes: [hash],

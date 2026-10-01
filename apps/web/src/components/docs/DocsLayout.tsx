@@ -52,6 +52,7 @@ export const DOCS_NAV = [
       { slug: "accounts", label: "Accounts and projects" },
       { slug: "billing", label: "Billing" },
       { slug: "security", label: "Security" },
+      { slug: "self-hosting", label: "Self-hosting" },
     ],
   },
   {

@@ -7,6 +7,7 @@ export const PLAN_STORAGE_LIMIT_BYTES = {
   "25gb": 25 * GIGABYTE,
   "100gb": 100 * GIGABYTE,
   "500gb": 500 * GIGABYTE,
+  unlimited: Number.MAX_SAFE_INTEGER,
 } as const;
 
 export type StorageUsage = {

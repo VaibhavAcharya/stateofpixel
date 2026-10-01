@@ -1,7 +1,6 @@
 import {
   ApiError,
   createApiClient,
-  DEFAULT_API_URL,
   isRateLimited,
   isServerError,
 } from "../api";
@@ -11,6 +10,7 @@ import {
   previousNonces,
   readCiInfo,
   readGitInfo,
+  resolveApiUrl,
   resolveToken,
 } from "../ci-env";
 import { formatCounts } from "../format";
@@ -29,6 +29,7 @@ export async function finalizeCommand(
   options: FinalizeCommandOptions,
 ): Promise<void> {
   const env = process.env;
+  const apiUrl = resolveApiUrl(env);
   const buildName = options.buildName ?? env[ENV.buildName] ?? "default";
   const nonce = options.nonce ?? env[ENV.nonce] ?? defaultNonce(env);
   if (nonce === null) {
@@ -46,7 +47,7 @@ export async function finalizeCommand(
   let final: Awaited<ReturnType<typeof waitForFinalize>>;
   try {
     const api = createApiClient({
-      baseUrl: env.STATEOFPIXEL_API_URL ?? DEFAULT_API_URL,
+      baseUrl: apiUrl,
       token: await resolveToken(env),
       refreshToken: env[ENV.token] ? undefined : () => resolveToken(env),
     });
@@ -76,12 +77,12 @@ export async function finalizeCommand(
     }
     if (isServerError(error) && !options.strict) {
       console.warn(
-        `stateofpixel: skipped, the service is not reachable (${error instanceof Error ? error.message : error}). Use --strict to fail instead.`,
+        `stateofpixel: skipped, the service at ${apiUrl} is not reachable (${error instanceof Error ? error.message : error}). Use --strict to fail instead.`,
       );
       return;
     }
     if (error instanceof ApiError) {
-      throw new Error(`${error.message} (${error.code})`);
+      throw new Error(`${error.message} (${error.code}) from ${apiUrl}`);
     }
     throw error;
   }

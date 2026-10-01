@@ -9,6 +9,7 @@ import {
   ForkPullRequestError,
   previousNonces,
   readGitInfo,
+  resolveApiUrl,
   resolveToken,
 } from "./ci-env";
 
@@ -127,6 +128,18 @@ it("requests a GitHub Actions OIDC token for the stateofpixel audience", async (
   expect(requested?.searchParams.get("audience")).toBe("stateofpixel");
   expect(requested?.searchParams.get("api-version")).toBe("2.0");
   expect(await resolveToken({ STATEOFPIXEL_TOKEN: "sop_x" })).toBe("sop_x");
+});
+
+it("uses STATEOFPIXEL_API_URL for a self-hosted server", () => {
+  expect(resolveApiUrl({})).toBe("https://stateofpixel.com/api/v1");
+  expect(resolveApiUrl({ STATEOFPIXEL_API_URL: "" })).toBe(
+    "https://stateofpixel.com/api/v1",
+  );
+  expect(
+    resolveApiUrl({
+      STATEOFPIXEL_API_URL: "https://pixel.example.com/api/v1/",
+    }),
+  ).toBe("https://pixel.example.com/api/v1");
 });
 
 it("tells a pull request from a fork apart from a missing permission", async () => {

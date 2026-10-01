@@ -48,6 +48,7 @@ Set these on your Netlify site with `netlify env:set`; `netlify dev` loads them.
 - `CONNECTION_SECRET`: a random string that encrypts GitHub tokens in the database. Set it for the production context only, so deploy previews, whose database branches copy production data, cannot read the tokens.
 - `IMAGE_URL_SECRET`: a random string that signs image uploads and private image links.
 - `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_SECRET`, `DODO_PAYMENTS_ENVIRONMENT` (`test_mode` or `live_mode`): optional. Without them the pricing section shows paid plans as coming soon. The Dodo webhook URL is `<SITE_URL>/api/dodo/webhook`.
+- `STATEOFPIXEL_SELF_HOSTED`: optional, `true` on a self-hosted site. See [Self-hosting](https://stateofpixel.com/docs/self-hosting).
 
 ## Checks
 
