@@ -34,6 +34,9 @@ export const env = {
   get CONNECTION_SECRET() {
     return required("CONNECTION_SECRET");
   },
+  get STATEOFPIXEL_SELF_HOSTED() {
+    return process.env.STATEOFPIXEL_SELF_HOSTED === "true";
+  },
   get DODO_PAYMENTS_API_KEY() {
     return process.env.DODO_PAYMENTS_API_KEY;
   },

@@ -5,7 +5,6 @@ import { InvalidArgumentError } from "commander";
 import {
   ApiError,
   createApiClient,
-  DEFAULT_API_URL,
   isRateLimited,
   isServerError,
 } from "../api";
@@ -15,6 +14,7 @@ import {
   previousNonces,
   readCiInfo,
   readGitInfo,
+  resolveApiUrl,
   resolveToken,
 } from "../ci-env";
 import { createDiffEngine } from "../diff/engine";
@@ -44,6 +44,7 @@ export async function uploadCommand(
   options: UploadCommandOptions,
 ): Promise<void> {
   const env = process.env;
+  const apiUrl = resolveApiUrl(env);
   const stats = await stat(dir).catch(() => undefined);
   if (!stats?.isDirectory()) {
     throw new Error(`Not a directory: ${dir}`);
@@ -80,7 +81,7 @@ export async function uploadCommand(
       dir,
       workDir,
       api: createApiClient({
-        baseUrl: env.STATEOFPIXEL_API_URL ?? DEFAULT_API_URL,
+        baseUrl: apiUrl,
         token: await resolveToken(env),
         refreshToken: env[ENV.token] ? undefined : () => resolveToken(env),
       }),
@@ -110,12 +111,12 @@ export async function uploadCommand(
     }
     if (isServerError(error) && !options.strict) {
       console.warn(
-        `stateofpixel: skipped, the service is not reachable (${error instanceof Error ? error.message : error}). Use --strict to fail instead.`,
+        `stateofpixel: skipped, the service at ${apiUrl} is not reachable (${error instanceof Error ? error.message : error}). Use --strict to fail instead.`,
       );
       return;
     }
     if (error instanceof ApiError) {
-      throw new Error(`${error.message} (${error.code})`);
+      throw new Error(`${error.message} (${error.code}) from ${apiUrl}`);
     }
     throw error;
   } finally {

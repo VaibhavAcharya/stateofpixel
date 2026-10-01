@@ -1,8 +1,10 @@
 import { and, eq, isNull, notInArray } from "drizzle-orm";
 import { z } from "zod";
+import { planFields } from "./accounts.ts";
 import { internal } from "./api.ts";
 import type { Id } from "./dataModel.ts";
 import { first, one } from "./db/index.ts";
+import { env } from "./env.ts";
 import {
   createInstallationToken,
   getInstallation,
@@ -115,6 +117,7 @@ export const upsertAccount = internalMutation({
         )
         .limit(1),
     );
+    const plan = env.STATEOFPIXEL_SELF_HOSTED ? "unlimited" : "free";
     if (existing !== null) {
       await ctx.db
         .update(accounts)
@@ -123,6 +126,9 @@ export const upsertAccount = internalMutation({
           login: args.login,
           type: args.type,
           deletedAt: null,
+          ...(existing.plan === "free" && plan === "unlimited"
+            ? planFields(existing, plan)
+            : {}),
         })
         .where(eq(accounts._id, existing._id));
       return existing._id;
@@ -132,8 +138,8 @@ export const upsertAccount = internalMutation({
         .insert(accounts)
         .values({
           ...args,
-          plan: "free",
-          storageLimitBytes: PLAN_STORAGE_LIMIT_BYTES.free,
+          plan,
+          storageLimitBytes: PLAN_STORAGE_LIMIT_BYTES[plan],
           storageBytes: 0,
         })
         .returning({ _id: accounts._id }),

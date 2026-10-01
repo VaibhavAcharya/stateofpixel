@@ -25,17 +25,7 @@ export const Route = createRootRouteWithContext<{
     ],
     scripts: [
       { children: THEME_SCRIPT },
-      { children: UMAMI_BEFORE_SEND_SCRIPT },
-      {
-        src: "https://cloud.umami.is/script.js",
-        defer: true,
-        "data-website-id": "82c68e9d-e447-43cc-9f60-87ef5c9b1f7f",
-        "data-domains": "stateofpixel.com",
-        "data-before-send": "umamiBeforeSend",
-        "data-exclude-search": "true",
-        "data-do-not-track": "true",
-        "data-performance": "true",
-      },
+      ...(import.meta.env.STATEOFPIXEL_SELF_HOSTED ? [] : UMAMI_SCRIPTS),
     ],
   }),
   headers: () => ({
@@ -45,6 +35,20 @@ export const Route = createRootRouteWithContext<{
   }),
   component: RootComponent,
 });
+
+const UMAMI_SCRIPTS = [
+  { children: UMAMI_BEFORE_SEND_SCRIPT },
+  {
+    src: "https://cloud.umami.is/script.js",
+    defer: true,
+    "data-website-id": "82c68e9d-e447-43cc-9f60-87ef5c9b1f7f",
+    "data-domains": "stateofpixel.com",
+    "data-before-send": "umamiBeforeSend",
+    "data-exclude-search": "true",
+    "data-do-not-track": "true",
+    "data-performance": "true",
+  },
+];
 
 function RootComponent() {
   return (

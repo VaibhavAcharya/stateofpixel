@@ -35,7 +35,14 @@ export const buildConclusion = z.enum([
   "rejected",
 ]);
 
-export const plan = z.enum(["free", "25gb", "100gb", "500gb", "custom"]);
+export const plan = z.enum([
+  "free",
+  "25gb",
+  "100gb",
+  "500gb",
+  "unlimited",
+  "custom",
+]);
 
 export const accountRole = z.enum(["owner", "member"]);
 

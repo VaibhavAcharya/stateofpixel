@@ -1,0 +1,57 @@
+export const meta = {
+  title: "Self-hosting",
+  description: "Run stateofpixel on a Netlify site of your own, with your own GitHub App.",
+  lead: "stateofpixel is open source under the MIT license. You can run it on a Netlify site of your own and point the published CLI at it.",
+};
+
+## What you need
+
+- A Netlify site built from [VaibhavAcharya/stateofpixel](https://github.com/VaibhavAcharya/stateofpixel) or your fork of it. It uses Netlify Functions, Netlify Database, Netlify Blobs and Netlify Identity.
+- A GitHub App of your own. Your instance sets checks and reads repositories through it, so it does not use the stateofpixel.com app.
+
+## Deploy the site
+
+Create a Netlify site from the repository. `netlify.toml` has the build command, the functions and their schedules. Netlify applies new database migrations before it publishes each deploy.
+
+## Create the GitHub App
+
+Create a GitHub App owned by the organization whose repositories you want to test. [Environment variables](https://github.com/VaibhavAcharya/stateofpixel/blob/main/CONTRIBUTING.md#environment-variables) in CONTRIBUTING.md lists the permissions, events and callback URLs it needs. Use your site's URL wherever it says `SITE_URL`. The webhook URL is `<SITE_URL>/api/github/webhook`.
+
+Install the app on the repositories you want. Each one becomes a project.
+
+## Turn on sign-in
+
+Enable Identity on the site and turn on its GitHub provider. People sign in with GitHub, then connect their GitHub account, and what they can see follows their access on GitHub. See [Who can see and do what](/docs/security#who-can-see-and-do-what).
+
+## Set the environment variables
+
+Set the variables listed in [Environment variables](https://github.com/VaibhavAcharya/stateofpixel/blob/main/CONTRIBUTING.md#environment-variables) on the site, with `SITE_URL` set to your site's URL. Leave out the `DODO_PAYMENTS_*` variables. Without them there is no checkout.
+
+Then set `STATEOFPIXEL_SELF_HOSTED` to `true`. With it:
+
+- Accounts are on the Unlimited plan, with no storage limit. Accounts created before you set it move to Unlimited the next time their installation syncs, for example when you add a repository to the installation. An account on a custom plan keeps it.
+- The daily limits on builds and uploaded bytes do not apply. The other [limits](/docs/limits#limits) still do.
+- Pages load no analytics script.
+
+Redeploy after changing it. The build reads it to leave out the analytics script.
+
+## Point CI at your site
+
+The published `stateofpixel` CLI works with your site. Set `STATEOFPIXEL_API_URL` to your site's API in every workflow that uploads:
+
+```yaml .github/workflows/visual.yml
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  STATEOFPIXEL_API_URL: https://pixel.example.com/api/v1
+```
+
+Everything else is the same as in the [Quickstart](/docs). On GitHub Actions the CLI signs in with the OIDC token, and your site checks it against its own projects. On other CI, create a project token on your site. See [Other CI](/docs/other-ci).
+
+When an upload fails, the CLI prints the API URL it used, so a wrong URL shows in the error.
+
+## Update
+
+Pull the changes from the repository and deploy. Netlify applies the new migrations before it publishes the deploy.

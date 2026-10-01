@@ -39,6 +39,7 @@ export const PLAN_NAMES = {
   "25gb": "25 GB",
   "100gb": "100 GB",
   "500gb": "500 GB",
+  unlimited: "Unlimited",
   custom: "Custom",
 } as const;
 
@@ -176,8 +177,10 @@ export function PlanBox({
           <span className="font-medium">{planName} plan</span>
           <span className="text-muted tabular-nums">
             {" "}
-            · {formatGigabytes(storage.storageBytes)} of{" "}
-            {formatGigabytes(storage.storageLimitBytes)} used
+            · {formatGigabytes(storage.storageBytes)}
+            {storage.plan === "unlimited"
+              ? " used"
+              : ` of ${formatGigabytes(storage.storageLimitBytes)} used`}
           </span>
           {period !== null && <span className="text-muted"> · {period}</span>}
           {billing.error !== null && (

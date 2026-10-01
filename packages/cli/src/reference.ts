@@ -1,3 +1,5 @@
+import { DEFAULT_API_URL } from "./api";
+
 export const ENV = {
   buildName: "STATEOFPIXEL_BUILD_NAME",
   shard: "STATEOFPIXEL_SHARD",
@@ -5,6 +7,7 @@ export const ENV = {
   baselineBranch: "STATEOFPIXEL_BASELINE_BRANCH",
   token: "STATEOFPIXEL_TOKEN",
   dir: "STATEOFPIXEL_DIR",
+  apiUrl: "STATEOFPIXEL_API_URL",
 } as const;
 
 export const ENVIRONMENT: { name: string; description: string }[] = [
@@ -16,6 +19,10 @@ export const ENVIRONMENT: { name: string; description: string }[] = [
     name: ENV.dir,
     description:
       "folder that snapshot() writes to and the Playwright reporter uploads, stateofpixel-screenshots by default",
+  },
+  {
+    name: ENV.apiUrl,
+    description: `API of a self-hosted server, ${DEFAULT_API_URL} by default`,
   },
   {
     name: "CI",

@@ -5,6 +5,7 @@ import { confirmUploadedImages, findImages, getUrl } from "./blobs.ts";
 import { touchCheck } from "./checks.ts";
 import type { Doc, Id } from "./dataModel.ts";
 import { first, one } from "./db/index.ts";
+import { env } from "./env.ts";
 import { ciError } from "./lib/ciErrors.ts";
 import { snapshotResult, upload } from "./lib/ciRequests.ts";
 import { conclude } from "./lib/conclude.ts";
@@ -314,6 +315,9 @@ async function createBuild(
 }
 
 async function checkDailyLimits(ctx: MutationCtx, accountId: Id<"accounts">) {
+  if (env.STATEOFPIXEL_SELF_HOSTED) {
+    return;
+  }
   const uploads = await rateLimiter.check(ctx, "uploadedBytes", {
     key: accountId,
   });

@@ -80,6 +80,11 @@ const buildingOnNetlify =
   process.env.NETLIFY === "true" || process.env.NETLIFY_LOCAL === "true";
 
 export default defineConfig(({ command }) => ({
+  define: {
+    "import.meta.env.STATEOFPIXEL_SELF_HOSTED": JSON.stringify(
+      process.env.STATEOFPIXEL_SELF_HOSTED === "true",
+    ),
+  },
   plugins: [
     ogImages(),
     llmsFiles(),

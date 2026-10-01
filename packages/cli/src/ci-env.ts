@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
-import { ApiError, retryServerErrors } from "./api";
+import { ApiError, DEFAULT_API_URL, retryServerErrors } from "./api";
 import { ENV } from "./reference";
 
 const execFileAsync = promisify(execFile);
@@ -104,6 +104,10 @@ export function previousNonces(env: Env): string[] {
     { length: Math.min(Math.max(attempt - 1, 0), 10) },
     (_, index) => `${env.GITHUB_RUN_ID}-${attempt - 1 - index}`,
   );
+}
+
+export function resolveApiUrl(env: Env): string {
+  return (env[ENV.apiUrl] || DEFAULT_API_URL).replace(/\/+$/, "");
 }
 
 export async function resolveToken(
