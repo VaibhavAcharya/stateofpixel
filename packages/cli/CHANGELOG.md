@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.7.0...v1.8.0) (2026-10-01)
+
+
+### Features
+
+* add self-hosted mode and document STATEOFPIXEL_API_URL ([#77](https://github.com/VaibhavAcharya/stateofpixel/issues/77)) ([07e7ea4](https://github.com/VaibhavAcharya/stateofpixel/commit/07e7ea43f7c2ba93232ac8d9ffa3a3a20821c827))
+
 ## [1.7.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.6.3...v1.7.0) (2026-09-30)
 
 
