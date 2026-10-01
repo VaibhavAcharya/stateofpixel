@@ -334,11 +334,12 @@ it("starts the retention clock when a PR closes", async () => {
     action: "closed",
     installation: { id: 10 },
     repository: toGithubRepository({ id: 100, name: "web-app" }),
-    pull_request: { number: 7 },
+    pull_request: { number: 7, merged: true },
   });
 
   const build = await t.run(async (ctx) =>
     first(await ctx.db.select().from(builds).where(eq(builds._id, buildId))),
   );
   expect(build?.prClosedAt).toBe(Date.now());
+  expect(build?.prMergedAt).toBe(Date.now());
 });

@@ -105,6 +105,7 @@ export const build: Build = {
   commitSha: "4f2a9c1e8b7d6a5f4e3d2c1b0a9f8e7d6c5b4a39",
   commitMessage: "Redesign the pricing and sign-in pages",
   prNumber: 88,
+  prState: "open",
   status: "finalized",
   conclusion: "changes",
   superseded: false,

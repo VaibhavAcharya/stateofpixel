@@ -18,6 +18,7 @@ import {
   LeadCopy,
   listRowLinkClass,
   ProjectNotFound,
+  PrStatePill,
   RelativeTime,
   SkeletonRows,
   Spinner,
@@ -191,6 +192,7 @@ function useBuildColumns({
                 storageBlocked={row.original.storageBlocked}
               />
               {row.original.superseded && <SupersededPill />}
+              <PrStatePill state={row.original.prState} />
             </span>
           ),
         }),
@@ -428,6 +430,7 @@ function MobileBuildRow({
             storageBlocked={build.storageBlocked}
           />
           {build.superseded && <SupersededPill />}
+          <PrStatePill state={build.prState} />
           <span className="ml-auto text-xs text-muted">
             <RelativeTime timestamp={build.createdAt} />
           </span>

@@ -53,6 +53,7 @@ export const handle = httpAction(async (ctx, request) => {
     installationId: readInstallationId(payload),
     repository: readRepository(payload),
     pullRequestNumber: readPullRequestNumber(payload),
+    pullRequestMerged: readPullRequestMerged(payload),
   });
   return new Response(null, { status: 204 });
 });
@@ -73,6 +74,7 @@ export const receive = internalMutation({
       })
       .nullable(),
     pullRequestNumber: z.number().nullable().optional(),
+    pullRequestMerged: z.boolean().optional(),
   },
   handler: async (ctx, args) => {
     const seen = first(
@@ -124,6 +126,7 @@ export const receive = internalMutation({
         providerRepoId: args.repository.providerRepoId,
         prNumber: args.pullRequestNumber,
         closed: args.action === "closed",
+        merged: args.pullRequestMerged,
       });
     }
     return null;
@@ -135,6 +138,11 @@ function readPullRequestNumber(payload: Record<string, unknown>) {
   return isObject(pullRequest) && typeof pullRequest.number === "number"
     ? pullRequest.number
     : null;
+}
+
+function readPullRequestMerged(payload: Record<string, unknown>) {
+  const pullRequest = payload.pull_request;
+  return isObject(pullRequest) && pullRequest.merged === true;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

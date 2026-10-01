@@ -76,11 +76,15 @@ function llmsFiles(): Plugin {
   };
 }
 
-export default defineConfig({
+const buildingOnNetlify =
+  process.env.NETLIFY === "true" || process.env.NETLIFY_LOCAL === "true";
+
+export default defineConfig(({ command }) => ({
   plugins: [
     ogImages(),
     llmsFiles(),
-    netlify({ dev: { edgeFunctions: { enabled: false } } }),
+    (command === "serve" || buildingOnNetlify) &&
+      netlify({ dev: { edgeFunctions: { enabled: false } } }),
     tailwindcss(),
     highlightSnippets(),
     {
@@ -92,4 +96,4 @@ export default defineConfig({
     tanstackStart(),
     viteReact(),
   ],
-});
+}));

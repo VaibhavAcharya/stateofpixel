@@ -1,0 +1,1 @@
+ALTER TABLE "builds" ADD COLUMN "pr_merged_at" bigint;
