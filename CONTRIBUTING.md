@@ -18,7 +18,7 @@ netlify link
 netlify dev
 ```
 
-`netlify dev` needs Netlify CLI 27 or newer. It runs `pnpm dev` behind http://localhost:8888 with a local Postgres database, Netlify Blobs and Netlify Identity. `pnpm dev` alone has none of those, so use `netlify dev`. Delete `apps/web/.netlify/v1` after a local `pnpm build`, or `netlify dev` serves that build instead of the dev server.
+`netlify dev` needs Netlify CLI 27 or newer. It runs `pnpm dev` behind http://localhost:8888 with a local Postgres database, Netlify Blobs and Netlify Identity. `pnpm dev` alone has none of those, so use `netlify dev`.
 
 Apply the migrations with `pnpm --filter @stateofpixel/backend db:migrate` while `netlify dev` is stopped, and again after pulling schema changes. In this monorepo, `netlify database migrations apply` writes to a different local database than the one `netlify dev` uses, so do not use it here.
 
