@@ -133,13 +133,16 @@ export function Viewer({
   newLabel,
   settings,
   navigation,
+  headings = true,
 }: {
   snapshot: ViewerSnapshot;
   baselineLabel: string;
   newLabel: string;
   settings: ViewerSettings;
   navigation: ReactNode;
+  headings?: boolean;
 }) {
+  const Title = headings ? "h2" : "p";
   const { mode, setMode } = settings;
   const { image, baselineImage } = snapshot;
   const single = image === null || baselineImage === null;
@@ -153,12 +156,12 @@ export function Viewer({
     <div className="flex min-h-0 flex-1 flex-col">
       <DiffColorFilters />
       <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-2">
-        <h2
+        <Title
           className="min-w-0 text-base font-medium max-sm:w-full"
           title={snapshot.name}
         >
           <SnapshotName name={snapshot.name} />
-        </h2>
+        </Title>
         <DiffStatusPill status={snapshot.diffStatus} />
         {snapshot.diffRatio !== null && (
           <span className="text-xs whitespace-nowrap text-muted tabular-nums">

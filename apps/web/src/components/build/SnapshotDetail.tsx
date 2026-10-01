@@ -26,6 +26,7 @@ export function SnapshotDetail({
   build,
   snapshotId,
   settings,
+  headings = true,
   canWrite,
   canReview,
   rejecting,
@@ -41,6 +42,7 @@ export function SnapshotDetail({
   build: Build;
   snapshotId: Id<"snapshots">;
   settings: ViewerSettings;
+  headings?: boolean;
   canWrite: boolean;
   canReview: boolean;
   rejecting: boolean;
@@ -86,6 +88,7 @@ export function SnapshotDetail({
         }
         newLabel={`New #${build.number}`}
         navigation={navigation}
+        headings={headings}
       />
       <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-4 py-2.5">
         {rejecting ? (

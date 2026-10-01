@@ -655,11 +655,11 @@ export function FinalBand({ current }: { current?: Competitor }) {
         className={`${SECTION} grid grid-cols-2 items-end gap-12 max-lg:grid-cols-1`}
       >
         <div>
-          <p className={DISPLAY}>
+          <h2 className={DISPLAY}>
             Every pixel, reviewed.
             <br />
             <span className="text-muted">Nothing ships by surprise.</span>
-          </p>
+          </h2>
           <div className="mt-10 flex flex-wrap items-center gap-3">
             <AuthButton label="Start free with GitHub" />
             <Link to="/docs" className={buttonClass("ghost")}>

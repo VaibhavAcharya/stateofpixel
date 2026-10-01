@@ -44,6 +44,7 @@ export function BuildHeader({
   canWrite,
   canReview,
   links = true,
+  headings = true,
   onApproveAll,
   onRejectAll,
 }: {
@@ -53,24 +54,26 @@ export function BuildHeader({
   canWrite: boolean;
   canReview: boolean;
   links?: boolean;
+  headings?: boolean;
   onApproveAll: () => void;
   onRejectAll: () => void;
 }) {
   const github = `https://github.com/${owner}/${repo}`;
   const nothingPending = !canReview || build.counts.pending === 0;
+  const Title = headings ? "h1" : "p";
 
   return (
     <header className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-3 border-b border-border bg-surface px-4 py-3">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex min-w-0 items-center gap-2.5">
-          <h1 className="flex min-w-0 items-baseline gap-2 text-lg font-semibold tracking-[-0.01em]">
+          <Title className="flex min-w-0 items-baseline gap-2 text-lg font-semibold tracking-[-0.01em]">
             <span className="shrink-0 text-muted tabular-nums">
               #{build.number}
             </span>
             <span className="truncate">
               {build.commitMessage || "No commit message"}
             </span>
-          </h1>
+          </Title>
           <BuildStatePill
             status={build.status}
             conclusion={build.conclusion}
