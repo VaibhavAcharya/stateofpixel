@@ -5,6 +5,8 @@ import {
   CircleNotchIcon,
   ClockIcon,
   EqualsIcon,
+  GitMergeIcon,
+  GitPullRequestIcon,
   MinusIcon,
   PlusIcon,
   WarningIcon,
@@ -184,6 +186,23 @@ export function SupersededPill() {
   return (
     <span className="inline-flex h-5 shrink-0 items-center rounded-xs px-1.5 text-2xs font-medium text-muted shadow-[inset_0_0_0_1px_var(--color-border)]">
       Superseded
+    </span>
+  );
+}
+
+export function PrStatePill({
+  state,
+}: {
+  state: "open" | "closed" | "merged" | null;
+}) {
+  if (state !== "closed" && state !== "merged") {
+    return null;
+  }
+  const Icon = state === "merged" ? GitMergeIcon : GitPullRequestIcon;
+  return (
+    <span className="inline-flex h-5 shrink-0 items-center gap-1 rounded-xs px-1.5 text-2xs font-medium text-muted shadow-[inset_0_0_0_1px_var(--color-border)]">
+      <Icon size={12} />
+      {state === "merged" ? "PR merged" : "PR closed"}
     </span>
   );
 }

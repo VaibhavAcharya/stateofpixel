@@ -216,6 +216,7 @@ export const builds = pgTable(
     ancestors: text().array().notNull(),
     prNumber: integer(),
     prClosedAt: time(),
+    prMergedAt: time(),
     mergedPrNumber: integer(),
     nonce: text().notNull(),
     shardsTotal: integer(),

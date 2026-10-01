@@ -119,6 +119,14 @@ export const Superseded: Story = {
   args: { build: { ...build, superseded: true, supersededBy: 415 } },
 };
 
+export const PullRequestMerged: Story = {
+  args: { build: { ...build, prState: "merged" } },
+};
+
+export const PullRequestClosed: Story = {
+  args: { build: { ...build, prState: "closed" } },
+};
+
 export const FromMergedPullRequest: Story = {
   args: {
     build: {

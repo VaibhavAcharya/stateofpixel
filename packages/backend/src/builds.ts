@@ -1175,6 +1175,7 @@ function toBuildSummary(build: Doc<"builds">) {
     commitSha: build.commitSha,
     commitMessage: build.commitMessage,
     prNumber: build.prNumber ?? null,
+    prState: toPrState(build),
     status: build.status,
     conclusion: build.conclusion ?? null,
     counts: build.counts,
@@ -1186,6 +1187,16 @@ function toBuildSummary(build: Doc<"builds">) {
     },
     createdAt: build._creationTime,
   };
+}
+
+function toPrState(build: Doc<"builds">): "open" | "closed" | "merged" | null {
+  if (build.prNumber === null) {
+    return null;
+  }
+  if (build.prMergedAt !== null) {
+    return "merged";
+  }
+  return build.prClosedAt === null ? "open" : "closed";
 }
 
 const buildFilter = z.enum([

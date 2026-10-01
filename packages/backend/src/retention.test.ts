@@ -236,6 +236,30 @@ it("marks the builds of a PR as closed and reopened", async () => {
   expect(await closedAt()).toBeNull();
 });
 
+it("marks the builds of a merged PR as merged", async () => {
+  const { t, insertBuild } = await setup();
+  const buildId = await insertBuild({ branch: "feature", prNumber: 7 });
+  const build = () =>
+    t.run(async (ctx) =>
+      first(await ctx.db.select().from(builds).where(eq(builds._id, buildId))),
+    );
+
+  await t.mutation(internal.retention.setPrClosed, {
+    providerRepoId: 100,
+    prNumber: 7,
+    closed: true,
+  });
+  expect((await build())?.prMergedAt).toBeNull();
+
+  await t.mutation(internal.retention.setPrClosed, {
+    providerRepoId: 100,
+    prNumber: 7,
+    closed: true,
+    merged: true,
+  });
+  expect((await build())?.prMergedAt).toBe(Date.now());
+});
+
 it("deletes builds of PRs closed longer than the retention setting", async () => {
   const {
     t,

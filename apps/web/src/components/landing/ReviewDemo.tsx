@@ -28,6 +28,7 @@ const DEMO_FIXTURE: BuildFixture = {
     commitSha: "8c41e0d2b7a95f63e1d4c0b9a8f7e6d5c4b3a291",
     commitMessage: "Tighten pricing cards",
     prNumber: 131,
+    prState: "open",
     status: "finalized",
     superseded: false,
     shards: { done: 1, total: 1 },

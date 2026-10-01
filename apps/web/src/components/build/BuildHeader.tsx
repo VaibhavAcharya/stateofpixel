@@ -13,6 +13,7 @@ import { formatCount, shortSha } from "../../lib/format";
 import {
   BuildStatePill,
   buttonClass,
+  PrStatePill,
   RelativeTime,
   Spinner,
   SupersededPill,
@@ -82,6 +83,7 @@ export function BuildHeader({
             storageBlocked={build.storageBlocked}
           />
           {build.superseded && <SupersededPill />}
+          <PrStatePill state={build.prState} />
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
           <MetaItem icon={GitBranchIcon} label="Branch">

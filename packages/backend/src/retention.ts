@@ -36,8 +36,9 @@ export const setPrClosed = internalMutation({
     providerRepoId: z.number(),
     prNumber: z.number(),
     closed: z.boolean(),
+    merged: z.boolean().optional(),
   },
-  handler: async (ctx, { providerRepoId, prNumber, closed }) => {
+  handler: async (ctx, { providerRepoId, prNumber, closed, merged }) => {
     const project = first(
       await ctx.db
         .select()
@@ -62,10 +63,11 @@ export const setPrClosed = internalMutation({
       .orderBy(asc(builds._creationTime), asc(builds._id))
       .limit(MAX_PR_BUILDS);
     const prClosedAt = closed ? Date.now() : null;
+    const prMergedAt = closed && merged === true ? prClosedAt : null;
     for (const build of prBuilds) {
       await ctx.db
         .update(builds)
-        .set({ prClosedAt })
+        .set({ prClosedAt, prMergedAt })
         .where(eq(builds._id, build._id));
     }
     return null;
