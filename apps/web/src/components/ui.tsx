@@ -292,17 +292,20 @@ export function LeadCopy({
   title,
   children,
   className = "max-w-[65ch]",
+  as: Heading = "h2",
 }: {
   title: string;
   children: ReactNode;
   className?: string;
+  as?: "h1" | "h2";
 }) {
   return (
-    <p
+    <div
       className={`text-2xl font-[450] tracking-[-0.035em] text-balance text-muted max-sm:text-xl ${className}`}
     >
-      <strong className="font-semibold text-text">{title}</strong> {children}
-    </p>
+      <Heading className="inline font-semibold text-text">{title}</Heading>{" "}
+      {children}
+    </div>
   );
 }
 

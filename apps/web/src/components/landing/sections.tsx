@@ -35,7 +35,7 @@ export const DISPLAY =
 
 /* Header */
 
-const REPO_URL = "https://github.com/VaibhavAcharya/stateofpixel";
+export const REPO_URL = "https://github.com/VaibhavAcharya/stateofpixel";
 export const CHANGELOG_URL = `${REPO_URL}/blob/main/packages/cli/CHANGELOG.md`;
 
 const NAV = [
@@ -648,14 +648,14 @@ export function FinalStartFree() {
         className={`${SECTION} grid grid-cols-2 items-end gap-12 max-lg:grid-cols-1`}
       >
         <div>
-          <p className={DISPLAY}>
+          <h2 className={DISPLAY}>
             Start free.
             <br />
             <span className="text-muted">
               Pay when you pass{" "}
               <span className="whitespace-nowrap">{facts.freeStorage}.</span>
             </span>
-          </p>
+          </h2>
           <ul className="mt-8 flex flex-col gap-2 text-base">
             {[
               "No card to start",

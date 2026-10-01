@@ -115,16 +115,16 @@ function DemoRun({ onReset }: { onReset: () => void }) {
               owner="acme"
               repo="web"
               links={false}
+              headings={false}
               keyboard={active}
               track={demoTrack}
             />
           </section>
         </ShortcutsContext.Provider>
       </BuildDataContext.Provider>
-      <ShortcutsDialog
-        open={shortcutsOpen}
-        onClose={() => setShortcutsOpen(false)}
-      />
+      {shortcutsOpen && (
+        <ShortcutsDialog open onClose={() => setShortcutsOpen(false)} />
+      )}
       <CheckRun build={build} onReset={onReset} />
     </div>
   );

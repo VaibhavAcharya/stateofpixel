@@ -98,6 +98,7 @@ export function BuildPage({
   owner,
   repo,
   links = true,
+  headings = true,
   keyboard = true,
   track = trackEvent,
 }: {
@@ -106,6 +107,7 @@ export function BuildPage({
   owner: string;
   repo: string;
   links?: boolean;
+  headings?: boolean;
   keyboard?: boolean;
   track?: typeof trackEvent;
 }) {
@@ -338,6 +340,7 @@ export function BuildPage({
         repo={repo}
         canWrite={canWrite}
         links={links}
+        headings={headings}
         canReview={canReview}
         onApproveAll={() => reviewAll("approve")}
         onRejectAll={() => reviewAll("reject")}
@@ -436,6 +439,7 @@ export function BuildPage({
               build={build}
               snapshotId={snapshotId as Id<"snapshots">}
               settings={settings}
+              headings={headings}
               canWrite={canWrite}
               canReview={canReview}
               rejecting={rejecting}

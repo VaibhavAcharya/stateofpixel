@@ -71,7 +71,7 @@ function Brand() {
   return (
     <PublicPage>
       <section className={`${SECTION} pb-12`}>
-        <LeadCopy title="Brand." className="max-w-[720px]">
+        <LeadCopy as="h1" title="Brand." className="max-w-[720px]">
           The stateofpixel logo, colors and type. Download what you need.
         </LeadCopy>
         <div className="mt-12 grid grid-cols-2 gap-4 max-md:grid-cols-1">
