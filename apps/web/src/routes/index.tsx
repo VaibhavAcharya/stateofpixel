@@ -14,10 +14,12 @@ import {
   PipelinesSection,
   PromisesSection,
   PublicPage,
+  REPO_URL,
   SwitchStrip,
   TeamSection,
 } from "../components/landing/sections";
 import { PAGES, pageLinks, pageMeta, SITE_URL } from "../lib/pageMeta";
+import { SUPPORT_EMAIL } from "../lib/supportEmail";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,6 +34,7 @@ export const Route = createFileRoute("/")({
     scripts: [
       { type: "application/ld+json", children: faqJsonLd() },
       { type: "application/ld+json", children: softwareJsonLd() },
+      { type: "application/ld+json", children: organizationJsonLd() },
     ],
   }),
   component: Home,
@@ -82,5 +85,17 @@ function softwareJsonLd() {
       price: tier.monthly,
       priceCurrency: "USD",
     })),
+  });
+}
+
+function organizationJsonLd() {
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "stateofpixel",
+    url: SITE_URL,
+    logo: `${SITE_URL}/brand/stateofpixel-mark.png`,
+    email: SUPPORT_EMAIL,
+    sameAs: [REPO_URL, "https://www.npmjs.com/package/stateofpixel"],
   });
 }
