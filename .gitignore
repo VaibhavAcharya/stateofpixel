@@ -8,3 +8,4 @@ dist
 .output
 coverage
 .claude/worktrees
+deno.lock
