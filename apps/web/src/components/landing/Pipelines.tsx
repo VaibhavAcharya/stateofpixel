@@ -103,7 +103,6 @@ type Scenario = {
   group: Group;
   icon: Icon;
   flag?: string;
-  answer: string;
   docs: { slug: string; hash?: string; label: string };
   cases: Case[];
 };
@@ -256,8 +255,6 @@ const SCENARIOS: Scenario[] = [
     group: "ci",
     icon: SquaresFourIcon,
     flag: "--shard",
-    answer:
-      "Each shard uploads its part. The check reports once, after the last.",
     docs: { slug: "sharding", label: "Sharding" },
     cases: [
       {
@@ -293,7 +290,6 @@ const SCENARIOS: Scenario[] = [
     group: "ci",
     icon: StackIcon,
     flag: "--build-name",
-    answer: "Each suite gets its own baselines and its own check.",
     docs: { slug: "suites", label: "Suites" },
     cases: [
       {
@@ -316,7 +312,6 @@ const SCENARIOS: Scenario[] = [
     group: "ci",
     icon: FolderSimpleIcon,
     flag: "--subset",
-    answer: "Snapshots that did not run are not reported as removed.",
     docs: {
       slug: "any-screenshots",
       hash: "partial-runs",
@@ -358,8 +353,6 @@ const SCENARIOS: Scenario[] = [
     title: "New pushes and rebases",
     group: "branch",
     icon: GitCommitIcon,
-    answer:
-      "Approvals carry over to the next push. Rejected images come back as pending.",
     docs: { slug: "review", hash: "new-pushes", label: "Reviewing changes" },
     cases: [
       {
@@ -391,8 +384,6 @@ const SCENARIOS: Scenario[] = [
     title: "Squash and rebase merges",
     group: "branch",
     icon: GitMergeIcon,
-    answer:
-      "The build on main finds its pull request and marks changes never approved there.",
     docs: { slug: "baselines", hash: "after-a-merge", label: "Baselines" },
     cases: [
       {
@@ -428,7 +419,6 @@ const SCENARIOS: Scenario[] = [
     group: "branch",
     icon: SwapIcon,
     flag: "--threshold",
-    answer: "A snapshot that flips back and forth is marked as looking flaky.",
     docs: {
       slug: "stable-screenshots",
       hash: "find-flaky-snapshots",
@@ -475,7 +465,6 @@ const SCENARIOS: Scenario[] = [
     title: "Large suites",
     group: "limits",
     icon: ImagesIcon,
-    answer: `Up to ${facts.snapshotsPerBuild} snapshots a build. Unchanged images are not uploaded again.`,
     docs: { slug: "limits", hash: "limits", label: "Limits and storage" },
     cases: [
       {
@@ -510,7 +499,6 @@ const SCENARIOS: Scenario[] = [
     group: "limits",
     icon: CloudSlashIcon,
     flag: "--strict",
-    answer: "If stateofpixel is down, the upload warns and exits 0.",
     docs: { slug: "cli", hash: "exit-codes", label: "CLI" },
     cases: [
       {
@@ -535,7 +523,6 @@ const SCENARIOS: Scenario[] = [
     title: "Running out of storage",
     group: "limits",
     icon: DatabaseIcon,
-    answer: `Warns at ${facts.storageWarning}. After ${facts.graceDays} days over, the check passes with a note.`,
     docs: {
       slug: "limits",
       hash: "when-an-account-is-over-its-limit",
@@ -614,6 +601,8 @@ function CaseSwitch({
           type="button"
           aria-pressed={value === index}
           onClick={() => onChange(index)}
+          data-umami-event="Pipeline case"
+          data-umami-event-case={option.label}
           className={`h-7 rounded-sm px-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
             value === index
               ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
@@ -681,7 +670,6 @@ export function PipelinesSection() {
   const [selected, setSelected] = useState(0);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const [bar, setBar] = useState<{ top: number; height: number } | null>(null);
-  const scenario = SCENARIOS[selected] ?? SCENARIOS[0];
 
   useEffect(() => {
     const tab = tabs.current[selected];
@@ -757,9 +745,11 @@ export function PipelinesSection() {
                   role="tab"
                   id={`pipelines-tab-${index}`}
                   aria-selected={active}
-                  aria-controls="pipelines-panel"
+                  aria-controls={`pipelines-panel-${index}`}
                   tabIndex={active ? 0 : -1}
                   onClick={() => select(index)}
+                  data-umami-event="Pipeline scenario"
+                  data-umami-event-scenario={item.title}
                   className={`flex h-9 shrink-0 items-center gap-2.5 rounded-sm px-3 text-left text-sm whitespace-nowrap transition-colors duration-100 lg:rounded-l-none ${
                     active
                       ? "bg-hover font-medium text-text"
@@ -778,16 +768,18 @@ export function PipelinesSection() {
             );
           })}
         </div>
-        {scenario !== undefined && (
+        {SCENARIOS.map((item, index) => (
           <div
+            key={item.title}
             role="tabpanel"
-            id="pipelines-panel"
-            aria-labelledby={`pipelines-tab-${selected}`}
+            id={`pipelines-panel-${index}`}
+            aria-labelledby={`pipelines-tab-${index}`}
+            hidden={index !== selected}
             className="min-w-0"
           >
-            <ScenarioDetail key={scenario.title} scenario={scenario} />
+            <ScenarioDetail scenario={item} />
           </div>
-        )}
+        ))}
       </div>
     </section>
   );

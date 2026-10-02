@@ -120,7 +120,13 @@ export function BuildStatePill({
 }: {
   status: BuildStatus;
   conclusion: BuildConclusion | null;
-  counts: { pending: number; changed: number; added: number; rejected: number };
+  counts: {
+    pending: number;
+    approved: number;
+    changed: number;
+    added: number;
+    rejected: number;
+  };
   shards: { done: number; total: number | null };
   storageBlocked: boolean;
 }) {
@@ -176,7 +182,9 @@ export function BuildStatePill({
     default:
       return (
         <Pill tone="pending" icon={CircleIcon}>
-          {formatCount(counts.pending)} to review
+          {formatCount(counts.pending)}/
+          {formatCount(counts.pending + counts.approved + counts.rejected)} to
+          review
         </Pill>
       );
   }
@@ -223,21 +231,9 @@ export function Spinner({
   );
 }
 
-export function Kbd({
-  children,
-  inverted = false,
-}: {
-  children: ReactNode;
-  inverted?: boolean;
-}) {
+export function Kbd({ children }: { children: ReactNode }) {
   return (
-    <kbd
-      className={`inline-flex h-4 min-w-4 items-center justify-center rounded-[4px] px-1 font-mono text-[10px] leading-none font-normal ${
-        inverted
-          ? "bg-accent-fg/15 text-accent-fg/80"
-          : "bg-surface text-muted shadow-[inset_0_0_0_1px_var(--color-border)]"
-      }`}
-    >
+    <kbd className="inline-flex h-4 min-w-4 align-middle items-center justify-center rounded-[4px] bg-surface px-1 font-mono text-[10px] leading-none font-normal text-muted shadow-[inset_0_0_0_1px_var(--color-border)]">
       {children}
     </kbd>
   );
@@ -283,16 +279,18 @@ export function Tooltip({
   label,
   align = "start",
   className = "",
+  wrapperClassName = "inline-flex",
   children,
 }: {
   label: string;
   align?: "start" | "end";
   className?: string;
+  wrapperClassName?: string;
   children: ReactElement<{ "aria-describedby"?: string }>;
 }) {
   const id = useId();
   return (
-    <span className="group/tooltip relative inline-flex">
+    <span className={`group/tooltip relative ${wrapperClassName}`}>
       {cloneElement(children, { "aria-describedby": id })}
       <span
         role="tooltip"

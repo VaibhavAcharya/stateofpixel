@@ -19,6 +19,7 @@ import {
   RelativeTime,
   Spinner,
   SupersededPill,
+  Tooltip,
 } from "../ui";
 
 import type { Build } from "./types";
@@ -311,6 +312,23 @@ export function Banners({
 
 const VERDICT_POSITION = { reject: 0, none: 1, approve: 2 } as const;
 
+export function buildVerdict({
+  counts,
+  conclusion,
+  buildAction,
+}: Pick<Build, "counts" | "conclusion" | "buildAction">) {
+  return (
+    buildAction ??
+    (counts.pending > 0
+      ? "none"
+      : conclusion === "rejected"
+        ? "reject"
+        : conclusion === "approved"
+          ? "approve"
+          : "none")
+  );
+}
+
 function VerdictSwitch({
   counts,
   conclusion,
@@ -332,17 +350,9 @@ function VerdictSwitch({
   const total = pending + approved + rejected;
   const share = (value: number) =>
     `${total === 0 ? 0 : (value / total) * 100}%`;
-  const verdict =
-    buildAction ??
-    (pending > 0
-      ? "none"
-      : conclusion === "rejected"
-        ? "reject"
-        : conclusion === "approved"
-          ? "approve"
-          : "none");
+  const verdict = buildVerdict({ counts, conclusion, buildAction });
   const segment =
-    "relative z-10 flex h-7 min-w-0 items-center justify-center gap-1.5 rounded-[9px] px-3 text-sm font-medium whitespace-nowrap transition-colors duration-150 disabled:cursor-default";
+    "relative z-10 flex h-7 w-full min-w-0 items-center justify-center gap-1.5 rounded-[9px] px-3 text-sm font-medium whitespace-nowrap transition-colors duration-150 disabled:cursor-default";
   const side = (value: "approve" | "reject") =>
     verdict === value
       ? value === "approve"
@@ -355,74 +365,81 @@ function VerdictSwitch({
   return (
     <fieldset
       aria-label="Review the whole build"
-      className="relative m-0 grid w-[440px] grid-cols-3 overflow-hidden rounded-control border-0 bg-surface-2 p-0.5 max-sm:w-full"
+      className="relative m-0 grid w-[440px] grid-cols-3 rounded-control border-0 bg-surface-2 p-0.5 max-sm:w-full"
     >
       <span
         aria-hidden
         className="absolute top-0.5 left-0.5 h-7 w-[calc((100%-4px)/3)] rounded-[9px] bg-surface shadow-[inset_0_0_0_1px_var(--color-border)] transition-[translate] duration-200 ease-out-strong motion-reduce:transition-none"
         style={{ translate: `${VERDICT_POSITION[verdict] * 100}% 0` }}
       />
-      <button
-        type="button"
-        aria-pressed={verdict === "reject"}
-        title="Reject every snapshot left to review"
-        disabled={!canSwitch("reject")}
-        onClick={onReject}
-        className={`${segment} ${side("reject")}`}
-      >
-        <XIcon size={14} weight="bold" className="shrink-0" />
-        {verdict === "reject" ? "Rejected" : "Reject build"}
-      </button>
-      <button
-        type="button"
-        title={
-          verdict === "none"
-            ? undefined
-            : buildAction === null
-              ? "Return every snapshot to review"
-              : "Undo the build review"
-        }
-        disabled={!canReview || verdict === "none"}
-        onClick={onUndo}
-        className={`${segment} pb-1 max-sm:text-xs ${verdict === "none" ? "text-text" : "text-muted not-disabled:hover:text-text"}`}
-      >
-        {verdict === "none" ? (
-          <span className="tabular-nums">
-            {pending > 0
-              ? `${formatCount(pending)}/${formatCount(total)} to review`
-              : "All reviewed"}
-          </span>
-        ) : (
-          <>
-            <ArrowCounterClockwiseIcon size={14} />
-            Undo
-          </>
-        )}
-        <span
-          aria-hidden
-          className="absolute inset-x-4 bottom-[3px] flex h-0.5 overflow-hidden rounded-full bg-field-border/30"
+      <Tooltip label="Reject every snapshot left to review, press shift r">
+        <button
+          type="button"
+          aria-pressed={verdict === "reject"}
+          disabled={!canSwitch("reject")}
+          onClick={onReject}
+          className={`${segment} ${side("reject")}`}
         >
-          <span
-            className="bg-rejected transition-[width] duration-250 ease-out-strong"
-            style={{ width: share(rejected) }}
-          />
-          <span
-            className="bg-approved transition-[width] duration-250 ease-out-strong"
-            style={{ width: share(approved) }}
-          />
-        </span>
-      </button>
-      <button
-        type="button"
-        aria-pressed={verdict === "approve"}
-        title="Approve every snapshot left to review (shift+a)"
-        disabled={!canSwitch("approve")}
-        onClick={onApprove}
-        className={`${segment} ${side("approve")}`}
+          <XIcon size={14} weight="bold" className="shrink-0" />
+          {verdict === "reject" ? "Rejected" : "Reject build"}
+        </button>
+      </Tooltip>
+      <Tooltip
+        label={
+          buildAction === null
+            ? "Return every snapshot to review, press shift u"
+            : "Undo the build review, press shift u"
+        }
+        className={verdict === "none" ? "hidden" : "left-1/2! -translate-x-1/2"}
       >
-        <CheckIcon size={14} weight="bold" className="shrink-0" />
-        {verdict === "approve" ? "Approved" : "Approve build"}
-      </button>
+        <button
+          type="button"
+          disabled={!canReview || verdict === "none"}
+          onClick={onUndo}
+          className={`${segment} pb-1 max-sm:text-xs ${verdict === "none" ? "text-text" : "text-muted not-disabled:hover:text-text"}`}
+        >
+          {verdict === "none" ? (
+            <span className="tabular-nums">
+              {pending > 0
+                ? `${formatCount(pending)}/${formatCount(total)} to review`
+                : "All reviewed"}
+            </span>
+          ) : (
+            <>
+              <ArrowCounterClockwiseIcon size={14} />
+              Undo
+            </>
+          )}
+          <span
+            aria-hidden
+            className="absolute inset-x-4 bottom-[3px] flex h-0.5 overflow-hidden rounded-full bg-field-border/30"
+          >
+            <span
+              className="bg-rejected transition-[width] duration-250 ease-out-strong"
+              style={{ width: share(rejected) }}
+            />
+            <span
+              className="bg-approved transition-[width] duration-250 ease-out-strong"
+              style={{ width: share(approved) }}
+            />
+          </span>
+        </button>
+      </Tooltip>
+      <Tooltip
+        label="Approve every snapshot left to review, press shift a"
+        align="end"
+      >
+        <button
+          type="button"
+          aria-pressed={verdict === "approve"}
+          disabled={!canSwitch("approve")}
+          onClick={onApprove}
+          className={`${segment} ${side("approve")}`}
+        >
+          <CheckIcon size={14} weight="bold" className="shrink-0" />
+          {verdict === "approve" ? "Approved" : "Approve build"}
+        </button>
+      </Tooltip>
     </fieldset>
   );
 }

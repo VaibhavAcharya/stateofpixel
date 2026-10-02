@@ -35,7 +35,6 @@ import {
   type DiffStatus,
   DiffStatusPill,
   type Icon,
-  Kbd,
   SnapshotImage,
   SnapshotName,
   Tooltip,
@@ -263,7 +262,7 @@ function ZoomControls({
   const button = `${buttonClass("ghost", "sm")} h-5 w-full rounded-[5px] px-0`;
   const tooltip = "top-1/2! right-full! left-auto! mt-0! mr-2 -translate-y-1/2";
   return (
-    <div className="absolute right-2 bottom-2 z-10 flex w-9 flex-col rounded-md bg-surface p-0.5 opacity-0 shadow-menu ring-1 ring-border transition-opacity duration-150 group-hover/stage:opacity-100 focus-within:opacity-100 motion-reduce:transition-none pointer-coarse:hidden">
+    <div className="absolute right-2 bottom-2 z-10 flex w-9 flex-col rounded-md bg-surface p-0.5 opacity-0 shadow-menu ring-1 ring-border transition-opacity duration-150 group-hover/stage:opacity-100 focus-within:opacity-100 motion-reduce:transition-none pointer-coarse:opacity-100">
       <Tooltip label="Zoom in, press +" className={tooltip}>
         <button
           type="button"
@@ -398,7 +397,6 @@ function ModeSwitch({
             />
           </span>
           {option.label}
-          {option.key && <KeyChip keyName={option.key} />}
         </button>
       </KeyTooltip>
     </>
@@ -517,14 +515,6 @@ function DiffColorStack({
   );
 }
 
-function KeyChip({ keyName }: { keyName: string }) {
-  return (
-    <span className="max-lg:hidden">
-      <Kbd>{keyName}</Kbd>
-    </span>
-  );
-}
-
 function KeyTooltip({
   label,
   keyName,
@@ -537,9 +527,7 @@ function KeyTooltip({
   return keyName === undefined ? (
     children
   ) : (
-    <Tooltip label={`${label}, press ${keyName}`} className="lg:hidden">
-      {children}
-    </Tooltip>
+    <Tooltip label={`${label}, press ${keyName}`}>{children}</Tooltip>
   );
 }
 
@@ -1076,7 +1064,6 @@ function Segmented<Value extends string>({
               ) : (
                 option.label
               )}
-              {option.key !== undefined && <KeyChip keyName={option.key} />}
             </button>
           </KeyTooltip>
         );

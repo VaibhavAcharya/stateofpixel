@@ -17,6 +17,7 @@ import {
   representative,
   type SnapshotItem,
   storyReviewState,
+  variantName,
 } from "./stories";
 import type { SnapshotRow } from "./types";
 
@@ -89,6 +90,7 @@ export function SnapshotGroup({
               <SnapshotRowLink
                 key={item.row.id}
                 row={item.row}
+                only={some ? onlyBrowsers([item.row], browsers) : null}
                 selected={item.row.id === selectedId}
                 linkParams={linkParams}
                 onSelect={onSelect}
@@ -224,12 +226,14 @@ function rowLabel(row: SnapshotRow, name = row.name) {
 
 function SnapshotRowLink({
   row,
+  only = null,
   variant = false,
   selected,
   linkParams,
   onSelect,
 }: {
   row: SnapshotRow;
+  only?: string[] | null;
   variant?: boolean;
   selected: boolean;
   linkParams: BuildLinkParams | null;
@@ -263,6 +267,7 @@ function SnapshotRowLink({
         ) : (
           <SnapshotName name={row.name} className="flex-1" />
         )}
+        {only !== null && <OnlyLabel browsers={only} />}
         {row.diffRatio !== null && (
           <span className="shrink-0 text-xs text-muted tabular-nums">
             {formatPercent(row.diffRatio)}
@@ -271,10 +276,6 @@ function SnapshotRowLink({
       </RowLink>
     </li>
   );
-}
-
-function variantName(name: string) {
-  return /\[([^\]]+)\]$/.exec(name)?.[1] ?? null;
 }
 
 function StoryRows({

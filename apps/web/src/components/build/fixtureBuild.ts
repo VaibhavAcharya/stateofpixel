@@ -116,6 +116,23 @@ export function useFixtureBuild(fixture: BuildFixture): {
   const [buildAction, setBuildAction] = useState<"approve" | "reject" | null>(
     null,
   );
+  const [comments, setComments] = useState<
+    Record<string, Snapshot["comments"]>
+  >({});
+  const addComment = (snapshotId: string, body: string) =>
+    setComments((current) => ({
+      ...current,
+      [snapshotId]: [
+        ...(current[snapshotId] ?? []),
+        {
+          id: `${snapshotId}-${Date.now()}`,
+          action: null,
+          login: fixture.reviewer,
+          body,
+          createdAt: Date.now(),
+        },
+      ],
+    }));
   const snapshots = fixture.snapshots.map((snapshot) => ({
     ...snapshot,
     reviewState: reviews[snapshot.id]?.state ?? snapshot.reviewState,
@@ -195,12 +212,18 @@ export function useFixtureBuild(fixture: BuildFixture): {
                 carriedFrom: null,
               }
             : null,
+        comments: comments[snapshot.id] ?? [],
         rejectedIn: null,
         notReviewedOnPr: false,
         history: [],
         flaky: null,
       };
     },
+    useAddComment:
+      () =>
+      async ({ snapshotId, body }) => {
+        addComment(snapshotId, body.trim());
+      },
     useApplyReview:
       () =>
       async ({ snapshotIds, action, comment }) => {

@@ -11,6 +11,7 @@ type Tables = {
   deletedBuilds: typeof schema.deletedBuilds;
   snapshots: typeof schema.snapshots;
   reviews: typeof schema.reviews;
+  comments: typeof schema.comments;
   approvedImages: typeof schema.approvedImages;
   images: typeof schema.images;
   usageDaily: typeof schema.usageDaily;

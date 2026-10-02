@@ -28,13 +28,13 @@ import { Toasts, useToasts } from "../Toast";
 import {
   buttonClass,
   type DiffStatus,
-  Kbd,
   LeadCopy,
   Skeleton,
   Spinner,
+  Tooltip,
 } from "../ui";
 import { DIFF_COLORS, MODES, useViewerSettings } from "../Viewer";
-import { Banners, BuildHeader } from "./BuildHeader";
+import { Banners, BuildHeader, buildVerdict } from "./BuildHeader";
 import { type ReviewAction, useBuildData } from "./buildData";
 import { SnapshotDetail } from "./SnapshotDetail";
 import { SnapshotGroup } from "./SnapshotGroup";
@@ -56,6 +56,7 @@ const GROUPS: { status: DiffStatus; label: string }[] = [
 ];
 
 const PREFETCH_PENDING = 3;
+const SNAPSHOTS_PER_CALL = 100;
 
 const ACTION_VERBS: Record<ReviewAction, string> = {
   approve: "approve",
@@ -129,6 +130,7 @@ export function BuildPage({
   const { open: shortcutsOpen, setOpen: setShortcutsOpen } =
     useContext(ShortcutsContext);
   const [listOpen, setListOpen] = useState(false);
+  const [commenting, setCommenting] = useState(false);
   const filterInput = useRef<HTMLInputElement>(null);
   const settings = useViewerSettings();
   const { toasts, show, dismiss } = useToasts();
@@ -136,6 +138,7 @@ export function BuildPage({
   const linkParams = { owner, repo, number: String(build.number) };
   const { snapshotId, select: selectId } = data.useSelection(linkParams);
   const applyReview = data.useApplyReview();
+  const addComment = data.useAddComment();
   const groups = data.useSnapshotGroups(
     build.buildId,
     build.counts,
@@ -168,7 +171,10 @@ export function BuildPage({
       : groupItems(group.status).flatMap((item): SnapshotItem[] =>
           item.kind === "story" &&
           !closedStories.has(item.key) &&
-          selectedStory !== item.key
+          !(
+            selectedStory === item.key &&
+            item.rows.some((row) => row.id === snapshotId)
+          )
             ? item.rows.map((row) => ({ kind: "row", row }))
             : [item],
         ),
@@ -249,23 +255,26 @@ export function BuildPage({
     previousConclusion.current = build.conclusion;
   }, [build.conclusion, show]);
 
-  const review = (
-    action: ReviewAction,
-    item: SnapshotItem | undefined,
-    comment?: string,
-  ) => {
+  const review = (action: ReviewAction, item: SnapshotItem | undefined) => {
     const rows = reviewableRows(item);
     if (!canReview || item === undefined || rows.length === 0) {
       return;
     }
     const name = item.kind === "row" ? item.row.name : item.name;
     track("Review", { action, count: rows.length });
-    applyReview({
-      buildId: build.buildId,
-      snapshotIds: rows.map((row) => row.id),
-      action,
-      comment,
-    }).catch((error: unknown) => {
+    const calls = [];
+    for (let start = 0; start < rows.length; start += SNAPSHOTS_PER_CALL) {
+      calls.push(
+        applyReview({
+          buildId: build.buildId,
+          snapshotIds: rows
+            .slice(start, start + SNAPSHOTS_PER_CALL)
+            .map((row) => row.id),
+          action,
+        }),
+      );
+    }
+    Promise.all(calls).catch((error: unknown) => {
       const reason =
         errorCode(error) === "build_not_reviewable"
           ? " This build can no longer be reviewed."
@@ -274,20 +283,18 @@ export function BuildPage({
     });
   };
 
-  const approveAndAdvance = () => {
-    if (reviewableRows(current).length === 0) {
+  const reviewAndAdvance = (action: "approve" | "reject") => {
+    if (!canReview || reviewableRows(current).length === 0) {
       return;
     }
-    review("approve", current);
+    review(action, current);
     select(nextPending);
   };
 
-  const rejectAndAdvance = () => {
-    if (reviewableRows(current).length === 0) {
-      return;
+  const openComments = () => {
+    if (current !== undefined) {
+      setCommenting(true);
     }
-    review("reject", current);
-    select(nextPending);
   };
 
   const pendingAhead = [
@@ -334,9 +341,10 @@ export function BuildPage({
         event.ctrlKey ||
         event.altKey ||
         target?.closest(
-          "input:not([type=range]), textarea, select, [contenteditable]",
+          "input:not([type=range]), textarea, select, [contenteditable], dialog",
         ) ||
-        shortcutsOpen
+        shortcutsOpen ||
+        commenting
       ) {
         return;
       }
@@ -346,6 +354,9 @@ export function BuildPage({
         return;
       }
       switch (event.key) {
+        case "Escape":
+          setListOpen(false);
+          break;
         case "j":
           selectNext();
           break;
@@ -353,13 +364,25 @@ export function BuildPage({
           selectPrevious();
           break;
         case "a":
-          approveAndAdvance();
+          reviewAndAdvance("approve");
           break;
         case "A":
           reviewAll("approve");
           break;
+        case "R":
+          reviewAll("reject");
+          break;
+        case "U":
+          if (buildVerdict(build) !== "none") {
+            reviewAll("undo");
+          }
+          break;
         case "r":
-          rejectAndAdvance();
+          reviewAndAdvance("reject");
+          break;
+        case "m":
+          event.preventDefault();
+          openComments();
           break;
         case "u":
           review("undo", current);
@@ -386,7 +409,10 @@ export function BuildPage({
           }
           break;
         case "c":
-          if (settings.mode === "side" || settings.mode === "diff") {
+          if (
+            (settings.mode === "side" && settings.sideDiff) ||
+            settings.mode === "diff"
+          ) {
             const index = DIFF_COLORS.findIndex(
               (option) => option.value === settings.diffColor,
             );
@@ -469,11 +495,21 @@ export function BuildPage({
               : "lg:w-(--sidebar-width)"
           } ${listOpen ? "max-lg:animate-fade" : "max-lg:hidden"}`}
         >
-          <FilterInput
-            inputRef={filterInput}
-            value={filter}
-            onChange={setFilter}
-          />
+          <div className="flex shrink-0 items-center">
+            <FilterInput
+              inputRef={filterInput}
+              value={filter}
+              onChange={setFilter}
+            />
+            <button
+              type="button"
+              aria-label="Close snapshot list"
+              className={`mr-2 ${buttonClass("ghost", "icon")} lg:hidden`}
+              onClick={() => setListOpen(false)}
+            >
+              <XIcon size={16} />
+            </button>
+          </div>
           {build.browsers.length > 1 && (
             <div className="shrink-0 px-2 pb-2">
               <SelectMenu
@@ -483,7 +519,10 @@ export function BuildPage({
                   { value: undefined, label: "All" },
                   ...build.browsers.map((value) => ({ value, label: value })),
                 ]}
-                onChange={setBrowser}
+                onChange={(value) => {
+                  track("Browser filter", { browser: value ?? "all" });
+                  setBrowser(value);
+                }}
               />
             </div>
           )}
@@ -539,10 +578,18 @@ export function BuildPage({
             aria-valuemax={SIDEBAR_MAX_WIDTH}
             tabIndex={0}
             title="Drag to resize, double-click to reset"
-            className={`absolute inset-y-0 m-0 h-auto border-0 -right-[3px] z-10 w-[5px] cursor-col-resize touch-none transition-colors duration-100 hover:bg-link focus-visible:bg-link max-lg:hidden ${
+            className={`peer absolute inset-y-0 m-0 h-auto border-0 -right-[3px] z-10 w-[5px] cursor-col-resize touch-none transition-colors duration-100 hover:bg-link focus-visible:bg-link max-lg:hidden ${
               sidebar.resizing ? "bg-link" : ""
             }`}
             {...sidebar.handleProps}
+          />
+          <span
+            aria-hidden
+            className={`pointer-events-none absolute top-1/2 -right-0.5 z-10 h-4 w-[3px] -translate-y-1/2 rounded-full transition-colors duration-100 max-lg:hidden ${
+              sidebar.resizing
+                ? "bg-link"
+                : "bg-field-border/60 peer-hover:bg-link peer-focus-visible:bg-link"
+            }`}
           />
         </aside>
         <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface">
@@ -560,10 +607,19 @@ export function BuildPage({
               snapshotId={snapshotId as Id<"snapshots">}
               settings={settings}
               headings={headings}
-              canWrite={canWrite}
               canReview={canReview}
-              onApprove={approveAndAdvance}
-              onReject={rejectAndAdvance}
+              onApprove={() => reviewAndAdvance("approve")}
+              onReject={() => reviewAndAdvance("reject")}
+              commenting={commenting}
+              onOpenComments={openComments}
+              onCloseComments={() => setCommenting(false)}
+              onComment={(body) => {
+                track("Comment");
+                addComment({
+                  snapshotId: snapshotId as Id<"snapshots">,
+                  body,
+                }).catch(() => show("error", "Could not add the comment."));
+              }}
               onUndo={() => review("undo", current)}
               story={current?.kind === "story" ? current.rows : undefined}
               onPrevious={selectPrevious}
@@ -684,41 +740,39 @@ function FilterInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="shrink-0 p-2">
-      <label className="relative flex items-center">
-        <MagnifyingGlassIcon
-          size={14}
-          className="pointer-events-none absolute left-2.5 text-subtle"
-        />
-        <input
-          ref={inputRef}
-          type="search"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              event.currentTarget.blur();
-            }
-          }}
-          placeholder="Filter snapshots"
-          aria-label="Filter snapshots"
-          className="h-8 w-full rounded-md bg-surface pr-8 pl-8 text-sm shadow-[inset_0_0_0_1px_var(--color-border)] transition-shadow duration-250 ease-standard outline-none placeholder:text-subtle hover:shadow-[inset_0_0_0_1px_var(--color-field-border)] focus:shadow-field-focus [&::-webkit-search-cancel-button]:hidden"
-        />
-        {value === "" ? (
-          <span className="pointer-events-none absolute right-1.5">
-            <Kbd>/</Kbd>
-          </span>
-        ) : (
-          <button
-            type="button"
-            aria-label="Clear filter"
-            className={`absolute right-1 ${buttonClass("ghost", "icon-sm")}`}
-            onClick={() => onChange("")}
-          >
-            <XIcon size={12} />
-          </button>
-        )}
-      </label>
+    <div className="min-w-0 flex-1 p-2">
+      <Tooltip label="Filter, press /" wrapperClassName="flex">
+        <label className="relative flex w-full items-center">
+          <MagnifyingGlassIcon
+            size={14}
+            className="pointer-events-none absolute left-2.5 text-subtle"
+          />
+          <input
+            ref={inputRef}
+            type="search"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.currentTarget.blur();
+              }
+            }}
+            placeholder="Filter snapshots"
+            aria-label="Filter snapshots"
+            className="h-8 w-full rounded-md bg-surface pr-8 pl-8 text-sm shadow-[inset_0_0_0_1px_var(--color-border)] transition-shadow duration-250 ease-standard outline-none placeholder:text-subtle hover:shadow-[inset_0_0_0_1px_var(--color-field-border)] focus:shadow-field-focus [&::-webkit-search-cancel-button]:hidden"
+          />
+          {value !== "" && (
+            <button
+              type="button"
+              aria-label="Clear filter"
+              className={`absolute right-1 ${buttonClass("ghost", "icon-sm")}`}
+              onClick={() => onChange("")}
+            >
+              <XIcon size={12} />
+            </button>
+          )}
+        </label>
+      </Tooltip>
     </div>
   );
 }

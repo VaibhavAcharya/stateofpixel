@@ -665,6 +665,20 @@ it("approves, rejects and undoes a snapshot and updates the build", async () => 
     login: "octocat",
     comment: "Header moved",
   });
+  await user.mutation(api.comments.add, {
+    snapshotId,
+    body: " The nav moved 2px. ",
+  });
+  await expect(
+    user.mutation(api.comments.add, { snapshotId, body: "  " }),
+  ).rejects.toThrow(/invalid_comment/);
+  expect(
+    (await user.query(api.snapshots.get, { ...repo, number: 2, snapshotId }))
+      ?.comments,
+  ).toMatchObject([
+    { action: "reject", login: "octocat", body: "Header moved" },
+    { action: null, login: "octocat", body: "The nav moved 2px." },
+  ]);
 
   await user.mutation(api.reviews.apply, {
     buildId,
@@ -766,7 +780,7 @@ it("approves every pending snapshot with approve all", async () => {
 });
 
 it("undoes a build action, then every review once no build action is left", async () => {
-  const { t, user, grant, buildId, snapshotId } = await setup();
+  const { t, user, grant, buildId, snapshotId, userId } = await setup();
   await grant("write");
   await t.run(async (ctx) => {
     for (const name of ["A", "B", "C"]) {
@@ -810,6 +824,17 @@ it("undoes a build action, then every review once no build action is left", asyn
     counts: { pending: 0, approved: 1, rejected: 3 },
   });
   expect(await buildAction()).toBe("reject");
+
+  await t.mutation(internal.reviews.applyAll, {
+    buildId,
+    action: "approve",
+    userId,
+    diffStatus: "added",
+    cursor: null,
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    counts: { pending: 0, approved: 1, rejected: 3 },
+  });
 
   await user.mutation(api.reviews.apply, {
     buildId,

@@ -8,7 +8,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { toStatus } from "@stateofpixel/backend/checkStatus";
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "../../lib/useTicker";
+import { useReducedMotion } from "../../lib/useReducedMotion";
 import { buttonClass, LeadCopy, TONE_TEXT } from "../ui";
 import { SECTION } from "./sections";
 
@@ -329,6 +329,7 @@ export function SpeedSection() {
             type="button"
             className={buttonClass("ghost", "sm")}
             onClick={() => setRun((current) => current + 1)}
+            data-umami-event="Timeline replay"
             disabled={!seen}
           >
             <ArrowCounterClockwiseIcon size={12} />

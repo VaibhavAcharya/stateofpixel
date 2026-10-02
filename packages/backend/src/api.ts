@@ -6,6 +6,7 @@ import * as blobs from "./blobs.ts";
 import * as builds from "./builds.ts";
 import * as checks from "./checks.ts";
 import * as ciAuth from "./ciAuth.ts";
+import * as comments from "./comments.ts";
 import * as connections from "./connections.ts";
 import * as githubWebhook from "./githubWebhook.ts";
 import * as images from "./images.ts";
@@ -30,6 +31,7 @@ const modules = {
   blobs,
   builds,
   checks,
+  comments,
   ciAuth,
   connections,
   githubWebhook,

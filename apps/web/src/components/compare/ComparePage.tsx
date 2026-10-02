@@ -367,6 +367,7 @@ function FlowSection({ competitor }: { competitor: Competitor }) {
         </LeadCopy>
         <Segmented
           label="Count for"
+          event="Compare period"
           options={PERIODS}
           value={period}
           onChange={setPeriod}
@@ -478,11 +479,13 @@ function Total({
 
 function Segmented<Value extends string>({
   label,
+  event,
   options,
   value,
   onChange,
 }: {
   label: string;
+  event: string;
   options: { value: Value; label: string; count?: number }[];
   value: Value;
   onChange: (value: Value) => void;
@@ -498,6 +501,8 @@ function Segmented<Value extends string>({
           type="button"
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
+          data-umami-event={event}
+          data-umami-event-value={option.value}
           className={`flex h-7 items-center gap-1.5 rounded-sm px-3 text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
             value === option.value
               ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
@@ -635,6 +640,7 @@ function GlanceTable({
         </LeadCopy>
         <Segmented
           label="Rows"
+          event="Compare rows"
           options={VIEWS.map((item) => ({
             value: item.value,
             label: item.label,
@@ -668,52 +674,58 @@ function GlanceTable({
           <CompetitorLogo competitor={competitor} size={24} />
           {competitor.name}
         </ColumnHead>
-        {keys.map((key, index) => {
-          const cell = competitor.cells[key];
-          const row = { "--row": index + 2 } as CSSProperties;
-          return (
-            <Fragment key={`${view}-${key}`}>
-              <span
-                style={row}
-                className={`relative animate-fade py-5 pr-4 md:col-start-1 md:row-start-(--row) font-medium max-md:pt-8 max-md:pb-3 max-md:text-xs max-md:text-muted md:border-t ${DOTTED}`}
-              >
-                {LABELS[key]}
-              </span>
-              <span
-                style={row}
-                className={`relative flex animate-fade gap-3 px-5 py-5 font-medium md:col-start-2 md:row-start-(--row) max-md:rounded-t-lg max-md:bg-surface max-md:px-4 max-md:py-3 max-md:ring-1 max-md:ring-border md:border-t ${DOTTED} md:mx-px`}
-              >
-                <span className="mt-0.5 shrink-0 md:hidden">
-                  <Logo size={16} />
+        {[...keys, ...ROW_KEYS.filter((key) => !keys.includes(key))].map(
+          (key, index) => {
+            const cell = competitor.cells[key];
+            const row = { "--row": index + 2 } as CSSProperties;
+            const hidden = index >= keys.length ? "hidden" : "";
+            return (
+              <Fragment key={`${view}-${key}`}>
+                <span
+                  style={row}
+                  className={`${hidden} relative animate-fade py-5 pr-4 md:col-start-1 md:row-start-(--row) font-medium max-md:pt-8 max-md:pb-3 max-md:text-xs max-md:text-muted md:border-t ${DOTTED}`}
+                >
+                  {LABELS[key]}
                 </span>
-                {OURS[key]}
-              </span>
-              <span
-                style={row}
-                className={`relative flex animate-fade gap-3 px-5 py-5 md:col-start-3 md:row-start-(--row) max-md:rounded-b-lg max-md:bg-surface-2 max-md:px-4 max-md:py-3 md:border-t ${DOTTED}`}
-              >
-                <span className="mt-0.5 shrink-0 md:hidden">
-                  <CompetitorLogo competitor={competitor} size={16} />
+                <span
+                  style={row}
+                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 font-medium md:col-start-2 md:row-start-(--row) max-md:rounded-t-lg max-md:bg-surface max-md:px-4 max-md:py-3 max-md:ring-1 max-md:ring-border md:border-t ${DOTTED} md:mx-px`}
+                >
+                  <span className="mt-0.5 shrink-0 md:hidden">
+                    <Logo size={16} />
+                  </span>
+                  {OURS[key]}
                 </span>
-                <span>
-                  {cell === undefined ? (
-                    <span className="text-muted">Not found in their docs.</span>
-                  ) : (
-                    <>
-                      {cell.text}
-                      <SourceMarks items={cell.sources} sources={sources} />
-                    </>
-                  )}
+                <span
+                  style={row}
+                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 md:col-start-3 md:row-start-(--row) max-md:rounded-b-lg max-md:bg-surface-2 max-md:px-4 max-md:py-3 md:border-t ${DOTTED}`}
+                >
+                  <span className="mt-0.5 shrink-0 md:hidden">
+                    <CompetitorLogo competitor={competitor} size={16} />
+                  </span>
+                  <span>
+                    {cell === undefined ? (
+                      <span className="text-muted">
+                        Not found in their docs.
+                      </span>
+                    ) : (
+                      <>
+                        {cell.text}
+                        <SourceMarks items={cell.sources} sources={sources} />
+                      </>
+                    )}
+                  </span>
                 </span>
-              </span>
-            </Fragment>
-          );
-        })}
+              </Fragment>
+            );
+          },
+        )}
       </div>
       {view !== "all" && (
         <button
           type="button"
           onClick={() => setView("all")}
+          data-umami-event="Compare show all"
           className={`${buttonClass("ghost")} mt-6 -ml-3`}
         >
           Show all {ROW_KEYS.length} rows

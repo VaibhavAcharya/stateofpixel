@@ -333,6 +333,19 @@ export const reviews = pgTable(
   (table) => [index().on(table.snapshotId), index().on(table.buildId)],
 );
 
+export const comments = pgTable(
+  "comments",
+  {
+    _id: id(),
+    _creationTime: creationTime(),
+    snapshotId: text().notNull(),
+    buildId: text().notNull(),
+    userId: text().notNull(),
+    body: text().notNull(),
+  },
+  (table) => [index().on(table.snapshotId), index().on(table.buildId)],
+);
+
 export const approvedImages = pgTable(
   "approved_images",
   {

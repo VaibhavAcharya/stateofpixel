@@ -171,7 +171,11 @@ export const applyAll = internalMutation({
   },
   handler: async (ctx, args) => {
     const build = await getBuild(ctx, args.buildId);
-    if (build === null || !isReviewable(build)) {
+    if (
+      build === null ||
+      !isReviewable(build) ||
+      build.buildAction !== (args.action === "undo" ? null : args.action)
+    ) {
       return null;
     }
     const page = await paginate(

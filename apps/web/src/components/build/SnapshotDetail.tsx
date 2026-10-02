@@ -3,6 +3,7 @@ import {
   CaretDownIcon,
   CaretLeftIcon,
   CaretRightIcon,
+  ChatTextIcon,
   CheckIcon,
   WarningIcon,
   XIcon,
@@ -23,7 +24,8 @@ import {
 import { Viewer, type ViewerSettings } from "../Viewer";
 import { BuildNotFound } from "./BuildNotFound";
 import { useBuildData } from "./buildData";
-import { storyReviewState } from "./stories";
+import { CommentDialog } from "./CommentDialog";
+import { storyName, storyReviewState } from "./stories";
 import type { Build, Snapshot, SnapshotRow } from "./types";
 
 export function SnapshotDetail({
@@ -33,10 +35,13 @@ export function SnapshotDetail({
   snapshotId,
   settings,
   headings = true,
-  canWrite,
   canReview,
   onApprove,
   onReject,
+  commenting,
+  onOpenComments,
+  onCloseComments,
+  onComment,
   onUndo,
   navigation,
   story,
@@ -49,10 +54,13 @@ export function SnapshotDetail({
   snapshotId: Id<"snapshots">;
   settings: ViewerSettings;
   headings?: boolean;
-  canWrite: boolean;
   canReview: boolean;
   onApprove: () => void;
   onReject: () => void;
+  commenting: boolean;
+  onOpenComments: () => void;
+  onCloseComments: () => void;
+  onComment: (body: string) => void;
   onUndo: () => void;
   navigation: ReactNode;
   story?: SnapshotRow[];
@@ -105,8 +113,9 @@ export function SnapshotDetail({
               <ReviewStatus snapshot={snapshot} />
             ) : (
               <span className="text-xs text-muted tabular-nums">
-                {formatCount(story.length)} snapshots
-                {pending > 0 && `, ${formatCount(pending)} to review`}
+                {pending > 0
+                  ? `${formatCount(pending)}/${formatCount(story.length)} to review`
+                  : `${formatCount(story.length)} snapshots`}
                 {rejected > 0 && `, ${formatCount(rejected)} rejected`}
               </span>
             )}
@@ -116,17 +125,27 @@ export function SnapshotDetail({
         overlay={
           <ReviewDock
             state={
-              !canWrite || !reviewable
+              !reviewable
                 ? null
                 : story === undefined
                   ? snapshot.reviewState
                   : storyReviewState(story)
             }
+            canUndo={
+              reviewable &&
+              (story ?? [snapshot]).some(
+                (row) =>
+                  row.reviewState === "approved" ||
+                  row.reviewState === "rejected",
+              )
+            }
             count={story?.length}
+            comments={snapshot.comments.length}
             onPrevious={onPrevious}
             onNext={onNext}
             onApprove={onApprove}
             onReject={onReject}
+            onComments={onOpenComments}
             onUndo={onUndo}
           />
         }
@@ -176,89 +195,150 @@ export function SnapshotDetail({
         </p>
       )}
       <Details metadata={snapshot.metadata} />
+      <CommentDialog
+        open={commenting}
+        name={story === undefined ? snapshot.name : storyName(snapshot.name)}
+        comments={snapshot.comments}
+        canReview={reviewable}
+        onSubmit={onComment}
+        onClose={onCloseComments}
+      />
     </>
   );
 }
 
 function ReviewDock({
   state,
+  canUndo,
   count,
+  comments,
   onPrevious,
   onNext,
   onApprove,
   onReject,
+  onComments,
   onUndo,
 }: {
   state: ReviewState | null;
+  canUndo: boolean;
   count: number | undefined;
+  comments: number;
   onPrevious: () => void;
   onNext: () => void;
   onApprove: () => void;
   onReject: () => void;
+  onComments: () => void;
   onUndo: () => void;
 }) {
-  const icon = `${buttonClass("ghost", "icon")} rounded-sm aria-pressed:bg-hover`;
   const suffix = count === undefined ? "" : ` ${formatCount(count)}`;
-  const tooltip =
-    "top-auto! bottom-full! left-1/2! mt-0! mb-2 -translate-x-1/2";
+  const group =
+    "flex items-center gap-0.5 rounded-control bg-surface p-1 shadow-menu ring-1 ring-border";
   return (
-    <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-control bg-surface p-1 shadow-menu ring-1 ring-border">
-      <Tooltip label="Previous, press k" className={tooltip}>
-        <button
-          type="button"
-          aria-label="Previous snapshot"
-          className={`${buttonClass("ghost", "icon")} rounded-sm`}
+    <div className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2">
+      <div className={group}>
+        <DockButton
+          label="Previous snapshot"
+          tooltip="Previous"
+          keyName="k"
           onClick={onPrevious}
         >
           <CaretLeftIcon size={14} />
-        </button>
-      </Tooltip>
-      <Tooltip label="Reject, press r" className={tooltip}>
-        <button
-          type="button"
-          aria-label={`Reject${suffix}`}
-          aria-pressed={state === "rejected"}
+        </DockButton>
+        <DockButton
+          label={`Reject${suffix}`}
+          tooltip="Reject"
+          keyName="r"
+          pressed={state === "rejected"}
           disabled={state === null}
-          className={`${icon} text-rejected!`}
+          className="text-rejected!"
           onClick={onReject}
         >
           <XIcon size={16} weight="bold" />
-        </button>
-      </Tooltip>
-      <Tooltip label="Approve, press a" className={tooltip}>
-        <button
-          type="button"
-          aria-label={`Approve${suffix}`}
-          aria-pressed={state === "approved"}
+        </DockButton>
+        <DockButton
+          label={`Approve${suffix}`}
+          tooltip="Approve"
+          keyName="a"
+          pressed={state === "approved"}
           disabled={state === null}
-          className={`${icon} text-approved!`}
+          className="text-approved!"
           onClick={onApprove}
         >
           <CheckIcon size={16} weight="bold" />
-        </button>
-      </Tooltip>
-      <Tooltip label="Undo, press u" className={tooltip}>
-        <button
-          type="button"
-          aria-label="Undo"
-          disabled={state !== "approved" && state !== "rejected"}
-          className={icon}
+        </DockButton>
+        <DockButton
+          label="Undo"
+          tooltip="Undo"
+          keyName="u"
+          disabled={!canUndo}
           onClick={onUndo}
         >
           <ArrowCounterClockwiseIcon size={16} />
-        </button>
-      </Tooltip>
-      <Tooltip label="Next, press j" className={tooltip}>
-        <button
-          type="button"
-          aria-label="Next snapshot"
-          className={`${buttonClass("ghost", "icon")} rounded-sm`}
+        </DockButton>
+        <DockButton
+          label="Next snapshot"
+          tooltip="Next"
+          keyName="j"
           onClick={onNext}
         >
           <CaretRightIcon size={14} />
-        </button>
-      </Tooltip>
+        </DockButton>
+      </div>
+      <div className={`${group} absolute top-0 left-full ml-2`}>
+        <DockButton
+          label={`Comments, ${formatCount(comments)}`}
+          tooltip="Comments"
+          keyName="m"
+          className={comments > 0 ? "w-auto! gap-1! px-2!" : ""}
+          onClick={onComments}
+        >
+          <ChatTextIcon size={16} />
+          {comments > 0 && (
+            <span className="text-xs tabular-nums">
+              {formatCount(comments)}
+            </span>
+          )}
+        </DockButton>
+      </div>
     </div>
+  );
+}
+
+function DockButton({
+  label,
+  tooltip,
+  keyName,
+  pressed,
+  disabled = false,
+  className = "",
+  onClick,
+  children,
+}: {
+  label: string;
+  tooltip: string;
+  keyName: string;
+  pressed?: boolean;
+  disabled?: boolean;
+  className?: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip
+      label={`${tooltip}, press ${keyName}`}
+      className="top-auto! bottom-full! left-1/2! mt-0! mb-2 -translate-x-1/2"
+    >
+      <button
+        type="button"
+        aria-label={label}
+        aria-pressed={pressed}
+        disabled={disabled}
+        className={`${buttonClass("ghost", "icon")} rounded-sm! aria-pressed:bg-hover ${className}`}
+        onClick={onClick}
+      >
+        {children}
+      </button>
+    </Tooltip>
   );
 }
 

@@ -10,6 +10,7 @@ export const SHORTCUT_GROUPS: { title: string; items: [string, string[]][] }[] =
         ["Next / previous snapshot", ["j", "k"]],
         ["Show / hide the snapshots of a name", ["l", "h"]],
         ["Focus filter", ["/"]],
+        ["Close the snapshot list", ["esc"]],
         ["Show shortcuts", ["?"]],
       ],
     },
@@ -19,7 +20,10 @@ export const SHORTCUT_GROUPS: { title: string; items: [string, string[]][] }[] =
         ["Approve, move to next pending", ["a"]],
         ["Reject, move to next pending", ["r"]],
         ["Undo review", ["u"]],
+        ["Comments", ["m"]],
         ["Approve build", ["shift", "a"]],
+        ["Reject build", ["shift", "r"]],
+        ["Undo the build review", ["shift", "u"]],
       ],
     },
     {

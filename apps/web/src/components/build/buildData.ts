@@ -48,6 +48,10 @@ export type BuildData = {
   ) => Record<DiffStatus, SnapshotList>;
   useSnapshot: (args: SnapshotArgs) => Snapshot | null | undefined;
   useApplyReview: () => (args: ReviewArgs) => Promise<unknown>;
+  useAddComment: () => (args: {
+    snapshotId: Id<"snapshots">;
+    body: string;
+  }) => Promise<unknown>;
   useSelection: (params: BuildLinkParams) => Selection;
 };
 
@@ -103,16 +107,23 @@ function useApplyReview() {
     const next = NEXT_STATE[args.action];
     const ids =
       args.snapshotIds === "all" ? null : new Set<string>(args.snapshotIds);
+    const buildAction = store
+      .getAllQueries(api.builds.get)
+      .find(({ value }) => value?.buildId === args.buildId)?.value?.buildAction;
+    const known = ids !== null || buildAction === null;
     const previous = new Map<string, Exclude<ReviewState, "none">>();
     const review = <Row extends { id: string; reviewState: ReviewState }>(
       row: Row,
     ): Row => {
       const current = row.reviewState;
-      if (
-        current === "none" ||
-        current === next ||
-        (ids === null ? current !== "pending" : !ids.has(row.id))
-      ) {
+      const selected =
+        ids !== null
+          ? ids.has(row.id)
+          : known &&
+            (args.action === "undo"
+              ? current !== "pending"
+              : current === "pending");
+      if (current === "none" || current === next || !selected) {
         return row;
       }
       previous.set(row.id, current);
@@ -137,39 +148,32 @@ function useApplyReview() {
       }
     }
 
-    const reviewCounts = (
-      counts: Build["counts"],
-      buildAction: Build["buildAction"],
-    ) => {
+    const reviewCounts = (counts: Build["counts"]) => {
       const result = { ...counts };
-      if (ids === null && args.action === "undo") {
-        if (buildAction === null) {
-          result.pending += result.approved + result.rejected;
-          result.approved = 0;
-          result.rejected = 0;
-        }
+      if (!known) {
         return result;
       }
-      if (ids === null) {
-        result[next] += result.pending;
-        result.pending = 0;
-      } else {
+      if (ids !== null) {
         for (const state of previous.values()) {
           result[state]--;
           result[next]++;
         }
+      } else if (args.action === "undo") {
+        result.pending += result.approved + result.rejected;
+        result.approved = 0;
+        result.rejected = 0;
+      } else {
+        result[next] += result.pending;
+        result.pending = 0;
       }
       return result;
     };
-    const updated = new Map<
-      string,
-      { number: number; buildAction: Build["buildAction"] }
-    >();
+    const updated = new Map<string, number>();
     for (const { args: queryArgs, value } of store.getAllQueries(
       api.builds.get,
     )) {
       if (value?.buildId === args.buildId) {
-        const counts = reviewCounts(value.counts, value.buildAction);
+        const counts = reviewCounts(value.counts);
         store.setQuery(api.builds.get, queryArgs, {
           ...value,
           counts,
@@ -181,30 +185,31 @@ function useApplyReview() {
                 ? null
                 : args.action,
         });
-        updated.set(`${queryArgs.owner}/${queryArgs.name}`, {
-          number: value.number,
-          buildAction: value.buildAction,
-        });
+        updated.set(`${queryArgs.owner}/${queryArgs.name}`, value.number);
       }
     }
     for (const { args: queryArgs, value } of store.getAllQueries(
       api.builds.list,
     )) {
-      const build = updated.get(`${queryArgs.owner}/${queryArgs.name}`);
-      if (value !== undefined && build !== undefined) {
+      const number = updated.get(`${queryArgs.owner}/${queryArgs.name}`);
+      if (value !== undefined && number !== undefined) {
         store.setQuery(api.builds.list, queryArgs, {
           ...value,
           page: value.page.map((row) => {
-            if (row.number !== build.number) {
+            if (row.number !== number) {
               return row;
             }
-            const counts = reviewCounts(row.counts, build.buildAction);
+            const counts = reviewCounts(row.counts);
             return { ...row, counts, conclusion: conclude(counts) };
           }),
         });
       }
     }
   });
+}
+
+function useAddComment() {
+  return useMutation(api.comments.add);
 }
 
 function useSelection(params: BuildLinkParams): Selection {
@@ -225,6 +230,7 @@ export const BUILD_DATA: BuildData = {
   useSnapshotGroups,
   useSnapshot,
   useApplyReview,
+  useAddComment,
   useSelection,
 };
 

@@ -21,6 +21,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useId, useState } from "react";
 import { findDoc } from "../../content/docs";
+import { track } from "../../lib/analytics";
 import { BOOKING_URL } from "../../lib/booking";
 import { facts } from "../docs/facts";
 import { buttonClass, type Icon, LeadCopy } from "../ui";
@@ -103,12 +104,16 @@ function FaqAccordion({
 }) {
   const [open, setOpen] = useState<string[]>([]);
   const allOpen = open.length === questions.length;
-  const toggle = (question: string) =>
+  const toggle = (question: string) => {
+    if (!open.includes(question)) {
+      track("FAQ open", { question });
+    }
     setOpen((current) =>
       current.includes(question)
         ? current.filter((item) => item !== question)
         : [...current, question],
     );
+  };
   const half = Math.ceil(questions.length / columns);
   const stacks =
     columns === 1
@@ -121,6 +126,7 @@ function FaqAccordion({
         <button
           type="button"
           onClick={() => setOpen(allOpen ? [] : questions)}
+          data-umami-event={allOpen ? undefined : "FAQ open all"}
           className={buttonClass("ghost", "sm")}
         >
           {allOpen ? "Close all" : "Open all"}
@@ -311,7 +317,12 @@ function Manifest() {
           <li key={label}>
             <Disclosure
               open={open === index}
-              onToggle={() => setOpen(open === index ? null : index)}
+              onToggle={() => {
+                if (open !== index) {
+                  track("Upload manifest", { item: label });
+                }
+                setOpen(open === index ? null : index);
+              }}
               buttonClassName="h-10 rounded-sm px-3 text-sm transition-colors duration-100 hover:bg-hover"
               summary={
                 <>

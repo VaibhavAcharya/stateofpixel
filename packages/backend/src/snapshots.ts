@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import type { Doc, Id } from "./dataModel.ts";
 import { first } from "./db/index.ts";
@@ -8,6 +8,7 @@ import { findAllowedProject, findReadableBuild } from "./lib/permissions.ts";
 import {
   approvedImages,
   builds,
+  comments,
   connections,
   diffStatus,
   projects,
@@ -52,6 +53,8 @@ async function findReadableBuildById(ctx: QueryCtx, buildId: Id<"builds">) {
   }
   return build;
 }
+
+const MAX_COMMENTS = 50;
 
 export const list = query({
   args: {
@@ -142,6 +145,7 @@ export const get = query({
       baselineImage: await toImageInfo(ctx, project, snapshot.baselineImageId),
       diffImage: await toImageInfo(ctx, project, snapshot.diffImageId),
       lastReview: review === null ? null : await toReviewInfo(ctx, review),
+      comments: await findComments(ctx, snapshot._id),
       rejectedIn:
         snapshot.reviewState === "pending"
           ? await findEarlierRejection(ctx, build, snapshot)
@@ -152,6 +156,60 @@ export const get = query({
     };
   },
 });
+
+type Comment = {
+  id: string;
+  action: "approve" | "reject" | null;
+  userId: Id<"users"> | null;
+  body: string;
+  createdAt: number;
+};
+
+async function findComments(ctx: QueryCtx, snapshotId: Id<"snapshots">) {
+  const reviewRows = await ctx.db
+    .select()
+    .from(reviews)
+    .where(and(eq(reviews.snapshotId, snapshotId), isNotNull(reviews.comment)))
+    .orderBy(desc(reviews._creationTime))
+    .limit(MAX_COMMENTS);
+  const commentRows = await ctx.db
+    .select()
+    .from(comments)
+    .where(eq(comments.snapshotId, snapshotId))
+    .orderBy(desc(comments._creationTime))
+    .limit(MAX_COMMENTS);
+  const rows = [
+    ...reviewRows.map(
+      (row): Comment => ({
+        id: row._id,
+        action:
+          row.action === "approve" || row.action === "reject"
+            ? row.action
+            : null,
+        userId: row.userId,
+        body: row.comment ?? "",
+        createdAt: row._creationTime,
+      }),
+    ),
+    ...commentRows.map(
+      (row): Comment => ({
+        id: row._id,
+        action: null,
+        userId: row.userId,
+        body: row.body,
+        createdAt: row._creationTime,
+      }),
+    ),
+  ]
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .slice(-MAX_COMMENTS);
+  return Promise.all(
+    rows.map(async ({ userId, ...row }) => ({
+      ...row,
+      login: await findLogin(ctx, userId),
+    })),
+  );
+}
 
 async function findHistory(
   ctx: QueryCtx,

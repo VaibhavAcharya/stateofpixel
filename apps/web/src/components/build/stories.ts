@@ -1,7 +1,7 @@
 import type { ReviewState } from "../ui";
 import type { SnapshotRow } from "./types";
 
-const VARIANT_SUFFIX = /^(.*?)\s*\[[^\]]+\]$/;
+const VARIANT_SUFFIX = /^(.*?)\s*\[([^\]]+)\]$/;
 
 export type SnapshotItem =
   | { kind: "row"; row: SnapshotRow }
@@ -9,6 +9,10 @@ export type SnapshotItem =
 
 export function storyName(name: string): string {
   return VARIANT_SUFFIX.exec(name)?.[1] ?? name;
+}
+
+export function variantName(name: string): string | null {
+  return VARIANT_SUFFIX.exec(name)?.[2] ?? null;
 }
 
 export function groupStories(rows: SnapshotRow[]): SnapshotItem[] {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CHECKED, type Priced } from "../../content/compare";
+import { track } from "../../lib/analytics";
 import {
   ARGOS,
   CHROMATIC,
@@ -168,6 +169,18 @@ export function CostCalculator({
                 max={slider.max}
                 step={slider.step}
                 value={suite[slider.key]}
+                onPointerUp={() =>
+                  track("Suite slider", {
+                    slider: slider.key,
+                    value: suite[slider.key],
+                  })
+                }
+                onKeyUp={() =>
+                  track("Suite slider", {
+                    slider: slider.key,
+                    value: suite[slider.key],
+                  })
+                }
                 onChange={(event) =>
                   setSuite({
                     ...suite,

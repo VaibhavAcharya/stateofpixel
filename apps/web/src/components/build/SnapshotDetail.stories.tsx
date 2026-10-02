@@ -26,6 +26,7 @@ const pending: Snapshot = {
   baselineImage: demoImage("pricing-base"),
   diffImage: demoImage("pricing-diff"),
   lastReview: null,
+  comments: [],
   rejectedIn: null,
   notReviewedOnPr: false,
   history: [],
@@ -44,9 +45,11 @@ const review: NonNullable<Snapshot["lastReview"]> = {
 function StoryDetail({
   snapshot,
   canWrite = true,
+  commenting = false,
 }: {
   snapshot: Snapshot | null | undefined;
   canWrite?: boolean;
+  commenting?: boolean;
 }) {
   const settings = useViewerSettings();
   const data: BuildData = {
@@ -55,6 +58,7 @@ function StoryDetail({
     },
     useSnapshot: () => snapshot,
     useApplyReview: () => async () => {},
+    useAddComment: () => async () => {},
     useSelection: () => {
       throw new Error("not used");
     },
@@ -68,10 +72,13 @@ function StoryDetail({
           build={build}
           snapshotId={pending.id}
           settings={settings}
-          canWrite={canWrite}
           canReview={canWrite}
           onApprove={fn()}
           onReject={fn()}
+          commenting={commenting}
+          onOpenComments={fn()}
+          onCloseComments={fn()}
+          onComment={fn()}
           onUndo={fn()}
           onPrevious={fn()}
           onNext={fn()}
@@ -114,6 +121,38 @@ export const RejectedWithComment: Story = {
         action: "reject",
         comment: "The Pro card lost its border.",
       },
+    },
+  },
+};
+
+export const CommentsFromTwoReviewers: Story = {
+  args: {
+    commenting: true,
+    snapshot: {
+      ...pending,
+      reviewState: "rejected",
+      lastReview: {
+        ...review,
+        action: "reject",
+        login: "hubot",
+        comment: "The Pro card lost its border.",
+      },
+      comments: [
+        {
+          id: "review_1",
+          action: null,
+          login: "octocat",
+          body: "The new spacing matches the design file.",
+          createdAt: STORY_NOW - 3 * 60 * 60 * 1000,
+        },
+        {
+          id: "review_2",
+          action: "reject",
+          login: "hubot",
+          body: "The Pro card lost its border.",
+          createdAt: STORY_NOW - 20 * 60 * 1000,
+        },
+      ],
     },
   },
 };
