@@ -6,7 +6,6 @@ import { BUILD_DATA, type BuildData, NEXT_STATE } from "./buildData";
 import type { Build, Snapshot } from "./types";
 
 const SIZE = { width: 600, height: 375 };
-const AREA = SIZE.width * SIZE.height;
 const MINUTE_MS = 60 * 1000;
 
 export type FixtureSnapshot = {
@@ -16,6 +15,7 @@ export type FixtureSnapshot = {
   reviewState: ReviewState;
   diffPixels?: number;
   browser?: string;
+  size?: { width: number; height: number };
   image: string | null;
   baselineImage: string | null;
   diffImage: string | null;
@@ -70,8 +70,15 @@ export function unchanged(
   };
 }
 
-function toImage(url: string | null) {
-  return url === null ? null : { url, ...SIZE };
+function toImage(url: string | null, size = SIZE) {
+  return url === null ? null : { url, ...size };
+}
+
+function diffRatio(snapshot: FixtureSnapshot) {
+  const { width, height } = snapshot.size ?? SIZE;
+  return snapshot.diffPixels === undefined
+    ? null
+    : snapshot.diffPixels / (width * height);
 }
 
 function countSnapshots(snapshots: FixtureSnapshot[]): Build["counts"] {
@@ -164,10 +171,7 @@ export function useFixtureBuild(fixture: BuildFixture): {
             name: snapshot.name,
             diffStatus: snapshot.diffStatus,
             reviewState: snapshot.reviewState,
-            diffRatio:
-              snapshot.diffPixels === undefined
-                ? null
-                : snapshot.diffPixels / AREA,
+            diffRatio: diffRatio(snapshot),
             browser: snapshot.browser ?? null,
           })),
         status: "Exhausted" as const,
@@ -192,13 +196,12 @@ export function useFixtureBuild(fixture: BuildFixture): {
         name: snapshot.name,
         diffStatus: snapshot.diffStatus,
         reviewState: snapshot.reviewState,
-        diffRatio:
-          snapshot.diffPixels === undefined ? null : snapshot.diffPixels / AREA,
+        diffRatio: diffRatio(snapshot),
         diffPixels: snapshot.diffPixels ?? null,
         metadata: {},
-        image: toImage(snapshot.image),
-        baselineImage: toImage(snapshot.baselineImage),
-        diffImage: toImage(snapshot.diffImage),
+        image: toImage(snapshot.image, snapshot.size),
+        baselineImage: toImage(snapshot.baselineImage, snapshot.size),
+        diffImage: toImage(snapshot.diffImage, snapshot.size),
         lastReview:
           snapshot.reviewState === "approved" ||
           snapshot.reviewState === "rejected"

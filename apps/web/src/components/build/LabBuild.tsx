@@ -45,6 +45,10 @@ const REVIEW_SNAPSHOTS: FixtureSnapshot[] = [
   changed("pricing", "Pricing/Plans [600]", 78),
   changed("signin", "Sign in/Error [600]", 3393),
   {
+    ...changed("long-page", "Landing/Full page [600]", 3029),
+    size: { width: 600, height: 9982 },
+  },
+  {
     id: "invoices",
     name: "Invoices/Empty [600]",
     diffStatus: "added",
