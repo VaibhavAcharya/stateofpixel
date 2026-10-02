@@ -21,7 +21,7 @@ describe("sitemap", () => {
         path === "/" ? "2026-09-28T12:00:00+05:30" : undefined,
       ),
     ).toContain(
-      `<url><loc>${SITE_URL}/</loc><lastmod>2026-09-28T12:00:00+05:30</lastmod></url>\n  <url><loc>${SITE_URL}/brand</loc></url>`,
+      `<url><loc>${SITE_URL}</loc><lastmod>2026-09-28T12:00:00+05:30</lastmod></url>\n  <url><loc>${SITE_URL}/brand</loc></url>`,
     );
   });
 });

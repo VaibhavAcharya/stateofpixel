@@ -382,7 +382,7 @@ const ROLES: [string, number][] = [
 const TEAM_FACTS: [Icon, string][] = [
   [
     UserMinusIcon,
-    "Remove someone from the repository and they lose access here in about 5 minutes, 15 at most.",
+    "Remove someone from the repository and they lose access here too.",
   ],
   [
     LockSimpleIcon,
@@ -603,7 +603,7 @@ export const FAQ: [string, string][] = [
   ],
   [
     "What GitHub permissions does the app ask for?",
-    "Commit statuses write, to set the check. Pull requests read and write, where read finds the PR number, base branch and squash merges, and write is not used. Contents read, which GitHub requires for the compare API we use to find the baseline commit. Metadata read, which every app has. Email addresses read, so you can sign in with GitHub. The app also asks for Checks write and Actions read, which it does not use.",
+    "Commit statuses write, to set the check. Pull requests read and write, where read finds the PR number, base branch and squash merges, and write is not used for now. Contents read, which GitHub requires for the compare API we use to find the baseline commit. Metadata read, which every app has. Email addresses read, so you can sign in with GitHub. The app also asks for Checks write and Actions read, which it does not use for now.",
   ],
   [
     "Who can approve changes?",

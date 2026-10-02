@@ -2,6 +2,10 @@ import { facts } from "../components/docs/facts";
 
 export const SITE_URL = "https://stateofpixel.com";
 
+export function pageUrl(path: string) {
+  return path === "/" ? SITE_URL : `${SITE_URL}${path}`;
+}
+
 export type PageMeta = { path: string; title: string; description: string };
 
 export const PAGES = {
@@ -43,7 +47,7 @@ export function pageMeta(page: PageMeta) {
     { property: "og:type", content: "website" },
     { property: "og:title", content: page.title },
     { property: "og:description", content: page.description },
-    { property: "og:url", content: `${SITE_URL}${page.path}` },
+    { property: "og:url", content: pageUrl(page.path) },
     { property: "og:image", content: `${SITE_URL}${ogImagePath(page.path)}` },
     { property: "og:image:width", content: "1200" },
     { property: "og:image:height", content: "630" },
@@ -53,5 +57,5 @@ export function pageMeta(page: PageMeta) {
 }
 
 export function pageLinks(page: PageMeta) {
-  return [{ rel: "canonical", href: `${SITE_URL}${page.path}` }];
+  return [{ rel: "canonical", href: pageUrl(page.path) }];
 }

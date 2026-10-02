@@ -240,7 +240,8 @@ export function sitemap(
     ...pages.map((page) => {
       const date = lastModified(page.path);
       const lastmod = date === undefined ? "" : `<lastmod>${date}</lastmod>`;
-      return `  <url><loc>${siteUrl}${page.path}</loc>${lastmod}</url>`;
+      const url = page.path === "/" ? siteUrl : `${siteUrl}${page.path}`;
+      return `  <url><loc>${url}</loc>${lastmod}</url>`;
     }),
     "</urlset>",
     "",

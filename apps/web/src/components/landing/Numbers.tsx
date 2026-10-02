@@ -304,9 +304,6 @@ function Run({ active }: { active: boolean }) {
               </li>
             ))}
           </ol>
-          <p className="mt-3 text-xs text-muted">
-            We have not measured these steps, so they have no times.
-          </p>
         </div>
       </Lane>
     </div>
