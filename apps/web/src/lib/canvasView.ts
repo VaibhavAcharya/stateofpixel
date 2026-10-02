@@ -3,6 +3,7 @@ export type Point = { x: number; y: number };
 export type CanvasView = { scale: number; x: number; y: number };
 
 export const CANVAS_PADDING = 16;
+export const CANVAS_PADDING_TOP = 80;
 export const MAX_SCALE = 8;
 export const ZOOM_STEP = 1.25;
 export const ZOOM_OUT_LIMIT = 2;
@@ -11,8 +12,8 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function room(viewportSize: number) {
-  return Math.max(1, viewportSize - 2 * CANVAS_PADDING);
+function room(viewportSize: number, start = CANVAS_PADDING) {
+  return Math.max(1, viewportSize - start - CANVAS_PADDING);
 }
 
 export function fitScale(viewport: Size, content: Size) {
@@ -23,7 +24,7 @@ function minScale(viewport: Size, content: Size) {
   return (
     Math.min(
       fitScale(viewport, content),
-      room(viewport.height) / content.height,
+      room(viewport.height, CANVAS_PADDING_TOP) / content.height,
     ) / ZOOM_OUT_LIMIT
   );
 }
@@ -32,14 +33,19 @@ export function fitView(viewport: Size, content: Size): CanvasView {
   return {
     scale: fitScale(viewport, content),
     x: CANVAS_PADDING,
-    y: CANVAS_PADDING,
+    y: CANVAS_PADDING_TOP,
   };
 }
 
-function clampOffset(offset: number, viewportSize: number, size: number) {
-  return size + 2 * CANVAS_PADDING <= viewportSize
-    ? CANVAS_PADDING
-    : clamp(offset, viewportSize - size - CANVAS_PADDING, CANVAS_PADDING);
+function clampOffset(
+  offset: number,
+  viewportSize: number,
+  size: number,
+  start = CANVAS_PADDING,
+) {
+  return size + start + CANVAS_PADDING <= viewportSize
+    ? start
+    : clamp(offset, viewportSize - size - CANVAS_PADDING, start);
 }
 
 export function clampView(
@@ -51,7 +57,12 @@ export function clampView(
   return {
     scale,
     x: clampOffset(view.x, viewport.width, content.width * scale),
-    y: clampOffset(view.y, viewport.height, content.height * scale),
+    y: clampOffset(
+      view.y,
+      viewport.height,
+      content.height * scale,
+      CANVAS_PADDING_TOP,
+    ),
   };
 }
 

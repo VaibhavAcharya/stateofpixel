@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { CANVAS_PADDING, type CanvasView } from "../lib/canvasView";
+import {
+  CANVAS_PADDING,
+  CANVAS_PADDING_TOP,
+  type CanvasView,
+} from "../lib/canvasView";
 import { demoImage, preloadDemoImages } from "../lib/storyFixtures";
 import {
   type DiffColor,
@@ -120,7 +124,7 @@ export const FlipShowingBaseline: Story = {
 };
 
 const zoomed = (scale: number) => ({
-  initial: { view: { scale, x: CANVAS_PADDING, y: CANVAS_PADDING } },
+  initial: { view: { scale, x: CANVAS_PADDING, y: CANVAS_PADDING_TOP } },
 });
 
 export const ActualSize: Story = { args: zoomed(1) };

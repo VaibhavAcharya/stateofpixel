@@ -20,6 +20,7 @@ import {
 } from "react";
 import {
   CANVAS_PADDING,
+  CANVAS_PADDING_TOP,
   type CanvasView,
   clampView,
   fitView,
@@ -659,7 +660,8 @@ function useCanvas(settings: ViewerSettings, content: Size) {
   const pannable =
     viewport !== null &&
     (content.width * view.scale + 2 * CANVAS_PADDING > viewport.width ||
-      content.height * view.scale + 2 * CANVAS_PADDING > viewport.height);
+      content.height * view.scale + CANVAS_PADDING_TOP + CANVAS_PADDING >
+        viewport.height);
 
   const update = (change: (current: CanvasView, size: Size) => CanvasView) =>
     setView((value) => {
@@ -857,9 +859,6 @@ function Pane({
 }) {
   return (
     <figure className="flex min-h-0 min-w-0 flex-col bg-canvas">
-      <figcaption className="flex h-7 shrink-0 items-end justify-between gap-4 px-4 text-xs text-muted">
-        {caption}
-      </figcaption>
       <div
         ref={paneRef}
         data-pane
@@ -871,6 +870,9 @@ function Pane({
             transform: `translate(${Math.round(view.x)}px, ${Math.round(view.y)}px)`,
           }}
         >
+          <figcaption className="absolute inset-x-0 bottom-full mb-1.5 flex justify-between gap-4 text-xs whitespace-nowrap text-muted">
+            {caption}
+          </figcaption>
           {children}
         </div>
       </div>

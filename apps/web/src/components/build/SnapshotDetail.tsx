@@ -234,7 +234,7 @@ function ReviewDock({
   const group =
     "flex items-center gap-0.5 rounded-control bg-surface p-1 shadow-menu ring-1 ring-border";
   return (
-    <div className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2">
+    <div className="absolute top-2 left-1/2 z-10 -translate-x-1/2">
       <div className={group}>
         <DockButton
           label="Previous snapshot"
@@ -326,7 +326,7 @@ function DockButton({
   return (
     <Tooltip
       label={`${tooltip}, press ${keyName}`}
-      className="top-auto! bottom-full! left-1/2! mt-0! mb-2 -translate-x-1/2"
+      className="left-1/2! mt-2! -translate-x-1/2"
     >
       <button
         type="button"

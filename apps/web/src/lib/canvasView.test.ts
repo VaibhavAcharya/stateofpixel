@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CANVAS_PADDING,
+  CANVAS_PADDING_TOP,
   clampView,
   fitView,
   MAX_SCALE,
@@ -17,7 +18,7 @@ describe("fitView", () => {
     expect(fitView(viewport, wide)).toEqual({
       scale: 0.5,
       x: CANVAS_PADDING,
-      y: CANVAS_PADDING,
+      y: CANVAS_PADDING_TOP,
     });
   });
 
@@ -30,7 +31,7 @@ describe("panView", () => {
   it("stops at the image edges", () => {
     const view = fitView(viewport, wide);
     expect(panView(view, { x: 0, y: 500 }, viewport, wide).y).toBe(
-      CANVAS_PADDING,
+      CANVAS_PADDING_TOP,
     );
     expect(panView(view, { x: 0, y: -5000 }, viewport, wide).y).toBe(
       viewport.height - 1500 - CANVAS_PADDING,
@@ -38,7 +39,7 @@ describe("panView", () => {
   });
 
   it("keeps an image that fits at the top left", () => {
-    const view = { scale: 1, x: CANVAS_PADDING, y: CANVAS_PADDING };
+    const view = { scale: 1, x: CANVAS_PADDING, y: CANVAS_PADDING_TOP };
     expect(panView(view, { x: 200, y: -100 }, viewport, small)).toEqual(view);
   });
 });
@@ -60,7 +61,9 @@ describe("zoomView", () => {
     const view = fitView(viewport, wide);
     const anchor = { x: 0, y: 0 };
     expect(zoomView(view, 100, anchor, viewport, wide).scale).toBe(MAX_SCALE);
-    expect(zoomView(view, 0.01, anchor, viewport, wide).scale).toBe(0.1);
+    expect(zoomView(view, 0.01, anchor, viewport, wide).scale).toBeCloseTo(
+      0.089,
+    );
   });
 });
 
