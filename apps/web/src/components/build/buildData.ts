@@ -139,6 +139,9 @@ function useApplyReview() {
 
     const reviewCounts = (counts: Build["counts"]) => {
       const result = { ...counts };
+      if (ids === null && args.action === "undo") {
+        return result;
+      }
       if (ids === null) {
         result[next] += result.pending;
         result.pending = 0;
@@ -160,6 +163,12 @@ function useApplyReview() {
           ...value,
           counts,
           conclusion: conclude(counts),
+          buildAction:
+            ids !== null
+              ? value.buildAction
+              : args.action === "undo"
+                ? null
+                : args.action,
         });
         updated.set(`${queryArgs.owner}/${queryArgs.name}`, value.number);
       }

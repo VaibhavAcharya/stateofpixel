@@ -1,18 +1,20 @@
 import {
+  ArrowCounterClockwiseIcon,
   ArrowsLeftRightIcon,
+  CheckIcon,
   ClockIcon,
   GitBranchIcon,
   GitCommitIcon,
   GitPullRequestIcon,
   InfoIcon,
   WarningIcon,
+  XIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { formatCount, shortSha } from "../../lib/format";
 import {
   BuildStatePill,
-  buttonClass,
   PrStatePill,
   RelativeTime,
   Spinner,
@@ -48,6 +50,7 @@ export function BuildHeader({
   headings = true,
   onApproveAll,
   onRejectAll,
+  onUndoAll,
 }: {
   build: Build;
   owner: string;
@@ -58,9 +61,9 @@ export function BuildHeader({
   headings?: boolean;
   onApproveAll: () => void;
   onRejectAll: () => void;
+  onUndoAll: () => void;
 }) {
   const github = `https://github.com/${owner}/${repo}`;
-  const nothingPending = !canReview || build.counts.pending === 0;
   const Title = headings ? "h1" : "p";
 
   return (
@@ -144,30 +147,14 @@ export function BuildHeader({
       </div>
       <div className="flex items-center gap-2 empty:hidden max-sm:w-full">
         {build.status !== "finalized" ? null : canWrite ? (
-          <>
-            <button
-              type="button"
-              className={`${buttonClass("danger")} max-sm:flex-1`}
-              disabled={nothingPending}
-              onClick={onRejectAll}
-            >
-              Reject build
-            </button>
-            <button
-              type="button"
-              className={`${buttonClass("primary")} max-sm:flex-1`}
-              disabled={nothingPending}
-              title="Approve all pending (shift+a)"
-              onClick={onApproveAll}
-            >
-              Approve all
-              {build.counts.pending > 0 && (
-                <span className="tabular-nums opacity-60">
-                  {formatCount(build.counts.pending)}
-                </span>
-              )}
-            </button>
-          </>
+          <VerdictSwitch
+            counts={build.counts}
+            canReview={canReview}
+            buildAction={build.buildAction}
+            onApprove={onApproveAll}
+            onReject={onRejectAll}
+            onUndo={onUndoAll}
+          />
         ) : (
           <span className="text-xs text-muted">
             You need write access on GitHub to review
@@ -308,5 +295,97 @@ export function Banners({
         </p>
       ))}
     </div>
+  );
+}
+
+const VERDICT_POSITION = { reject: 0, none: 1, approve: 2 } as const;
+
+function VerdictSwitch({
+  counts,
+  canReview,
+  buildAction,
+  onApprove,
+  onReject,
+  onUndo,
+}: {
+  counts: Build["counts"];
+  canReview: boolean;
+  buildAction: "approve" | "reject" | null;
+  onApprove: () => void;
+  onReject: () => void;
+  onUndo: () => void;
+}) {
+  const { pending, approved, rejected } = counts;
+  const total = pending + approved + rejected;
+  const share = (value: number) =>
+    `${total === 0 ? 0 : (value / total) * 100}%`;
+  const segment =
+    "relative z-10 flex h-7 min-w-0 items-center justify-center gap-1.5 rounded-[9px] px-3 text-sm font-medium whitespace-nowrap transition-colors duration-150 disabled:cursor-default";
+  const idle = pending === 0 && buildAction === null;
+
+  return (
+    <fieldset
+      aria-label="Review the whole build"
+      className="relative m-0 grid w-[400px] grid-cols-3 overflow-hidden rounded-control border-0 bg-surface-2 p-0.5 max-sm:w-full"
+    >
+      <span
+        aria-hidden
+        className="absolute top-0.5 left-0.5 h-7 w-[calc((100%-4px)/3)] rounded-[9px] bg-surface shadow-[inset_0_0_0_1px_var(--color-border)] transition-[translate] duration-200 ease-out-strong motion-reduce:transition-none"
+        style={{
+          translate: `${VERDICT_POSITION[buildAction ?? "none"] * 100}% 0`,
+        }}
+      />
+      <button
+        type="button"
+        aria-pressed={buildAction === "reject"}
+        disabled={!canReview || buildAction === "reject" || idle}
+        onClick={onReject}
+        className={`${segment} ${buildAction === "reject" ? "text-rejected" : "text-muted not-disabled:hover:text-rejected"}`}
+      >
+        <XIcon size={14} weight="bold" />
+        Reject build
+      </button>
+      <button
+        type="button"
+        disabled={!canReview || buildAction === null}
+        onClick={onUndo}
+        className={`${segment} pb-1 ${buildAction === null ? "text-text" : "text-muted hover:text-text"}`}
+      >
+        {buildAction === null ? (
+          <span className="tabular-nums">
+            {pending > 0 ? `${formatCount(pending)} to review` : "All reviewed"}
+          </span>
+        ) : (
+          <>
+            <ArrowCounterClockwiseIcon size={14} />
+            Undo
+          </>
+        )}
+        <span
+          aria-hidden
+          className="absolute inset-x-4 bottom-[3px] flex h-0.5 overflow-hidden rounded-full bg-field-border/30"
+        >
+          <span
+            className="bg-rejected transition-[width] duration-250 ease-out-strong"
+            style={{ width: share(rejected) }}
+          />
+          <span
+            className="bg-approved transition-[width] duration-250 ease-out-strong"
+            style={{ width: share(approved) }}
+          />
+        </span>
+      </button>
+      <button
+        type="button"
+        aria-pressed={buildAction === "approve"}
+        title="Approve every pending snapshot (shift+a)"
+        disabled={!canReview || buildAction === "approve" || idle}
+        onClick={onApprove}
+        className={`${segment} ${buildAction === "approve" ? "text-approved" : "text-muted not-disabled:hover:text-approved"}`}
+      >
+        <CheckIcon size={14} weight="bold" />
+        Approve build
+      </button>
+    </fieldset>
   );
 }

@@ -42,9 +42,12 @@ Images show at Fit by default. Scroll or drag to pan, and pinch, or scroll with 
 
 Anyone with write access to the repository on GitHub can review. See [Who can review](#who-can-review).
 
-- Approve a snapshot with <kbd>a</kbd>, which also moves to the next pending one, or approve every pending snapshot with Approve all. On a folded row, Approve and Reject apply to every snapshot in it, and the button shows how many.
-- Reject with <kbd>r</kbd> and an optional comment. One rejection makes the check fail with "1 change rejected". Reject build rejects every pending snapshot at once.
-- Undo a review with <kbd>u</kbd>.
+The dock at the bottom of the images reviews the open snapshot, and the switch in the build header reviews the whole build.
+
+- Approve a snapshot with <kbd>a</kbd> or the check in the dock, which also moves to the next pending one. On a folded row, it approves every snapshot in it.
+- Reject with <kbd>r</kbd> or the cross, which also moves to the next pending one. One rejection makes the check fail with "1 change rejected".
+- Undo a review with <kbd>u</kbd> or the arrow in the dock.
+- Approve build, or <kbd>shift</kbd> <kbd>a</kbd>, approves every pending snapshot, and Reject build rejects them. The middle of the switch then reads Undo, which takes the build action back without changing reviews made one by one. Picking the other side switches the build action.
 
 When every change is approved, the check turns green on GitHub. See [The GitHub check](/docs/checks).
 
@@ -52,7 +55,7 @@ When every change is approved, the check turns green on GitHub. See [The GitHub 
 
 Under the image, the snapshot shows what else is known about it:
 
-- **Review**: who approved or rejected it and when, with the comment, or the build an approval carried over from.
+- **Review**: who approved or rejected it and when, with a comment if one was left, or the build an approval carried over from.
 - **Looks flaky**: shown when the snapshot changed back and forth on the default branch, or another build of the same commit has a different image. See [Find flaky snapshots](/docs/stable-screenshots#find-flaky-snapshots).
 - **History**: the recent builds on the default branch where the image changed. History opens the snapshot on the Baselines tab. See [Baselines](/docs/baselines).
 - **Details**: the metadata your test sent, like browser, viewport and test file.

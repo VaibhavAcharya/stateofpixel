@@ -15,6 +15,7 @@ const meta = {
     canReview: true,
     onApproveAll: fn(),
     onRejectAll: fn(),
+    onUndoAll: fn(),
   },
   render: (args) => (
     <>

@@ -30,6 +30,7 @@ export type BuildFixture = {
     | "createdAt"
     | "finalizedAt"
     | "browsers"
+    | "buildAction"
   >;
   snapshots: FixtureSnapshot[];
   reviewer: string;
@@ -103,10 +104,18 @@ export function useFixtureBuild(fixture: BuildFixture): {
   const [reviews, setReviews] = useState<
     Record<
       string,
-      { state: ReviewState; comment: string | null; reviewedAt: number }
+      {
+        state: ReviewState;
+        comment: string | null;
+        reviewedAt: number;
+        batch: boolean;
+      }
     >
   >({});
 
+  const [buildAction, setBuildAction] = useState<"approve" | "reject" | null>(
+    null,
+  );
   const snapshots = fixture.snapshots.map((snapshot) => ({
     ...snapshot,
     reviewState: reviews[snapshot.id]?.state ?? snapshot.reviewState,
@@ -124,6 +133,7 @@ export function useFixtureBuild(fixture: BuildFixture): {
     browsers: [
       ...new Set(snapshots.flatMap((snapshot) => snapshot.browser ?? [])),
     ].sort(),
+    buildAction,
   };
 
   const data: BuildData = {
@@ -197,20 +207,28 @@ export function useFixtureBuild(fixture: BuildFixture): {
         setReviews((current) => {
           const next = { ...current };
           for (const snapshot of snapshots) {
+            const state = current[snapshot.id]?.state ?? snapshot.reviewState;
+            const fromBuildAction = current[snapshot.id]?.batch === true;
             const selected =
-              snapshotIds === "all"
-                ? snapshot.reviewState === "pending"
-                : snapshotIds.includes(snapshot.id as Id<"snapshots">);
-            if (selected && snapshot.reviewState !== "none") {
+              snapshotIds !== "all"
+                ? snapshotIds.includes(snapshot.id as Id<"snapshots">)
+                : action === "undo"
+                  ? fromBuildAction
+                  : state === "pending" || fromBuildAction;
+            if (selected && state !== "none") {
               next[snapshot.id] = {
                 state: NEXT_STATE[action],
                 comment: comment || null,
                 reviewedAt: Date.now(),
+                batch: snapshotIds === "all" && action !== "undo",
               };
             }
           }
           return next;
         });
+        if (snapshotIds === "all") {
+          setBuildAction(action === "undo" ? null : action);
+        }
       },
   };
 

@@ -117,6 +117,7 @@ export const build: Build = {
   supersededBy: null,
   mergedPr: null,
   browsers: ["chromium"],
+  buildAction: null,
   counts: buildCounts,
   createdAt: STORY_NOW - 5 * MINUTE_MS,
   finalizedAt: STORY_NOW - 4 * MINUTE_MS,

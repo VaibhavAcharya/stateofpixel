@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { internal } from "./api.ts";
 import { touchCheck } from "./checks.ts";
@@ -30,7 +30,11 @@ const reviewAction = z.enum(["approve", "reject", "undo"]);
 
 type ReviewAction = z.infer<typeof reviewAction>;
 type Counts = z.infer<typeof buildCounts>;
-type Source = "user" | "approve_all";
+type Source = "user" | "approve_all" | "reject_all";
+
+const BUILD_SOURCES = new Set(["approve_all", "reject_all"]);
+
+const BUILD_SOURCE = { approve: "approve_all", reject: "reject_all" } as const;
 
 const NEXT_STATE = {
   approve: "approved",
@@ -91,13 +95,10 @@ export const apply = mutation({
     }
 
     if (snapshotIds === "all") {
-      if (action === "undo") {
-        throw new AppError({ code: "invalid_action" });
-      }
       const options = {
         action,
         userId,
-        source: action === "approve" ? "approve_all" : "user",
+        source: action === "undo" ? "user" : BUILD_SOURCE[action],
         comment: trimmedComment,
       } as const;
       const counts = { ...build.counts };
@@ -109,9 +110,13 @@ export const apply = mutation({
           diffStatus,
         ).limit(ALL_PAGE_SIZE);
         truncated ||= page.length === ALL_PAGE_SIZE;
-        await reviewPending(ctx, build, page, counts, options);
+        await reviewBuildPage(ctx, build, page, counts, options);
       }
       await saveCounts(ctx, build, counts);
+      await ctx.db
+        .update(builds)
+        .set({ buildAction: action === "undo" ? null : action })
+        .where(eq(builds._id, build._id));
       if (truncated) {
         await ctx.scheduler.runAfter(0, internal.reviews.applyAll, {
           buildId,
@@ -154,7 +159,7 @@ export const apply = mutation({
 export const applyAll = internalMutation({
   args: {
     buildId: z.string(),
-    action: z.enum(["approve", "reject"]),
+    action: reviewAction,
     userId: z.string(),
     comment: z.string().optional(),
     diffStatus: z.enum(["changed", "added"]),
@@ -173,10 +178,10 @@ export const applyAll = internalMutation({
           .offset(offset),
     );
     const counts = { ...build.counts };
-    await reviewPending(ctx, build, page.page, counts, {
+    await reviewBuildPage(ctx, build, page.page, counts, {
       action: args.action,
       userId: args.userId,
-      source: args.action === "approve" ? "approve_all" : "user",
+      source: args.action === "undo" ? "user" : BUILD_SOURCE[args.action],
       comment: args.comment,
     });
     await saveCounts(ctx, build, counts);
@@ -210,15 +215,51 @@ function checkReviewable(build: Doc<"builds">) {
   }
 }
 
-async function reviewPending(
+async function latestSources(
+  ctx: MutationCtx,
+  snapshotIds: Id<"snapshots">[],
+): Promise<Map<string, string>> {
+  const sources = new Map<string, string>();
+  if (snapshotIds.length === 0) {
+    return sources;
+  }
+  const rows = await ctx.db
+    .select({ snapshotId: reviews.snapshotId, source: reviews.source })
+    .from(reviews)
+    .where(inArray(reviews.snapshotId, snapshotIds))
+    .orderBy(desc(reviews._creationTime), desc(reviews._id));
+  for (const row of rows) {
+    if (!sources.has(row.snapshotId)) {
+      sources.set(row.snapshotId, row.source);
+    }
+  }
+  return sources;
+}
+
+async function reviewBuildPage(
   ctx: MutationCtx,
   build: Doc<"builds">,
   snapshots: Doc<"snapshots">[],
   counts: Counts,
   options: Parameters<typeof review>[4],
 ) {
+  const sources = await latestSources(
+    ctx,
+    snapshots
+      .filter(
+        (snapshot) =>
+          snapshot.reviewState === "approved" ||
+          snapshot.reviewState === "rejected",
+      )
+      .map((snapshot) => snapshot._id),
+  );
   for (const snapshot of snapshots) {
-    if (snapshot.reviewState === "pending") {
+    const fromBuildAction = BUILD_SOURCES.has(sources.get(snapshot._id) ?? "");
+    const selected =
+      options.action === "undo"
+        ? fromBuildAction
+        : snapshot.reviewState === "pending" || fromBuildAction;
+    if (selected) {
       await review(ctx, build, snapshot, counts, options);
     }
   }

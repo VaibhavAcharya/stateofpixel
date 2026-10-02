@@ -1308,6 +1308,7 @@ export const get = query({
           : { number: baseline.number, branch: baseline.branch },
       supersededBy: supersededBy?.number ?? null,
       browsers: build.browsers,
+      buildAction: build.buildAction,
       mergedPr:
         build.mergedPrNumber === null
           ? null

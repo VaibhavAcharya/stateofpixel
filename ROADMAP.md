@@ -23,6 +23,10 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 - Find why some snapshots of older builds point at images that no longer exist, and stop the image cleanup from deleting images still in use.
 - Raise the 4 MB image limit by uploading straight to Blobs instead of through a function.
 
+## Review
+
+- Let reviewers leave a comment on a rejection without stopping the review. Today `r` rejects right away and moves on, and comments saved earlier still show in the review status.
+
 ## Landing and marketing
 
 - Mention on the landing that GitHub tokens are stored encrypted and private image links expire within two hours.

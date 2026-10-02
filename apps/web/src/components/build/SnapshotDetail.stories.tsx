@@ -1,6 +1,5 @@
 import type { Id } from "@stateofpixel/backend/dataModel";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
 import { fn } from "storybook/test";
 import {
   build,
@@ -45,14 +44,11 @@ const review: NonNullable<Snapshot["lastReview"]> = {
 function StoryDetail({
   snapshot,
   canWrite = true,
-  rejecting = false,
 }: {
   snapshot: Snapshot | null | undefined;
   canWrite?: boolean;
-  rejecting?: boolean;
 }) {
   const settings = useViewerSettings();
-  const [isRejecting, setRejecting] = useState(rejecting);
   const data: BuildData = {
     useSnapshotGroups: () => {
       throw new Error("not used");
@@ -74,12 +70,11 @@ function StoryDetail({
           settings={settings}
           canWrite={canWrite}
           canReview={canWrite}
-          rejecting={isRejecting}
-          onStartReject={() => setRejecting(true)}
-          onCancelReject={() => setRejecting(false)}
           onApprove={fn()}
-          onReject={() => setRejecting(false)}
+          onReject={fn()}
           onUndo={fn()}
+          onPrevious={fn()}
+          onNext={fn()}
           navigation={null}
         />
       </div>
@@ -102,8 +97,6 @@ type Story = StoryObj<typeof meta>;
 export const Pending: Story = {};
 
 export const PendingDark: Story = { parameters: { theme: "dark" } };
-
-export const Rejecting: Story = { args: { rejecting: true } };
 
 export const Approved: Story = {
   args: {

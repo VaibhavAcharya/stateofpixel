@@ -765,6 +765,75 @@ it("approves every pending snapshot with approve all", async () => {
   ]);
 });
 
+it("switches and undoes a build action without touching other reviews", async () => {
+  const { t, user, grant, buildId, snapshotId } = await setup();
+  await grant("write");
+  await t.run(async (ctx) => {
+    for (const name of ["A", "B", "C"]) {
+      await ctx.db.insert(snapshots).values({
+        buildId,
+        shardIndex: 1,
+        name,
+        diffStatus: "added",
+        reviewState: "pending",
+        metadata: {},
+      });
+    }
+    const build = first(
+      await ctx.db.select().from(builds).where(eq(builds._id, buildId)),
+    );
+    if (build) {
+      await ctx.db
+        .update(builds)
+        .set({ counts: { ...build.counts, added: 3, pending: 4 } })
+        .where(eq(builds._id, buildId));
+    }
+  });
+  const buildAction = () =>
+    t.run(
+      async (ctx) =>
+        first(await ctx.db.select().from(builds).where(eq(builds._id, buildId)))
+          ?.buildAction,
+    );
+
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: [snapshotId],
+    action: "approve",
+  });
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: "all",
+    action: "reject",
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    counts: { pending: 0, approved: 1, rejected: 3 },
+  });
+  expect(await buildAction()).toBe("reject");
+
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: "all",
+    action: "approve",
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    conclusion: "approved",
+    counts: { pending: 0, approved: 4, rejected: 0 },
+  });
+  expect(await buildAction()).toBe("approve");
+
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: "all",
+    action: "undo",
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    conclusion: "changes",
+    counts: { pending: 3, approved: 1, rejected: 0 },
+  });
+  expect(await buildAction()).toBeNull();
+});
+
 it("saves settings for admins only and checks the values", async () => {
   const writer = await setup();
   await writer.grant("write");

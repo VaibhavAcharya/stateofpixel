@@ -17,9 +17,9 @@ export const SHORTCUT_GROUPS: { title: string; items: [string, string[]][] }[] =
       title: "Review",
       items: [
         ["Approve, move to next pending", ["a"]],
-        ["Reject with a comment", ["r"]],
+        ["Reject, move to next pending", ["r"]],
         ["Undo review", ["u"]],
-        ["Approve all pending", ["shift", "a"]],
+        ["Approve build", ["shift", "a"]],
       ],
     },
     {

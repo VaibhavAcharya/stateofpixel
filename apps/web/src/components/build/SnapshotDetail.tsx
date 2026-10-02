@@ -1,24 +1,28 @@
 import {
   ArrowCounterClockwiseIcon,
   CaretDownIcon,
+  CaretLeftIcon,
   CaretRightIcon,
+  CheckIcon,
   WarningIcon,
+  XIcon,
 } from "@phosphor-icons/react/ssr";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { Link } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { formatCount } from "../../lib/format";
 import {
   buttonClass,
-  Kbd,
   REVIEW_ICONS,
   RelativeTime,
+  type ReviewState,
   Skeleton,
   TONE_TEXT,
 } from "../ui";
 import { Viewer, type ViewerSettings } from "../Viewer";
 import { BuildNotFound } from "./BuildNotFound";
 import { useBuildData } from "./buildData";
+import { storyReviewState } from "./stories";
 import type { Build, Snapshot, SnapshotRow } from "./types";
 
 export function SnapshotDetail({
@@ -30,14 +34,13 @@ export function SnapshotDetail({
   headings = true,
   canWrite,
   canReview,
-  rejecting,
-  onStartReject,
-  onCancelReject,
   onApprove,
   onReject,
   onUndo,
   navigation,
   story,
+  onPrevious,
+  onNext,
 }: {
   owner: string;
   repo: string;
@@ -47,14 +50,13 @@ export function SnapshotDetail({
   headings?: boolean;
   canWrite: boolean;
   canReview: boolean;
-  rejecting: boolean;
-  onStartReject: () => void;
-  onCancelReject: () => void;
   onApprove: () => void;
-  onReject: (comment: string) => void;
+  onReject: () => void;
   onUndo: () => void;
   navigation: ReactNode;
   story?: SnapshotRow[];
+  onPrevious: () => void;
+  onNext: () => void;
 }) {
   const snapshot = useBuildData().useSnapshot({
     owner,
@@ -78,16 +80,12 @@ export function SnapshotDetail({
     return <BuildNotFound title="Snapshot not found." />;
   }
   const reviewable = canReview && snapshot.reviewState !== "none";
-  const states = (story ?? []).map((row) => row.reviewState);
-  const count = (state: string) =>
-    states.filter((value) => value === state).length;
-  const toApprove = story === undefined ? 0 : story.length - count("approved");
-  const toReject = story === undefined ? 0 : story.length - count("rejected");
-  const reviewed =
-    story === undefined
-      ? snapshot.reviewState === "approved" ||
-        snapshot.reviewState === "rejected"
-      : count("approved") + count("rejected") > 0;
+  const pending = (story ?? []).filter(
+    (row) => row.reviewState === "pending",
+  ).length;
+  const rejected = (story ?? []).filter(
+    (row) => row.reviewState === "rejected",
+  ).length;
 
   return (
     <>
@@ -100,79 +98,39 @@ export function SnapshotDetail({
             : `Baseline #${build.baseline.number}`
         }
         newLabel={`New #${build.number}`}
-        navigation={navigation}
-        headings={headings}
-      />
-      <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-4 py-2.5">
-        {rejecting ? (
-          <RejectForm onSubmit={onReject} onCancel={onCancelReject} />
-        ) : (
+        navigation={
           <>
             {story === undefined ? (
               <ReviewStatus snapshot={snapshot} />
             ) : (
-              <p className="text-xs text-muted">
+              <span className="text-xs text-muted tabular-nums">
                 {formatCount(story.length)} snapshots
-                {count("pending") > 0 &&
-                  `, ${formatCount(count("pending"))} waiting for review`}
-                {count("rejected") > 0 &&
-                  `, ${formatCount(count("rejected"))} rejected`}
-              </p>
+                {pending > 0 && `, ${formatCount(pending)} waiting for review`}
+                {rejected > 0 && `, ${formatCount(rejected)} rejected`}
+              </span>
             )}
-            {canWrite && reviewable && (
-              <div className="ml-auto flex items-center gap-2 max-sm:w-full">
-                {reviewed && (
-                  <button
-                    type="button"
-                    className={buttonClass("ghost")}
-                    onClick={onUndo}
-                  >
-                    <ArrowCounterClockwiseIcon size={14} />
-                    Undo
-                    <Kbd>u</Kbd>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className={`${buttonClass("danger")} max-sm:flex-1`}
-                  disabled={
-                    story === undefined
-                      ? snapshot.reviewState === "rejected"
-                      : toReject === 0
-                  }
-                  onClick={onStartReject}
-                >
-                  Reject
-                  {story !== undefined && toReject > 0 && (
-                    <span className="tabular-nums">
-                      {formatCount(toReject)}
-                    </span>
-                  )}
-                  <Kbd>r</Kbd>
-                </button>
-                <button
-                  type="button"
-                  className={`${buttonClass("primary")} max-sm:flex-1`}
-                  disabled={
-                    story === undefined
-                      ? snapshot.reviewState === "approved"
-                      : toApprove === 0
-                  }
-                  onClick={onApprove}
-                >
-                  Approve
-                  {story !== undefined && toApprove > 0 && (
-                    <span className="tabular-nums">
-                      {formatCount(toApprove)}
-                    </span>
-                  )}
-                  <Kbd inverted>a</Kbd>
-                </button>
-              </div>
-            )}
+            {navigation}
           </>
-        )}
-      </div>
+        }
+        overlay={
+          canWrite && reviewable ? (
+            <ReviewDock
+              state={
+                story === undefined
+                  ? snapshot.reviewState
+                  : storyReviewState(story)
+              }
+              count={story?.length}
+              onPrevious={onPrevious}
+              onNext={onNext}
+              onApprove={onApprove}
+              onReject={onReject}
+              onUndo={onUndo}
+            />
+          ) : undefined
+        }
+        headings={headings}
+      />
       {snapshot.flaky !== null && (
         <p className="flex shrink-0 flex-wrap items-center gap-x-1.5 border-t border-border px-4 py-2 text-xs text-muted">
           <WarningIcon size={14} className="shrink-0 text-pending" />
@@ -218,6 +176,80 @@ export function SnapshotDetail({
       )}
       <Details metadata={snapshot.metadata} />
     </>
+  );
+}
+
+function ReviewDock({
+  state,
+  count,
+  onPrevious,
+  onNext,
+  onApprove,
+  onReject,
+  onUndo,
+}: {
+  state: ReviewState;
+  count: number | undefined;
+  onPrevious: () => void;
+  onNext: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+  onUndo: () => void;
+}) {
+  const icon = `${buttonClass("ghost", "icon-sm")} aria-pressed:bg-hover`;
+  const suffix = count === undefined ? "" : ` ${formatCount(count)}`;
+  return (
+    <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-[9px] bg-surface p-0.5 shadow-menu ring-1 ring-border">
+      <button
+        type="button"
+        aria-label="Previous snapshot"
+        title="Previous, press k"
+        className={buttonClass("ghost", "icon-sm")}
+        onClick={onPrevious}
+      >
+        <CaretLeftIcon size={12} />
+      </button>
+      <button
+        type="button"
+        aria-label={`Reject${suffix}`}
+        aria-pressed={state === "rejected"}
+        title="Reject, press r"
+        className={`${icon} text-rejected!`}
+        onClick={onReject}
+      >
+        <XIcon size={14} weight="bold" />
+      </button>
+      <button
+        type="button"
+        aria-label={`Approve${suffix}`}
+        aria-pressed={state === "approved"}
+        title="Approve, press a"
+        className={`${icon} text-approved!`}
+        onClick={onApprove}
+      >
+        <CheckIcon size={14} weight="bold" />
+      </button>
+      {(state === "approved" || state === "rejected") && (
+        <button
+          type="button"
+          aria-label="Undo"
+          title="Undo, press u"
+          className={icon}
+          onClick={onUndo}
+        >
+          <ArrowCounterClockwiseIcon size={14} />
+        </button>
+      )}
+      <button
+        type="button"
+        aria-label="Next snapshot"
+        title="Next, press j"
+        className={buttonClass("ghost", "icon-sm")}
+        onClick={onNext}
+      >
+        <CaretRightIcon size={12} />
+      </button>
+    </div>
   );
 }
 
@@ -318,49 +350,5 @@ function Details({ metadata }: { metadata: Record<string, unknown> }) {
         </dl>
       )}
     </footer>
-  );
-}
-
-function RejectForm({
-  onSubmit,
-  onCancel,
-}: {
-  onSubmit: (comment: string) => void;
-  onCancel: () => void;
-}) {
-  const [comment, setComment] = useState("");
-  const input = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    input.current?.focus();
-  }, []);
-  return (
-    <form
-      className="flex w-full items-center gap-2"
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSubmit(comment);
-      }}
-    >
-      <input
-        ref={input}
-        value={comment}
-        maxLength={500}
-        onChange={(event) => setComment(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            onCancel();
-          }
-        }}
-        placeholder="Why is this change wrong? (optional)"
-        aria-label="Reject comment"
-        className="h-8 min-w-0 flex-1 rounded-md bg-surface px-2.5 text-sm shadow-[inset_0_0_0_1px_var(--color-field-border)] transition-shadow duration-250 ease-standard outline-none placeholder:text-subtle focus:shadow-field-focus"
-      />
-      <button type="button" className={buttonClass("ghost")} onClick={onCancel}>
-        Cancel
-      </button>
-      <button type="submit" className={buttonClass("danger")}>
-        Reject
-      </button>
-    </form>
   );
 }

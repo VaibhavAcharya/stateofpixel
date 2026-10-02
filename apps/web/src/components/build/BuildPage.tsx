@@ -128,7 +128,6 @@ export function BuildPage({
     () => new Set(),
   );
   const [selectedStory, setSelectedStory] = useState<string>();
-  const [rejecting, setRejecting] = useState(false);
   const { open: shortcutsOpen, setOpen: setShortcutsOpen } =
     useContext(ShortcutsContext);
   const [listOpen, setListOpen] = useState(false);
@@ -285,6 +284,14 @@ export function BuildPage({
     select(nextPending);
   };
 
+  const rejectAndAdvance = () => {
+    if (reviewableRows(current).length === 0) {
+      return;
+    }
+    review("reject", current);
+    select(nextPending);
+  };
+
   const pendingAhead = [
     ...ordered.slice(currentIndex + 1),
     ...ordered.slice(0, currentIndex),
@@ -308,13 +315,13 @@ export function BuildPage({
     }),
   );
 
-  const reviewAll = (action: "approve" | "reject") => {
+  const reviewAll = (action: ReviewAction) => {
     if (!canReview) {
       return;
     }
     track("Review all", { action });
     applyReview({ buildId: build.buildId, snapshotIds: "all", action }).catch(
-      () => show("error", `Could not ${action} all snapshots.`),
+      () => show("error", `Could not ${ACTION_VERBS[action]} the build.`),
     );
   };
 
@@ -331,8 +338,7 @@ export function BuildPage({
         target?.closest(
           "input:not([type=range]), textarea, select, [contenteditable]",
         ) ||
-        shortcutsOpen ||
-        rejecting
+        shortcutsOpen
       ) {
         return;
       }
@@ -355,10 +361,7 @@ export function BuildPage({
           reviewAll("approve");
           break;
         case "r":
-          if (canReview && reviewableRows(current).length > 0) {
-            event.preventDefault();
-            setRejecting(true);
-          }
+          rejectAndAdvance();
           break;
         case "u":
           review("undo", current);
@@ -444,6 +447,7 @@ export function BuildPage({
         canReview={canReview}
         onApproveAll={() => reviewAll("approve")}
         onRejectAll={() => reviewAll("reject")}
+        onUndoAll={() => reviewAll("undo")}
       />
       <Banners build={build} owner={owner} repo={repo} />
       <div className="relative flex min-h-0 flex-1">
@@ -560,16 +564,12 @@ export function BuildPage({
               headings={headings}
               canWrite={canWrite}
               canReview={canReview}
-              rejecting={rejecting}
-              onStartReject={() => setRejecting(true)}
-              onCancelReject={() => setRejecting(false)}
               onApprove={approveAndAdvance}
-              onReject={(comment) => {
-                setRejecting(false);
-                review("reject", current, comment);
-              }}
+              onReject={rejectAndAdvance}
               onUndo={() => review("undo", current)}
               story={current?.kind === "story" ? current.rows : undefined}
+              onPrevious={selectPrevious}
+              onNext={selectNext}
               navigation={
                 <SnapshotNavigation
                   position={currentIndex + 1}

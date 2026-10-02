@@ -137,6 +137,7 @@ export function Viewer({
   newLabel,
   settings,
   navigation,
+  overlay,
   headings = true,
 }: {
   snapshot: ViewerSnapshot;
@@ -144,6 +145,7 @@ export function Viewer({
   newLabel: string;
   settings: ViewerSettings;
   navigation: ReactNode;
+  overlay?: ReactNode;
   headings?: boolean;
 }) {
   const Title = headings ? "h2" : "p";
@@ -202,6 +204,7 @@ export function Viewer({
       </div>
       <div className="group/stage relative flex min-h-0 flex-1 flex-col">
         <ZoomControls settings={settings} scale={canvas.view.scale} />
+        {overlay}
         <div
           ref={canvas.stageRef}
           className={`grid min-h-0 flex-1 overflow-hidden bg-border select-none ${
