@@ -12,6 +12,7 @@ import {
   type Ref,
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -93,9 +94,9 @@ export type DiffColor = "red" | "magenta" | "blue" | "green";
 
 export const DIFF_COLORS: { value: DiffColor; label: string; color: string }[] =
   [
+    { value: "magenta", label: "Magenta", color: "#ff00ff" },
     { value: "green", label: "Green", color: "#00cc00" },
     { value: "red", label: "Red", color: "#ff0000" },
-    { value: "magenta", label: "Magenta", color: "#ff00ff" },
     { value: "blue", label: "Blue", color: "#0066ff" },
   ];
 
@@ -106,7 +107,7 @@ export function useViewerSettings() {
   const [sideDiff, setSideDiff] = useState(true);
   const [showBaseline, setShowBaseline] = useState(false);
   const [diffOnly, setDiffOnly] = useState(false);
-  const [diffColor, setDiffColor] = useState<DiffColor>("green");
+  const [diffColor, setDiffColor] = useState<DiffColor>("magenta");
   return {
     sideDiff,
     setSideDiff,
@@ -187,13 +188,13 @@ export function Viewer({
             <ModeSwitch settings={settings} snapshot={snapshot} />
           </div>
         )}
-        {overlayShown && (
-          <DiffColorPicker
-            value={settings.diffColor}
-            onChange={settings.setDiffColor}
-          />
-        )}
         <div className="ml-auto flex items-center gap-2">
+          {overlayShown && (
+            <DiffColorStack
+              value={settings.diffColor}
+              onChange={settings.setDiffColor}
+            />
+          )}
           <span className="w-11 text-right text-xs text-muted tabular-nums">
             {Math.round(canvas.view.scale * 100)}%
           </span>
@@ -364,42 +365,98 @@ function DiffColorFilters() {
   );
 }
 
-function DiffColorPicker({
+const STACK_STEP = 3;
+
+function DiffColorStack({
   value,
   onChange,
 }: {
   value: DiffColor;
   onChange: (value: DiffColor) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const name = useId();
+  const selected = Math.max(
+    0,
+    DIFF_COLORS.findIndex((option) => option.value === value),
+  );
+  const behind = DIFF_COLORS.map((_, index) => index).filter(
+    (index) => index !== selected,
+  );
+  const offset = (index: number) => {
+    const steps = index === selected ? 0 : behind.indexOf(index) + 1;
+    return open
+      ? `calc(var(--swatch-step) * ${steps})`
+      : `${steps * STACK_STEP}px`;
+  };
+  const width = open
+    ? `calc(var(--swatch-step) * ${DIFF_COLORS.length - 1} + 28px)`
+    : `${behind.length * STACK_STEP + 28}px`;
+
   return (
-    <fieldset
-      aria-label="Diff color"
-      className="flex items-center rounded-control bg-surface-2 p-0.5"
+    <Tooltip
+      label="Diff color, press c"
+      align="end"
+      className="pointer-coarse:hidden"
     >
-      {DIFF_COLORS.map((option) => {
-        const active = option.value === value;
-        return (
-          <Tooltip key={option.value} label={option.label}>
-            <button
-              type="button"
-              aria-pressed={active}
-              aria-label={option.label}
-              className={`flex size-7 items-center justify-center rounded-[9px] transition-colors duration-100 ${
-                active
-                  ? "bg-surface shadow-[inset_0_0_0_1px_var(--color-border)]"
-                  : "hover:bg-surface/60"
-              }`}
-              onClick={() => onChange(option.value)}
+      <fieldset
+        aria-label="Diff color"
+        className="relative m-0 h-7 rounded-[9px] border-0 p-0 transition-[width] duration-150 ease-out-strong [--swatch-step:20px] motion-reduce:transition-none pointer-coarse:[--swatch-step:36px]"
+        style={{ width }}
+        onPointerEnter={(event) => {
+          if (event.pointerType === "mouse") {
+            setOpen(true);
+          }
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType === "mouse") {
+            setOpen(false);
+          }
+        }}
+        onPointerDown={(event) => {
+          if (event.pointerType !== "mouse") {
+            setOpen(true);
+          }
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            setOpen(false);
+          }
+        }}
+      >
+        {DIFF_COLORS.map((option, index) => {
+          const active = index === selected;
+          return (
+            <label
+              key={option.value}
+              title={open ? option.label : undefined}
+              className="absolute top-1/2 right-2 size-3 cursor-pointer rounded-full transition-transform duration-150 ease-out-strong after:absolute after:-inset-1 motion-reduce:transition-none pointer-coarse:after:-inset-3 has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-focus"
+              style={{
+                transform: `translate(calc(-1 * ${offset(index)}), -50%)`,
+                zIndex: active
+                  ? DIFF_COLORS.length
+                  : DIFF_COLORS.length - 1 - behind.indexOf(index),
+                backgroundColor: option.color,
+                boxShadow: active
+                  ? "0 0 0 2px var(--color-surface-2), 0 0 0 3.5px var(--color-text)"
+                  : "0 0 0 1.5px var(--color-surface-2)",
+              }}
             >
-              <span
-                className="size-3 rounded-full"
-                style={{ backgroundColor: option.color }}
+              <input
+                type="radio"
+                name={name}
+                value={option.value}
+                checked={active}
+                aria-label={option.label}
+                className="sr-only"
+                onChange={() => onChange(option.value)}
               />
-            </button>
-          </Tooltip>
-        );
-      })}
-    </fieldset>
+            </label>
+          );
+        })}
+      </fieldset>
+    </Tooltip>
   );
 }
 
@@ -791,7 +848,7 @@ function Frame({
   scale,
   caption,
   overlay,
-  overlayColor = "green",
+  overlayColor = "magenta",
   size,
   highlighted = false,
 }: {

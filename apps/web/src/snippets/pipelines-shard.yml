@@ -1,0 +1,6 @@
+strategy:
+  matrix:
+    shard: [1, 2, 3, 4]
+steps:
+  - run: npx playwright test --shard ${{ matrix.shard }}/4
+  - run: npx stateofpixel upload screenshots --shard ${{ matrix.shard }}/4

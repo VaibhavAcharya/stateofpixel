@@ -101,6 +101,7 @@ async function setup({ private: isPrivate = true } = {}) {
           status: "finalized",
           conclusion: "changes",
           baselineBuildId: baselineId,
+          browsers: ["chromium"],
         })
         .returning({ _id: builds._id }),
     );
@@ -272,6 +273,7 @@ it("lists builds by branch and returns build and snapshot details", async () => 
     buildId,
     baseline: { number: 1, branch: "main" },
     supersededBy: null,
+    browsers: ["chromium"],
   });
   expect(await user.query(api.builds.get, { ...repo, number: 9 })).toBeNull();
 
@@ -287,6 +289,7 @@ it("lists builds by branch and returns build and snapshot details", async () => 
       diffStatus: "changed",
       reviewState: "pending",
       diffRatio: 0.01,
+      browser: "chromium",
     },
   ]);
 
@@ -305,6 +308,45 @@ it("lists builds by branch and returns build and snapshot details", async () => 
     lastReview: null,
     flaky: null,
   });
+});
+
+it("stores the browsers of a build from snapshot metadata on finalize", async () => {
+  const { t, user, grant, buildId } = await setup();
+  await grant("read");
+  await t.run(async (ctx) => {
+    await ctx.db
+      .update(builds)
+      .set({ status: "pending", browsers: [] })
+      .where(eq(builds._id, buildId));
+    await ctx.db.insert(snapshots).values(
+      [{ browser: "webkit" }, { browser: "chromium" }, { browser: 1 }].map(
+        (metadata, index) => ({
+          buildId,
+          shardIndex: 1,
+          name: `Page ${index}`,
+          diffStatus: "unchanged" as const,
+          reviewState: "none" as const,
+          metadata,
+        }),
+      ),
+    );
+  });
+  await t.mutation(internal.builds.finalize, { buildId, cursor: null });
+
+  expect(
+    await user.query(api.builds.get, { ...repo, number: 2 }),
+  ).toMatchObject({ browsers: ["chromium", "webkit"] });
+  const unchanged = await user.query(api.snapshots.list, {
+    buildId,
+    diffStatus: "unchanged",
+    paginationOpts: firstPage,
+  });
+  expect(unchanged.page.map((row) => row.browser)).toEqual([
+    null,
+    "webkit",
+    "chromium",
+    null,
+  ]);
 });
 
 it("flags a snapshot that flips between images or differs on the same commit", async () => {

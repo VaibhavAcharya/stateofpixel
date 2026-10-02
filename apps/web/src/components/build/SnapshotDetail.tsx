@@ -7,6 +7,7 @@ import {
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { formatCount } from "../../lib/format";
 import {
   buttonClass,
   Kbd,
@@ -18,7 +19,7 @@ import {
 import { Viewer, type ViewerSettings } from "../Viewer";
 import { BuildNotFound } from "./BuildNotFound";
 import { useBuildData } from "./buildData";
-import type { Build, Snapshot } from "./types";
+import type { Build, Snapshot, SnapshotRow } from "./types";
 
 export function SnapshotDetail({
   owner,
@@ -36,6 +37,7 @@ export function SnapshotDetail({
   onReject,
   onUndo,
   navigation,
+  story,
 }: {
   owner: string;
   repo: string;
@@ -52,6 +54,7 @@ export function SnapshotDetail({
   onReject: (comment: string) => void;
   onUndo: () => void;
   navigation: ReactNode;
+  story?: SnapshotRow[];
 }) {
   const snapshot = useBuildData().useSnapshot({
     owner,
@@ -75,6 +78,16 @@ export function SnapshotDetail({
     return <BuildNotFound title="Snapshot not found." />;
   }
   const reviewable = canReview && snapshot.reviewState !== "none";
+  const states = (story ?? []).map((row) => row.reviewState);
+  const count = (state: string) =>
+    states.filter((value) => value === state).length;
+  const toApprove = story === undefined ? 0 : story.length - count("approved");
+  const toReject = story === undefined ? 0 : story.length - count("rejected");
+  const reviewed =
+    story === undefined
+      ? snapshot.reviewState === "approved" ||
+        snapshot.reviewState === "rejected"
+      : count("approved") + count("rejected") > 0;
 
   return (
     <>
@@ -95,11 +108,20 @@ export function SnapshotDetail({
           <RejectForm onSubmit={onReject} onCancel={onCancelReject} />
         ) : (
           <>
-            <ReviewStatus snapshot={snapshot} />
+            {story === undefined ? (
+              <ReviewStatus snapshot={snapshot} />
+            ) : (
+              <p className="text-xs text-muted">
+                {formatCount(story.length)} snapshots
+                {count("pending") > 0 &&
+                  `, ${formatCount(count("pending"))} waiting for review`}
+                {count("rejected") > 0 &&
+                  `, ${formatCount(count("rejected"))} rejected`}
+              </p>
+            )}
             {canWrite && reviewable && (
               <div className="ml-auto flex items-center gap-2 max-sm:w-full">
-                {(snapshot.reviewState === "approved" ||
-                  snapshot.reviewState === "rejected") && (
+                {reviewed && (
                   <button
                     type="button"
                     className={buttonClass("ghost")}
@@ -113,19 +135,37 @@ export function SnapshotDetail({
                 <button
                   type="button"
                   className={`${buttonClass("danger")} max-sm:flex-1`}
-                  disabled={snapshot.reviewState === "rejected"}
+                  disabled={
+                    story === undefined
+                      ? snapshot.reviewState === "rejected"
+                      : toReject === 0
+                  }
                   onClick={onStartReject}
                 >
                   Reject
+                  {story !== undefined && toReject > 0 && (
+                    <span className="tabular-nums">
+                      {formatCount(toReject)}
+                    </span>
+                  )}
                   <Kbd>r</Kbd>
                 </button>
                 <button
                   type="button"
                   className={`${buttonClass("primary")} max-sm:flex-1`}
-                  disabled={snapshot.reviewState === "approved"}
+                  disabled={
+                    story === undefined
+                      ? snapshot.reviewState === "approved"
+                      : toApprove === 0
+                  }
                   onClick={onApprove}
                 >
                   Approve
+                  {story !== undefined && toApprove > 0 && (
+                    <span className="tabular-nums">
+                      {formatCount(toApprove)}
+                    </span>
+                  )}
                   <Kbd inverted>a</Kbd>
                 </button>
               </div>

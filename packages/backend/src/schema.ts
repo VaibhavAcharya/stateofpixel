@@ -246,6 +246,7 @@ export const builds = pgTable(
     ciProvider: text(),
     ciRunUrl: text(),
     finalizedAt: time(),
+    browsers: text().array().notNull().default([]),
   },
   (table) => [
     uniqueIndex().on(table.projectId, table.number),

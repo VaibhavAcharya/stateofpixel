@@ -232,7 +232,7 @@ export function Kbd({
 }) {
   return (
     <kbd
-      className={`inline-flex h-5 min-w-5 items-center justify-center rounded-xs px-[5px] font-mono text-2xs font-normal ${
+      className={`inline-flex h-4 min-w-4 items-center justify-center rounded-[4px] px-1 font-mono text-[10px] leading-none font-normal ${
         inverted
           ? "bg-accent-fg/15 text-accent-fg/80"
           : "bg-surface text-muted shadow-[inset_0_0_0_1px_var(--color-border)]"

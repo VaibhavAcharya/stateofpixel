@@ -16,6 +16,7 @@ import {
   monthlyPrice,
 } from "../landing/Pricing";
 import { SECTION } from "../landing/sections";
+import { RangeSlider } from "../RangeSlider";
 import { LeadCopy, Logo } from "../ui";
 
 const count = new Intl.NumberFormat("en-US");
@@ -105,7 +106,9 @@ export function quote(suite: Suite, competitors: Priced[]) {
       name,
       logo,
       plan:
-        extra > 0 ? `${plan.name} + ${count.format(extra)} extra` : plan.name,
+        extra > 0 && plan.extra !== null
+          ? `${plan.name} ${formatPrice(plan.price)} + ${count.format(extra)} extra at ${formatPrice(plan.extra * 1000)} per 1,000`
+          : plan.name,
       cost: Math.round(cost),
     };
   });
@@ -151,8 +154,7 @@ export function CostCalculator({ competitors }: { competitors: Priced[] }) {
                   {count.format(suite[slider.key])}
                 </span>
               </span>
-              <input
-                type="range"
+              <RangeSlider
                 min={slider.min}
                 max={slider.max}
                 step={slider.step}
@@ -163,7 +165,7 @@ export function CostCalculator({ competitors }: { competitors: Priced[] }) {
                     [slider.key]: Number(event.target.value),
                   })
                 }
-                className="w-full accent-(--color-text)"
+                className="w-full"
               />
             </label>
           ))}

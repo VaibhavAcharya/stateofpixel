@@ -15,6 +15,7 @@ export type FixtureSnapshot = {
   diffStatus: DiffStatus;
   reviewState: ReviewState;
   diffPixels?: number;
+  browser?: string;
   image: string | null;
   baselineImage: string | null;
   diffImage: string | null;
@@ -23,7 +24,12 @@ export type FixtureSnapshot = {
 export type BuildFixture = {
   build: Omit<
     Build,
-    "counts" | "conclusion" | "buildId" | "createdAt" | "finalizedAt"
+    | "counts"
+    | "conclusion"
+    | "buildId"
+    | "createdAt"
+    | "finalizedAt"
+    | "browsers"
   >;
   snapshots: FixtureSnapshot[];
   reviewer: string;
@@ -115,6 +121,9 @@ export function useFixtureBuild(fixture: BuildFixture): {
     conclusion: fixture.build.storageBlocked ? "changes" : conclude(counts),
     createdAt,
     finalizedAt: createdAt + MINUTE_MS,
+    browsers: [
+      ...new Set(snapshots.flatMap((snapshot) => snapshot.browser ?? [])),
+    ].sort(),
   };
 
   const data: BuildData = {
@@ -132,6 +141,7 @@ export function useFixtureBuild(fixture: BuildFixture): {
               snapshot.diffPixels === undefined
                 ? null
                 : snapshot.diffPixels / AREA,
+            browser: snapshot.browser ?? null,
           })),
         status: "Exhausted" as const,
         loadMore: () => {},

@@ -364,7 +364,7 @@ function homeMarkdown(modules: Modules, link: (path: string) => string) {
     `Start with the [quickstart](${link("/docs")}).`,
     "## Access",
     table(["On GitHub", "On stateofpixel"], ACCESS),
-    "## Made for real pipelines",
+    "## How it handles sharding, merges and outages",
     titledList(PIPELINES.map(([title, text]) => [`${title}.`, text])),
     "## Pricing",
     table(

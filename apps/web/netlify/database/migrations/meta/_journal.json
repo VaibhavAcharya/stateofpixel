@@ -15,6 +15,13 @@
       "when": 1790832406039,
       "tag": "20261001052646_pr_merged_at",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790877735551,
+      "tag": "20261001180215_build_browsers",
+      "breakpoints": true
     }
   ]
 }

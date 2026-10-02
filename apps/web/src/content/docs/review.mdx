@@ -18,6 +18,10 @@ The page refreshes every 5 seconds while it is open, so new shards and other rev
 
 The sidebar groups snapshots into Changed, Added, Removed, Failed and Unchanged. The first changed snapshot opens when the page loads, and each snapshot has its own link you can share. Drag the edge of the sidebar to resize it, and double-click the edge to reset it.
 
+Type in the filter at the top of the sidebar, or press <kbd>/</kbd>, to show only snapshots whose name contains the text. When a build has snapshots from more than one browser, a Browser menu under the filter shows the snapshots of one browser. The browser comes from the `browser` field in the snapshot metadata, which `snapshot` from [Playwright](/docs/playwright) writes for you. See [Metadata](/docs/any-screenshots#metadata) to send it from other tools. <kbd>j</kbd> and <kbd>k</kbd> move through the snapshots that match.
+
+Snapshots that differ only in the brackets at the end of the name, like `Checkout/Empty [chromium 1280]` and `Checkout/Empty [firefox 375]`, are listed under one row with their name and count. Click the count, or press <kbd>h</kbd> and <kbd>l</kbd>, to fold the row up and open it again. A folded row opens the snapshot with the largest change, and <kbd>j</kbd> and <kbd>k</kbd> move past it in one step. When a build has more than one browser, rows that changed in only some of them come first, under Some browsers, with the browsers they changed in.
+
 - **Changed**: pixels differ from the baseline above the threshold, or the size changed.
 - **Added**: the baseline has no snapshot with this name.
 - **Removed**: the baseline has it and this build does not. Removed snapshots never need review.
@@ -26,11 +30,11 @@ The sidebar groups snapshots into Changed, Added, Removed, Failed and Unchanged.
 ## Compare
 
 - **Side by side**: baseline left, new right, with the diff drawn over the new image. Press <kbd>d</kbd> to hide it.
-- **Diff**: the new image with the changed pixels in green. Press <kbd>d</kbd> for Diff only, which shows the changed pixels without the image.
+- **Diff**: the new image with the changed pixels in magenta. Press <kbd>d</kbd> for Diff only, which shows the changed pixels without the image.
 - **Slider**: drag a handle to wipe between the two.
 - **Flip**: one frame that switches between baseline and new when you press <kbd>space</kbd>. The best mode for 1 pixel shifts.
 
-The diff is green by default. While it shows, the color dots in the toolbar switch it to red, magenta or blue. The color stays as you move between snapshots and goes back to green when you reload the page.
+The diff is magenta by default. While it shows, the color at the right of the toolbar changes it to green, red or blue: point at it or tab to it to see all four, or press <kbd>c</kbd> for the next one. The color stays as you move between snapshots and goes back to magenta when you reload the page.
 
 Images show at Fit by default. Scroll or drag to pan, and pinch, or scroll with <kbd>ctrl</kbd> held, to zoom. You can also zoom with <kbd>+</kbd> and <kbd>-</kbd>, and <kbd>0</kbd> shows real pixels at 100%. Fit, or <kbd>f</kbd>, resets the view. In Side by side both images pan and zoom together. When the sizes differ, both images align at the top left.
 
@@ -38,7 +42,7 @@ Images show at Fit by default. Scroll or drag to pan, and pinch, or scroll with 
 
 Anyone with write access to the repository on GitHub can review. See [Who can review](#who-can-review).
 
-- Approve a snapshot with <kbd>a</kbd>, which also moves to the next pending one, or approve every pending snapshot with Approve all.
+- Approve a snapshot with <kbd>a</kbd>, which also moves to the next pending one, or approve every pending snapshot with Approve all. On a folded row, Approve and Reject apply to every snapshot in it, and the button shows how many.
 - Reject with <kbd>r</kbd> and an optional comment. One rejection makes the check fail with "1 change rejected". Reject build rejects every pending snapshot at once.
 - Undo a review with <kbd>u</kbd>.
 

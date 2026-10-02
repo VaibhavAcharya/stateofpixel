@@ -1,0 +1,1 @@
+npx stateofpixel upload screenshots

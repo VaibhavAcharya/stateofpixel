@@ -90,6 +90,10 @@ export const list = query({
         diffStatus: snapshot.diffStatus,
         reviewState: snapshot.reviewState,
         diffRatio: snapshot.diffRatio,
+        browser:
+          typeof snapshot.metadata.browser === "string"
+            ? snapshot.metadata.browser
+            : null,
       })),
     };
   },

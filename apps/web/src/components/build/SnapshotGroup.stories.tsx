@@ -2,6 +2,7 @@ import type { Id } from "@stateofpixel/backend/dataModel";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 import { SnapshotGroup } from "./SnapshotGroup";
+import { groupStories, someBrowsersFirst } from "./stories";
 import type { SnapshotRow } from "./types";
 
 const AREA = 600 * 375;
@@ -17,6 +18,7 @@ function row(
     diffStatus: "changed",
     reviewState: "pending",
     diffRatio: 540 / AREA,
+    browser: "chromium",
     ...fields,
   };
 }
@@ -38,6 +40,34 @@ const rows = [
   ),
 ];
 
+const BROWSERS = ["chromium", "firefox", "webkit"];
+
+function entries(items: SnapshotRow[], browsers = ["chromium"]) {
+  return someBrowsersFirst(groupStories(items), browsers);
+}
+
+const storyRows = [
+  ...BROWSERS.flatMap((browser, index) =>
+    [375, 1280].map((width) =>
+      row(`b-${browser}-${width}`, `Button/Primary [${browser} ${width}]`, {
+        browser,
+        reviewState: index === 0 ? "approved" : "pending",
+        diffRatio: (900 + width) / AREA,
+      }),
+    ),
+  ),
+  ...[375, 1280].map((width) =>
+    row(`p-${width}`, `Pricing/Enterprise [firefox ${width}]`, {
+      browser: "firefox",
+      diffRatio: (2100 + width) / AREA,
+    }),
+  ),
+  row("s", "Sign in/Error [webkit 375]", {
+    browser: "webkit",
+    diffRatio: 3393 / AREA,
+  }),
+];
+
 const meta = {
   title: "Build/Snapshot group",
   component: SnapshotGroup,
@@ -54,7 +84,10 @@ const meta = {
     count: rows.length,
     open: true,
     onToggle: fn(),
-    rows,
+    entries: entries(rows),
+    closedStories: new Set(),
+    onToggleStory: fn(),
+    browsers: ["chromium"],
     loading: false,
     canLoadMore: false,
     onLoadMore: fn(),
@@ -74,7 +107,29 @@ export const ChangedDark: Story = { parameters: { theme: "dark" } };
 
 export const Closed: Story = { args: { open: false } };
 
-export const Loading: Story = { args: { rows: [], loading: true } };
+export const Loading: Story = { args: { entries: [], loading: true } };
+
+export const Stories: Story = {
+  args: {
+    count: storyRows.length,
+    entries: entries(storyRows, BROWSERS),
+    browsers: BROWSERS,
+    selectedId: "s",
+  },
+};
+
+export const StoriesDark: Story = {
+  ...Stories,
+  parameters: { theme: "dark" },
+};
+
+export const StoryClosed: Story = {
+  args: {
+    ...Stories.args,
+    closedStories: new Set(["changed:Pricing/Enterprise"]),
+    selectedId: "b-firefox-1280",
+  },
+};
 
 export const CanLoadMore: Story = { args: { count: 240, canLoadMore: true } };
 
@@ -84,12 +139,12 @@ export const Added: Story = {
     label: "Added",
     count: 1,
     selectedId: undefined,
-    rows: [
+    entries: entries([
       row("6", "Invoices/Empty [chromium 1280]", {
         diffStatus: "added",
         diffRatio: null,
       }),
-    ],
+    ]),
   },
 };
 
@@ -99,7 +154,7 @@ export const Unchanged: Story = {
     label: "Unchanged",
     count: 2,
     selectedId: undefined,
-    rows: [
+    entries: entries([
       row("7", "Footer/Default [chromium 1280]", {
         diffStatus: "unchanged",
         reviewState: "none",
@@ -110,7 +165,7 @@ export const Unchanged: Story = {
         reviewState: "none",
         diffRatio: null,
       }),
-    ],
+    ]),
   },
 };
 
@@ -120,12 +175,12 @@ export const Failed: Story = {
     label: "Failed",
     count: 1,
     selectedId: undefined,
-    rows: [
+    entries: entries([
       row("9", "Chart/Live [chromium 1280]", {
         diffStatus: "failed",
         reviewState: "none",
         diffRatio: null,
       }),
-    ],
+    ]),
   },
 };

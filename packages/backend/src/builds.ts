@@ -1102,6 +1102,7 @@ export const finalize = internalMutation({
         fullRows: build.fullRows && !notCompared,
         ancestors: [],
         finalizedAt: Date.now(),
+        browsers: await findBrowsers(ctx, buildId),
       })
       .where(eq(builds._id, buildId));
     await cancelExpiry(ctx, build);
@@ -1306,6 +1307,7 @@ export const get = query({
           ? null
           : { number: baseline.number, branch: baseline.branch },
       supersededBy: supersededBy?.number ?? null,
+      browsers: build.browsers,
       mergedPr:
         build.mergedPrNumber === null
           ? null
@@ -1368,6 +1370,24 @@ export const deleted = query({
     };
   },
 });
+
+async function findBrowsers(
+  ctx: QueryCtx,
+  buildId: Id<"builds">,
+): Promise<string[]> {
+  const browser = sql<string>`${snapshots.metadata}->>'browser'`;
+  const rows = await ctx.db
+    .selectDistinct({ browser })
+    .from(snapshots)
+    .where(
+      and(
+        eq(snapshots.buildId, buildId),
+        sql`jsonb_typeof(${snapshots.metadata}->'browser') = 'string'`,
+      ),
+    )
+    .orderBy(browser);
+  return rows.map((row) => row.browser);
+}
 
 async function findLastPrBuild(
   ctx: QueryCtx,

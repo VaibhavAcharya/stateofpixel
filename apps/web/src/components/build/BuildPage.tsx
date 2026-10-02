@@ -25,6 +25,7 @@ import {
   SIDEBAR_MIN_WIDTH,
   useSidebarWidth,
 } from "../../lib/useSidebarWidth";
+import { SelectMenu } from "../ListControls";
 import { Toasts, useToasts } from "../Toast";
 import {
   buttonClass,
@@ -34,11 +35,18 @@ import {
   Skeleton,
   Spinner,
 } from "../ui";
-import { MODES, useViewerSettings } from "../Viewer";
+import { DIFF_COLORS, MODES, useViewerSettings } from "../Viewer";
 import { Banners, BuildHeader } from "./BuildHeader";
 import { type ReviewAction, useBuildData } from "./buildData";
 import { SnapshotDetail } from "./SnapshotDetail";
 import { SnapshotGroup } from "./SnapshotGroup";
+import {
+  groupStories,
+  itemRows,
+  representative,
+  type SnapshotItem,
+  someBrowsersFirst,
+} from "./stories";
 import type { Build, SnapshotRow } from "./types";
 
 const GROUPS: { status: DiffStatus; label: string }[] = [
@@ -112,9 +120,14 @@ export function BuildPage({
   track?: typeof trackEvent;
 }) {
   const [filter, setFilter] = useState("");
+  const [browser, setBrowser] = useState<string>();
   const [collapsed, setCollapsed] = useState<Set<DiffStatus>>(
     () => new Set(["unchanged"]),
   );
+  const [closedStories, setClosedStories] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [selectedStory, setSelectedStory] = useState<string>();
   const [rejecting, setRejecting] = useState(false);
   const { open: shortcutsOpen, setOpen: setShortcutsOpen } =
     useContext(ShortcutsContext);
@@ -135,15 +148,64 @@ export function BuildPage({
     canWrite && build.status === "finalized" && !build.superseded;
 
   const needle = filter.trim().toLowerCase();
+  const activeBrowser =
+    browser !== undefined && build.browsers.includes(browser)
+      ? browser
+      : undefined;
   const visible = (rows: SnapshotRow[]) =>
-    needle === ""
-      ? rows
-      : rows.filter((row) => row.name.toLowerCase().includes(needle));
+    rows.filter(
+      (row) =>
+        (needle === "" || row.name.toLowerCase().includes(needle)) &&
+        (activeBrowser === undefined || row.browser === activeBrowser),
+    );
+  const groupEntries = (status: DiffStatus) =>
+    someBrowsersFirst(
+      groupStories(visible(groups[status].results)),
+      activeBrowser === undefined ? build.browsers : [],
+    );
+  const groupItems = (status: DiffStatus) =>
+    groupEntries(status).map((entry) => entry.item);
   const ordered = GROUPS.flatMap((group) =>
-    collapsed.has(group.status) ? [] : visible(groups[group.status].results),
+    collapsed.has(group.status)
+      ? []
+      : groupItems(group.status).flatMap((item): SnapshotItem[] =>
+          item.kind === "story" &&
+          !closedStories.has(item.key) &&
+          selectedStory !== item.key
+            ? item.rows.map((row) => ({ kind: "row", row }))
+            : [item],
+        ),
   );
-  const currentIndex = ordered.findIndex((row) => row.id === snapshotId);
+  const currentIndex = ordered.findIndex((item) =>
+    itemRows(item).some((row) => row.id === snapshotId),
+  );
   const current = currentIndex === -1 ? undefined : ordered[currentIndex];
+  const reviewableRows = (item: SnapshotItem | undefined) =>
+    item === undefined
+      ? []
+      : itemRows(item).filter((row) => row.reviewState !== "none");
+
+  const toggleStory = (key: string) =>
+    setClosedStories((value) => {
+      const next = new Set(value);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  const currentStoryKey = () => {
+    const row = current === undefined ? undefined : itemRows(current)[0];
+    if (row === undefined) {
+      return undefined;
+    }
+    return groupItems(row.diffStatus).find(
+      (item) =>
+        item.kind === "story" &&
+        item.rows.some((storyRow) => storyRow.id === snapshotId),
+    );
+  };
 
   const toggleGroup = (status: DiffStatus) =>
     setCollapsed((value) => {
@@ -156,18 +218,23 @@ export function BuildPage({
       return next;
     });
 
-  const select = (row: SnapshotRow | undefined) => {
-    if (row !== undefined) {
+  const select = (item: SnapshotItem | undefined) => {
+    if (item !== undefined) {
+      setSelectedStory(undefined);
       settings.setShowBaseline(false);
       settings.setView(null);
-      selectId(row.id);
+      selectId(representative(item).id);
     }
   };
   const selectNext = () => select(ordered[currentIndex + 1] ?? ordered[0]);
   const selectPrevious = () =>
     select(ordered[currentIndex - 1] ?? ordered[ordered.length - 1]);
 
-  const firstId = ordered.find((row) => row.diffStatus !== "unchanged")?.id;
+  const firstItem = ordered.find(
+    (item) => itemRows(item)[0]?.diffStatus !== "unchanged",
+  );
+  const firstId =
+    firstItem === undefined ? undefined : representative(firstItem).id;
   useEffect(() => {
     if (snapshotId === undefined && firstId !== undefined) {
       selectId(firstId, { replace: true });
@@ -187,16 +254,18 @@ export function BuildPage({
 
   const review = (
     action: ReviewAction,
-    row: SnapshotRow | undefined,
+    item: SnapshotItem | undefined,
     comment?: string,
   ) => {
-    if (!canReview || row === undefined || row.reviewState === "none") {
+    const rows = reviewableRows(item);
+    if (!canReview || item === undefined || rows.length === 0) {
       return;
     }
-    track("Review", { action });
+    const name = item.kind === "row" ? item.row.name : item.name;
+    track("Review", { action, count: rows.length });
     applyReview({
       buildId: build.buildId,
-      snapshotIds: [row.id],
+      snapshotIds: rows.map((row) => row.id),
       action,
       comment,
     }).catch((error: unknown) => {
@@ -204,12 +273,12 @@ export function BuildPage({
         errorCode(error) === "build_not_reviewable"
           ? " This build can no longer be reviewed."
           : " Your change was undone.";
-      show("error", `Could not ${ACTION_VERBS[action]} ${row.name}.${reason}`);
+      show("error", `Could not ${ACTION_VERBS[action]} ${name}.${reason}`);
     });
   };
 
   const approveAndAdvance = () => {
-    if (current === undefined || current.reviewState === "none") {
+    if (reviewableRows(current).length === 0) {
       return;
     }
     review("approve", current);
@@ -220,7 +289,9 @@ export function BuildPage({
     ...ordered.slice(currentIndex + 1),
     ...ordered.slice(0, currentIndex),
   ]
-    .filter((row) => row.reviewState === "pending")
+    .filter((item) =>
+      itemRows(item).some((row) => row.reviewState === "pending"),
+    )
     .slice(0, PREFETCH_PENDING);
   const nextPending = pendingAhead[0];
   const neighbours = new Set(
@@ -228,9 +299,13 @@ export function BuildPage({
       ordered[currentIndex + 1] ?? ordered[0],
       ordered[currentIndex - 1] ?? ordered[ordered.length - 1],
       ...pendingAhead,
-    ].flatMap((row) =>
-      row === undefined || row.id === snapshotId ? [] : [row.id],
-    ),
+    ].flatMap((item) => {
+      if (item === undefined) {
+        return [];
+      }
+      const id = representative(item).id;
+      return id === snapshotId ? [] : [id];
+    }),
   );
 
   const reviewAll = (action: "approve" | "reject") => {
@@ -280,7 +355,7 @@ export function BuildPage({
           reviewAll("approve");
           break;
         case "r":
-          if (canReview && current && current.reviewState !== "none") {
+          if (canReview && reviewableRows(current).length > 0) {
             event.preventDefault();
             setRejecting(true);
           }
@@ -288,11 +363,36 @@ export function BuildPage({
         case "u":
           review("undo", current);
           break;
+        case "l": {
+          const story = currentStoryKey();
+          if (story?.kind === "story" && closedStories.has(story.key)) {
+            toggleStory(story.key);
+          }
+          break;
+        }
+        case "h": {
+          const story = currentStoryKey();
+          if (story?.kind === "story" && !closedStories.has(story.key)) {
+            toggleStory(story.key);
+          }
+          break;
+        }
         case "d":
           if (settings.mode === "side") {
             settings.setSideDiff(!settings.sideDiff);
           } else if (settings.mode === "diff") {
             settings.setDiffOnly(!settings.diffOnly);
+          }
+          break;
+        case "c":
+          if (settings.mode === "side" || settings.mode === "diff") {
+            const index = DIFF_COLORS.findIndex(
+              (option) => option.value === settings.diffColor,
+            );
+            const next = DIFF_COLORS[(index + 1) % DIFF_COLORS.length];
+            if (next !== undefined) {
+              settings.setDiffColor(next.value);
+            }
           }
           break;
         case " ":
@@ -372,6 +472,19 @@ export function BuildPage({
             value={filter}
             onChange={setFilter}
           />
+          {build.browsers.length > 1 && (
+            <div className="shrink-0 px-2 pb-2">
+              <SelectMenu
+                label="Browser"
+                value={activeBrowser}
+                options={[
+                  { value: undefined, label: "All" },
+                  ...build.browsers.map((value) => ({ value, label: value })),
+                ]}
+                onChange={setBrowser}
+              />
+            </div>
+          )}
           <nav
             aria-label="Snapshots"
             className="min-h-0 flex-1 overflow-y-auto px-2 pb-3"
@@ -387,14 +500,19 @@ export function BuildPage({
                     count={build.counts[group.status]}
                     open={!collapsed.has(group.status)}
                     onToggle={() => toggleGroup(group.status)}
-                    rows={visible(query.results)}
+                    entries={groupEntries(group.status)}
+                    closedStories={closedStories}
+                    onToggleStory={toggleStory}
+                    browsers={build.browsers}
                     loading={query.status === "LoadingFirstPage"}
                     canLoadMore={query.status === "CanLoadMore"}
                     onLoadMore={() => query.loadMore(200)}
                     selectedId={snapshotId}
+                    selectedStory={selectedStory}
                     linkParams={links ? linkParams : null}
-                    onSelect={(row) => {
+                    onSelect={(row, story) => {
                       setListOpen(false);
+                      setSelectedStory(story);
                       if (!links) {
                         selectId(row.id);
                       }
@@ -451,6 +569,7 @@ export function BuildPage({
                 review("reject", current, comment);
               }}
               onUndo={() => review("undo", current)}
+              story={current?.kind === "story" ? current.rows : undefined}
               navigation={
                 <SnapshotNavigation
                   position={currentIndex + 1}

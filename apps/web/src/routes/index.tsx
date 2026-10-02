@@ -1,23 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  CostSection,
-  PerThousandSection,
-  SpeedSection,
-} from "../components/landing/Numbers";
+import { CostCalculator } from "../components/compare/CostCalculator";
+import { SpeedSection } from "../components/landing/Numbers";
+import { PipelinesSection } from "../components/landing/Pipelines";
 import { PricingPlans, TIERS } from "../components/landing/Pricing";
 import {
-  FAQ,
-  FaqList,
   FinalStartFree,
   HeroCentered,
   HowSteps,
-  PipelinesSection,
-  PromisesSection,
   PublicPage,
   REPO_URL,
   SwitchStrip,
   TeamSection,
 } from "../components/landing/sections";
+import { QUESTIONS, TrustSection } from "../components/landing/Trust";
 import { PAGES, pageLinks, pageMeta, SITE_URL } from "../lib/pageMeta";
 import { SUPPORT_EMAIL } from "../lib/supportEmail";
 
@@ -44,16 +39,14 @@ function Home() {
   return (
     <PublicPage>
       <HeroCentered />
-      <PerThousandSection />
       <HowSteps />
       <SpeedSection />
       <TeamSection />
       <PipelinesSection />
       <PricingPlans />
-      <CostSection />
-      <PromisesSection />
+      <CostCalculator competitors={["argos", "chromatic", "percy"]} />
+      <TrustSection />
       <SwitchStrip />
-      <FaqList />
       <FinalStartFree />
     </PublicPage>
   );
@@ -63,7 +56,7 @@ function faqJsonLd() {
   return JSON.stringify({
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: FAQ.map(([question, answer]) => ({
+    mainEntity: QUESTIONS.map(([question, answer]) => ({
       "@type": "Question",
       name: question,
       acceptedAnswer: { "@type": "Answer", text: answer },

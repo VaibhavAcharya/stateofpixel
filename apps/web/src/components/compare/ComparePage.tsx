@@ -2,11 +2,11 @@ import {
   ArrowDownIcon,
   ArrowRightIcon,
   CaretDownIcon,
+  EqualsIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { type CSSProperties, Fragment, type ReactNode, useState } from "react";
 import {
-  type Cell,
   CHECKED,
   COMPETITORS,
   type Competitor,
@@ -25,7 +25,7 @@ import percyAfter from "../../snippets/compare/percy-after.yml?highlight";
 import percyBefore from "../../snippets/compare/percy-before.yml?highlight";
 import playwrightConfig from "../../snippets/playwright.config.ts?highlight";
 import { CodeBlock, type Snippet } from "../CodeBlock";
-import { formatPrice } from "../landing/Pricing";
+import { DEFAULT_WORKLOAD, formatPrice } from "../landing/Pricing";
 import { DISPLAY, LEAD, PublicPage, SECTION, WIDE } from "../landing/sections";
 import { AuthButton } from "../SignIn";
 import { buttonClass, LeadCopy, Logo } from "../ui";
@@ -37,6 +37,7 @@ import {
 } from "./CostCalculator";
 
 const DOTTED = "border-dotted border-field-border/50";
+const count = new Intl.NumberFormat("en-US");
 const WORKFLOW = ".github/workflows/visual.yml";
 const CARD_SHADOW = "shadow-[0_8px_32px_#11151a18,0_1px_4px_#11151a0a]";
 
@@ -291,83 +292,237 @@ function CompareHero({
   );
 }
 
-function FlowLane({
-  title,
-  icon,
-  steps,
-  bill,
+type Period = "build" | "month";
+
+const PERIODS: { value: Period; label: string }[] = [
+  { value: "build", label: "One build" },
+  { value: "month", label: "One month" },
+];
+
+function RailNode({ children }: { children: ReactNode }) {
+  return (
+    <span className="relative flex justify-center max-md:row-span-2 max-md:row-start-1 md:col-start-2 md:row-start-1">
+      <span
+        aria-hidden
+        className="absolute -inset-y-1.5 left-1/2 w-px -translate-x-1/2 bg-border"
+      />
+      <span className="mono relative mt-4 flex size-7 items-center justify-center rounded-full bg-surface text-xs text-muted tabular-nums ring-1 ring-border">
+        {children}
+      </span>
+    </span>
+  );
+}
+
+function StepCell({
   ours,
+  competitor,
+  children,
 }: {
-  title: string;
-  icon: ReactNode;
-  steps: string[];
-  bill: string;
   ours: boolean;
+  competitor: Competitor;
+  children: ReactNode;
 }) {
   return (
     <div
-      className={`rounded-lg p-6 max-sm:p-4 ${ours ? "bg-surface ring-1 ring-border" : "bg-surface-2"}`}
+      className={`flex min-h-16 flex-wrap items-start gap-x-3 gap-y-1 rounded-lg p-4 text-sm max-md:col-start-2 ${
+        ours
+          ? "bg-surface ring-1 ring-border md:col-start-3 md:row-start-1"
+          : "bg-surface-2 md:col-start-1 md:row-start-1"
+      }`}
     >
-      <div className="flex flex-wrap items-center gap-3">
-        {icon}
-        <span className="text-base font-semibold">{title}</span>
-        <span
-          className={`ml-auto rounded-full px-2.5 py-0.5 text-xs font-medium ${ours ? "bg-approved-bg text-approved" : "bg-changed-bg text-changed"}`}
-        >
-          {bill}
-        </span>
-      </div>
-      <ol className="mt-6 grid grid-cols-4 gap-3 max-md:grid-cols-1">
-        {steps.map((step, index) => (
-          <li key={step} className="flex flex-col gap-3 max-md:flex-row">
-            <span className="flex items-center gap-2">
-              <span
-                className={`mono flex size-6 shrink-0 items-center justify-center rounded-full text-xs tabular-nums ${ours ? "bg-approved text-surface" : "bg-surface text-muted ring-1 ring-border"}`}
-              >
-                {index + 1}
-              </span>
-              {index < steps.length - 1 && (
-                <span
-                  aria-hidden
-                  className={`h-px flex-1 max-md:hidden ${ours ? "bg-approved/40" : "bg-field-border/60"}`}
-                />
-              )}
-            </span>
-            <span className="text-sm">{step}</span>
-          </li>
-        ))}
-      </ol>
+      <span className="mt-0.5 shrink-0 md:hidden">
+        {ours ? (
+          <Logo size={16} />
+        ) : (
+          <CompetitorLogo competitor={competitor} size={16} />
+        )}
+      </span>
+      {children}
     </div>
   );
 }
 
+const RAIL_ROW =
+  "grid grid-cols-[minmax(0,1fr)_56px_minmax(0,1fr)] py-1.5 max-md:grid-cols-[28px_minmax(0,1fr)] max-md:gap-x-3 max-md:gap-y-2";
+
 function FlowSection({ competitor }: { competitor: Competitor }) {
+  const [period, setPeriod] = useState<Period>("build");
+  const builds = period === "build" ? 1 : DEFAULT_SUITE.builds;
+  const { screenshots, changed } = perBuild();
+  const [ours, theirs] = quote(
+    DEFAULT_SUITE,
+    competitor.priced === null ? [] : [competitor.priced],
+  ).bills;
+  const metrics = [
+    `${count.format(screenshots * builds)} screenshots`,
+    `${count.format(screenshots * builds)} hashes`,
+    `${count.format(changed * builds)} changed`,
+  ];
   return (
     <section className={SECTION}>
-      <LeadCopy
-        title="Where the screenshots come from."
-        className="max-w-[720px]"
-      >
-        That one choice decides what can drift, and what you are billed for.
-      </LeadCopy>
-      <div className="mt-12 flex flex-col gap-3">
-        <FlowLane
-          title={competitor.name}
-          icon={<CompetitorLogo competitor={competitor} size={24} />}
-          steps={competitor.theirFlow}
-          bill={competitor.theirBill}
-          ours={false}
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <LeadCopy title="One build, step by step." className="max-w-[720px]">
+          {DEFAULT_SUITE.screens} stories at {DEFAULT_SUITE.viewports}{" "}
+          viewports, run through {competitor.name} and through stateofpixel.
+        </LeadCopy>
+        <Segmented
+          label="Count for"
+          options={PERIODS}
+          value={period}
+          onChange={setPeriod}
         />
-        <FlowLane
-          title="stateofpixel"
-          icon={<Logo size={24} />}
-          steps={OUR_FLOW}
-          bill="Billed per GB stored"
-          ours
-        />
+      </div>
+      <div className="mt-12">
+        <div className={`${RAIL_ROW} pb-3 text-sm font-semibold max-md:hidden`}>
+          <span className="flex items-center gap-2">
+            <CompetitorLogo competitor={competitor} size={20} />
+            {competitor.name}
+          </span>
+          <span className="col-start-3 flex items-center gap-2">
+            <Logo size={20} />
+            stateofpixel
+          </span>
+        </div>
+        <ol>
+          {competitor.theirFlow.map((step, index) => (
+            <li key={step} className={RAIL_ROW}>
+              <RailNode>{index + 1}</RailNode>
+              <StepCell ours={false} competitor={competitor}>
+                <span>{step}</span>
+              </StepCell>
+              <StepCell ours competitor={competitor}>
+                <span className="min-w-0 flex-1">{OUR_FLOW[index]}</span>
+                {metrics[index] !== undefined && (
+                  <span
+                    key={period}
+                    className="mono ml-auto animate-fade pt-px text-xs max-md:ml-0 max-md:basis-full max-md:pl-7 whitespace-nowrap text-muted tabular-nums"
+                  >
+                    {metrics[index]}
+                  </span>
+                )}
+              </StepCell>
+            </li>
+          ))}
+        </ol>
+        <div className={RAIL_ROW}>
+          <RailNode>
+            <EqualsIcon size={12} weight="bold" />
+          </RailNode>
+          <Total
+            ours={false}
+            label={competitor.theirBill}
+            value={count.format(screenshots * builds)}
+            unit="counted"
+            note={
+              period === "month" && theirs?.cost != null
+                ? `${formatPrice(theirs.cost)} a month on ${theirs.plan}`
+                : `Each screenshot in each build`
+            }
+          />
+          <Total
+            ours
+            label="Billed per GB stored"
+            value="0"
+            unit="counted"
+            note={
+              period === "month" && ours?.cost != null
+                ? `${formatPrice(ours.cost)} a month on ${ours.plan}`
+                : `${count.format(changed)} changed screenshots and their diffs stored`
+            }
+          />
+        </div>
       </div>
     </section>
   );
+}
+
+function Total({
+  ours,
+  label,
+  value,
+  unit,
+  note,
+}: {
+  ours: boolean;
+  label: string;
+  value: string;
+  unit: string;
+  note: string;
+}) {
+  return (
+    <div
+      className={`flex flex-col gap-1 rounded-lg p-5 max-md:col-start-2 ${
+        ours
+          ? "bg-surface ring-1 ring-border md:col-start-3 md:row-start-1"
+          : "bg-surface-2 md:col-start-1 md:row-start-1"
+      }`}
+    >
+      <span
+        className={`w-fit rounded-full px-2.5 py-0.5 text-xs font-medium ${ours ? "bg-approved-bg text-approved" : "bg-changed-bg text-changed"}`}
+      >
+        {label}
+      </span>
+      <span className="mt-3 flex items-baseline gap-2">
+        <span
+          key={value}
+          className={`animate-fade text-[32px] leading-none font-semibold tracking-[-0.04em] tabular-nums ${ours ? "text-approved" : ""}`}
+        >
+          {value}
+        </span>
+        <span className="text-sm text-muted">{unit}</span>
+      </span>
+      <span className="text-sm text-muted">{note}</span>
+    </div>
+  );
+}
+
+function Segmented<Value extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: Value; label: string; count?: number }[];
+  value: Value;
+  onChange: (value: Value) => void;
+}) {
+  return (
+    <fieldset
+      aria-label={label}
+      className="flex w-fit max-w-full flex-wrap gap-1 rounded-control bg-surface-2 p-0.5"
+    >
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          aria-pressed={value === option.value}
+          onClick={() => onChange(option.value)}
+          className={`flex h-7 items-center gap-1.5 rounded-sm px-3 text-xs font-medium whitespace-nowrap transition-colors duration-100 pointer-coarse:h-9 ${
+            value === option.value
+              ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
+              : "text-muted hover:text-text"
+          }`}
+        >
+          {option.label}
+          {option.count !== undefined && (
+            <span className="mono text-subtle tabular-nums">
+              {option.count}
+            </span>
+          )}
+        </button>
+      ))}
+    </fieldset>
+  );
+}
+
+function perBuild() {
+  const screenshots =
+    DEFAULT_SUITE.screens * DEFAULT_SUITE.viewports * DEFAULT_SUITE.browsers;
+  return {
+    screenshots,
+    changed: Math.round((screenshots * DEFAULT_WORKLOAD.changed) / 100),
+  };
 }
 
 function Differences({ competitor }: { competitor: Competitor }) {
@@ -439,6 +594,27 @@ function ProductShot() {
   );
 }
 
+const KEY_ROWS: RowKey[] = ["billing", "free", "limit", "renders", "compares"];
+
+const LABELS = Object.fromEntries(
+  ROW_GROUPS.flatMap((group) => Object.entries(group.rows)),
+) as Record<RowKey, string>;
+
+type View = "key" | (typeof ROW_GROUPS)[number]["title"] | "all";
+
+const VIEWS: { value: View; label: string; keys: RowKey[] }[] = [
+  { value: "key", label: "Key rows", keys: KEY_ROWS },
+  ...ROW_GROUPS.map((group) => ({
+    value: group.title,
+    label: group.title,
+    keys: Object.keys(group.rows) as RowKey[],
+  })),
+  { value: "all", label: "All", keys: ROW_KEYS },
+];
+
+const COLUMNS =
+  "relative grid grid-cols-[minmax(0,200px)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 text-sm max-md:grid-cols-1";
+
 function GlanceTable({
   competitor,
   sources,
@@ -446,64 +622,121 @@ function GlanceTable({
   competitor: Competitor;
   sources: Source[];
 }) {
-  const columns =
-    "grid grid-cols-[minmax(0,220px)_1fr_1fr] gap-x-8 max-md:grid-cols-2 max-md:gap-x-4";
+  const [view, setView] = useState<View>("key");
+  const keys = VIEWS.find((item) => item.value === view)?.keys ?? KEY_ROWS;
   return (
     <section className={SECTION}>
-      <LeadCopy title="Side by side." className="max-w-[720px]">
-        Every row about {competitor.name} links to the page it came from.
-      </LeadCopy>
-      <div className="mt-12 text-sm">
-        <div
-          className={`${columns} sticky top-16 z-[1] border-b border-border bg-surface py-4`}
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <LeadCopy
+          title={`stateofpixel and ${competitor.name}, row by row.`}
+          className="max-w-[640px]"
         >
-          <span className="max-md:hidden" />
-          <span className="flex items-center gap-2 font-semibold">
-            <Logo size={20} />
-            stateofpixel
-          </span>
-          <span className="flex items-center gap-2 font-semibold">
-            <CompetitorLogo competitor={competitor} size={20} />
-            {competitor.name}
-          </span>
-        </div>
-        {ROW_GROUPS.map((group) => (
-          <div key={group.title}>
-            <p className="pt-10 pb-2 text-xs font-medium text-muted">
-              {group.title}
-            </p>
-            {(Object.entries(group.rows) as [RowKey, string][]).map(
-              ([key, label]) => {
-                const cell: Cell | undefined = competitor.cells[key];
-                return (
-                  <div
-                    key={key}
-                    className={`${columns} gap-y-2 border-t ${DOTTED} py-4`}
-                  >
-                    <span className="text-muted max-md:col-span-2">
-                      {label}
-                    </span>
-                    <span className="font-medium">{OURS[key]}</span>
-                    <span>
-                      {cell === undefined ? (
-                        <span className="text-muted">
-                          Not found in their docs.
-                        </span>
-                      ) : (
-                        <>
-                          {cell.text}
-                          <SourceMarks items={cell.sources} sources={sources} />
-                        </>
-                      )}
-                    </span>
-                  </div>
-                );
-              },
-            )}
-          </div>
-        ))}
+          Every row about {competitor.name} links to the page it came from.
+        </LeadCopy>
+        <Segmented
+          label="Rows"
+          options={VIEWS.map((item) => ({
+            value: item.value,
+            label: item.label,
+            count: item.keys.length,
+          }))}
+          value={view}
+          onChange={setView}
+        />
       </div>
+      <div
+        className={`${COLUMNS} mt-12 max-md:mt-4`}
+        style={
+          {
+            gridTemplateRows: `repeat(${keys.length + 1}, auto)`,
+          } as CSSProperties
+        }
+      >
+        <div
+          aria-hidden
+          className="col-start-2 row-span-full row-start-1 rounded-lg bg-surface ring-1 ring-border max-md:hidden"
+        />
+        <div
+          aria-hidden
+          className="col-start-3 row-span-full row-start-1 rounded-lg bg-surface-2 max-md:hidden"
+        />
+        <ColumnHead column="md:col-start-2">
+          <Logo size={24} />
+          stateofpixel
+        </ColumnHead>
+        <ColumnHead column="md:col-start-3">
+          <CompetitorLogo competitor={competitor} size={24} />
+          {competitor.name}
+        </ColumnHead>
+        {keys.map((key, index) => {
+          const cell = competitor.cells[key];
+          const row = { "--row": index + 2 } as CSSProperties;
+          return (
+            <Fragment key={`${view}-${key}`}>
+              <span
+                style={row}
+                className={`relative animate-fade py-5 pr-4 md:col-start-1 md:row-start-(--row) font-medium max-md:pt-8 max-md:pb-3 max-md:text-xs max-md:text-muted md:border-t ${DOTTED}`}
+              >
+                {LABELS[key]}
+              </span>
+              <span
+                style={row}
+                className={`relative flex animate-fade gap-3 px-5 py-5 font-medium md:col-start-2 md:row-start-(--row) max-md:rounded-t-lg max-md:bg-surface max-md:px-4 max-md:py-3 max-md:ring-1 max-md:ring-border md:border-t ${DOTTED} md:mx-px`}
+              >
+                <span className="mt-0.5 shrink-0 md:hidden">
+                  <Logo size={16} />
+                </span>
+                {OURS[key]}
+              </span>
+              <span
+                style={row}
+                className={`relative flex animate-fade gap-3 px-5 py-5 md:col-start-3 md:row-start-(--row) max-md:rounded-b-lg max-md:bg-surface-2 max-md:px-4 max-md:py-3 md:border-t ${DOTTED}`}
+              >
+                <span className="mt-0.5 shrink-0 md:hidden">
+                  <CompetitorLogo competitor={competitor} size={16} />
+                </span>
+                <span>
+                  {cell === undefined ? (
+                    <span className="text-muted">Not found in their docs.</span>
+                  ) : (
+                    <>
+                      {cell.text}
+                      <SourceMarks items={cell.sources} sources={sources} />
+                    </>
+                  )}
+                </span>
+              </span>
+            </Fragment>
+          );
+        })}
+      </div>
+      {view !== "all" && (
+        <button
+          type="button"
+          onClick={() => setView("all")}
+          className={`${buttonClass("ghost")} mt-6 -ml-3`}
+        >
+          Show all {ROW_KEYS.length} rows
+          <CaretDownIcon size={14} />
+        </button>
+      )}
     </section>
+  );
+}
+
+function ColumnHead({
+  column,
+  children,
+}: {
+  column: string;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      className={`relative row-start-1 flex items-center gap-3 px-5 pt-5 pb-4 text-base font-semibold max-md:hidden ${column}`}
+    >
+      {children}
+    </span>
   );
 }
 

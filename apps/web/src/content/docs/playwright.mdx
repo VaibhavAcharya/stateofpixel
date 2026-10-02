@@ -40,7 +40,7 @@ test("pricing", async ({ page }) => {
 
 `snapshot(page, name)` waits for fonts, disables animations, hides the caret and saves a full-page screenshot. Pass `{ fullPage: false }` to capture only the viewport.
 
-The browser and viewport width are added to the name, so `Marketing/Pricing` in Chromium at 1280px becomes `Marketing/Pricing [chromium 1280]`. Running the same test in several Playwright projects gives one snapshot per browser and width. The name is how stateofpixel matches snapshots across builds, so renaming a snapshot makes it a new one.
+The browser and viewport width are added to the name, so `Marketing/Pricing` in Chromium at 1280px becomes `Marketing/Pricing [chromium 1280]`. Running the same test in several Playwright projects gives one snapshot per browser and width. Renaming a snapshot makes it a new one. See [Snapshot names](/docs/any-screenshots#snapshot-names).
 
 Next to each PNG, `snapshot` writes the browser, viewport, Playwright project, test file and line. The build page shows them under the snapshot.
 
