@@ -38,7 +38,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-const counts = { pending: 5, changed: 4, added: 1, rejected: 2 };
+const counts = { pending: 5, approved: 0, changed: 4, added: 1, rejected: 2 };
 const shards = { done: 1, total: 1 };
 
 export const Pills: Story = {
@@ -154,7 +154,7 @@ export const Buttons: Story = {
       {VARIANTS.map((variant) => (
         <Row key={variant} label={variant}>
           <button type="button" className={buttonClass(variant)}>
-            Approve all
+            {variant === "danger" ? "Reject" : "Save"}
           </button>
           <button type="button" className={buttonClass(variant, "sm")}>
             Small
@@ -170,9 +170,6 @@ export const Buttons: Story = {
       <Row label="Keys">
         <Kbd>a</Kbd>
         <Kbd>shift</Kbd>
-        <span className={buttonClass("primary")}>
-          Approve <Kbd inverted>a</Kbd>
-        </span>
       </Row>
     </div>
   ),

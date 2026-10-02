@@ -8,6 +8,7 @@ export const MAX_IMAGE_WIDTH = 10_000;
 export const MAX_IMAGE_HEIGHT = 50_000;
 export const MAX_SNAPSHOT_NAME_LENGTH = 512;
 export const MAX_METADATA_BYTES = 4096;
+export const MAX_COMMENT_LENGTH = 500;
 export const BUILD_EXPIRY_MS = 60 * MINUTE_MS;
 export const DAILY_BUILDS = 2000;
 export const DAILY_UPLOAD_BYTES = 20 * 1024 ** 3;

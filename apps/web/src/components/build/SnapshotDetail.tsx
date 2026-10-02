@@ -1,24 +1,32 @@
 import {
   ArrowCounterClockwiseIcon,
   CaretDownIcon,
+  CaretLeftIcon,
   CaretRightIcon,
+  ChatTextIcon,
+  CheckIcon,
   WarningIcon,
+  XIcon,
 } from "@phosphor-icons/react/ssr";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { Link } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useState } from "react";
+import { formatCount } from "../../lib/format";
 import {
   buttonClass,
-  Kbd,
   REVIEW_ICONS,
   RelativeTime,
+  type ReviewState,
   Skeleton,
   TONE_TEXT,
+  Tooltip,
 } from "../ui";
 import { Viewer, type ViewerSettings } from "../Viewer";
 import { BuildNotFound } from "./BuildNotFound";
 import { useBuildData } from "./buildData";
-import type { Build, Snapshot } from "./types";
+import { CommentDialog } from "./CommentDialog";
+import { storyName, storyReviewState } from "./stories";
+import type { Build, Snapshot, SnapshotRow } from "./types";
 
 export function SnapshotDetail({
   owner,
@@ -27,15 +35,18 @@ export function SnapshotDetail({
   snapshotId,
   settings,
   headings = true,
-  canWrite,
   canReview,
-  rejecting,
-  onStartReject,
-  onCancelReject,
   onApprove,
   onReject,
+  commenting,
+  onOpenComments,
+  onCloseComments,
+  onComment,
   onUndo,
   navigation,
+  story,
+  onPrevious,
+  onNext,
 }: {
   owner: string;
   repo: string;
@@ -43,15 +54,18 @@ export function SnapshotDetail({
   snapshotId: Id<"snapshots">;
   settings: ViewerSettings;
   headings?: boolean;
-  canWrite: boolean;
   canReview: boolean;
-  rejecting: boolean;
-  onStartReject: () => void;
-  onCancelReject: () => void;
   onApprove: () => void;
-  onReject: (comment: string) => void;
+  onReject: () => void;
+  commenting: boolean;
+  onOpenComments: () => void;
+  onCloseComments: () => void;
+  onComment: (body: string) => void;
   onUndo: () => void;
   navigation: ReactNode;
+  story?: SnapshotRow[];
+  onPrevious: () => void;
+  onNext: () => void;
 }) {
   const snapshot = useBuildData().useSnapshot({
     owner,
@@ -75,6 +89,12 @@ export function SnapshotDetail({
     return <BuildNotFound title="Snapshot not found." />;
   }
   const reviewable = canReview && snapshot.reviewState !== "none";
+  const pending = (story ?? []).filter(
+    (row) => row.reviewState === "pending",
+  ).length;
+  const rejected = (story ?? []).filter(
+    (row) => row.reviewState === "rejected",
+  ).length;
 
   return (
     <>
@@ -87,52 +107,50 @@ export function SnapshotDetail({
             : `Baseline #${build.baseline.number}`
         }
         newLabel={`New #${build.number}`}
-        navigation={navigation}
+        navigation={
+          <>
+            {story === undefined ? (
+              <ReviewStatus snapshot={snapshot} />
+            ) : (
+              <span className="text-xs text-muted tabular-nums">
+                {pending > 0
+                  ? `${formatCount(pending)}/${formatCount(story.length)} to review`
+                  : `${formatCount(story.length)} snapshots`}
+                {rejected > 0 && `, ${formatCount(rejected)} rejected`}
+              </span>
+            )}
+            {navigation}
+          </>
+        }
+        overlay={
+          <ReviewDock
+            state={
+              !reviewable
+                ? null
+                : story === undefined
+                  ? snapshot.reviewState
+                  : storyReviewState(story)
+            }
+            canUndo={
+              reviewable &&
+              (story ?? [snapshot]).some(
+                (row) =>
+                  row.reviewState === "approved" ||
+                  row.reviewState === "rejected",
+              )
+            }
+            count={story?.length}
+            comments={snapshot.comments.length}
+            onPrevious={onPrevious}
+            onNext={onNext}
+            onApprove={onApprove}
+            onReject={onReject}
+            onComments={onOpenComments}
+            onUndo={onUndo}
+          />
+        }
         headings={headings}
       />
-      <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-4 py-2.5">
-        {rejecting ? (
-          <RejectForm onSubmit={onReject} onCancel={onCancelReject} />
-        ) : (
-          <>
-            <ReviewStatus snapshot={snapshot} />
-            {canWrite && reviewable && (
-              <div className="ml-auto flex items-center gap-2 max-sm:w-full">
-                {(snapshot.reviewState === "approved" ||
-                  snapshot.reviewState === "rejected") && (
-                  <button
-                    type="button"
-                    className={buttonClass("ghost")}
-                    onClick={onUndo}
-                  >
-                    <ArrowCounterClockwiseIcon size={14} />
-                    Undo
-                    <Kbd>u</Kbd>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className={`${buttonClass("danger")} max-sm:flex-1`}
-                  disabled={snapshot.reviewState === "rejected"}
-                  onClick={onStartReject}
-                >
-                  Reject
-                  <Kbd>r</Kbd>
-                </button>
-                <button
-                  type="button"
-                  className={`${buttonClass("primary")} max-sm:flex-1`}
-                  disabled={snapshot.reviewState === "approved"}
-                  onClick={onApprove}
-                >
-                  Approve
-                  <Kbd inverted>a</Kbd>
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
       {snapshot.flaky !== null && (
         <p className="flex shrink-0 flex-wrap items-center gap-x-1.5 border-t border-border px-4 py-2 text-xs text-muted">
           <WarningIcon size={14} className="shrink-0 text-pending" />
@@ -177,7 +195,150 @@ export function SnapshotDetail({
         </p>
       )}
       <Details metadata={snapshot.metadata} />
+      <CommentDialog
+        open={commenting}
+        name={story === undefined ? snapshot.name : storyName(snapshot.name)}
+        comments={snapshot.comments}
+        canReview={reviewable}
+        onSubmit={onComment}
+        onClose={onCloseComments}
+      />
     </>
+  );
+}
+
+function ReviewDock({
+  state,
+  canUndo,
+  count,
+  comments,
+  onPrevious,
+  onNext,
+  onApprove,
+  onReject,
+  onComments,
+  onUndo,
+}: {
+  state: ReviewState | null;
+  canUndo: boolean;
+  count: number | undefined;
+  comments: number;
+  onPrevious: () => void;
+  onNext: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+  onComments: () => void;
+  onUndo: () => void;
+}) {
+  const suffix = count === undefined ? "" : ` ${formatCount(count)}`;
+  const group =
+    "flex items-center gap-0.5 rounded-control bg-surface p-1 shadow-menu ring-1 ring-border";
+  return (
+    <div className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2">
+      <div className={group}>
+        <DockButton
+          label="Previous snapshot"
+          tooltip="Previous"
+          keyName="k"
+          onClick={onPrevious}
+        >
+          <CaretLeftIcon size={14} />
+        </DockButton>
+        <DockButton
+          label={`Reject${suffix}`}
+          tooltip="Reject"
+          keyName="r"
+          pressed={state === "rejected"}
+          disabled={state === null}
+          className="text-rejected!"
+          onClick={onReject}
+        >
+          <XIcon size={16} weight="bold" />
+        </DockButton>
+        <DockButton
+          label={`Approve${suffix}`}
+          tooltip="Approve"
+          keyName="a"
+          pressed={state === "approved"}
+          disabled={state === null}
+          className="text-approved!"
+          onClick={onApprove}
+        >
+          <CheckIcon size={16} weight="bold" />
+        </DockButton>
+        <DockButton
+          label="Undo"
+          tooltip="Undo"
+          keyName="u"
+          disabled={!canUndo}
+          onClick={onUndo}
+        >
+          <ArrowCounterClockwiseIcon size={16} />
+        </DockButton>
+        <DockButton
+          label="Next snapshot"
+          tooltip="Next"
+          keyName="j"
+          onClick={onNext}
+        >
+          <CaretRightIcon size={14} />
+        </DockButton>
+      </div>
+      <div className={`${group} absolute top-0 left-full ml-2`}>
+        <DockButton
+          label={`Comments, ${formatCount(comments)}`}
+          tooltip="Comments"
+          keyName="m"
+          className={comments > 0 ? "w-auto! gap-1! px-2!" : ""}
+          onClick={onComments}
+        >
+          <ChatTextIcon size={16} />
+          {comments > 0 && (
+            <span className="text-xs tabular-nums">
+              {formatCount(comments)}
+            </span>
+          )}
+        </DockButton>
+      </div>
+    </div>
+  );
+}
+
+function DockButton({
+  label,
+  tooltip,
+  keyName,
+  pressed,
+  disabled = false,
+  className = "",
+  onClick,
+  children,
+}: {
+  label: string;
+  tooltip: string;
+  keyName: string;
+  pressed?: boolean;
+  disabled?: boolean;
+  className?: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip
+      label={`${tooltip}, press ${keyName}`}
+      className="top-auto! bottom-full! left-1/2! mt-0! mb-2 -translate-x-1/2"
+    >
+      <button
+        type="button"
+        aria-label={label}
+        aria-pressed={pressed}
+        disabled={disabled}
+        className={`${buttonClass("ghost", "icon")} rounded-sm! aria-pressed:bg-hover ${className}`}
+        onClick={onClick}
+      >
+        {children}
+      </button>
+    </Tooltip>
   );
 }
 
@@ -278,49 +439,5 @@ function Details({ metadata }: { metadata: Record<string, unknown> }) {
         </dl>
       )}
     </footer>
-  );
-}
-
-function RejectForm({
-  onSubmit,
-  onCancel,
-}: {
-  onSubmit: (comment: string) => void;
-  onCancel: () => void;
-}) {
-  const [comment, setComment] = useState("");
-  const input = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    input.current?.focus();
-  }, []);
-  return (
-    <form
-      className="flex w-full items-center gap-2"
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSubmit(comment);
-      }}
-    >
-      <input
-        ref={input}
-        value={comment}
-        maxLength={500}
-        onChange={(event) => setComment(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            onCancel();
-          }
-        }}
-        placeholder="Why is this change wrong? (optional)"
-        aria-label="Reject comment"
-        className="h-8 min-w-0 flex-1 rounded-md bg-surface px-2.5 text-sm shadow-[inset_0_0_0_1px_var(--color-field-border)] transition-shadow duration-250 ease-standard outline-none placeholder:text-subtle focus:shadow-field-focus"
-      />
-      <button type="button" className={buttonClass("ghost")} onClick={onCancel}>
-        Cancel
-      </button>
-      <button type="submit" className={buttonClass("danger")}>
-        Reject
-      </button>
-    </form>
   );
 }

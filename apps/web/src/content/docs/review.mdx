@@ -1,3 +1,5 @@
+import { facts } from "../../components/docs/facts";
+
 export const meta = {
   title: "Reviewing changes",
   description: "Compare, approve and reject visual changes on the build page.",
@@ -18,6 +20,10 @@ The page refreshes every 5 seconds while it is open, so new shards and other rev
 
 The sidebar groups snapshots into Changed, Added, Removed, Failed and Unchanged. The first changed snapshot opens when the page loads, and each snapshot has its own link you can share. Drag the edge of the sidebar to resize it, and double-click the edge to reset it.
 
+Type in the filter at the top of the sidebar, or press <kbd>/</kbd>, to show only snapshots whose name contains the text. When a build has snapshots from more than one browser, a Browser menu under the filter shows the snapshots of one browser. The browser comes from the `browser` field in the snapshot metadata, which `snapshot` from [Playwright](/docs/playwright) writes for you. See [Metadata](/docs/any-screenshots#metadata) to send it from other tools. <kbd>j</kbd> and <kbd>k</kbd> move through the snapshots that match.
+
+Snapshots that differ only in the brackets at the end of the name, like `Checkout/Empty [chromium 1280]` and `Checkout/Empty [firefox 375]`, are listed under one row with their name and count. Click the count, or press <kbd>h</kbd> and <kbd>l</kbd>, to fold the row up and open it again. A folded row opens the snapshot with the largest change, and <kbd>j</kbd> and <kbd>k</kbd> move past it in one step. When a build has more than one browser, rows that changed in only some of them come first, under Some browsers, with the browsers they changed in.
+
 - **Changed**: pixels differ from the baseline above the threshold, or the size changed.
 - **Added**: the baseline has no snapshot with this name.
 - **Removed**: the baseline has it and this build does not. Removed snapshots never need review.
@@ -26,21 +32,25 @@ The sidebar groups snapshots into Changed, Added, Removed, Failed and Unchanged.
 ## Compare
 
 - **Side by side**: baseline left, new right, with the diff drawn over the new image. Press <kbd>d</kbd> to hide it.
-- **Diff**: the new image with the changed pixels in green. Press <kbd>d</kbd> for Diff only, which shows the changed pixels without the image.
+- **Diff**: the new image with the changed pixels in magenta. Press <kbd>d</kbd> for Diff only, which shows the changed pixels without the image.
 - **Slider**: drag a handle to wipe between the two.
 - **Flip**: one frame that switches between baseline and new when you press <kbd>space</kbd>. The best mode for 1 pixel shifts.
 
-The diff is green by default. While it shows, the color dots in the toolbar switch it to red, magenta or blue. The color stays as you move between snapshots and goes back to green when you reload the page.
+The diff is magenta by default. While it shows, the color at the right of the toolbar changes it to green, red or blue: point at it or tab to it to see all four, or press <kbd>c</kbd> for the next one. The color stays as you move between snapshots and goes back to magenta when you reload the page.
 
-Images show at Fit by default. Scroll or drag to pan, and pinch, or scroll with <kbd>ctrl</kbd> held, to zoom. You can also zoom with <kbd>+</kbd> and <kbd>-</kbd>, and <kbd>0</kbd> shows real pixels at 100%. Fit, or <kbd>f</kbd>, resets the view. In Side by side both images pan and zoom together. When the sizes differ, both images align at the top left.
+Images show at Fit by default. Scroll or drag to pan, and pinch, or scroll with <kbd>ctrl</kbd> held, to zoom. You can also zoom with <kbd>+</kbd> and <kbd>-</kbd>, and <kbd>0</kbd> shows real pixels at 100%. Fit, or <kbd>f</kbd>, resets the view. The same buttons show in the bottom right of the images when you point at them. You can zoom out to half the size that shows the whole image. In Side by side both images pan and zoom together. When the sizes differ, both images align at the top left.
 
 ## Approve and reject
 
 Anyone with write access to the repository on GitHub can review. See [Who can review](#who-can-review).
 
-- Approve a snapshot with <kbd>a</kbd>, which also moves to the next pending one, or approve every pending snapshot with Approve all.
-- Reject with <kbd>r</kbd> and an optional comment. One rejection makes the check fail with "1 change rejected". Reject build rejects every pending snapshot at once.
-- Undo a review with <kbd>u</kbd>.
+The dock at the bottom of the images reviews the open snapshot, and the switch in the build header reviews the whole build.
+
+- Approve a snapshot with <kbd>a</kbd> or the check in the dock, which also moves to the next pending one. On a folded row, it approves every snapshot in it.
+- Reject with <kbd>r</kbd> or the cross, which also moves to the next pending one. One rejection makes the check fail with "1 change rejected".
+- Comment with <kbd>m</kbd> or the speech bubble next to the dock. A comment does not approve or reject anything. Comments are up to {facts.commentLength}, and every comment on a snapshot stays in its thread, oldest first, with who left it, so comments from several reviewers do not replace each other.
+- Undo a review with <kbd>u</kbd> or the arrow in the dock.
+- Approve build, or <kbd>shift</kbd> <kbd>a</kbd>, approves every pending snapshot, and Reject build, or <kbd>shift</kbd> <kbd>r</kbd>, rejects them. The middle of the switch then reads Undo, which takes the build action back without changing reviews made one by one. Picking the other side switches the build action. Once nothing is left to review, the switch shows the result: Rejected when any snapshot is rejected, Approved otherwise. Undo, or <kbd>shift</kbd> <kbd>u</kbd>, then returns every snapshot to review, including the ones reviewed one by one.
 
 When every change is approved, the check turns green on GitHub. See [The GitHub check](/docs/checks).
 
@@ -48,7 +58,7 @@ When every change is approved, the check turns green on GitHub. See [The GitHub 
 
 Under the image, the snapshot shows what else is known about it:
 
-- **Review**: who approved or rejected it and when, with the comment, or the build an approval carried over from.
+- **Review**: who approved or rejected it and when, with a comment if one was left, or the build an approval carried over from.
 - **Looks flaky**: shown when the snapshot changed back and forth on the default branch, or another build of the same commit has a different image. See [Find flaky snapshots](/docs/stable-screenshots#find-flaky-snapshots).
 - **History**: the recent builds on the default branch where the image changed. History opens the snapshot on the Baselines tab. See [Baselines](/docs/baselines).
 - **Details**: the metadata your test sent, like browser, viewport and test file.

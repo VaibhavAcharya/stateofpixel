@@ -116,6 +116,8 @@ export const build: Build = {
   baseline: { number: 405, branch: "main" },
   supersededBy: null,
   mergedPr: null,
+  browsers: ["chromium"],
+  buildAction: null,
   counts: buildCounts,
   createdAt: STORY_NOW - 5 * MINUTE_MS,
   finalizedAt: STORY_NOW - 4 * MINUTE_MS,

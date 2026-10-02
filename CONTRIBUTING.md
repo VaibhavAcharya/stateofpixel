@@ -24,7 +24,7 @@ Apply the migrations with `pnpm --filter @stateofpixel/backend db:migrate` while
 
 Signing in needs Identity enabled on your site with the GitHub provider, and optionally Google. Repositories need a GitHub App of your own, see [Environment variables](#environment-variables).
 
-In dev, `/lab.stateofpixel/web/builds/1` renders the build page from the fixtures in `apps/web/src/components/build/LabBuild.tsx`, without GitHub. Reviews there change local state only.
+In dev, `/lab.stateofpixel/web/builds/1` renders the build page from the fixtures in `apps/web/src/components/build/LabBuild.tsx`, without GitHub. `/lab.stateofpixel/web/builds/4` has 445 snapshots across 3 browsers and 3 widths. Reviews and comments there change local state only.
 
 Components have Storybook stories next to them. `pnpm --filter @stateofpixel/web storybook` opens them on http://localhost:6007. `apps/web/.storybook/preview.tsx` mocks the data hooks, and shared fixtures are in `apps/web/src/lib/storyFixtures.tsx`.
 

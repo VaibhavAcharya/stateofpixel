@@ -15,6 +15,7 @@ export type FixtureSnapshot = {
   diffStatus: DiffStatus;
   reviewState: ReviewState;
   diffPixels?: number;
+  browser?: string;
   image: string | null;
   baselineImage: string | null;
   diffImage: string | null;
@@ -23,7 +24,13 @@ export type FixtureSnapshot = {
 export type BuildFixture = {
   build: Omit<
     Build,
-    "counts" | "conclusion" | "buildId" | "createdAt" | "finalizedAt"
+    | "counts"
+    | "conclusion"
+    | "buildId"
+    | "createdAt"
+    | "finalizedAt"
+    | "browsers"
+    | "buildAction"
   >;
   snapshots: FixtureSnapshot[];
   reviewer: string;
@@ -97,10 +104,35 @@ export function useFixtureBuild(fixture: BuildFixture): {
   const [reviews, setReviews] = useState<
     Record<
       string,
-      { state: ReviewState; comment: string | null; reviewedAt: number }
+      {
+        state: ReviewState;
+        comment: string | null;
+        reviewedAt: number;
+        batch: boolean;
+      }
     >
   >({});
 
+  const [buildAction, setBuildAction] = useState<"approve" | "reject" | null>(
+    null,
+  );
+  const [comments, setComments] = useState<
+    Record<string, Snapshot["comments"]>
+  >({});
+  const addComment = (snapshotId: string, body: string) =>
+    setComments((current) => ({
+      ...current,
+      [snapshotId]: [
+        ...(current[snapshotId] ?? []),
+        {
+          id: `${snapshotId}-${Date.now()}`,
+          action: null,
+          login: fixture.reviewer,
+          body,
+          createdAt: Date.now(),
+        },
+      ],
+    }));
   const snapshots = fixture.snapshots.map((snapshot) => ({
     ...snapshot,
     reviewState: reviews[snapshot.id]?.state ?? snapshot.reviewState,
@@ -115,6 +147,10 @@ export function useFixtureBuild(fixture: BuildFixture): {
     conclusion: fixture.build.storageBlocked ? "changes" : conclude(counts),
     createdAt,
     finalizedAt: createdAt + MINUTE_MS,
+    browsers: [
+      ...new Set(snapshots.flatMap((snapshot) => snapshot.browser ?? [])),
+    ].sort(),
+    buildAction,
   };
 
   const data: BuildData = {
@@ -132,6 +168,7 @@ export function useFixtureBuild(fixture: BuildFixture): {
               snapshot.diffPixels === undefined
                 ? null
                 : snapshot.diffPixels / AREA,
+            browser: snapshot.browser ?? null,
           })),
         status: "Exhausted" as const,
         loadMore: () => {},
@@ -175,32 +212,46 @@ export function useFixtureBuild(fixture: BuildFixture): {
                 carriedFrom: null,
               }
             : null,
+        comments: comments[snapshot.id] ?? [],
         rejectedIn: null,
         notReviewedOnPr: false,
         history: [],
         flaky: null,
       };
     },
+    useAddComment:
+      () =>
+      async ({ snapshotId, body }) => {
+        addComment(snapshotId, body.trim());
+      },
     useApplyReview:
       () =>
       async ({ snapshotIds, action, comment }) => {
         setReviews((current) => {
           const next = { ...current };
           for (const snapshot of snapshots) {
+            const state = current[snapshot.id]?.state ?? snapshot.reviewState;
+            const fromBuildAction = current[snapshot.id]?.batch === true;
             const selected =
-              snapshotIds === "all"
-                ? snapshot.reviewState === "pending"
-                : snapshotIds.includes(snapshot.id as Id<"snapshots">);
-            if (selected && snapshot.reviewState !== "none") {
+              snapshotIds !== "all"
+                ? snapshotIds.includes(snapshot.id as Id<"snapshots">)
+                : action === "undo"
+                  ? buildAction === null || fromBuildAction
+                  : state === "pending" || fromBuildAction;
+            if (selected && state !== "none") {
               next[snapshot.id] = {
                 state: NEXT_STATE[action],
                 comment: comment || null,
                 reviewedAt: Date.now(),
+                batch: snapshotIds === "all" && action !== "undo",
               };
             }
           }
           return next;
         });
+        if (snapshotIds === "all") {
+          setBuildAction(action === "undo" ? null : action);
+        }
       },
   };
 

@@ -246,3 +246,62 @@
     }
   }
 }
+
+@layer components {
+  .range-slider {
+    appearance: none;
+    height: 16px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .range-slider:focus-visible {
+    outline: none;
+  }
+  .range-slider:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .range-slider::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      to right,
+      var(--color-text) var(--range-fill),
+      var(--color-field-border) var(--range-fill)
+    );
+  }
+  .range-slider::-moz-range-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      to right,
+      var(--color-text) var(--range-fill),
+      var(--color-field-border) var(--range-fill)
+    );
+  }
+  .range-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -6px;
+    border-radius: 9999px;
+    background: var(--color-text);
+    box-shadow: 0 0 0 2px var(--color-surface);
+  }
+  .range-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border: none;
+    border-radius: 9999px;
+    background: var(--color-text);
+    box-shadow: 0 0 0 2px var(--color-surface);
+  }
+  .range-slider:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  .range-slider:focus-visible::-moz-range-thumb {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}

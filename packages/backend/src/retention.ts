@@ -10,6 +10,7 @@ import {
   accounts,
   approvedImages,
   builds,
+  comments,
   deletedBuilds,
   githubEvents,
   images,
@@ -209,14 +210,24 @@ export async function deleteBuildRows(
     .from(reviews)
     .where(eq(reviews.buildId, buildId))
     .limit(DELETE_PAGE_SIZE);
+  const commentIds = await ctx.db
+    .select({ _id: comments._id })
+    .from(comments)
+    .where(eq(comments.buildId, buildId))
+    .limit(DELETE_PAGE_SIZE);
   for (const snapshot of snapshotIds) {
     await ctx.db.delete(snapshots).where(eq(snapshots._id, snapshot._id));
   }
   for (const review of reviewIds) {
     await ctx.db.delete(reviews).where(eq(reviews._id, review._id));
   }
+  for (const comment of commentIds) {
+    await ctx.db.delete(comments).where(eq(comments._id, comment._id));
+  }
   return (
-    snapshotIds.length < DELETE_PAGE_SIZE && reviewIds.length < DELETE_PAGE_SIZE
+    snapshotIds.length < DELETE_PAGE_SIZE &&
+    reviewIds.length < DELETE_PAGE_SIZE &&
+    commentIds.length < DELETE_PAGE_SIZE
   );
 }
 

@@ -3,6 +3,8 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   CircleHalfIcon,
+  MinusIcon,
+  PlusIcon,
   SquareSplitHorizontalIcon,
   SwapIcon,
 } from "@phosphor-icons/react/ssr";
@@ -12,6 +14,7 @@ import {
   type Ref,
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -23,6 +26,7 @@ import {
   type Point,
   panView,
   type Size,
+  ZOOM_STEP,
   zoomView,
 } from "../lib/canvasView";
 import { formatCount, formatPercent } from "../lib/format";
@@ -31,7 +35,6 @@ import {
   type DiffStatus,
   DiffStatusPill,
   type Icon,
-  Kbd,
   SnapshotImage,
   SnapshotName,
   Tooltip,
@@ -93,9 +96,9 @@ export type DiffColor = "red" | "magenta" | "blue" | "green";
 
 export const DIFF_COLORS: { value: DiffColor; label: string; color: string }[] =
   [
+    { value: "magenta", label: "Magenta", color: "#ff00ff" },
     { value: "green", label: "Green", color: "#00cc00" },
     { value: "red", label: "Red", color: "#ff0000" },
-    { value: "magenta", label: "Magenta", color: "#ff00ff" },
     { value: "blue", label: "Blue", color: "#0066ff" },
   ];
 
@@ -106,7 +109,7 @@ export function useViewerSettings() {
   const [sideDiff, setSideDiff] = useState(true);
   const [showBaseline, setShowBaseline] = useState(false);
   const [diffOnly, setDiffOnly] = useState(false);
-  const [diffColor, setDiffColor] = useState<DiffColor>("green");
+  const [diffColor, setDiffColor] = useState<DiffColor>("magenta");
   return {
     sideDiff,
     setSideDiff,
@@ -133,6 +136,7 @@ export function Viewer({
   newLabel,
   settings,
   navigation,
+  overlay,
   headings = true,
 }: {
   snapshot: ViewerSnapshot;
@@ -140,6 +144,7 @@ export function Viewer({
   newLabel: string;
   settings: ViewerSettings;
   navigation: ReactNode;
+  overlay?: ReactNode;
   headings?: boolean;
 }) {
   const Title = headings ? "h2" : "p";
@@ -176,8 +181,14 @@ export function Viewer({
         </div>
       </div>
       <div className="flex min-h-11 shrink-0 flex-wrap items-center gap-2 border-b border-border px-4 py-1.5">
-        {!single && (
-          <div className="flex min-w-0 flex-wrap items-center rounded-control bg-surface-2 p-0.5">
+        {single ? (
+          <span className="text-xs text-muted">
+            {image === null
+              ? "Only the baseline image, nothing to compare"
+              : "Only the new image, nothing to compare"}
+          </span>
+        ) : (
+          <div className="-ml-2 flex min-w-0 flex-wrap items-center gap-0.5">
             <Segmented
               label="View mode"
               options={MODES}
@@ -187,66 +198,112 @@ export function Viewer({
             <ModeSwitch settings={settings} snapshot={snapshot} />
           </div>
         )}
-        {overlayShown && (
-          <DiffColorPicker
-            value={settings.diffColor}
-            onChange={settings.setDiffColor}
-          />
-        )}
         <div className="ml-auto flex items-center gap-2">
-          <span className="w-11 text-right text-xs text-muted tabular-nums">
-            {Math.round(canvas.view.scale * 100)}%
-          </span>
-          <KeyTooltip label="Fit" keyName="f">
-            <button
-              type="button"
-              className={buttonClass()}
-              disabled={settings.view === null}
-              onClick={() => settings.setView(null)}
-            >
-              Fit
-              <KeyChip keyName="f" />
-            </button>
-          </KeyTooltip>
+          {overlayShown && (
+            <DiffColorStack
+              value={settings.diffColor}
+              onChange={settings.setDiffColor}
+            />
+          )}
         </div>
       </div>
-      <div
-        ref={canvas.stageRef}
-        className={`grid min-h-0 flex-1 overflow-hidden bg-border select-none ${
-          canvas.pannable
-            ? `touch-none ${canvas.panning ? "cursor-grabbing" : "cursor-grab"}`
-            : "touch-pan-x touch-pan-y"
-        } ${
-          single || mode !== "side"
-            ? "grid-cols-1"
-            : "grid-cols-2 gap-px max-md:grid-cols-1 max-md:grid-rows-2"
-        }`}
-      >
-        {single ? (
-          <Pane
-            caption={image === null ? baselineLabel : newLabel}
-            view={canvas.view}
-            paneRef={canvas.paneRef}
-          >
-            <Frame
-              image={image ?? baselineImage}
-              scale={canvas.view.scale}
+      <div className="group/stage relative flex min-h-0 flex-1 flex-col">
+        <ZoomControls settings={settings} scale={canvas.view.scale} />
+        {overlay}
+        <div
+          ref={canvas.stageRef}
+          className={`grid min-h-0 flex-1 overflow-hidden bg-border select-none ${
+            canvas.pannable
+              ? `touch-none ${canvas.panning ? "cursor-grabbing" : "cursor-grab"}`
+              : "touch-pan-x touch-pan-y"
+          } ${
+            single || mode !== "side"
+              ? "grid-cols-1"
+              : "grid-cols-2 gap-px max-md:grid-cols-1 max-md:grid-rows-2"
+          }`}
+        >
+          {single ? (
+            <Pane
               caption={image === null ? baselineLabel : newLabel}
+              view={canvas.view}
+              paneRef={canvas.paneRef}
+            >
+              <Frame
+                image={image ?? baselineImage}
+                scale={canvas.view.scale}
+                caption={image === null ? baselineLabel : newLabel}
+              />
+            </Pane>
+          ) : (
+            <Compare
+              settings={settings}
+              snapshot={snapshot}
+              image={image}
+              baselineImage={baselineImage}
+              baselineLabel={baselineLabel}
+              newLabel={newLabel}
+              view={canvas.view}
+              paneRef={canvas.paneRef}
             />
-          </Pane>
-        ) : (
-          <Compare
-            settings={settings}
-            snapshot={snapshot}
-            image={image}
-            baselineImage={baselineImage}
-            baselineLabel={baselineLabel}
-            newLabel={newLabel}
-            view={canvas.view}
-            paneRef={canvas.paneRef}
-          />
-        )}
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
+
+function ZoomControls({
+  settings,
+  scale,
+}: {
+  settings: ViewerSettings;
+  scale: number;
+}) {
+  const button = `${buttonClass("ghost", "sm")} h-5 w-full rounded-[5px] px-0`;
+  const tooltip = "top-1/2! right-full! left-auto! mt-0! mr-2 -translate-y-1/2";
+  return (
+    <div className="absolute right-2 bottom-2 z-10 flex w-9 flex-col rounded-md bg-surface p-0.5 opacity-0 shadow-menu ring-1 ring-border transition-opacity duration-150 group-hover/stage:opacity-100 focus-within:opacity-100 motion-reduce:transition-none pointer-coarse:opacity-100">
+      <Tooltip label="Zoom in, press +" className={tooltip}>
+        <button
+          type="button"
+          aria-label="Zoom in"
+          className={button}
+          onClick={() => settings.zoom({ by: ZOOM_STEP })}
+        >
+          <PlusIcon size={10} weight="bold" />
+        </button>
+      </Tooltip>
+      <Tooltip label="Real pixels, press 0" className={tooltip}>
+        <button
+          type="button"
+          aria-label={`Zoom ${Math.round(scale * 100)}%, show at 100%`}
+          className={`${button} text-[9px] tabular-nums`}
+          onClick={() => settings.zoom({ to: 1 })}
+        >
+          {Math.round(scale * 100)}%
+        </button>
+      </Tooltip>
+      <Tooltip label="Zoom out, press -" className={tooltip}>
+        <button
+          type="button"
+          aria-label="Zoom out"
+          className={button}
+          onClick={() => settings.zoom({ by: 1 / ZOOM_STEP })}
+        >
+          <MinusIcon size={10} weight="bold" />
+        </button>
+      </Tooltip>
+      <span aria-hidden className="mx-1 my-0.5 h-px bg-border" />
+      <Tooltip label="Fit, press f" className={tooltip}>
+        <button
+          type="button"
+          className={`${button} text-[9px]`}
+          disabled={settings.view === null}
+          onClick={() => settings.setView(null)}
+        >
+          Fit
+        </button>
+      </Tooltip>
     </div>
   );
 }
@@ -321,14 +378,14 @@ function ModeSwitch({
   }
   return (
     <>
-      <span className="mx-1 h-4 w-px bg-field-border/50 max-sm:hidden" />
+      <span className="mx-1.5 h-4 w-px bg-border max-sm:hidden" />
       <KeyTooltip label={option.label} keyName={option.key}>
         <button
           type="button"
           role="switch"
           aria-checked={option.on}
           onClick={option.toggle}
-          className={`flex h-7 items-center gap-2 rounded-[9px] px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
+          className={`flex h-7 items-center gap-2 rounded-sm px-2 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
             option.on ? "text-text" : "text-muted hover:text-text"
           }`}
         >
@@ -340,7 +397,6 @@ function ModeSwitch({
             />
           </span>
           {option.label}
-          {option.key && <KeyChip keyName={option.key} />}
         </button>
       </KeyTooltip>
     </>
@@ -364,50 +420,98 @@ function DiffColorFilters() {
   );
 }
 
-function DiffColorPicker({
+const STACK_STEP = 3;
+
+function DiffColorStack({
   value,
   onChange,
 }: {
   value: DiffColor;
   onChange: (value: DiffColor) => void;
 }) {
-  return (
-    <fieldset
-      aria-label="Diff color"
-      className="flex items-center rounded-control bg-surface-2 p-0.5"
-    >
-      {DIFF_COLORS.map((option) => {
-        const active = option.value === value;
-        return (
-          <Tooltip key={option.value} label={option.label}>
-            <button
-              type="button"
-              aria-pressed={active}
-              aria-label={option.label}
-              className={`flex size-7 items-center justify-center rounded-[9px] transition-colors duration-100 ${
-                active
-                  ? "bg-surface shadow-[inset_0_0_0_1px_var(--color-border)]"
-                  : "hover:bg-surface/60"
-              }`}
-              onClick={() => onChange(option.value)}
-            >
-              <span
-                className="size-3 rounded-full"
-                style={{ backgroundColor: option.color }}
-              />
-            </button>
-          </Tooltip>
-        );
-      })}
-    </fieldset>
+  const [open, setOpen] = useState(false);
+  const name = useId();
+  const selected = Math.max(
+    0,
+    DIFF_COLORS.findIndex((option) => option.value === value),
   );
-}
+  const behind = DIFF_COLORS.map((_, index) => index).filter(
+    (index) => index !== selected,
+  );
+  const offset = (index: number) => {
+    const steps = index === selected ? 0 : behind.indexOf(index) + 1;
+    return open
+      ? `calc(var(--swatch-step) * ${steps})`
+      : `${steps * STACK_STEP}px`;
+  };
+  const width = open
+    ? `calc(var(--swatch-step) * ${DIFF_COLORS.length - 1} + 28px)`
+    : `${behind.length * STACK_STEP + 28}px`;
 
-function KeyChip({ keyName }: { keyName: string }) {
   return (
-    <span className="max-lg:hidden">
-      <Kbd>{keyName}</Kbd>
-    </span>
+    <Tooltip
+      label="Diff color, press c"
+      align="end"
+      className="pointer-coarse:hidden"
+    >
+      <fieldset
+        aria-label="Diff color"
+        className="relative m-0 h-7 rounded-[9px] border-0 p-0 transition-[width] duration-150 ease-out-strong [--swatch-step:20px] motion-reduce:transition-none pointer-coarse:[--swatch-step:36px]"
+        style={{ width }}
+        onPointerEnter={(event) => {
+          if (event.pointerType === "mouse") {
+            setOpen(true);
+          }
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType === "mouse") {
+            setOpen(false);
+          }
+        }}
+        onPointerDown={(event) => {
+          if (event.pointerType !== "mouse") {
+            setOpen(true);
+          }
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            setOpen(false);
+          }
+        }}
+      >
+        {DIFF_COLORS.map((option, index) => {
+          const active = index === selected;
+          return (
+            <label
+              key={option.value}
+              title={open ? option.label : undefined}
+              className="absolute top-1/2 right-2 size-3 cursor-pointer rounded-full transition-transform duration-150 ease-out-strong after:absolute after:-inset-1 motion-reduce:transition-none pointer-coarse:after:-inset-3 has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-focus"
+              style={{
+                transform: `translate(calc(-1 * ${offset(index)}), -50%)`,
+                zIndex: active
+                  ? DIFF_COLORS.length
+                  : DIFF_COLORS.length - 1 - behind.indexOf(index),
+                backgroundColor: option.color,
+                boxShadow: active
+                  ? "0 0 0 2px var(--color-surface-2), 0 0 0 3.5px var(--color-text)"
+                  : "0 0 0 1.5px var(--color-surface-2)",
+              }}
+            >
+              <input
+                type="radio"
+                name={name}
+                value={option.value}
+                checked={active}
+                aria-label={option.label}
+                className="sr-only"
+                onChange={() => onChange(option.value)}
+              />
+            </label>
+          );
+        })}
+      </fieldset>
+    </Tooltip>
   );
 }
 
@@ -423,9 +527,7 @@ function KeyTooltip({
   return keyName === undefined ? (
     children
   ) : (
-    <Tooltip label={`${label}, press ${keyName}`} className="lg:hidden">
-      {children}
-    </Tooltip>
+    <Tooltip label={`${label}, press ${keyName}`}>{children}</Tooltip>
   );
 }
 
@@ -791,7 +893,7 @@ function Frame({
   scale,
   caption,
   overlay,
-  overlayColor = "green",
+  overlayColor = "magenta",
   size,
   highlighted = false,
 }: {
@@ -935,7 +1037,7 @@ function Segmented<Value extends string>({
   onChange: (value: Value) => void;
 }) {
   return (
-    <fieldset aria-label={label} className="flex min-w-0 flex-wrap">
+    <fieldset aria-label={label} className="flex min-w-0 flex-wrap gap-0.5">
       {options.map((option) => {
         const active = option.value === value;
         const OptionIcon = option.icon;
@@ -948,10 +1050,8 @@ function Segmented<Value extends string>({
             <button
               type="button"
               aria-pressed={active}
-              className={`flex h-7 items-center gap-1.5 rounded-[9px] px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
-                active
-                  ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
-                  : "text-muted hover:text-text"
+              className={`flex h-7 items-center gap-1.5 rounded-sm px-2 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
+                active ? "bg-hover text-text" : "text-muted hover:text-text"
               }`}
               onClick={() => onChange(option.value)}
             >
@@ -964,7 +1064,6 @@ function Segmented<Value extends string>({
               ) : (
                 option.label
               )}
-              {option.key !== undefined && <KeyChip keyName={option.key} />}
             </button>
           </KeyTooltip>
         );

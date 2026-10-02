@@ -13,6 +13,7 @@ import {
   unchanged,
   useFixtureBuild,
 } from "./fixtureBuild";
+import { SCALE_SNAPSHOTS } from "./scaleFixture";
 import type { Build } from "./types";
 
 function notStored(snapshot: FixtureSnapshot): FixtureSnapshot {
@@ -79,6 +80,15 @@ const FIXTURES: Record<number, BuildFixture> = {
         ? notStored(snapshot)
         : snapshot,
     ),
+    reviewer: "octocat",
+  },
+  4: {
+    build: {
+      ...BASE_BUILD,
+      number: 4,
+      commitMessage: "Round the buttons and tighten the header",
+    },
+    snapshots: SCALE_SNAPSHOTS,
     reviewer: "octocat",
   },
 };

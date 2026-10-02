@@ -246,6 +246,8 @@ export const builds = pgTable(
     ciProvider: text(),
     ciRunUrl: text(),
     finalizedAt: time(),
+    browsers: text().array().notNull().default([]),
+    buildAction: text().$type<"approve" | "reject">(),
   },
   (table) => [
     uniqueIndex().on(table.projectId, table.number),
@@ -316,10 +318,30 @@ export const reviews = pgTable(
     userId: text(),
     action: text().$type<"approve" | "reject" | "undo">().notNull(),
     source: text()
-      .$type<"user" | "approve_all" | "carry_over" | "auto_branch" | "orphan">()
+      .$type<
+        | "user"
+        | "approve_all"
+        | "reject_all"
+        | "carry_over"
+        | "auto_branch"
+        | "orphan"
+      >()
       .notNull(),
     sourceReviewId: text(),
     comment: text(),
+  },
+  (table) => [index().on(table.snapshotId), index().on(table.buildId)],
+);
+
+export const comments = pgTable(
+  "comments",
+  {
+    _id: id(),
+    _creationTime: creationTime(),
+    snapshotId: text().notNull(),
+    buildId: text().notNull(),
+    userId: text().notNull(),
+    body: text().notNull(),
   },
   (table) => [index().on(table.snapshotId), index().on(table.buildId)],
 );

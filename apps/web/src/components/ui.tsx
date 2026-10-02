@@ -120,7 +120,13 @@ export function BuildStatePill({
 }: {
   status: BuildStatus;
   conclusion: BuildConclusion | null;
-  counts: { pending: number; changed: number; added: number; rejected: number };
+  counts: {
+    pending: number;
+    approved: number;
+    changed: number;
+    added: number;
+    rejected: number;
+  };
   shards: { done: number; total: number | null };
   storageBlocked: boolean;
 }) {
@@ -176,7 +182,9 @@ export function BuildStatePill({
     default:
       return (
         <Pill tone="pending" icon={CircleIcon}>
-          {formatCount(counts.pending)} to review
+          {formatCount(counts.pending)}/
+          {formatCount(counts.pending + counts.approved + counts.rejected)} to
+          review
         </Pill>
       );
   }
@@ -223,21 +231,9 @@ export function Spinner({
   );
 }
 
-export function Kbd({
-  children,
-  inverted = false,
-}: {
-  children: ReactNode;
-  inverted?: boolean;
-}) {
+export function Kbd({ children }: { children: ReactNode }) {
   return (
-    <kbd
-      className={`inline-flex h-5 min-w-5 items-center justify-center rounded-xs px-[5px] font-mono text-2xs font-normal ${
-        inverted
-          ? "bg-accent-fg/15 text-accent-fg/80"
-          : "bg-surface text-muted shadow-[inset_0_0_0_1px_var(--color-border)]"
-      }`}
-    >
+    <kbd className="inline-flex h-4 min-w-4 align-middle items-center justify-center rounded-[4px] bg-surface px-1 font-mono text-[10px] leading-none font-normal text-muted shadow-[inset_0_0_0_1px_var(--color-border)]">
       {children}
     </kbd>
   );
@@ -276,28 +272,30 @@ export function buttonClass(
   variant: keyof typeof BUTTON_VARIANTS = "secondary",
   size: keyof typeof BUTTON_SIZES = "md",
 ) {
-  return `inline-flex shrink-0 items-center justify-center rounded-control font-medium whitespace-nowrap transition-colors duration-100 select-none disabled:pointer-events-none disabled:opacity-45 aria-disabled:cursor-not-allowed aria-disabled:opacity-45 pointer-coarse:min-h-11 ${BUTTON_SIZES[size]} ${BUTTON_VARIANTS[variant]}`;
+  return `inline-flex shrink-0 items-center justify-center rounded-control font-medium whitespace-nowrap transition-colors duration-100 select-none disabled:pointer-events-none disabled:opacity-45 aria-disabled:cursor-not-allowed aria-disabled:opacity-45 ${BUTTON_SIZES[size]} ${BUTTON_VARIANTS[variant]}`;
 }
 
 export function Tooltip({
   label,
   align = "start",
   className = "",
+  wrapperClassName = "inline-flex",
   children,
 }: {
   label: string;
   align?: "start" | "end";
   className?: string;
+  wrapperClassName?: string;
   children: ReactElement<{ "aria-describedby"?: string }>;
 }) {
   const id = useId();
   return (
-    <span className="group/tooltip relative inline-flex">
+    <span className={`group/tooltip relative ${wrapperClassName}`}>
       {cloneElement(children, { "aria-describedby": id })}
       <span
         role="tooltip"
         id={id}
-        className={`pointer-events-none invisible absolute top-full z-40 mt-1.5 w-max max-w-64 rounded-md bg-surface px-2.5 py-1.5 text-xs font-normal text-text opacity-0 shadow-tooltip ring-1 ring-border transition-opacity duration-100 group-focus-within/tooltip:visible group-focus-within/tooltip:opacity-100 group-hover/tooltip:visible group-hover/tooltip:opacity-100 ${
+        className={`pointer-events-none invisible absolute top-full z-40 mt-1.5 w-max max-w-64 rounded-md bg-surface px-2.5 py-1.5 text-xs font-normal text-text opacity-0 shadow-tooltip ring-1 ring-border transition-opacity duration-100 group-has-focus-visible/tooltip:visible group-has-focus-visible/tooltip:opacity-100 group-hover/tooltip:visible group-hover/tooltip:opacity-100 ${
           align === "end" ? "right-0" : "left-0"
         } ${className}`}
       >

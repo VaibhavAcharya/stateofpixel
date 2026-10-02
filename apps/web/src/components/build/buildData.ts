@@ -48,6 +48,10 @@ export type BuildData = {
   ) => Record<DiffStatus, SnapshotList>;
   useSnapshot: (args: SnapshotArgs) => Snapshot | null | undefined;
   useApplyReview: () => (args: ReviewArgs) => Promise<unknown>;
+  useAddComment: () => (args: {
+    snapshotId: Id<"snapshots">;
+    body: string;
+  }) => Promise<unknown>;
   useSelection: (params: BuildLinkParams) => Selection;
 };
 
@@ -103,16 +107,23 @@ function useApplyReview() {
     const next = NEXT_STATE[args.action];
     const ids =
       args.snapshotIds === "all" ? null : new Set<string>(args.snapshotIds);
+    const buildAction = store
+      .getAllQueries(api.builds.get)
+      .find(({ value }) => value?.buildId === args.buildId)?.value?.buildAction;
+    const known = ids !== null || buildAction === null;
     const previous = new Map<string, Exclude<ReviewState, "none">>();
     const review = <Row extends { id: string; reviewState: ReviewState }>(
       row: Row,
     ): Row => {
       const current = row.reviewState;
-      if (
-        current === "none" ||
-        current === next ||
-        (ids === null ? current !== "pending" : !ids.has(row.id))
-      ) {
+      const selected =
+        ids !== null
+          ? ids.has(row.id)
+          : known &&
+            (args.action === "undo"
+              ? current !== "pending"
+              : current === "pending");
+      if (current === "none" || current === next || !selected) {
         return row;
       }
       previous.set(row.id, current);
@@ -139,14 +150,21 @@ function useApplyReview() {
 
     const reviewCounts = (counts: Build["counts"]) => {
       const result = { ...counts };
-      if (ids === null) {
-        result[next] += result.pending;
-        result.pending = 0;
-      } else {
+      if (!known) {
+        return result;
+      }
+      if (ids !== null) {
         for (const state of previous.values()) {
           result[state]--;
           result[next]++;
         }
+      } else if (args.action === "undo") {
+        result.pending += result.approved + result.rejected;
+        result.approved = 0;
+        result.rejected = 0;
+      } else {
+        result[next] += result.pending;
+        result.pending = 0;
       }
       return result;
     };
@@ -160,6 +178,12 @@ function useApplyReview() {
           ...value,
           counts,
           conclusion: conclude(counts),
+          buildAction:
+            ids !== null
+              ? value.buildAction
+              : args.action === "undo"
+                ? null
+                : args.action,
         });
         updated.set(`${queryArgs.owner}/${queryArgs.name}`, value.number);
       }
@@ -184,6 +208,10 @@ function useApplyReview() {
   });
 }
 
+function useAddComment() {
+  return useMutation(api.comments.add);
+}
+
 function useSelection(params: BuildLinkParams): Selection {
   const { snapshotId } = useParams({ strict: false });
   const navigate = useNavigate();
@@ -202,6 +230,7 @@ export const BUILD_DATA: BuildData = {
   useSnapshotGroups,
   useSnapshot,
   useApplyReview,
+  useAddComment,
   useSelection,
 };
 

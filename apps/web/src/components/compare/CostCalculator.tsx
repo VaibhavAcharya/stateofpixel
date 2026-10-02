@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CHECKED, type Priced } from "../../content/compare";
+import { track } from "../../lib/analytics";
 import {
   ARGOS,
   CHROMATIC,
@@ -15,7 +16,8 @@ import {
   gigabytes,
   monthlyPrice,
 } from "../landing/Pricing";
-import { SECTION } from "../landing/sections";
+import { SECTION, WIDE } from "../landing/sections";
+import { RangeSlider } from "../RangeSlider";
 import { LeadCopy, Logo } from "../ui";
 
 const count = new Intl.NumberFormat("en-US");
@@ -105,7 +107,9 @@ export function quote(suite: Suite, competitors: Priced[]) {
       name,
       logo,
       plan:
-        extra > 0 ? `${plan.name} + ${count.format(extra)} extra` : plan.name,
+        extra > 0 && plan.extra !== null
+          ? `${plan.name} ${formatPrice(plan.price)} + ${count.format(extra)} extra at ${formatPrice(plan.extra * 1000)} per 1,000`
+          : plan.name,
       cost: Math.round(cost),
     };
   });
@@ -127,7 +131,13 @@ export function BillLogo({ bill, size }: { bill: Bill; size: number }) {
   );
 }
 
-export function CostCalculator({ competitors }: { competitors: Priced[] }) {
+export function CostCalculator({
+  competitors,
+  flushTop = false,
+}: {
+  competitors: Priced[];
+  flushTop?: boolean;
+}) {
   const [suite, setSuite] = useState(DEFAULT_SUITE);
   const { snapshots, bills } = quote(suite, competitors);
   const max = Math.max(...bills.map((bill) => bill.cost ?? 0), 1);
@@ -136,7 +146,10 @@ export function CostCalculator({ competitors }: { competitors: Priced[] }) {
   const saved =
     ours?.cost === null || ours === undefined ? 0 : cheapest - ours.cost;
   return (
-    <section id="cost" className={`${SECTION} scroll-mt-16`}>
+    <section
+      id="cost"
+      className={`${flushTop ? `${WIDE} pb-24 max-sm:pb-12` : SECTION} scroll-mt-16`}
+    >
       <LeadCopy title="Price it for your suite." className="max-w-[720px]">
         Move the sliders. Every tool here bills for this many screenshots a
         month, except stateofpixel.
@@ -151,19 +164,30 @@ export function CostCalculator({ competitors }: { competitors: Priced[] }) {
                   {count.format(suite[slider.key])}
                 </span>
               </span>
-              <input
-                type="range"
+              <RangeSlider
                 min={slider.min}
                 max={slider.max}
                 step={slider.step}
                 value={suite[slider.key]}
+                onPointerUp={() =>
+                  track("Suite slider", {
+                    slider: slider.key,
+                    value: suite[slider.key],
+                  })
+                }
+                onKeyUp={() =>
+                  track("Suite slider", {
+                    slider: slider.key,
+                    value: suite[slider.key],
+                  })
+                }
                 onChange={(event) =>
                   setSuite({
                     ...suite,
                     [slider.key]: Number(event.target.value),
                   })
                 }
-                className="w-full accent-(--color-text)"
+                className="w-full"
               />
             </label>
           ))}

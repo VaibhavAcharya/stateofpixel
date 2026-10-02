@@ -101,6 +101,7 @@ async function setup({ private: isPrivate = true } = {}) {
           status: "finalized",
           conclusion: "changes",
           baselineBuildId: baselineId,
+          browsers: ["chromium"],
         })
         .returning({ _id: builds._id }),
     );
@@ -272,6 +273,7 @@ it("lists builds by branch and returns build and snapshot details", async () => 
     buildId,
     baseline: { number: 1, branch: "main" },
     supersededBy: null,
+    browsers: ["chromium"],
   });
   expect(await user.query(api.builds.get, { ...repo, number: 9 })).toBeNull();
 
@@ -287,6 +289,7 @@ it("lists builds by branch and returns build and snapshot details", async () => 
       diffStatus: "changed",
       reviewState: "pending",
       diffRatio: 0.01,
+      browser: "chromium",
     },
   ]);
 
@@ -305,6 +308,45 @@ it("lists builds by branch and returns build and snapshot details", async () => 
     lastReview: null,
     flaky: null,
   });
+});
+
+it("stores the browsers of a build from snapshot metadata on finalize", async () => {
+  const { t, user, grant, buildId } = await setup();
+  await grant("read");
+  await t.run(async (ctx) => {
+    await ctx.db
+      .update(builds)
+      .set({ status: "pending", browsers: [] })
+      .where(eq(builds._id, buildId));
+    await ctx.db.insert(snapshots).values(
+      [{ browser: "webkit" }, { browser: "chromium" }, { browser: 1 }].map(
+        (metadata, index) => ({
+          buildId,
+          shardIndex: 1,
+          name: `Page ${index}`,
+          diffStatus: "unchanged" as const,
+          reviewState: "none" as const,
+          metadata,
+        }),
+      ),
+    );
+  });
+  await t.mutation(internal.builds.finalize, { buildId, cursor: null });
+
+  expect(
+    await user.query(api.builds.get, { ...repo, number: 2 }),
+  ).toMatchObject({ browsers: ["chromium", "webkit"] });
+  const unchanged = await user.query(api.snapshots.list, {
+    buildId,
+    diffStatus: "unchanged",
+    paginationOpts: firstPage,
+  });
+  expect(unchanged.page.map((row) => row.browser)).toEqual([
+    null,
+    "webkit",
+    "chromium",
+    null,
+  ]);
 });
 
 it("flags a snapshot that flips between images or differs on the same commit", async () => {
@@ -623,6 +665,20 @@ it("approves, rejects and undoes a snapshot and updates the build", async () => 
     login: "octocat",
     comment: "Header moved",
   });
+  await user.mutation(api.comments.add, {
+    snapshotId,
+    body: " The nav moved 2px. ",
+  });
+  await expect(
+    user.mutation(api.comments.add, { snapshotId, body: "  " }),
+  ).rejects.toThrow(/invalid_comment/);
+  expect(
+    (await user.query(api.snapshots.get, { ...repo, number: 2, snapshotId }))
+      ?.comments,
+  ).toMatchObject([
+    { action: "reject", login: "octocat", body: "Header moved" },
+    { action: null, login: "octocat", body: "The nav moved 2px." },
+  ]);
 
   await user.mutation(api.reviews.apply, {
     buildId,
@@ -721,6 +777,95 @@ it("approves every pending snapshot with approve all", async () => {
     "approve_all",
     "approve_all",
   ]);
+});
+
+it("undoes a build action, then every review once no build action is left", async () => {
+  const { t, user, grant, buildId, snapshotId, userId } = await setup();
+  await grant("write");
+  await t.run(async (ctx) => {
+    for (const name of ["A", "B", "C"]) {
+      await ctx.db.insert(snapshots).values({
+        buildId,
+        shardIndex: 1,
+        name,
+        diffStatus: "added",
+        reviewState: "pending",
+        metadata: {},
+      });
+    }
+    const build = first(
+      await ctx.db.select().from(builds).where(eq(builds._id, buildId)),
+    );
+    if (build) {
+      await ctx.db
+        .update(builds)
+        .set({ counts: { ...build.counts, added: 3, pending: 4 } })
+        .where(eq(builds._id, buildId));
+    }
+  });
+  const buildAction = () =>
+    t.run(
+      async (ctx) =>
+        first(await ctx.db.select().from(builds).where(eq(builds._id, buildId)))
+          ?.buildAction,
+    );
+
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: [snapshotId],
+    action: "approve",
+  });
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: "all",
+    action: "reject",
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    counts: { pending: 0, approved: 1, rejected: 3 },
+  });
+  expect(await buildAction()).toBe("reject");
+
+  await t.mutation(internal.reviews.applyAll, {
+    buildId,
+    action: "approve",
+    userId,
+    diffStatus: "added",
+    cursor: null,
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    counts: { pending: 0, approved: 1, rejected: 3 },
+  });
+
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: "all",
+    action: "approve",
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    conclusion: "approved",
+    counts: { pending: 0, approved: 4, rejected: 0 },
+  });
+  expect(await buildAction()).toBe("approve");
+
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: "all",
+    action: "undo",
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    conclusion: "changes",
+    counts: { pending: 3, approved: 1, rejected: 0 },
+  });
+  expect(await buildAction()).toBeNull();
+
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: "all",
+    action: "undo",
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    counts: { pending: 4, approved: 0, rejected: 0 },
+  });
 });
 
 it("saves settings for admins only and checks the values", async () => {

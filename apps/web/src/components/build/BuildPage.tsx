@@ -1,6 +1,4 @@
 import {
-  CaretDownIcon,
-  CaretUpIcon,
   MagnifyingGlassIcon,
   SidebarSimpleIcon,
   XIcon,
@@ -25,20 +23,28 @@ import {
   SIDEBAR_MIN_WIDTH,
   useSidebarWidth,
 } from "../../lib/useSidebarWidth";
+import { SelectMenu } from "../ListControls";
 import { Toasts, useToasts } from "../Toast";
 import {
   buttonClass,
   type DiffStatus,
-  Kbd,
   LeadCopy,
   Skeleton,
   Spinner,
+  Tooltip,
 } from "../ui";
-import { MODES, useViewerSettings } from "../Viewer";
-import { Banners, BuildHeader } from "./BuildHeader";
+import { DIFF_COLORS, MODES, useViewerSettings } from "../Viewer";
+import { Banners, BuildHeader, buildVerdict } from "./BuildHeader";
 import { type ReviewAction, useBuildData } from "./buildData";
 import { SnapshotDetail } from "./SnapshotDetail";
 import { SnapshotGroup } from "./SnapshotGroup";
+import {
+  groupStories,
+  itemRows,
+  representative,
+  type SnapshotItem,
+  someBrowsersFirst,
+} from "./stories";
 import type { Build, SnapshotRow } from "./types";
 
 const GROUPS: { status: DiffStatus; label: string }[] = [
@@ -50,6 +56,7 @@ const GROUPS: { status: DiffStatus; label: string }[] = [
 ];
 
 const PREFETCH_PENDING = 3;
+const SNAPSHOTS_PER_CALL = 100;
 
 const ACTION_VERBS: Record<ReviewAction, string> = {
   approve: "approve",
@@ -112,13 +119,18 @@ export function BuildPage({
   track?: typeof trackEvent;
 }) {
   const [filter, setFilter] = useState("");
+  const [browser, setBrowser] = useState<string>();
   const [collapsed, setCollapsed] = useState<Set<DiffStatus>>(
     () => new Set(["unchanged"]),
   );
-  const [rejecting, setRejecting] = useState(false);
+  const [closedStories, setClosedStories] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [selectedStory, setSelectedStory] = useState<string>();
   const { open: shortcutsOpen, setOpen: setShortcutsOpen } =
     useContext(ShortcutsContext);
   const [listOpen, setListOpen] = useState(false);
+  const [commenting, setCommenting] = useState(false);
   const filterInput = useRef<HTMLInputElement>(null);
   const settings = useViewerSettings();
   const { toasts, show, dismiss } = useToasts();
@@ -126,6 +138,7 @@ export function BuildPage({
   const linkParams = { owner, repo, number: String(build.number) };
   const { snapshotId, select: selectId } = data.useSelection(linkParams);
   const applyReview = data.useApplyReview();
+  const addComment = data.useAddComment();
   const groups = data.useSnapshotGroups(
     build.buildId,
     build.counts,
@@ -135,15 +148,67 @@ export function BuildPage({
     canWrite && build.status === "finalized" && !build.superseded;
 
   const needle = filter.trim().toLowerCase();
+  const activeBrowser =
+    browser !== undefined && build.browsers.includes(browser)
+      ? browser
+      : undefined;
   const visible = (rows: SnapshotRow[]) =>
-    needle === ""
-      ? rows
-      : rows.filter((row) => row.name.toLowerCase().includes(needle));
+    rows.filter(
+      (row) =>
+        (needle === "" || row.name.toLowerCase().includes(needle)) &&
+        (activeBrowser === undefined || row.browser === activeBrowser),
+    );
+  const groupEntries = (status: DiffStatus) =>
+    someBrowsersFirst(
+      groupStories(visible(groups[status].results)),
+      activeBrowser === undefined ? build.browsers : [],
+    );
+  const groupItems = (status: DiffStatus) =>
+    groupEntries(status).map((entry) => entry.item);
   const ordered = GROUPS.flatMap((group) =>
-    collapsed.has(group.status) ? [] : visible(groups[group.status].results),
+    collapsed.has(group.status)
+      ? []
+      : groupItems(group.status).flatMap((item): SnapshotItem[] =>
+          item.kind === "story" &&
+          !closedStories.has(item.key) &&
+          !(
+            selectedStory === item.key &&
+            item.rows.some((row) => row.id === snapshotId)
+          )
+            ? item.rows.map((row) => ({ kind: "row", row }))
+            : [item],
+        ),
   );
-  const currentIndex = ordered.findIndex((row) => row.id === snapshotId);
+  const currentIndex = ordered.findIndex((item) =>
+    itemRows(item).some((row) => row.id === snapshotId),
+  );
   const current = currentIndex === -1 ? undefined : ordered[currentIndex];
+  const reviewableRows = (item: SnapshotItem | undefined) =>
+    item === undefined
+      ? []
+      : itemRows(item).filter((row) => row.reviewState !== "none");
+
+  const toggleStory = (key: string) =>
+    setClosedStories((value) => {
+      const next = new Set(value);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  const currentStoryKey = () => {
+    const row = current === undefined ? undefined : itemRows(current)[0];
+    if (row === undefined) {
+      return undefined;
+    }
+    return groupItems(row.diffStatus).find(
+      (item) =>
+        item.kind === "story" &&
+        item.rows.some((storyRow) => storyRow.id === snapshotId),
+    );
+  };
 
   const toggleGroup = (status: DiffStatus) =>
     setCollapsed((value) => {
@@ -156,18 +221,23 @@ export function BuildPage({
       return next;
     });
 
-  const select = (row: SnapshotRow | undefined) => {
-    if (row !== undefined) {
+  const select = (item: SnapshotItem | undefined) => {
+    if (item !== undefined) {
+      setSelectedStory(undefined);
       settings.setShowBaseline(false);
       settings.setView(null);
-      selectId(row.id);
+      selectId(representative(item).id);
     }
   };
   const selectNext = () => select(ordered[currentIndex + 1] ?? ordered[0]);
   const selectPrevious = () =>
     select(ordered[currentIndex - 1] ?? ordered[ordered.length - 1]);
 
-  const firstId = ordered.find((row) => row.diffStatus !== "unchanged")?.id;
+  const firstItem = ordered.find(
+    (item) => itemRows(item)[0]?.diffStatus !== "unchanged",
+  );
+  const firstId =
+    firstItem === undefined ? undefined : representative(firstItem).id;
   useEffect(() => {
     if (snapshotId === undefined && firstId !== undefined) {
       selectId(firstId, { replace: true });
@@ -185,42 +255,55 @@ export function BuildPage({
     previousConclusion.current = build.conclusion;
   }, [build.conclusion, show]);
 
-  const review = (
-    action: ReviewAction,
-    row: SnapshotRow | undefined,
-    comment?: string,
-  ) => {
-    if (!canReview || row === undefined || row.reviewState === "none") {
+  const review = (action: ReviewAction, item: SnapshotItem | undefined) => {
+    const rows = reviewableRows(item);
+    if (!canReview || item === undefined || rows.length === 0) {
       return;
     }
-    track("Review", { action });
-    applyReview({
-      buildId: build.buildId,
-      snapshotIds: [row.id],
-      action,
-      comment,
-    }).catch((error: unknown) => {
+    const name = item.kind === "row" ? item.row.name : item.name;
+    track("Review", { action, count: rows.length });
+    const calls = [];
+    for (let start = 0; start < rows.length; start += SNAPSHOTS_PER_CALL) {
+      calls.push(
+        applyReview({
+          buildId: build.buildId,
+          snapshotIds: rows
+            .slice(start, start + SNAPSHOTS_PER_CALL)
+            .map((row) => row.id),
+          action,
+        }),
+      );
+    }
+    Promise.all(calls).catch((error: unknown) => {
       const reason =
         errorCode(error) === "build_not_reviewable"
           ? " This build can no longer be reviewed."
           : " Your change was undone.";
-      show("error", `Could not ${ACTION_VERBS[action]} ${row.name}.${reason}`);
+      show("error", `Could not ${ACTION_VERBS[action]} ${name}.${reason}`);
     });
   };
 
-  const approveAndAdvance = () => {
-    if (current === undefined || current.reviewState === "none") {
+  const reviewAndAdvance = (action: "approve" | "reject") => {
+    if (!canReview || reviewableRows(current).length === 0) {
       return;
     }
-    review("approve", current);
+    review(action, current);
     select(nextPending);
+  };
+
+  const openComments = () => {
+    if (current !== undefined) {
+      setCommenting(true);
+    }
   };
 
   const pendingAhead = [
     ...ordered.slice(currentIndex + 1),
     ...ordered.slice(0, currentIndex),
   ]
-    .filter((row) => row.reviewState === "pending")
+    .filter((item) =>
+      itemRows(item).some((row) => row.reviewState === "pending"),
+    )
     .slice(0, PREFETCH_PENDING);
   const nextPending = pendingAhead[0];
   const neighbours = new Set(
@@ -228,18 +311,22 @@ export function BuildPage({
       ordered[currentIndex + 1] ?? ordered[0],
       ordered[currentIndex - 1] ?? ordered[ordered.length - 1],
       ...pendingAhead,
-    ].flatMap((row) =>
-      row === undefined || row.id === snapshotId ? [] : [row.id],
-    ),
+    ].flatMap((item) => {
+      if (item === undefined) {
+        return [];
+      }
+      const id = representative(item).id;
+      return id === snapshotId ? [] : [id];
+    }),
   );
 
-  const reviewAll = (action: "approve" | "reject") => {
+  const reviewAll = (action: ReviewAction) => {
     if (!canReview) {
       return;
     }
     track("Review all", { action });
     applyReview({ buildId: build.buildId, snapshotIds: "all", action }).catch(
-      () => show("error", `Could not ${action} all snapshots.`),
+      () => show("error", `Could not ${ACTION_VERBS[action]} the build.`),
     );
   };
 
@@ -254,10 +341,10 @@ export function BuildPage({
         event.ctrlKey ||
         event.altKey ||
         target?.closest(
-          "input:not([type=range]), textarea, select, [contenteditable]",
+          "input:not([type=range]), textarea, select, [contenteditable], dialog",
         ) ||
         shortcutsOpen ||
-        rejecting
+        commenting
       ) {
         return;
       }
@@ -267,6 +354,9 @@ export function BuildPage({
         return;
       }
       switch (event.key) {
+        case "Escape":
+          setListOpen(false);
+          break;
         case "j":
           selectNext();
           break;
@@ -274,25 +364,62 @@ export function BuildPage({
           selectPrevious();
           break;
         case "a":
-          approveAndAdvance();
+          reviewAndAdvance("approve");
           break;
         case "A":
           reviewAll("approve");
           break;
-        case "r":
-          if (canReview && current && current.reviewState !== "none") {
-            event.preventDefault();
-            setRejecting(true);
+        case "R":
+          reviewAll("reject");
+          break;
+        case "U":
+          if (buildVerdict(build) !== "none") {
+            reviewAll("undo");
           }
+          break;
+        case "r":
+          reviewAndAdvance("reject");
+          break;
+        case "m":
+          event.preventDefault();
+          openComments();
           break;
         case "u":
           review("undo", current);
           break;
+        case "l": {
+          const story = currentStoryKey();
+          if (story?.kind === "story" && closedStories.has(story.key)) {
+            toggleStory(story.key);
+          }
+          break;
+        }
+        case "h": {
+          const story = currentStoryKey();
+          if (story?.kind === "story" && !closedStories.has(story.key)) {
+            toggleStory(story.key);
+          }
+          break;
+        }
         case "d":
           if (settings.mode === "side") {
             settings.setSideDiff(!settings.sideDiff);
           } else if (settings.mode === "diff") {
             settings.setDiffOnly(!settings.diffOnly);
+          }
+          break;
+        case "c":
+          if (
+            (settings.mode === "side" && settings.sideDiff) ||
+            settings.mode === "diff"
+          ) {
+            const index = DIFF_COLORS.findIndex(
+              (option) => option.value === settings.diffColor,
+            );
+            const next = DIFF_COLORS[(index + 1) % DIFF_COLORS.length];
+            if (next !== undefined) {
+              settings.setDiffColor(next.value);
+            }
           }
           break;
         case " ":
@@ -344,6 +471,7 @@ export function BuildPage({
         canReview={canReview}
         onApproveAll={() => reviewAll("approve")}
         onRejectAll={() => reviewAll("reject")}
+        onUndoAll={() => reviewAll("undo")}
       />
       <Banners build={build} owner={owner} repo={repo} />
       <div className="relative flex min-h-0 flex-1">
@@ -367,11 +495,37 @@ export function BuildPage({
               : "lg:w-(--sidebar-width)"
           } ${listOpen ? "max-lg:animate-fade" : "max-lg:hidden"}`}
         >
-          <FilterInput
-            inputRef={filterInput}
-            value={filter}
-            onChange={setFilter}
-          />
+          <div className="flex shrink-0 items-center">
+            <FilterInput
+              inputRef={filterInput}
+              value={filter}
+              onChange={setFilter}
+            />
+            <button
+              type="button"
+              aria-label="Close snapshot list"
+              className={`mr-2 ${buttonClass("ghost", "icon")} lg:hidden`}
+              onClick={() => setListOpen(false)}
+            >
+              <XIcon size={16} />
+            </button>
+          </div>
+          {build.browsers.length > 1 && (
+            <div className="shrink-0 px-2 pb-2">
+              <SelectMenu
+                label="Browser"
+                value={activeBrowser}
+                options={[
+                  { value: undefined, label: "All" },
+                  ...build.browsers.map((value) => ({ value, label: value })),
+                ]}
+                onChange={(value) => {
+                  track("Browser filter", { browser: value ?? "all" });
+                  setBrowser(value);
+                }}
+              />
+            </div>
+          )}
           <nav
             aria-label="Snapshots"
             className="min-h-0 flex-1 overflow-y-auto px-2 pb-3"
@@ -387,14 +541,19 @@ export function BuildPage({
                     count={build.counts[group.status]}
                     open={!collapsed.has(group.status)}
                     onToggle={() => toggleGroup(group.status)}
-                    rows={visible(query.results)}
+                    entries={groupEntries(group.status)}
+                    closedStories={closedStories}
+                    onToggleStory={toggleStory}
+                    browsers={build.browsers}
                     loading={query.status === "LoadingFirstPage"}
                     canLoadMore={query.status === "CanLoadMore"}
                     onLoadMore={() => query.loadMore(200)}
                     selectedId={snapshotId}
+                    selectedStory={selectedStory}
                     linkParams={links ? linkParams : null}
-                    onSelect={(row) => {
+                    onSelect={(row, story) => {
                       setListOpen(false);
+                      setSelectedStory(story);
                       if (!links) {
                         selectId(row.id);
                       }
@@ -419,10 +578,18 @@ export function BuildPage({
             aria-valuemax={SIDEBAR_MAX_WIDTH}
             tabIndex={0}
             title="Drag to resize, double-click to reset"
-            className={`absolute inset-y-0 m-0 h-auto border-0 -right-[3px] z-10 w-[5px] cursor-col-resize touch-none transition-colors duration-100 hover:bg-link focus-visible:bg-link max-lg:hidden ${
+            className={`peer absolute inset-y-0 m-0 h-auto border-0 -right-[3px] z-10 w-[5px] cursor-col-resize touch-none transition-colors duration-100 hover:bg-link focus-visible:bg-link max-lg:hidden ${
               sidebar.resizing ? "bg-link" : ""
             }`}
             {...sidebar.handleProps}
+          />
+          <span
+            aria-hidden
+            className={`pointer-events-none absolute top-1/2 -right-0.5 z-10 h-4 w-[3px] -translate-y-1/2 rounded-full transition-colors duration-100 max-lg:hidden ${
+              sidebar.resizing
+                ? "bg-link"
+                : "bg-field-border/60 peer-hover:bg-link peer-focus-visible:bg-link"
+            }`}
           />
         </aside>
         <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface">
@@ -440,23 +607,27 @@ export function BuildPage({
               snapshotId={snapshotId as Id<"snapshots">}
               settings={settings}
               headings={headings}
-              canWrite={canWrite}
               canReview={canReview}
-              rejecting={rejecting}
-              onStartReject={() => setRejecting(true)}
-              onCancelReject={() => setRejecting(false)}
-              onApprove={approveAndAdvance}
-              onReject={(comment) => {
-                setRejecting(false);
-                review("reject", current, comment);
+              onApprove={() => reviewAndAdvance("approve")}
+              onReject={() => reviewAndAdvance("reject")}
+              commenting={commenting}
+              onOpenComments={openComments}
+              onCloseComments={() => setCommenting(false)}
+              onComment={(body) => {
+                track("Comment");
+                addComment({
+                  snapshotId: snapshotId as Id<"snapshots">,
+                  body,
+                }).catch(() => show("error", "Could not add the comment."));
               }}
               onUndo={() => review("undo", current)}
+              story={current?.kind === "story" ? current.rows : undefined}
+              onPrevious={selectPrevious}
+              onNext={selectNext}
               navigation={
                 <SnapshotNavigation
                   position={currentIndex + 1}
                   total={ordered.length}
-                  onPrevious={selectPrevious}
-                  onNext={selectNext}
                   onOpenList={() => setListOpen(true)}
                 />
               }
@@ -473,7 +644,7 @@ export function BuildPage({
           snapshotId={id}
         />
       ))}
-      <Toasts toasts={toasts} dismiss={dismiss} />
+      <Toasts toasts={toasts} dismiss={dismiss} className="bottom-16" />
     </>
   );
 }
@@ -534,14 +705,10 @@ function NoSelection({
 function SnapshotNavigation({
   position,
   total,
-  onPrevious,
-  onNext,
   onOpenList,
 }: {
   position: number;
   total: number;
-  onPrevious: () => void;
-  onNext: () => void;
   onOpenList: () => void;
 }) {
   return (
@@ -559,24 +726,6 @@ function SnapshotNavigation({
       <span className="px-1 text-xs text-muted tabular-nums max-lg:hidden">
         {position > 0 ? `${position} of ${total}` : ""}
       </span>
-      <button
-        type="button"
-        aria-label="Previous snapshot"
-        title="Previous (k)"
-        className={buttonClass("ghost", "icon-sm")}
-        onClick={onPrevious}
-      >
-        <CaretUpIcon size={14} />
-      </button>
-      <button
-        type="button"
-        aria-label="Next snapshot"
-        title="Next (j)"
-        className={buttonClass("ghost", "icon-sm")}
-        onClick={onNext}
-      >
-        <CaretDownIcon size={14} />
-      </button>
     </div>
   );
 }
@@ -591,41 +740,39 @@ function FilterInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="shrink-0 p-2">
-      <label className="relative flex items-center">
-        <MagnifyingGlassIcon
-          size={14}
-          className="pointer-events-none absolute left-2.5 text-subtle"
-        />
-        <input
-          ref={inputRef}
-          type="search"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              event.currentTarget.blur();
-            }
-          }}
-          placeholder="Filter snapshots"
-          aria-label="Filter snapshots"
-          className="h-8 w-full rounded-md bg-surface pr-8 pl-8 text-sm shadow-[inset_0_0_0_1px_var(--color-border)] transition-shadow duration-250 ease-standard outline-none placeholder:text-subtle hover:shadow-[inset_0_0_0_1px_var(--color-field-border)] focus:shadow-field-focus [&::-webkit-search-cancel-button]:hidden"
-        />
-        {value === "" ? (
-          <span className="pointer-events-none absolute right-1.5">
-            <Kbd>/</Kbd>
-          </span>
-        ) : (
-          <button
-            type="button"
-            aria-label="Clear filter"
-            className={`absolute right-1 ${buttonClass("ghost", "icon-sm")}`}
-            onClick={() => onChange("")}
-          >
-            <XIcon size={12} />
-          </button>
-        )}
-      </label>
+    <div className="min-w-0 flex-1 p-2">
+      <Tooltip label="Filter, press /" wrapperClassName="flex">
+        <label className="relative flex w-full items-center">
+          <MagnifyingGlassIcon
+            size={14}
+            className="pointer-events-none absolute left-2.5 text-subtle"
+          />
+          <input
+            ref={inputRef}
+            type="search"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.currentTarget.blur();
+              }
+            }}
+            placeholder="Filter snapshots"
+            aria-label="Filter snapshots"
+            className="h-8 w-full rounded-md bg-surface pr-8 pl-8 text-sm shadow-[inset_0_0_0_1px_var(--color-border)] transition-shadow duration-250 ease-standard outline-none placeholder:text-subtle hover:shadow-[inset_0_0_0_1px_var(--color-field-border)] focus:shadow-field-focus [&::-webkit-search-cancel-button]:hidden"
+          />
+          {value !== "" && (
+            <button
+              type="button"
+              aria-label="Clear filter"
+              className={`absolute right-1 ${buttonClass("ghost", "icon-sm")}`}
+              onClick={() => onChange("")}
+            >
+              <XIcon size={12} />
+            </button>
+          )}
+        </label>
+      </Tooltip>
     </div>
   );
 }

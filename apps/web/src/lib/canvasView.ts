@@ -5,6 +5,7 @@ export type CanvasView = { scale: number; x: number; y: number };
 export const CANVAS_PADDING = 16;
 export const MAX_SCALE = 8;
 export const ZOOM_STEP = 1.25;
+export const ZOOM_OUT_LIMIT = 2;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -19,9 +20,11 @@ export function fitScale(viewport: Size, content: Size) {
 }
 
 function minScale(viewport: Size, content: Size) {
-  return Math.min(
-    fitScale(viewport, content),
-    room(viewport.height) / content.height,
+  return (
+    Math.min(
+      fitScale(viewport, content),
+      room(viewport.height) / content.height,
+    ) / ZOOM_OUT_LIMIT
   );
 }
 

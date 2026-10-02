@@ -34,7 +34,7 @@ function StoryViewer({
     initial.showBaseline ?? false,
   );
   const [diffOnly, setDiffOnly] = useState(initial.diffOnly ?? false);
-  const [diffColor, setDiffColor] = useState(initial.diffColor ?? "green");
+  const [diffColor, setDiffColor] = useState(initial.diffColor ?? "magenta");
   return (
     <div className="flex h-[720px] flex-col bg-surface">
       <Viewer
@@ -107,8 +107,8 @@ export const DiffOnly: Story = {
   args: { initial: { mode: "diff", diffOnly: true } },
 };
 
-export const DiffOnlyMagenta: Story = {
-  args: { initial: { mode: "diff", diffOnly: true, diffColor: "magenta" } },
+export const DiffOnlyGreen: Story = {
+  args: { initial: { mode: "diff", diffOnly: true, diffColor: "green" } },
 };
 
 export const Slider: Story = { args: { initial: { mode: "slider" } } };

@@ -8,7 +8,9 @@ export const SHORTCUT_GROUPS: { title: string; items: [string, string[]][] }[] =
       title: "Navigate",
       items: [
         ["Next / previous snapshot", ["j", "k"]],
+        ["Show / hide the snapshots of a name", ["l", "h"]],
         ["Focus filter", ["/"]],
+        ["Close the snapshot list", ["esc"]],
         ["Show shortcuts", ["?"]],
       ],
     },
@@ -16,9 +18,12 @@ export const SHORTCUT_GROUPS: { title: string; items: [string, string[]][] }[] =
       title: "Review",
       items: [
         ["Approve, move to next pending", ["a"]],
-        ["Reject with a comment", ["r"]],
+        ["Reject, move to next pending", ["r"]],
         ["Undo review", ["u"]],
-        ["Approve all pending", ["shift", "a"]],
+        ["Comments", ["m"]],
+        ["Approve build", ["shift", "a"]],
+        ["Reject build", ["shift", "r"]],
+        ["Undo the build review", ["shift", "u"]],
       ],
     },
     {
@@ -26,6 +31,7 @@ export const SHORTCUT_GROUPS: { title: string; items: [string, string[]][] }[] =
       items: [
         ["Side by side, Diff, Slider, Flip", ["1", "2", "3", "4"]],
         ["Diff overlay in Side by side, Diff only in Diff", ["d"]],
+        ["Next diff color", ["c"]],
         ["Toggle image in Flip mode", ["space"]],
         ["Move the Slider divider by 10%", ["shift", "left", "right"]],
         ["Fit / 100% zoom", ["f", "0"]],

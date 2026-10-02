@@ -13,6 +13,7 @@ export const facts = {
   imageSize: `${limits.MAX_IMAGE_BYTES / MB} MB`,
   imageDimensions: `${count(limits.MAX_IMAGE_WIDTH)} x ${count(limits.MAX_IMAGE_HEIGHT)} px`,
   snapshotNameLength: `${count(limits.MAX_SNAPSHOT_NAME_LENGTH)} characters`,
+  commentLength: `${count(limits.MAX_COMMENT_LENGTH)} characters`,
   metadataSize: `${limits.MAX_METADATA_BYTES / 1024} KB`,
   buildExpiryMinutes: limits.BUILD_EXPIRY_MS / 60_000,
   dailyBuilds: `${count(limits.DAILY_BUILDS)} a day`,

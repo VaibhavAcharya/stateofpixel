@@ -1,10 +1,11 @@
 import {
   ArrowRightIcon,
-  CaretDownIcon,
   CheckIcon,
   GearSixIcon,
   ListIcon,
+  LockSimpleIcon,
   TerminalWindowIcon,
+  UserMinusIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
@@ -21,14 +22,13 @@ import { CodeBlock, type Snippet } from "../CodeBlock";
 import { facts } from "../docs/facts";
 import { Menu, menuItemClass, useCloseMenu } from "../Menu";
 import { AuthButton, SignInButton } from "../SignIn";
-import { buttonClass, Kbd, LeadCopy, Wordmark } from "../ui";
+import { buttonClass, type Icon, Kbd, LeadCopy, Wordmark } from "../ui";
 import { ReviewDemo } from "./ReviewDemo";
 
 export const WIDE = "mx-auto max-w-[1448px] px-6 max-sm:px-4";
 export const SECTION = `${WIDE} py-24 max-sm:py-12`;
 export const LEAD =
   "text-2xl font-[450] tracking-[-0.035em] text-balance text-muted max-sm:text-xl";
-const DOTTED = "border-dotted border-field-border/50";
 
 export const DISPLAY =
   "text-[clamp(40px,4.6vw,66px)] leading-[1.1] font-semibold tracking-[-0.045em] text-balance";
@@ -277,7 +277,7 @@ export function HowSteps() {
       <div className={`${SECTION} grid grid-cols-2 gap-16 max-lg:grid-cols-1`}>
         <div>
           <LeadCopy
-            title="Works with the tests you have."
+            title="Works with the tests you already have."
             className="max-w-[520px]"
           >
             No token to copy on GitHub Actions. The first build on your default
@@ -365,37 +365,125 @@ export const ACCESS: [string, string][] = [
   ["Account owner", "Change the plan and billing"],
 ];
 
+const CAPABILITIES = [
+  "Builds and baselines",
+  "Approve and reject",
+  "Project settings",
+  "Plan and billing",
+];
+
+const ROLES: [string, number][] = [
+  ["Owner", 4],
+  ["Admin", 3],
+  ["Write", 2],
+  ["Read", 1],
+];
+
+const TEAM_FACTS: [Icon, string][] = [
+  [
+    UserMinusIcon,
+    "Remove someone from the repository and they lose access here in about 5 minutes, 15 at most.",
+  ],
+  [
+    LockSimpleIcon,
+    "Private builds show only to people who can read the repository on GitHub.",
+  ],
+];
+
 export function TeamSection() {
   return (
     <section
-      className={`${SECTION} grid grid-cols-[1fr_1.2fr] gap-12 max-lg:grid-cols-1`}
+      className={`${SECTION} grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-16 max-lg:grid-cols-1 max-lg:gap-10`}
     >
-      <LeadCopy title="Your team is already set up." className="max-w-[520px]">
-        Access comes from GitHub, so there are no invites and no seats to buy.
-        Remove someone from the repository and they lose access here in about 5
-        minutes, 15 at most.
-      </LeadCopy>
-      <table className="w-full text-sm">
+      <div>
+        <LeadCopy title="Access follows GitHub." className="max-w-[520px]">
+          There are no invites and no seats. People can do what their role on
+          the repository allows.
+        </LeadCopy>
+        <ul className="mt-10 flex flex-col">
+          {TEAM_FACTS.map(([FactIcon, text]) => (
+            <li
+              key={text}
+              className="flex gap-3 border-t border-dotted border-field-border/50 py-4 text-sm text-muted"
+            >
+              <FactIcon size={16} className="mt-0.5 shrink-0 text-text" />
+              {text}
+            </li>
+          ))}
+        </ul>
+        <Link
+          to="/docs/$slug"
+          params={{ slug: "security" }}
+          hash="who-can-see-and-do-what"
+          className="mt-2 inline-flex items-center gap-1 text-sm text-link"
+        >
+          Who can see and do what
+          <ArrowRightIcon size={12} />
+        </Link>
+      </div>
+      <table className="w-full table-fixed text-sm max-sm:hidden">
         <thead>
-          <tr className="border-b border-dotted border-field-border/50 text-left text-xs text-muted">
-            <th className="pb-3 font-medium">On GitHub</th>
-            <th className="pb-3 font-medium">On stateofpixel</th>
+          <tr className="text-left text-xs text-muted">
+            <th className="w-28 pb-3 font-medium">Role on GitHub</th>
+            {CAPABILITIES.map((capability) => (
+              <th key={capability} className="pb-3 font-medium">
+                {capability}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {ACCESS.map(([role, can]) => (
+          {ROLES.map(([role, allowed]) => (
             <tr
               key={role}
-              className="border-b border-dotted border-field-border/50"
+              className="border-t border-dotted border-field-border/50"
             >
-              <td className="py-4 pr-6 font-medium whitespace-nowrap">
+              <th scope="row" className="py-4 text-left font-medium">
                 {role}
-              </td>
-              <td className="py-4 text-muted">{can}</td>
+              </th>
+              {CAPABILITIES.map((capability, index) => (
+                <td key={capability} className="py-4">
+                  {index < allowed ? (
+                    <>
+                      <CheckIcon
+                        size={16}
+                        weight="bold"
+                        aria-hidden
+                        className="text-approved"
+                      />
+                      <span className="sr-only">Yes</span>
+                    </>
+                  ) : (
+                    <>
+                      <span aria-hidden className="text-subtle">
+                        -
+                      </span>
+                      <span className="sr-only">No</span>
+                    </>
+                  )}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
       </table>
+      <ul className="flex flex-col sm:hidden">
+        {ROLES.map(([role, allowed]) => (
+          <li
+            key={role}
+            className="border-t border-dotted border-field-border/50 py-4"
+          >
+            <span className="block text-sm font-medium">{role}</span>
+            <span className="mt-1 block text-sm text-muted">
+              {CAPABILITIES.slice(0, allowed)
+                .map((capability, index) =>
+                  index === 0 ? capability : capability.toLowerCase(),
+                )
+                .join(", ")}
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -439,35 +527,6 @@ export const PIPELINES: [string, string][] = [
   ],
 ];
 
-export function PipelinesSection() {
-  return (
-    <section className={SECTION}>
-      <LeadCopy title="Made for real pipelines." className="max-w-[720px]">
-        Sharding, merges, suites, outages and limits are handled by default.
-      </LeadCopy>
-      <DottedRows items={PIPELINES} />
-    </section>
-  );
-}
-
-export function DottedRows({ items }: { items: [string, string][] }) {
-  return (
-    <ul className="mt-12 border-t border-dotted border-field-border/50">
-      {items.map(([title, text]) => (
-        <li
-          key={title}
-          className="grid grid-cols-[minmax(0,420px)_1fr] gap-x-8 border-b border-dotted border-field-border/50 py-5 max-md:grid-cols-1"
-        >
-          <span className="text-xl font-semibold tracking-[-0.025em]">
-            {title}
-          </span>
-          <span className="text-sm text-muted md:pt-1.5">{text}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 /* Promises */
 
 export const PROMISES: [string, string][] = [
@@ -488,33 +547,6 @@ export const PROMISES: [string, string][] = [
     "The CLI reads any folder of PNG files, and compare runs on your machine with no account.",
   ],
 ];
-
-export function PromisesSection() {
-  return (
-    <section className={SECTION}>
-      <LeadCopy title="Easy to say yes to." className="max-w-[720px]">
-        What a security review and a finance review both ask first.
-      </LeadCopy>
-      <ul className="mt-12 grid grid-cols-2 gap-x-12 max-md:grid-cols-1">
-        {PROMISES.map(([title, text]) => (
-          <li key={title} className={`flex gap-4 border-t ${DOTTED} py-6`}>
-            <CheckIcon
-              size={18}
-              weight="bold"
-              className="mt-1 shrink-0 text-approved"
-            />
-            <span>
-              <span className="block text-xl font-semibold tracking-[-0.025em]">
-                {title}
-              </span>
-              <span className="mt-1 block text-sm text-muted">{text}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
 
 /* Switch */
 
@@ -610,36 +642,6 @@ export const FAQ: [string, string][] = [
     `Cancel at the next billing date and the plan stays until the end of the billing period. Then the account moves to the Free plan with ${facts.freeStorage} of storage.`,
   ],
 ];
-
-export function FaqList() {
-  return (
-    <section
-      id="faq"
-      className={`${SECTION} scroll-mt-16 grid grid-cols-[1fr_2fr] gap-12 max-lg:grid-cols-1`}
-    >
-      <LeadCopy title="Questions." className="max-w-[360px]">
-        The ones a security review asks first.
-      </LeadCopy>
-      <div className="border-t border-dotted border-field-border/50">
-        {FAQ.map(([question, answer]) => (
-          <details
-            key={question}
-            className="group border-b border-dotted border-field-border/50"
-          >
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-base font-medium [&::-webkit-details-marker]:hidden">
-              {question}
-              <CaretDownIcon
-                size={14}
-                className="shrink-0 text-muted transition-transform duration-180 group-open:rotate-180"
-              />
-            </summary>
-            <p className="max-w-[65ch] pb-5 text-sm text-muted">{answer}</p>
-          </details>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 export function FinalStartFree() {
   return (
