@@ -4,6 +4,7 @@ export type CanvasView = { scale: number; x: number; y: number };
 
 export const CANVAS_PADDING = 16;
 export const CANVAS_PADDING_TOP = 80;
+export const PAN_MARGIN = 64;
 export const MAX_SCALE = 8;
 export const ZOOM_STEP = 1.25;
 export const ZOOM_OUT_LIMIT = 2;
@@ -29,23 +30,25 @@ function minScale(viewport: Size, content: Size) {
   );
 }
 
+function centerOffset(viewportSize: number, size: number, start: number) {
+  return start + Math.max(0, (room(viewportSize, start) - size) / 2);
+}
+
 export function fitView(viewport: Size, content: Size): CanvasView {
+  const scale = fitScale(viewport, content);
   return {
-    scale: fitScale(viewport, content),
-    x: CANVAS_PADDING,
-    y: CANVAS_PADDING_TOP,
+    scale,
+    x: centerOffset(viewport.width, content.width * scale, CANVAS_PADDING),
+    y: centerOffset(
+      viewport.height,
+      content.height * scale,
+      CANVAS_PADDING_TOP,
+    ),
   };
 }
 
-function clampOffset(
-  offset: number,
-  viewportSize: number,
-  size: number,
-  start = CANVAS_PADDING,
-) {
-  return size + start + CANVAS_PADDING <= viewportSize
-    ? start
-    : clamp(offset, viewportSize - size - CANVAS_PADDING, start);
+function clampOffset(offset: number, viewportSize: number, size: number) {
+  return clamp(offset, PAN_MARGIN - size, viewportSize - PAN_MARGIN);
 }
 
 export function clampView(
@@ -57,12 +60,7 @@ export function clampView(
   return {
     scale,
     x: clampOffset(view.x, viewport.width, content.width * scale),
-    y: clampOffset(
-      view.y,
-      viewport.height,
-      content.height * scale,
-      CANVAS_PADDING_TOP,
-    ),
+    y: clampOffset(view.y, viewport.height, content.height * scale),
   };
 }
 

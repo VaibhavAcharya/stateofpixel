@@ -5,6 +5,7 @@ import {
   clampView,
   fitView,
   MAX_SCALE,
+  PAN_MARGIN,
   panView,
   zoomView,
 } from "./canvasView";
@@ -25,22 +26,37 @@ describe("fitView", () => {
   it("never scales a small image up", () => {
     expect(fitView(viewport, small).scale).toBe(1);
   });
+
+  it("centers an image that fits below the top padding", () => {
+    expect(fitView(viewport, small)).toEqual({
+      scale: 1,
+      x: (viewport.width - small.width) / 2,
+      y:
+        CANVAS_PADDING_TOP +
+        (viewport.height - CANVAS_PADDING_TOP - CANVAS_PADDING - small.height) /
+          2,
+    });
+  });
 });
 
 describe("panView", () => {
-  it("stops at the image edges", () => {
+  it("stops when only the margin of the image is on screen", () => {
     const view = fitView(viewport, wide);
-    expect(panView(view, { x: 0, y: 500 }, viewport, wide).y).toBe(
-      CANVAS_PADDING_TOP,
+    expect(panView(view, { x: 0, y: 5000 }, viewport, wide).y).toBe(
+      viewport.height - PAN_MARGIN,
     );
     expect(panView(view, { x: 0, y: -5000 }, viewport, wide).y).toBe(
-      viewport.height - 1500 - CANVAS_PADDING,
+      PAN_MARGIN - 1500,
     );
   });
 
-  it("keeps an image that fits at the top left", () => {
-    const view = { scale: 1, x: CANVAS_PADDING, y: CANVAS_PADDING_TOP };
-    expect(panView(view, { x: 200, y: -100 }, viewport, small)).toEqual(view);
+  it("pans an image that fits", () => {
+    const view = fitView(viewport, small);
+    expect(panView(view, { x: 200, y: -100 }, viewport, small)).toEqual({
+      scale: 1,
+      x: view.x + 200,
+      y: view.y - 100,
+    });
   });
 });
 
@@ -68,12 +84,12 @@ describe("zoomView", () => {
 });
 
 describe("clampView", () => {
-  it("fixes a view after the viewport grows", () => {
-    const view = { scale: 0.8, x: -300, y: -900 };
-    expect(clampView(view, { width: 2000, height: 2000 }, wide)).toEqual({
-      scale: 0.8,
-      x: CANVAS_PADDING,
-      y: 2000 - 2400 - CANVAS_PADDING,
+  it("brings back an image panned off screen", () => {
+    const view = { scale: 1, x: 5000, y: -5000 };
+    expect(clampView(view, viewport, small)).toEqual({
+      scale: 1,
+      x: viewport.width - PAN_MARGIN,
+      y: PAN_MARGIN - small.height,
     });
   });
 });

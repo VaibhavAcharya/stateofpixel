@@ -19,8 +19,6 @@ import {
   useState,
 } from "react";
 import {
-  CANVAS_PADDING,
-  CANVAS_PADDING_TOP,
   type CanvasView,
   clampView,
   fitView,
@@ -657,11 +655,7 @@ function useCanvas(settings: ViewerSettings, content: Size) {
       ? { scale: 1, x: 0, y: 0 }
       : resolve(stored, viewport, content);
   latest.current = { viewport, content, view };
-  const pannable =
-    viewport !== null &&
-    (content.width * view.scale + 2 * CANVAS_PADDING > viewport.width ||
-      content.height * view.scale + CANVAS_PADDING_TOP + CANVAS_PADDING >
-        viewport.height);
+  const pannable = viewport !== null;
 
   const update = (change: (current: CanvasView, size: Size) => CanvasView) =>
     setView((value) => {
