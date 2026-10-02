@@ -10,15 +10,15 @@ Node 22 or newer. CI uses the version in `.node-version`.
 pnpm install
 ```
 
-Run the app with the [Netlify CLI](https://docs.netlify.com/cli/get-started/) from `apps/web`, linked to a Netlify site of your own:
+Run the app with the [Netlify CLI](https://docs.netlify.com/cli/get-started/), linked to a Netlify site of your own:
 
 ```sh
 cd apps/web
 netlify link
-netlify dev
+pnpm dev
 ```
 
-`netlify dev` needs Netlify CLI 27 or newer. It runs `pnpm dev` behind http://localhost:8888 with a local Postgres database, Netlify Blobs and Netlify Identity. `pnpm dev` alone has none of those, so use `netlify dev`.
+`pnpm dev` runs `netlify dev`, which needs Netlify CLI 27 or newer. It serves the app at http://localhost:8888 with a local Postgres database, Netlify Blobs and Netlify Identity. `pnpm dev:vite` runs Vite alone at http://localhost:3000, with none of those.
 
 Apply the migrations with `pnpm --filter @stateofpixel/backend db:migrate` while `netlify dev` is stopped, and again after pulling schema changes. In this monorepo, `netlify database migrations apply` writes to a different local database than the one `netlify dev` uses, so do not use it here.
 

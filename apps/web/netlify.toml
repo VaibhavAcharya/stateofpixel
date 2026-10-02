@@ -33,6 +33,6 @@
   path = "netlify/database/migrations"
 
 [dev]
-  command = "pnpm dev"
+  command = "pnpm --filter @stateofpixel/web dev:vite"
   targetPort = 3000
   port = 8888

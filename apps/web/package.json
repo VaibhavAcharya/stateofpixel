@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/build-functions.ts && vite dev --port 3000",
+    "dev": "netlify dev",
+    "dev:vite": "node scripts/build-functions.ts && vite dev --port 3000",
     "build": "vite build && node scripts/og-images.ts && node scripts/build-functions.ts",
     "preview": "vite preview",
     "typecheck": "tsc",
