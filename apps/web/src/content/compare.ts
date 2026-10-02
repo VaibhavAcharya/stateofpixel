@@ -262,7 +262,7 @@ const chromatic: Competitor = {
     ],
     [
       "Threaded review comments",
-      "Chromatic's UI Review has discussions on each change. stateofpixel has approve, and reject with an optional comment.",
+      "Chromatic's UI Review has discussions on each change. stateofpixel has a list of comments on each snapshot, next to approve and reject.",
     ],
   ],
   switchSteps: [

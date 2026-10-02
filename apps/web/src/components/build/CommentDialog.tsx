@@ -1,9 +1,8 @@
 import { ChatTextIcon, CheckIcon, XIcon } from "@phosphor-icons/react/ssr";
+import { MAX_COMMENT_LENGTH } from "@stateofpixel/backend/limits";
 import { useEffect, useRef, useState } from "react";
 import { buttonClass, RelativeTime } from "../ui";
 import type { Snapshot } from "./types";
-
-const MAX_COMMENT_LENGTH = 500;
 
 export function CommentDialog({
   open,

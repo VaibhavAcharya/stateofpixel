@@ -1,11 +1,10 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { first } from "./db/index.ts";
+import { MAX_COMMENT_LENGTH } from "./lib/limits.ts";
 import { requirePermission } from "./lib/permissions.ts";
 import { builds, comments, snapshots } from "./schema.ts";
 import { AppError, mutation } from "./server.ts";
-
-const MAX_COMMENT_LENGTH = 500;
 
 export const add = mutation({
   args: { snapshotId: z.string(), body: z.string() },

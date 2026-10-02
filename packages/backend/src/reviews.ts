@@ -5,6 +5,7 @@ import { touchCheck } from "./checks.ts";
 import type { Doc, Id } from "./dataModel.ts";
 import { first, one } from "./db/index.ts";
 import { conclude } from "./lib/conclude.ts";
+import { MAX_COMMENT_LENGTH } from "./lib/limits.ts";
 import { requirePermission } from "./lib/permissions.ts";
 import {
   approvedImages,
@@ -24,7 +25,6 @@ import {
 
 const MAX_SNAPSHOTS_PER_CALL = 100;
 const ALL_PAGE_SIZE = 500;
-const MAX_COMMENT_LENGTH = 500;
 
 const reviewAction = z.enum(["approve", "reject", "undo"]);
 

@@ -1,3 +1,5 @@
+import { facts } from "../../components/docs/facts";
+
 export const meta = {
   title: "Reviewing changes",
   description: "Compare, approve and reject visual changes on the build page.",
@@ -46,7 +48,7 @@ The dock at the bottom of the images reviews the open snapshot, and the switch i
 
 - Approve a snapshot with <kbd>a</kbd> or the check in the dock, which also moves to the next pending one. On a folded row, it approves every snapshot in it.
 - Reject with <kbd>r</kbd> or the cross, which also moves to the next pending one. One rejection makes the check fail with "1 change rejected".
-- Comment with <kbd>m</kbd> or the speech bubble next to the dock. A comment does not approve or reject anything. Comments are up to 500 characters, and every comment on a snapshot stays in its thread, oldest first, with who left it, so comments from several reviewers do not replace each other.
+- Comment with <kbd>m</kbd> or the speech bubble next to the dock. A comment does not approve or reject anything. Comments are up to {facts.commentLength}, and every comment on a snapshot stays in its thread, oldest first, with who left it, so comments from several reviewers do not replace each other.
 - Undo a review with <kbd>u</kbd> or the arrow in the dock.
 - Approve build, or <kbd>shift</kbd> <kbd>a</kbd>, approves every pending snapshot, and Reject build, or <kbd>shift</kbd> <kbd>r</kbd>, rejects them. The middle of the switch then reads Undo, which takes the build action back without changing reviews made one by one. Picking the other side switches the build action. Once nothing is left to review, the switch shows the result: Rejected when any snapshot is rejected, Approved otherwise. Undo, or <kbd>shift</kbd> <kbd>u</kbd>, then returns every snapshot to review, including the ones reviewed one by one.
 

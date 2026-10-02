@@ -80,9 +80,8 @@ function Privacy() {
       </p>
       <p>When you review a build:</p>
       <ul>
-        <li>
-          Each approve, reject and undo, who made it, and any comment you add.
-        </li>
+        <li>Each approve, reject and undo, and who made it.</li>
+        <li>Each comment you leave on a snapshot, and who left it.</li>
       </ul>
 
       <h2>Cookies and browser storage</h2>
