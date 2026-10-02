@@ -5,7 +5,7 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 ## Faster updates
 
 - Find why the web job that finishes a main build waits about 30 seconds in the upload. It happened on the pushes of 7d39e14 (34.4 s) and e56833c (33.7 s); the other shard of the same runs took about 2 seconds.
-- The first upload after a production deploy takes 9 to 12 seconds, and a server function invocation right after a deploy took about 7 seconds. The database sleeps after 5 minutes without queries, and turning that off needs a Pro plan. Check how much of the delay is the database waking up and how much is the server function starting.
+- The first upload after a production deploy takes 9 to 12 seconds, and a server function invocation right after a deploy took about 7 seconds. The database stays awake, because `jobs-tick` queries it every minute and those idle runs take 20 to 45 ms. Check how much of the delay is the server function starting and how much is its first database connection.
 
 ## Jobs
 
