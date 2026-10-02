@@ -3,6 +3,8 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   CircleHalfIcon,
+  MinusIcon,
+  PlusIcon,
   SquareSplitHorizontalIcon,
   SwapIcon,
 } from "@phosphor-icons/react/ssr";
@@ -24,6 +26,7 @@ import {
   type Point,
   panView,
   type Size,
+  ZOOM_STEP,
   zoomView,
 } from "../lib/canvasView";
 import { formatCount, formatPercent } from "../lib/format";
@@ -195,59 +198,104 @@ export function Viewer({
               onChange={settings.setDiffColor}
             />
           )}
-          <span className="w-11 text-right text-xs text-muted tabular-nums">
-            {Math.round(canvas.view.scale * 100)}%
-          </span>
-          <KeyTooltip label="Fit" keyName="f">
-            <button
-              type="button"
-              className={buttonClass()}
-              disabled={settings.view === null}
-              onClick={() => settings.setView(null)}
-            >
-              Fit
-              <KeyChip keyName="f" />
-            </button>
-          </KeyTooltip>
         </div>
       </div>
-      <div
-        ref={canvas.stageRef}
-        className={`grid min-h-0 flex-1 overflow-hidden bg-border select-none ${
-          canvas.pannable
-            ? `touch-none ${canvas.panning ? "cursor-grabbing" : "cursor-grab"}`
-            : "touch-pan-x touch-pan-y"
-        } ${
-          single || mode !== "side"
-            ? "grid-cols-1"
-            : "grid-cols-2 gap-px max-md:grid-cols-1 max-md:grid-rows-2"
-        }`}
-      >
-        {single ? (
-          <Pane
-            caption={image === null ? baselineLabel : newLabel}
-            view={canvas.view}
-            paneRef={canvas.paneRef}
-          >
-            <Frame
-              image={image ?? baselineImage}
-              scale={canvas.view.scale}
+      <div className="group/stage relative flex min-h-0 flex-1 flex-col">
+        <ZoomControls settings={settings} scale={canvas.view.scale} />
+        <div
+          ref={canvas.stageRef}
+          className={`grid min-h-0 flex-1 overflow-hidden bg-border select-none ${
+            canvas.pannable
+              ? `touch-none ${canvas.panning ? "cursor-grabbing" : "cursor-grab"}`
+              : "touch-pan-x touch-pan-y"
+          } ${
+            single || mode !== "side"
+              ? "grid-cols-1"
+              : "grid-cols-2 gap-px max-md:grid-cols-1 max-md:grid-rows-2"
+          }`}
+        >
+          {single ? (
+            <Pane
               caption={image === null ? baselineLabel : newLabel}
+              view={canvas.view}
+              paneRef={canvas.paneRef}
+            >
+              <Frame
+                image={image ?? baselineImage}
+                scale={canvas.view.scale}
+                caption={image === null ? baselineLabel : newLabel}
+              />
+            </Pane>
+          ) : (
+            <Compare
+              settings={settings}
+              snapshot={snapshot}
+              image={image}
+              baselineImage={baselineImage}
+              baselineLabel={baselineLabel}
+              newLabel={newLabel}
+              view={canvas.view}
+              paneRef={canvas.paneRef}
             />
-          </Pane>
-        ) : (
-          <Compare
-            settings={settings}
-            snapshot={snapshot}
-            image={image}
-            baselineImage={baselineImage}
-            baselineLabel={baselineLabel}
-            newLabel={newLabel}
-            view={canvas.view}
-            paneRef={canvas.paneRef}
-          />
-        )}
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
+
+function ZoomControls({
+  settings,
+  scale,
+}: {
+  settings: ViewerSettings;
+  scale: number;
+}) {
+  const button = `${buttonClass("ghost", "sm")} h-5 w-full rounded-[5px] px-0`;
+  const tooltip = "top-1/2! right-full! left-auto! mt-0! mr-2 -translate-y-1/2";
+  return (
+    <div className="absolute right-2 bottom-2 z-10 flex w-9 flex-col rounded-md bg-surface p-0.5 opacity-0 shadow-menu ring-1 ring-border transition-opacity duration-150 group-hover/stage:opacity-100 focus-within:opacity-100 motion-reduce:transition-none pointer-coarse:hidden">
+      <Tooltip label="Zoom in, press +" className={tooltip}>
+        <button
+          type="button"
+          aria-label="Zoom in"
+          className={button}
+          onClick={() => settings.zoom({ by: ZOOM_STEP })}
+        >
+          <PlusIcon size={10} weight="bold" />
+        </button>
+      </Tooltip>
+      <Tooltip label="Real pixels, press 0" className={tooltip}>
+        <button
+          type="button"
+          aria-label={`Zoom ${Math.round(scale * 100)}%, show at 100%`}
+          className={`${button} text-[9px] tabular-nums`}
+          onClick={() => settings.zoom({ to: 1 })}
+        >
+          {Math.round(scale * 100)}%
+        </button>
+      </Tooltip>
+      <Tooltip label="Zoom out, press -" className={tooltip}>
+        <button
+          type="button"
+          aria-label="Zoom out"
+          className={button}
+          onClick={() => settings.zoom({ by: 1 / ZOOM_STEP })}
+        >
+          <MinusIcon size={10} weight="bold" />
+        </button>
+      </Tooltip>
+      <span aria-hidden className="mx-1 my-0.5 h-px bg-border" />
+      <Tooltip label="Fit, press f" className={tooltip}>
+        <button
+          type="button"
+          className={`${button} text-[9px]`}
+          disabled={settings.view === null}
+          onClick={() => settings.setView(null)}
+        >
+          Fit
+        </button>
+      </Tooltip>
     </div>
   );
 }

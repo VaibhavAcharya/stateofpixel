@@ -498,7 +498,7 @@ function Segmented<Value extends string>({
           type="button"
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
-          className={`flex h-7 items-center gap-1.5 rounded-sm px-3 text-xs font-medium whitespace-nowrap transition-colors duration-100 pointer-coarse:h-9 ${
+          className={`flex h-7 items-center gap-1.5 rounded-sm px-3 text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
             value === option.value
               ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
               : "text-muted hover:text-text"

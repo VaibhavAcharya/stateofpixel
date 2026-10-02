@@ -276,7 +276,7 @@ export function buttonClass(
   variant: keyof typeof BUTTON_VARIANTS = "secondary",
   size: keyof typeof BUTTON_SIZES = "md",
 ) {
-  return `inline-flex shrink-0 items-center justify-center rounded-control font-medium whitespace-nowrap transition-colors duration-100 select-none disabled:pointer-events-none disabled:opacity-45 aria-disabled:cursor-not-allowed aria-disabled:opacity-45 pointer-coarse:min-h-11 ${BUTTON_SIZES[size]} ${BUTTON_VARIANTS[variant]}`;
+  return `inline-flex shrink-0 items-center justify-center rounded-control font-medium whitespace-nowrap transition-colors duration-100 select-none disabled:pointer-events-none disabled:opacity-45 aria-disabled:cursor-not-allowed aria-disabled:opacity-45 ${BUTTON_SIZES[size]} ${BUTTON_VARIANTS[variant]}`;
 }
 
 export function Tooltip({

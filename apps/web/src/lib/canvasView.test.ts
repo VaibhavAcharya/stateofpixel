@@ -56,11 +56,11 @@ describe("zoomView", () => {
     );
   });
 
-  it("limits the scale between the whole image and the maximum", () => {
+  it("limits the scale between half the whole image and the maximum", () => {
     const view = fitView(viewport, wide);
     const anchor = { x: 0, y: 0 };
     expect(zoomView(view, 100, anchor, viewport, wide).scale).toBe(MAX_SCALE);
-    expect(zoomView(view, 0.01, anchor, viewport, wide).scale).toBe(0.2);
+    expect(zoomView(view, 0.01, anchor, viewport, wide).scale).toBe(0.1);
   });
 });
 

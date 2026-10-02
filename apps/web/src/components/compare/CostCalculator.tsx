@@ -15,7 +15,7 @@ import {
   gigabytes,
   monthlyPrice,
 } from "../landing/Pricing";
-import { SECTION } from "../landing/sections";
+import { SECTION, WIDE } from "../landing/sections";
 import { RangeSlider } from "../RangeSlider";
 import { LeadCopy, Logo } from "../ui";
 
@@ -130,7 +130,13 @@ export function BillLogo({ bill, size }: { bill: Bill; size: number }) {
   );
 }
 
-export function CostCalculator({ competitors }: { competitors: Priced[] }) {
+export function CostCalculator({
+  competitors,
+  flushTop = false,
+}: {
+  competitors: Priced[];
+  flushTop?: boolean;
+}) {
   const [suite, setSuite] = useState(DEFAULT_SUITE);
   const { snapshots, bills } = quote(suite, competitors);
   const max = Math.max(...bills.map((bill) => bill.cost ?? 0), 1);
@@ -139,7 +145,10 @@ export function CostCalculator({ competitors }: { competitors: Priced[] }) {
   const saved =
     ours?.cost === null || ours === undefined ? 0 : cheapest - ours.cost;
   return (
-    <section id="cost" className={`${SECTION} scroll-mt-16`}>
+    <section
+      id="cost"
+      className={`${flushTop ? `${WIDE} pb-24 max-sm:pb-12` : SECTION} scroll-mt-16`}
+    >
       <LeadCopy title="Price it for your suite." className="max-w-[720px]">
         Move the sliders. Every tool here bills for this many screenshots a
         month, except stateofpixel.

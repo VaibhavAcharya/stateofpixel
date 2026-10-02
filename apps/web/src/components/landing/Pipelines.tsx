@@ -614,7 +614,7 @@ function CaseSwitch({
           type="button"
           aria-pressed={value === index}
           onClick={() => onChange(index)}
-          className={`h-7 rounded-sm px-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-100 pointer-coarse:h-9 ${
+          className={`h-7 rounded-sm px-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
             value === index
               ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
               : "text-muted hover:text-text"
@@ -760,7 +760,7 @@ export function PipelinesSection() {
                   aria-controls="pipelines-panel"
                   tabIndex={active ? 0 : -1}
                   onClick={() => select(index)}
-                  className={`flex h-9 shrink-0 items-center gap-2.5 rounded-sm px-3 text-left text-sm whitespace-nowrap transition-colors duration-100 pointer-coarse:h-11 lg:rounded-l-none ${
+                  className={`flex h-9 shrink-0 items-center gap-2.5 rounded-sm px-3 text-left text-sm whitespace-nowrap transition-colors duration-100 lg:rounded-l-none ${
                     active
                       ? "bg-hover font-medium text-text"
                       : "text-muted hover:bg-hover hover:text-text"

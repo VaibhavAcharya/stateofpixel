@@ -277,7 +277,7 @@ export function HowSteps() {
       <div className={`${SECTION} grid grid-cols-2 gap-16 max-lg:grid-cols-1`}>
         <div>
           <LeadCopy
-            title="Works with the tests you have."
+            title="Works with the tests you already have."
             className="max-w-[520px]"
           >
             No token to copy on GitHub Actions. The first build on your default
@@ -373,10 +373,10 @@ const CAPABILITIES = [
 ];
 
 const ROLES: [string, number][] = [
-  ["Read", 1],
-  ["Write", 2],
-  ["Admin", 3],
   ["Owner", 4],
+  ["Admin", 3],
+  ["Write", 2],
+  ["Read", 1],
 ];
 
 const TEAM_FACTS: [Icon, string][] = [

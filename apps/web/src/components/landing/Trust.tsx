@@ -21,6 +21,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useId, useState } from "react";
 import { findDoc } from "../../content/docs";
+import { BOOKING_URL } from "../../lib/booking";
 import { facts } from "../docs/facts";
 import { buttonClass, type Icon, LeadCopy } from "../ui";
 import { FAQ, SECTION } from "./sections";
@@ -34,8 +35,6 @@ const ANSWERED_ABOVE = [
   "What happens when stateofpixel is down?",
   "What happens when the free storage is full?",
 ];
-
-const BOOKING_URL = "https://cal.com/vaibhavacharya/30min";
 
 export const QUESTIONS = FAQ.filter(
   ([question]) => !ANSWERED_ABOVE.includes(question),

@@ -44,7 +44,7 @@ function Home() {
       <TeamSection />
       <PipelinesSection />
       <PricingPlans />
-      <CostCalculator competitors={["argos", "chromatic", "percy"]} />
+      <CostCalculator competitors={["argos", "chromatic", "percy"]} flushTop />
       <TrustSection />
       <SwitchStrip />
       <FinalStartFree />
