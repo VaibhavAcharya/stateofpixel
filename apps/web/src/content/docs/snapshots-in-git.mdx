@@ -1,0 +1,37 @@
+export const meta = {
+  title: "Playwright snapshots in git",
+  description: "What committing Playwright snapshot PNG files costs, and how to keep baselines out of the repository.",
+  lead: "Playwright stores baselines as PNG files next to your tests and asks you to commit them. That works for a few screenshots. With many, the repository, the update loop and merges get harder.",
+};
+
+## How Playwright stores baselines
+
+From the [Playwright docs](https://playwright.dev/docs/test-snapshots): "`my.spec.ts` file will produce and store snapshots in the `my.spec.ts-snapshots` directory. You should commit this directory to your version control (e.g. `git`), and review any changes to it."
+
+The file name ends with the project and the platform, from `process.platform`. A run on macOS writes `-darwin` files and a run on Linux CI writes `-linux` files, so the files you commit from your laptop are not the ones CI compares.
+
+## What it costs
+
+- **Updates have to run on Linux.** Someone regenerates the `-linux` files in Docker or on CI and commits them. One team [described](https://github.com/microsoft/playwright/issues/13873) its fix: "The only way we could make it consistent with 0% threshold, was to just update the screenshot on CI machines via a GitHub PR comment".
+- **History grows.** Every update adds new PNG files, and git keeps the old ones. `--update-snapshots` does not delete snapshots of tests you removed, and the Playwright team [decided not to add it](https://github.com/microsoft/playwright/issues/16582).
+- **Git LFS needs every checkout to fetch.** Without the LFS files, each PNG is a small pointer file and the test [fails to read it](https://github.com/microsoft/playwright/issues/23012).
+- **Images do not merge.** Two pull requests that change the same screenshot conflict, and git cannot combine two PNG files. You keep one and regenerate.
+
+## Use one name on every platform
+
+If you keep snapshots in git, drop the platform from the name and take every screenshot in the same Docker image, locally and on CI:
+
+```ts playwright.config.ts
+import { defineConfig } from "@playwright/test";
+
+export default defineConfig({
+  snapshotPathTemplate:
+    "{testDir}/__screenshots__/{testFilePath}/{arg}{-projectName}{ext}",
+});
+```
+
+## Keep baselines out of the repository
+
+stateofpixel keeps baselines on its server. A build is compared with the newest approved build in its own git history, so nothing is committed, nobody regenerates files on Linux, and two pull requests never conflict over an image. Approving the change on the pull request is the update. See [Baselines](/docs/baselines).
+
+To move over, replace `toHaveScreenshot()` with `snapshot()` from `stateofpixel/playwright`, add the reporter, and delete the `-snapshots` folders. See [Playwright](/docs/playwright).

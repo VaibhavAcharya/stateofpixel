@@ -1,0 +1,40 @@
+export const meta = {
+  title: "Storybook visual tests without Chromatic",
+  description: "The ways to screenshot and compare Storybook stories in your own CI, without Chromatic.",
+  lead: "The Storybook docs cover visual tests with Chromatic, a cloud service from the Storybook team. You can also take the screenshots in your own CI and compare them there.",
+};
+
+## What Storybook offers
+
+The [Storybook visual testing docs](https://storybook.js.org/docs/writing-tests/visual-testing) say: "Storybook supports cross-browser visual testing natively using Chromatic, a cloud service made by the Storybook team." The page covers only the Chromatic addon.
+
+Without Chromatic, there are two documented paths:
+
+- **The test runner.** Its [README](https://github.com/storybookjs/test-runner#image-snapshot) has an image snapshot recipe that takes a screenshot of each story in `postVisit` and compares it with `jest-image-snapshot`.
+- **The Vitest addon.** The [migration guide](https://storybook.js.org/docs/writing-tests/integrations/vitest-addon/migration-guide) points to `storybook-addon-vis` for screenshot tests that run locally.
+
+Both store the baselines as files in your repository, with the same costs as [Playwright snapshots in git](/docs/snapshots-in-git). Neither gives you a place to review a change or a check that waits for approval.
+
+## Capture the built Storybook
+
+stateofpixel captures every story of a built Storybook in Chromium on your CI and uploads the screenshots. Your stories do not change.
+
+```yaml .github/workflows/visual.yml
+steps:
+  - uses: actions/checkout@v7
+    with:
+      fetch-depth: 0
+  - run: npm ci
+  - run: npx playwright install --with-deps chromium
+  - run: npx storybook build
+  - run: npx stateofpixel storybook storybook-static --viewports 375,1280
+```
+
+Baselines stay on the server, changes are reviewed on a build page, and the `stateofpixel` check waits until someone approves them. See [Storybook](/docs/storybook) for the options.
+
+## What changes from Chromatic
+
+- Stories render in Chromium on your CI, not in Chromatic's browsers. Chromatic also renders in Safari, Firefox and Edge.
+- You pay for storage, not per snapshot.
+
+[stateofpixel vs Chromatic](/compare/chromatic) compares plans and prices, and [Moving from another tool](/docs/moving) has the steps.

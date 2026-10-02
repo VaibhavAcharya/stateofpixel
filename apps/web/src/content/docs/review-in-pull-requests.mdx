@@ -1,0 +1,31 @@
+export const meta = {
+  title: "Review screenshots in pull requests",
+  description: "How to review and approve visual changes from a pull request instead of a downloaded Playwright report.",
+  lead: "When a Playwright screenshot test fails on CI, the diff is in the HTML report artifact. Reviewing it means downloading a zip, and accepting it means updating files and pushing again.",
+};
+
+## The usual loop
+
+1. A screenshot test fails and the CI job fails.
+2. You download the `playwright-report` artifact, extract it and open it with `npx playwright show-report`. The [Playwright docs](https://playwright.dev/docs/ci-intro) say: "Downloading the HTML report as a zip file is not very convenient."
+3. To accept the change, you run `npx playwright test --update-snapshots` in the same environment as CI, commit the new PNG files and push.
+
+A request for an [accept button in the HTML report](https://github.com/microsoft/playwright/issues/24310) was closed as not planned.
+
+## What the loop misses
+
+- **One decision per image.** `--update-snapshots` accepts every changed screenshot in the run. One [issue](https://github.com/microsoft/playwright/issues/17801) puts it this way: "you can not be sure that the new generated screenshots have no flaky effects."
+- **A gate.** The test fails the CI job, so an intended change and a regression look the same on the pull request until someone opens the report.
+
+GitHub can show committed images in 2-up, swipe and onion skin views, but only for files in the diff, and it has no way to accept some screenshots and reject others.
+
+## Review on a page, gate with a check
+
+With stateofpixel, the CI job passes and the `stateofpixel` check stays pending until someone reviews the changes. Details on the check opens the build page:
+
+- Compare side by side, as a diff, with a slider, or by flipping between the two.
+- Approve or reject each snapshot, or the whole build, from the keyboard.
+- When you push again or rebase, approvals carry over, so you only review what changed since.
+- Require the check in branch protection, and a pull request with unreviewed changes cannot merge.
+
+See [Reviewing changes](/docs/review) and [The GitHub check](/docs/checks).

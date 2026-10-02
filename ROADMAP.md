@@ -26,6 +26,13 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 ## Landing and marketing
 
 - Mention on the landing that GitHub tokens are stored encrypted and private image links expire within two hours.
+- Submit to [awesome-regression-testing](https://github.com/mojoaxel/awesome-regression-testing), under Online services.
+- Submit to [awesome-testing-tools](https://github.com/ZoranPandovski/awesome-testing-tools), under Automated Testing Tools.
+- Submit to [awesome-design-systems](https://github.com/klaufel/awesome-design-systems), under Testing, Unit & Regression test.
+- Submit to [free-for-dev](https://github.com/ripienaar/free-for-dev), under Testing. Fill in their PR template by hand, since they close PRs that look AI-written.
+- Submit to [awesome-test-automation](https://github.com/atinfo/awesome-test-automation), in `automation-and-testing-as-service.md` under Web test automation and testing.
+- Once there are users, submit to [awesome-testing](https://github.com/TheJambo/awesome-testing) under Visual Testing and [awesome-playwright](https://github.com/mxschmitt/awesome-playwright) under Integrations. Both have closed visual testing tools as too new.
+- Once there are 1,000 stars, a Product Hunt award or SOC 2, submit to [awesome-developer-first](https://github.com/agamm/awesome-developer-first) under Testing.
 
 ## Local development
 

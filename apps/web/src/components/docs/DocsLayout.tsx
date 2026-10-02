@@ -44,6 +44,13 @@ export const DOCS_NAV = [
     pages: [
       { slug: "stable-screenshots", label: "Stable screenshots" },
       { slug: "troubleshooting", label: "Troubleshooting" },
+      { slug: "screenshots-fail-on-ci", label: "Screenshots that fail on CI" },
+      { slug: "snapshots-in-git", label: "Playwright snapshots in git" },
+      {
+        slug: "storybook-without-chromatic",
+        label: "Storybook without Chromatic",
+      },
+      { slug: "review-in-pull-requests", label: "Review in pull requests" },
     ],
   },
   {

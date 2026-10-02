@@ -1,0 +1,33 @@
+import { facts } from "../../components/docs/facts";
+
+export const meta = {
+  title: "Screenshots that fail on CI",
+  description: "Why Playwright toHaveScreenshot passes on your machine and fails on CI, and how to fix it.",
+  lead: "A screenshot test that passes on your laptop and fails on CI is almost always comparing images from two different machines. The OS, fonts and CPU change how a browser draws the same page.",
+};
+
+## Why the pixels differ
+
+The [Playwright docs](https://playwright.dev/docs/test-snapshots) say: "Browser rendering can vary based on the host OS, version, settings, hardware, power source (battery vs. power adapter), headless mode, and other factors."
+
+So Playwright adds the browser and platform to each baseline file, like `landing-chromium-darwin.png`. A baseline taken on macOS is a different file from one taken on Linux. When CI runs on Linux, it either finds no baseline or finds one that was taken on another machine.
+
+Docker does not fix every case. About images for different CPUs, a Playwright maintainer [wrote](https://github.com/microsoft/playwright/issues/13873): "It is expected that arm docker image vs intel docker image produce different screenshots".
+
+## Take every screenshot in one environment
+
+- Take baselines and new screenshots on the same OS, CPU architecture and Playwright version. The [Playwright CI docs](https://playwright.dev/docs/ci) suggest a container "to have a consistent environment for e.g. screenshots/visual regression testing across different operating systems."
+- Do not update baselines from your laptop. Update them on CI, or locally in the same container image.
+- Pin the runner image, like `ubuntu-24.04` instead of `ubuntu-latest`, so an image update does not change your fonts.
+
+## Raise the threshold last
+
+`threshold` decides how different a pixel's color has to be to count, from 0 (strict) to 1 (lax). `maxDiffPixels` lets a number of pixels differ. Both let small differences pass, and small regressions with them. On differences between machines, the same maintainer [wrote](https://github.com/microsoft/playwright/issues/13873) that "you'll need pretty big values, so tests will not be that useful." Fix the environment first.
+
+## Freeze what moves
+
+`toHaveScreenshot` already stops CSS animations and waits until two screenshots in a row match. Dates, random data and fonts that load late still change between runs. [Stable screenshots](/docs/stable-screenshots) has the fixes.
+
+## With stateofpixel
+
+The [Playwright reporter](/docs/playwright) uploads only on CI, so every baseline comes from your CI and a screenshot from your laptop never becomes one. Snapshot names carry the browser and width, not the platform. When two builds of the same commit give different images, the snapshot shows "Looks flaky". The default threshold is {facts.diffThreshold}, and you can try other values on your machine with `npx stateofpixel compare` before you change it.
