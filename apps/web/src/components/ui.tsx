@@ -297,7 +297,7 @@ export function Tooltip({
       <span
         role="tooltip"
         id={id}
-        className={`pointer-events-none invisible absolute top-full z-40 mt-1.5 w-max max-w-64 rounded-md bg-surface px-2.5 py-1.5 text-xs font-normal text-text opacity-0 shadow-tooltip ring-1 ring-border transition-opacity duration-100 group-focus-within/tooltip:visible group-focus-within/tooltip:opacity-100 group-hover/tooltip:visible group-hover/tooltip:opacity-100 ${
+        className={`pointer-events-none invisible absolute top-full z-40 mt-1.5 w-max max-w-64 rounded-md bg-surface px-2.5 py-1.5 text-xs font-normal text-text opacity-0 shadow-tooltip ring-1 ring-border transition-opacity duration-100 group-has-focus-visible/tooltip:visible group-has-focus-visible/tooltip:opacity-100 group-hover/tooltip:visible group-hover/tooltip:opacity-100 ${
           align === "end" ? "right-0" : "left-0"
         } ${className}`}
       >

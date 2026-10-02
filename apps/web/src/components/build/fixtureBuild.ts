@@ -213,7 +213,7 @@ export function useFixtureBuild(fixture: BuildFixture): {
               snapshotIds !== "all"
                 ? snapshotIds.includes(snapshot.id as Id<"snapshots">)
                 : action === "undo"
-                  ? fromBuildAction
+                  ? buildAction === null || fromBuildAction
                   : state === "pending" || fromBuildAction;
             if (selected && state !== "none") {
               next[snapshot.id] = {

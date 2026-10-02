@@ -47,7 +47,7 @@ The dock at the bottom of the images reviews the open snapshot, and the switch i
 - Approve a snapshot with <kbd>a</kbd> or the check in the dock, which also moves to the next pending one. On a folded row, it approves every snapshot in it.
 - Reject with <kbd>r</kbd> or the cross, which also moves to the next pending one. One rejection makes the check fail with "1 change rejected".
 - Undo a review with <kbd>u</kbd> or the arrow in the dock.
-- Approve build, or <kbd>shift</kbd> <kbd>a</kbd>, approves every pending snapshot, and Reject build rejects them. The middle of the switch then reads Undo, which takes the build action back without changing reviews made one by one. Picking the other side switches the build action.
+- Approve build, or <kbd>shift</kbd> <kbd>a</kbd>, approves every pending snapshot, and Reject build rejects them. The middle of the switch then reads Undo, which takes the build action back without changing reviews made one by one. Picking the other side switches the build action. Once nothing is left to review, the switch shows the result: Rejected when any snapshot is rejected, Approved otherwise. Undo then returns every snapshot to review, including the ones reviewed one by one.
 
 When every change is approved, the check turns green on GitHub. See [The GitHub check](/docs/checks).
 

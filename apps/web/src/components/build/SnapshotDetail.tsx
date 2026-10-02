@@ -18,6 +18,7 @@ import {
   type ReviewState,
   Skeleton,
   TONE_TEXT,
+  Tooltip,
 } from "../ui";
 import { Viewer, type ViewerSettings } from "../Viewer";
 import { BuildNotFound } from "./BuildNotFound";
@@ -105,7 +106,7 @@ export function SnapshotDetail({
             ) : (
               <span className="text-xs text-muted tabular-nums">
                 {formatCount(story.length)} snapshots
-                {pending > 0 && `, ${formatCount(pending)} waiting for review`}
+                {pending > 0 && `, ${formatCount(pending)} to review`}
                 {rejected > 0 && `, ${formatCount(rejected)} rejected`}
               </span>
             )}
@@ -113,21 +114,21 @@ export function SnapshotDetail({
           </>
         }
         overlay={
-          canWrite && reviewable ? (
-            <ReviewDock
-              state={
-                story === undefined
+          <ReviewDock
+            state={
+              !canWrite || !reviewable
+                ? null
+                : story === undefined
                   ? snapshot.reviewState
                   : storyReviewState(story)
-              }
-              count={story?.length}
-              onPrevious={onPrevious}
-              onNext={onNext}
-              onApprove={onApprove}
-              onReject={onReject}
-              onUndo={onUndo}
-            />
-          ) : undefined
+            }
+            count={story?.length}
+            onPrevious={onPrevious}
+            onNext={onNext}
+            onApprove={onApprove}
+            onReject={onReject}
+            onUndo={onUndo}
+          />
         }
         headings={headings}
       />
@@ -188,7 +189,7 @@ function ReviewDock({
   onReject,
   onUndo,
 }: {
-  state: ReviewState;
+  state: ReviewState | null;
   count: number | undefined;
   onPrevious: () => void;
   onNext: () => void;
@@ -196,59 +197,67 @@ function ReviewDock({
   onReject: () => void;
   onUndo: () => void;
 }) {
-  const icon = `${buttonClass("ghost", "icon-sm")} aria-pressed:bg-hover`;
+  const icon = `${buttonClass("ghost", "icon")} rounded-sm aria-pressed:bg-hover`;
   const suffix = count === undefined ? "" : ` ${formatCount(count)}`;
+  const tooltip =
+    "top-auto! bottom-full! left-1/2! mt-0! mb-2 -translate-x-1/2";
   return (
-    <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-[9px] bg-surface p-0.5 shadow-menu ring-1 ring-border">
-      <button
-        type="button"
-        aria-label="Previous snapshot"
-        title="Previous, press k"
-        className={buttonClass("ghost", "icon-sm")}
-        onClick={onPrevious}
-      >
-        <CaretLeftIcon size={12} />
-      </button>
-      <button
-        type="button"
-        aria-label={`Reject${suffix}`}
-        aria-pressed={state === "rejected"}
-        title="Reject, press r"
-        className={`${icon} text-rejected!`}
-        onClick={onReject}
-      >
-        <XIcon size={14} weight="bold" />
-      </button>
-      <button
-        type="button"
-        aria-label={`Approve${suffix}`}
-        aria-pressed={state === "approved"}
-        title="Approve, press a"
-        className={`${icon} text-approved!`}
-        onClick={onApprove}
-      >
-        <CheckIcon size={14} weight="bold" />
-      </button>
-      {(state === "approved" || state === "rejected") && (
+    <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-control bg-surface p-1 shadow-menu ring-1 ring-border">
+      <Tooltip label="Previous, press k" className={tooltip}>
+        <button
+          type="button"
+          aria-label="Previous snapshot"
+          className={`${buttonClass("ghost", "icon")} rounded-sm`}
+          onClick={onPrevious}
+        >
+          <CaretLeftIcon size={14} />
+        </button>
+      </Tooltip>
+      <Tooltip label="Reject, press r" className={tooltip}>
+        <button
+          type="button"
+          aria-label={`Reject${suffix}`}
+          aria-pressed={state === "rejected"}
+          disabled={state === null}
+          className={`${icon} text-rejected!`}
+          onClick={onReject}
+        >
+          <XIcon size={16} weight="bold" />
+        </button>
+      </Tooltip>
+      <Tooltip label="Approve, press a" className={tooltip}>
+        <button
+          type="button"
+          aria-label={`Approve${suffix}`}
+          aria-pressed={state === "approved"}
+          disabled={state === null}
+          className={`${icon} text-approved!`}
+          onClick={onApprove}
+        >
+          <CheckIcon size={16} weight="bold" />
+        </button>
+      </Tooltip>
+      <Tooltip label="Undo, press u" className={tooltip}>
         <button
           type="button"
           aria-label="Undo"
-          title="Undo, press u"
+          disabled={state !== "approved" && state !== "rejected"}
           className={icon}
           onClick={onUndo}
         >
-          <ArrowCounterClockwiseIcon size={14} />
+          <ArrowCounterClockwiseIcon size={16} />
         </button>
-      )}
-      <button
-        type="button"
-        aria-label="Next snapshot"
-        title="Next, press j"
-        className={buttonClass("ghost", "icon-sm")}
-        onClick={onNext}
-      >
-        <CaretRightIcon size={12} />
-      </button>
+      </Tooltip>
+      <Tooltip label="Next, press j" className={tooltip}>
+        <button
+          type="button"
+          aria-label="Next snapshot"
+          className={`${buttonClass("ghost", "icon")} rounded-sm`}
+          onClick={onNext}
+        >
+          <CaretRightIcon size={14} />
+        </button>
+      </Tooltip>
     </div>
   );
 }

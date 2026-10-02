@@ -318,7 +318,7 @@ function StoryRows({
           selected={selected}
           linkParams={linkParams}
           onSelect={(row) => onSelect(row, story.key)}
-          label={`${story.name}, ${formatCount(story.rows.length)} snapshots${pending.length > 0 ? `, ${formatCount(pending.length)} pending` : ""}`}
+          label={`${story.name}, ${formatCount(story.rows.length)} snapshots${pending.length > 0 ? `, ${formatCount(pending.length)} to review` : ""}`}
         >
           <Icon
             size={14}

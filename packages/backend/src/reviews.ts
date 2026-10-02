@@ -95,11 +95,13 @@ export const apply = mutation({
     }
 
     if (snapshotIds === "all") {
+      const undoAll = action === "undo" && build.buildAction === null;
       const options = {
         action,
         userId,
         source: action === "undo" ? "user" : BUILD_SOURCE[action],
         comment: trimmedComment,
+        undoAll,
       } as const;
       const counts = { ...build.counts };
       let truncated = false;
@@ -123,6 +125,7 @@ export const apply = mutation({
           action,
           userId,
           comment: trimmedComment,
+          undoAll,
           diffStatus: "changed",
           cursor: null,
         });
@@ -162,6 +165,7 @@ export const applyAll = internalMutation({
     action: reviewAction,
     userId: z.string(),
     comment: z.string().optional(),
+    undoAll: z.boolean().optional(),
     diffStatus: z.enum(["changed", "added"]),
     cursor: z.string().nullable(),
   },
@@ -183,6 +187,7 @@ export const applyAll = internalMutation({
       userId: args.userId,
       source: args.action === "undo" ? "user" : BUILD_SOURCE[args.action],
       comment: args.comment,
+      undoAll: args.undoAll ?? false,
     });
     await saveCounts(ctx, build, counts);
 
@@ -241,7 +246,7 @@ async function reviewBuildPage(
   build: Doc<"builds">,
   snapshots: Doc<"snapshots">[],
   counts: Counts,
-  options: Parameters<typeof review>[4],
+  options: Parameters<typeof review>[4] & { undoAll: boolean },
 ) {
   const sources = await latestSources(
     ctx,
@@ -257,7 +262,7 @@ async function reviewBuildPage(
     const fromBuildAction = BUILD_SOURCES.has(sources.get(snapshot._id) ?? "");
     const selected =
       options.action === "undo"
-        ? fromBuildAction
+        ? options.undoAll || fromBuildAction
         : snapshot.reviewState === "pending" || fromBuildAction;
     if (selected) {
       await review(ctx, build, snapshot, counts, options);

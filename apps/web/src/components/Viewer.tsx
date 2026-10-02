@@ -182,8 +182,14 @@ export function Viewer({
         </div>
       </div>
       <div className="flex min-h-11 shrink-0 flex-wrap items-center gap-2 border-b border-border px-4 py-1.5">
-        {!single && (
-          <div className="flex min-w-0 flex-wrap items-center rounded-control bg-surface-2 p-0.5">
+        {single ? (
+          <span className="text-xs text-muted">
+            {image === null
+              ? "Only the baseline image, nothing to compare"
+              : "Only the new image, nothing to compare"}
+          </span>
+        ) : (
+          <div className="-ml-2 flex min-w-0 flex-wrap items-center gap-0.5">
             <Segmented
               label="View mode"
               options={MODES}
@@ -373,14 +379,14 @@ function ModeSwitch({
   }
   return (
     <>
-      <span className="mx-1 h-4 w-px bg-field-border/50 max-sm:hidden" />
+      <span className="mx-1.5 h-4 w-px bg-border max-sm:hidden" />
       <KeyTooltip label={option.label} keyName={option.key}>
         <button
           type="button"
           role="switch"
           aria-checked={option.on}
           onClick={option.toggle}
-          className={`flex h-7 items-center gap-2 rounded-[9px] px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
+          className={`flex h-7 items-center gap-2 rounded-sm px-2 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
             option.on ? "text-text" : "text-muted hover:text-text"
           }`}
         >
@@ -1043,7 +1049,7 @@ function Segmented<Value extends string>({
   onChange: (value: Value) => void;
 }) {
   return (
-    <fieldset aria-label={label} className="flex min-w-0 flex-wrap">
+    <fieldset aria-label={label} className="flex min-w-0 flex-wrap gap-0.5">
       {options.map((option) => {
         const active = option.value === value;
         const OptionIcon = option.icon;
@@ -1056,10 +1062,8 @@ function Segmented<Value extends string>({
             <button
               type="button"
               aria-pressed={active}
-              className={`flex h-7 items-center gap-1.5 rounded-[9px] px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
-                active
-                  ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
-                  : "text-muted hover:text-text"
+              className={`flex h-7 items-center gap-1.5 rounded-sm px-2 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
+                active ? "bg-hover text-text" : "text-muted hover:text-text"
               }`}
               onClick={() => onChange(option.value)}
             >

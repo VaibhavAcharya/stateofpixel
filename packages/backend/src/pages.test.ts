@@ -765,7 +765,7 @@ it("approves every pending snapshot with approve all", async () => {
   ]);
 });
 
-it("switches and undoes a build action without touching other reviews", async () => {
+it("undoes a build action, then every review once no build action is left", async () => {
   const { t, user, grant, buildId, snapshotId } = await setup();
   await grant("write");
   await t.run(async (ctx) => {
@@ -832,6 +832,15 @@ it("switches and undoes a build action without touching other reviews", async ()
     counts: { pending: 3, approved: 1, rejected: 0 },
   });
   expect(await buildAction()).toBeNull();
+
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: "all",
+    action: "undo",
+  });
+  expect(await buildState(t, buildId)).toMatchObject({
+    counts: { pending: 4, approved: 0, rejected: 0 },
+  });
 });
 
 it("saves settings for admins only and checks the values", async () => {

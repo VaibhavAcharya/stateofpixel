@@ -1,6 +1,4 @@
 import {
-  CaretDownIcon,
-  CaretUpIcon,
   MagnifyingGlassIcon,
   SidebarSimpleIcon,
   XIcon,
@@ -574,8 +572,6 @@ export function BuildPage({
                 <SnapshotNavigation
                   position={currentIndex + 1}
                   total={ordered.length}
-                  onPrevious={selectPrevious}
-                  onNext={selectNext}
                   onOpenList={() => setListOpen(true)}
                 />
               }
@@ -592,7 +588,7 @@ export function BuildPage({
           snapshotId={id}
         />
       ))}
-      <Toasts toasts={toasts} dismiss={dismiss} />
+      <Toasts toasts={toasts} dismiss={dismiss} className="bottom-16" />
     </>
   );
 }
@@ -653,14 +649,10 @@ function NoSelection({
 function SnapshotNavigation({
   position,
   total,
-  onPrevious,
-  onNext,
   onOpenList,
 }: {
   position: number;
   total: number;
-  onPrevious: () => void;
-  onNext: () => void;
   onOpenList: () => void;
 }) {
   return (
@@ -678,24 +670,6 @@ function SnapshotNavigation({
       <span className="px-1 text-xs text-muted tabular-nums max-lg:hidden">
         {position > 0 ? `${position} of ${total}` : ""}
       </span>
-      <button
-        type="button"
-        aria-label="Previous snapshot"
-        title="Previous (k)"
-        className={buttonClass("ghost", "icon-sm")}
-        onClick={onPrevious}
-      >
-        <CaretUpIcon size={14} />
-      </button>
-      <button
-        type="button"
-        aria-label="Next snapshot"
-        title="Next (j)"
-        className={buttonClass("ghost", "icon-sm")}
-        onClick={onNext}
-      >
-        <CaretDownIcon size={14} />
-      </button>
     </div>
   );
 }

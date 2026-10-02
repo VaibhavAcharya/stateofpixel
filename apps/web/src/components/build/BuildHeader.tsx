@@ -65,6 +65,11 @@ export function BuildHeader({
 }) {
   const github = `https://github.com/${owner}/${repo}`;
   const Title = headings ? "h1" : "p";
+  const { pending, approved, rejected } = build.counts;
+  const showSwitch =
+    canWrite &&
+    build.status === "finalized" &&
+    pending + approved + rejected > 0;
 
   return (
     <header className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-3 border-b border-border bg-surface px-4 py-3">
@@ -78,13 +83,15 @@ export function BuildHeader({
               {build.commitMessage || "No commit message"}
             </span>
           </Title>
-          <BuildStatePill
-            status={build.status}
-            conclusion={build.conclusion}
-            counts={build.counts}
-            shards={build.shards}
-            storageBlocked={build.storageBlocked}
-          />
+          {!(showSwitch && !build.storageBlocked) && (
+            <BuildStatePill
+              status={build.status}
+              conclusion={build.conclusion}
+              counts={build.counts}
+              shards={build.shards}
+              storageBlocked={build.storageBlocked}
+            />
+          )}
           {build.superseded && <SupersededPill />}
           <PrStatePill state={build.prState} />
         </div>
@@ -146,9 +153,10 @@ export function BuildHeader({
         </div>
       </div>
       <div className="flex items-center gap-2 empty:hidden max-sm:w-full">
-        {build.status !== "finalized" ? null : canWrite ? (
+        {showSwitch ? (
           <VerdictSwitch
             counts={build.counts}
+            conclusion={build.conclusion}
             canReview={canReview}
             buildAction={build.buildAction}
             onApprove={onApproveAll}
@@ -156,9 +164,12 @@ export function BuildHeader({
             onUndo={onUndoAll}
           />
         ) : (
-          <span className="text-xs text-muted">
-            You need write access on GitHub to review
-          </span>
+          build.status === "finalized" &&
+          !canWrite && (
+            <span className="text-xs text-muted">
+              You need write access on GitHub to review
+            </span>
+          )
         )}
       </div>
     </header>
@@ -302,6 +313,7 @@ const VERDICT_POSITION = { reject: 0, none: 1, approve: 2 } as const;
 
 function VerdictSwitch({
   counts,
+  conclusion,
   canReview,
   buildAction,
   onApprove,
@@ -309,6 +321,7 @@ function VerdictSwitch({
   onUndo,
 }: {
   counts: Build["counts"];
+  conclusion: Build["conclusion"];
   canReview: boolean;
   buildAction: "approve" | "reject" | null;
   onApprove: () => void;
@@ -319,41 +332,65 @@ function VerdictSwitch({
   const total = pending + approved + rejected;
   const share = (value: number) =>
     `${total === 0 ? 0 : (value / total) * 100}%`;
+  const verdict =
+    buildAction ??
+    (pending > 0
+      ? "none"
+      : conclusion === "rejected"
+        ? "reject"
+        : conclusion === "approved"
+          ? "approve"
+          : "none");
   const segment =
     "relative z-10 flex h-7 min-w-0 items-center justify-center gap-1.5 rounded-[9px] px-3 text-sm font-medium whitespace-nowrap transition-colors duration-150 disabled:cursor-default";
-  const idle = pending === 0 && buildAction === null;
+  const side = (value: "approve" | "reject") =>
+    verdict === value
+      ? value === "approve"
+        ? "text-approved"
+        : "text-rejected"
+      : `text-muted disabled:text-subtle ${value === "approve" ? "not-disabled:hover:text-approved" : "not-disabled:hover:text-rejected"}`;
+  const canSwitch = (value: "approve" | "reject") =>
+    canReview && verdict !== value && (pending > 0 || buildAction !== null);
 
   return (
     <fieldset
       aria-label="Review the whole build"
-      className="relative m-0 grid w-[400px] grid-cols-3 overflow-hidden rounded-control border-0 bg-surface-2 p-0.5 max-sm:w-full"
+      className="relative m-0 grid w-[440px] grid-cols-3 overflow-hidden rounded-control border-0 bg-surface-2 p-0.5 max-sm:w-full"
     >
       <span
         aria-hidden
         className="absolute top-0.5 left-0.5 h-7 w-[calc((100%-4px)/3)] rounded-[9px] bg-surface shadow-[inset_0_0_0_1px_var(--color-border)] transition-[translate] duration-200 ease-out-strong motion-reduce:transition-none"
-        style={{
-          translate: `${VERDICT_POSITION[buildAction ?? "none"] * 100}% 0`,
-        }}
+        style={{ translate: `${VERDICT_POSITION[verdict] * 100}% 0` }}
       />
       <button
         type="button"
-        aria-pressed={buildAction === "reject"}
-        disabled={!canReview || buildAction === "reject" || idle}
+        aria-pressed={verdict === "reject"}
+        title="Reject every snapshot left to review"
+        disabled={!canSwitch("reject")}
         onClick={onReject}
-        className={`${segment} ${buildAction === "reject" ? "text-rejected" : "text-muted not-disabled:hover:text-rejected"}`}
+        className={`${segment} ${side("reject")}`}
       >
-        <XIcon size={14} weight="bold" />
-        Reject build
+        <XIcon size={14} weight="bold" className="shrink-0" />
+        {verdict === "reject" ? "Rejected" : "Reject build"}
       </button>
       <button
         type="button"
-        disabled={!canReview || buildAction === null}
+        title={
+          verdict === "none"
+            ? undefined
+            : buildAction === null
+              ? "Return every snapshot to review"
+              : "Undo the build review"
+        }
+        disabled={!canReview || verdict === "none"}
         onClick={onUndo}
-        className={`${segment} pb-1 ${buildAction === null ? "text-text" : "text-muted hover:text-text"}`}
+        className={`${segment} pb-1 max-sm:text-xs ${verdict === "none" ? "text-text" : "text-muted not-disabled:hover:text-text"}`}
       >
-        {buildAction === null ? (
+        {verdict === "none" ? (
           <span className="tabular-nums">
-            {pending > 0 ? `${formatCount(pending)} to review` : "All reviewed"}
+            {pending > 0
+              ? `${formatCount(pending)}/${formatCount(total)} to review`
+              : "All reviewed"}
           </span>
         ) : (
           <>
@@ -377,14 +414,14 @@ function VerdictSwitch({
       </button>
       <button
         type="button"
-        aria-pressed={buildAction === "approve"}
-        title="Approve every pending snapshot (shift+a)"
-        disabled={!canReview || buildAction === "approve" || idle}
+        aria-pressed={verdict === "approve"}
+        title="Approve every snapshot left to review (shift+a)"
+        disabled={!canSwitch("approve")}
         onClick={onApprove}
-        className={`${segment} ${buildAction === "approve" ? "text-approved" : "text-muted not-disabled:hover:text-approved"}`}
+        className={`${segment} ${side("approve")}`}
       >
-        <CheckIcon size={14} weight="bold" />
-        Approve build
+        <CheckIcon size={14} weight="bold" className="shrink-0" />
+        {verdict === "approve" ? "Approved" : "Approve build"}
       </button>
     </fieldset>
   );

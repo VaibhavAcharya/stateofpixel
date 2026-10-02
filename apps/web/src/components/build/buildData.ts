@@ -137,9 +137,17 @@ function useApplyReview() {
       }
     }
 
-    const reviewCounts = (counts: Build["counts"]) => {
+    const reviewCounts = (
+      counts: Build["counts"],
+      buildAction: Build["buildAction"],
+    ) => {
       const result = { ...counts };
       if (ids === null && args.action === "undo") {
+        if (buildAction === null) {
+          result.pending += result.approved + result.rejected;
+          result.approved = 0;
+          result.rejected = 0;
+        }
         return result;
       }
       if (ids === null) {
@@ -153,12 +161,15 @@ function useApplyReview() {
       }
       return result;
     };
-    const updated = new Map<string, number>();
+    const updated = new Map<
+      string,
+      { number: number; buildAction: Build["buildAction"] }
+    >();
     for (const { args: queryArgs, value } of store.getAllQueries(
       api.builds.get,
     )) {
       if (value?.buildId === args.buildId) {
-        const counts = reviewCounts(value.counts);
+        const counts = reviewCounts(value.counts, value.buildAction);
         store.setQuery(api.builds.get, queryArgs, {
           ...value,
           counts,
@@ -170,21 +181,24 @@ function useApplyReview() {
                 ? null
                 : args.action,
         });
-        updated.set(`${queryArgs.owner}/${queryArgs.name}`, value.number);
+        updated.set(`${queryArgs.owner}/${queryArgs.name}`, {
+          number: value.number,
+          buildAction: value.buildAction,
+        });
       }
     }
     for (const { args: queryArgs, value } of store.getAllQueries(
       api.builds.list,
     )) {
-      const number = updated.get(`${queryArgs.owner}/${queryArgs.name}`);
-      if (value !== undefined && number !== undefined) {
+      const build = updated.get(`${queryArgs.owner}/${queryArgs.name}`);
+      if (value !== undefined && build !== undefined) {
         store.setQuery(api.builds.list, queryArgs, {
           ...value,
           page: value.page.map((row) => {
-            if (row.number !== number) {
+            if (row.number !== build.number) {
               return row;
             }
-            const counts = reviewCounts(row.counts);
+            const counts = reviewCounts(row.counts, build.buildAction);
             return { ...row, counts, conclusion: conclude(counts) };
           }),
         });
