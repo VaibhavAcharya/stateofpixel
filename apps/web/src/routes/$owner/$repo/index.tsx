@@ -183,7 +183,7 @@ function useBuildColumns({
           header: "Status",
           meta: { className: "w-48" },
           cell: ({ row }) => (
-            <span className="flex items-center gap-1.5">
+            <span className="flex flex-wrap items-center gap-1.5 py-1.5">
               <BuildStatePill
                 status={row.original.status}
                 conclusion={row.original.conclusion}
