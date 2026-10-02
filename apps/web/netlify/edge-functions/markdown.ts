@@ -15,5 +15,12 @@ export default async (request: Request) => {
 
 export const config = {
   path: "/*",
-  excludedPath: ["/*.md", "/*.txt", "/api/*", "/assets/*", "/og/*"],
+  excludedPath: [
+    "/*.md",
+    "/*.txt",
+    "/.netlify/*",
+    "/api/*",
+    "/assets/*",
+    "/og/*",
+  ],
 };
