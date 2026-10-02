@@ -73,16 +73,11 @@ function HeaderActions() {
   return (
     <div className="ml-auto flex items-center gap-2">
       {!isLoading && !isAuthenticated && (
-        <>
-          <span className="text-xs text-muted max-lg:hidden">
-            Free up to {facts.freeStorage}
-          </span>
-          <SignInButton
-            label="Sign in"
-            variant="ghost"
-            className="max-sm:hidden"
-          />
-        </>
+        <SignInButton
+          label="Sign in"
+          variant="ghost"
+          className="max-sm:hidden"
+        />
       )}
       <AuthButton label="Start free" />
       <div className="md:hidden">
