@@ -29,7 +29,7 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 - Listed in [awesome-regression-testing](https://github.com/mojoaxel/awesome-regression-testing), under Online services, merged in [#120](https://github.com/mojoaxel/awesome-regression-testing/pull/120).
 - Submitted to [awesome-testing-tools](https://github.com/ZoranPandovski/awesome-testing-tools), under Automated Testing Tools, in [#163](https://github.com/ZoranPandovski/awesome-testing-tools/pull/163).
 - Submitted to [awesome-design-systems](https://github.com/klaufel/awesome-design-systems), under Testing, Unit & Regression test, in [#43](https://github.com/klaufel/awesome-design-systems/pull/43).
-- Submitted to [free-for-dev](https://github.com/ripienaar/free-for-dev), under Testing, in [#4940](https://github.com/ripienaar/free-for-dev/pull/4940).
+- Listed in [free-for-dev](https://github.com/ripienaar/free-for-dev), under Testing, merged in [#4940](https://github.com/ripienaar/free-for-dev/pull/4940).
 - Submitted to [awesome-test-automation](https://github.com/atinfo/awesome-test-automation), in `automation-and-testing-as-service.md` under Web test automation and testing, in [#606](https://github.com/atinfo/awesome-test-automation/pull/606).
 - Once there are users, submit to [awesome-testing](https://github.com/TheJambo/awesome-testing) under Visual Testing and [awesome-playwright](https://github.com/mxschmitt/awesome-playwright) under Integrations. Both have closed visual testing tools as too new.
 - Once there are 1,000 stars, a Product Hunt award or SOC 2, submit to [awesome-developer-first](https://github.com/agamm/awesome-developer-first) under Testing.
