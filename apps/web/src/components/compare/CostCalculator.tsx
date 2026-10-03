@@ -125,6 +125,7 @@ export function BillLogo({ bill, size }: { bill: Bill; size: number }) {
       alt=""
       width={size}
       height={size}
+      loading="lazy"
       style={{ width: size, height: size }}
       className="flex-none rounded-[22%] ring-1 ring-border"
     />

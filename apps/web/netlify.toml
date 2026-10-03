@@ -4,6 +4,21 @@
   edge_functions = "apps/web/netlify/edge-functions"
 
 [[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/demo/*"
+  [headers.values]
+    Cache-Control = "public, max-age=600"
+
+[[headers]]
+  for = "/logos/*"
+  [headers.values]
+    Cache-Control = "public, max-age=600"
+
+[[headers]]
   for = "/*.md"
   [headers.values]
     Content-Type = "text/markdown; charset=utf-8"

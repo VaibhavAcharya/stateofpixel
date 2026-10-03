@@ -195,7 +195,15 @@ function DemoKeys() {
 /* Setup */
 
 function Logo({ name, size = 14 }: { name: string; size?: number }) {
-  return <img src={`/logos/${name}.svg`} alt="" width={size} height={size} />;
+  return (
+    <img
+      src={`/logos/${name}.svg`}
+      alt=""
+      width={size}
+      height={size}
+      loading="lazy"
+    />
+  );
 }
 
 type SetupTab = {
@@ -577,6 +585,7 @@ export function SwitchStrip() {
                   alt=""
                   width={16}
                   height={16}
+                  loading="lazy"
                   className="rounded-[22%] ring-1 ring-border"
                 />
                 From {competitor.name}
