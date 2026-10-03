@@ -4,6 +4,7 @@ packages:
   - examples/*
 
 overrides:
+  "esbuild@<0.25.0": ^0.25.0
   "fflate@<0.7.5": ^0.7.5
   "sharp@<0.35.4": ^0.35.4
 
