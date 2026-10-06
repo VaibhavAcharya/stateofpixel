@@ -1,0 +1,8 @@
+permissions:
+  contents: read
+  id-token: write
+
+steps:
+  - run: npm ci
+  - run: npx storybook build
+  - run: npx stateofpixel storybook storybook-static --viewports 375,1280

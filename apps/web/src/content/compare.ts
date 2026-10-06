@@ -56,10 +56,17 @@ export const OURS: Record<RowKey, string> = {
   openSource: "Yes, MIT licensed.",
 };
 
-export type Priced = "chromatic" | "argos" | "percy";
+export type Priced = "chromatic" | "argos" | "percy" | "happo";
 
 export type Competitor = {
-  slug: "chromatic" | "argos" | "percy" | "lost-pixel";
+  slug:
+    | "chromatic"
+    | "argos"
+    | "percy"
+    | "applitools"
+    | "happo"
+    | "lost-pixel"
+    | "backstopjs";
   name: string;
   logo: string;
   meta: PageMeta;
@@ -770,13 +777,514 @@ const lostPixel: Competitor = {
   ],
 };
 
-export const COMPETITORS: Competitor[] = [chromatic, argos, percy, lostPixel];
+const APPLITOOLS_PRICING = {
+  label: "Applitools pricing",
+  url: "https://applitools.com/pricing/",
+};
+const APPLITOOLS_GRID = {
+  label: "Applitools Ultrafast Grid",
+  url: "https://applitools.com/docs/eyes/concepts/test-execution/ultrafast-grid",
+};
+const APPLITOOLS_TERMS = {
+  label: "Applitools subscription agreement",
+  url: "https://applitools.com/legal/ssa-20231115/",
+};
+
+const applitools: Competitor = {
+  slug: "applitools",
+  name: "Applitools",
+  logo: "/logos/compare/applitools.png",
+  meta: {
+    path: "/compare/applitools",
+    title: "stateofpixel vs Applitools",
+    description:
+      "Applitools renders your tests in its own browser grid and bills per checkpoint, yearly. stateofpixel reviews the screenshots from your CI and bills for storage.",
+  },
+  headline: "Visual review without a yearly contract.",
+  lead: `Applitools renders your tests again in its own browser grid, and its first plan is $667 a month, billed yearly. stateofpixel reviews the screenshots your CI already takes, free up to ${facts.freeStorage}.`,
+  hook: "Renders in its own grid. Plans start at $667 a month, billed yearly.",
+  priced: null,
+  theirFlow: [
+    "Your tests run with the Eyes SDK",
+    "The SDK uploads the DOM and resources",
+    "The Ultrafast Grid renders each browser",
+    "Visual AI compares and sets the check",
+  ],
+  theirBill: "Billed per checkpoint, yearly",
+  cells: {
+    billing: {
+      text: "Checkpoints a month, counted per page or per component.",
+      sources: [APPLITOOLS_PRICING],
+    },
+    free: {
+      text: "A 14-day trial. No free plan is listed.",
+      sources: [
+        APPLITOOLS_PRICING,
+        {
+          label: "Applitools FAQ",
+          url: "https://applitools.com/applitools-faq/",
+        },
+      ],
+    },
+    paid: {
+      text: "Starter, $667 a month billed yearly, for 1,000 page or 100,000 component checkpoints. Higher plans are priced by sales.",
+      sources: [APPLITOOLS_PRICING],
+    },
+    limit: {
+      text: "Admins get an email. The contract allows throttling, overage fees, or ending the contract after three months over.",
+      sources: [
+        {
+          label: "Applitools account usage",
+          url: "https://applitools.com/docs/eyes/concepts/applitools-test-manager/admin/admin-account-view",
+        },
+        APPLITOOLS_TERMS,
+      ],
+    },
+    seats: {
+      text: "Unlimited users.",
+      sources: [APPLITOOLS_PRICING],
+    },
+    renders: {
+      text: "Applitools' Ultrafast Grid, from the DOM your test captures.",
+      sources: [APPLITOOLS_GRID],
+    },
+    compares: {
+      text: "Applitools' cloud, with Visual AI.",
+      sources: [APPLITOOLS_GRID],
+    },
+    browsers: {
+      text: "Chrome, Firefox, Safari, Edge and Internet Explorer, plus emulated Android and simulated iOS devices.",
+      sources: [
+        {
+          label: "Applitools browsers and devices",
+          url: "https://applitools.com/docs/eyes/concepts/test-execution/ultrafast-grid-devices-browsers",
+        },
+      ],
+    },
+    runners: {
+      text: "Playwright, Cypress, Selenium, Storybook, Appium, WebdriverIO and more.",
+      sources: [
+        {
+          label: "Applitools Eyes docs",
+          url: "https://applitools.com/docs/eyes",
+        },
+      ],
+    },
+    git: {
+      text: "GitHub, GitLab, Bitbucket and Azure DevOps.",
+      sources: [
+        {
+          label: "Applitools GitHub integration",
+          url: "https://applitools.com/docs/eyes/integrations/source-control/github",
+        },
+        {
+          label: "Applitools Bitbucket integration",
+          url: "https://applitools.com/docs/eyes/integrations/source-control/bitbucket",
+        },
+      ],
+    },
+    retention: {
+      text: "6 months on Starter, 12 months on Enterprise.",
+      sources: [APPLITOOLS_TERMS],
+    },
+    openSource: {
+      text: "No. The SDKs use a proprietary license.",
+      sources: [
+        {
+          label: "Eyes Python SDK license",
+          url: "https://github.com/applitools/eyes.sdk.python/blob/master/LICENSE",
+        },
+        {
+          label: "@applitools/eyes-playwright on npm",
+          url: "https://www.npmjs.com/package/@applitools/eyes-playwright",
+        },
+      ],
+    },
+  },
+  differences: [
+    [
+      "One renderer",
+      "The Ultrafast Grid renders the DOM your test captured again, in Applitools' browsers. We compare the pixels your test saw.",
+    ],
+    [
+      "Every price is on the page",
+      "Applitools lists Starter and sends the other plans to sales. Our plans start free, bill monthly or yearly, and all of them are on the pricing page.",
+    ],
+    [
+      "Open source",
+      "The Applitools SDKs use a proprietary license. stateofpixel, server included, is MIT licensed and can run on your own Netlify site.",
+    ],
+  ],
+  ahead: [
+    [
+      "Visual AI match levels",
+      "Layout and Ignore Colors match levels skip content or color changes, for a whole image or a region. stateofpixel compares pixels with a color threshold.",
+    ],
+    [
+      "Root cause analysis",
+      "Eyes stores the DOM and CSS with each checkpoint and shows which ones changed. stateofpixel stores the images and their metadata.",
+    ],
+    [
+      "Browsers you don't run",
+      "Applitools renders Safari, Edge and mobile devices for you. With stateofpixel, your CI renders every browser you want to compare.",
+    ],
+    [
+      "GitLab, Bitbucket and Azure DevOps",
+      "Applitools works with all three. stateofpixel works with GitHub only.",
+    ],
+  ],
+  switchSteps: [
+    [
+      "Install the GitHub App",
+      "Pick the repositories. On GitHub Actions there is no token to copy.",
+    ],
+    [
+      "Replace the Eyes step",
+      "Storybook stories are captured at each width you list. In Playwright tests, replace eyes.check() with snapshot().",
+    ],
+    [
+      "Merge to main",
+      "That build becomes the baseline. There is nothing to export from Applitools.",
+    ],
+  ],
+  faq: [
+    [
+      "Does Applitools have a free plan?",
+      `Applitools lists a 14-day trial. stateofpixel is free up to ${facts.freeStorage} stored, with no time limit.`,
+    ],
+    [
+      "Does stateofpixel use AI to compare?",
+      "No. It compares pixels and ignores color differences under a threshold you set per project or per run. Most noise is fixed where the screenshot is taken, see Stable screenshots in the docs.",
+    ],
+    [
+      "Can I keep Cypress or Selenium tests?",
+      "Yes. Save screenshots to a folder and run stateofpixel upload on it. Cypress has its own guide in the docs.",
+    ],
+    [
+      "Do I lose my Applitools baselines?",
+      "You start fresh. The first build on your default branch becomes the baseline, and pull requests compare against it from then on.",
+    ],
+  ],
+};
+
+const HAPPO_PRICING = {
+  label: "Happo pricing",
+  url: "https://happo.io/pricing",
+};
+const HAPPO_GETTING_STARTED = {
+  label: "Happo getting started",
+  url: "https://docs.happo.io/docs/getting-started",
+};
+const HAPPO_BROWSERS = {
+  label: "Happo browsers",
+  url: "https://docs.happo.io/docs/browsers",
+};
+
+const happo: Competitor = {
+  slug: "happo",
+  name: "Happo",
+  logo: "/logos/compare/happo.png",
+  meta: {
+    path: "/compare/happo",
+    title: "stateofpixel vs Happo",
+    description:
+      "Happo renders every snapshot in every browser on its own workers and bills each one. stateofpixel reviews the screenshots from your CI and bills for storage.",
+  },
+  headline: "Stop paying per browser.",
+  lead: "Happo renders every snapshot in every browser on its own workers and bills each one. stateofpixel reviews the screenshots your CI already takes and bills only for the storage they use.",
+  hook: "Renders in its own browsers and bills every snapshot in every browser.",
+  priced: "happo",
+  theirFlow: [
+    "Your CI builds and uploads the suite",
+    "Happo's workers render every snapshot",
+    "Happo compares with the baseline report",
+    "You review on Happo and it sets the status",
+  ],
+  theirBill: "Billed per snapshot",
+  cells: {
+    billing: {
+      text: "Snapshots a month. One snapshot is one variant in one browser.",
+      sources: [HAPPO_PRICING],
+    },
+    free: {
+      text: "5,000 snapshots a month, Chrome only.",
+      sources: [HAPPO_PRICING],
+    },
+    paid: {
+      text: "Starter, $149 a month for 50,000 snapshots in Chrome and Firefox, then $0.006 each.",
+      sources: [HAPPO_PRICING],
+    },
+    limit: {
+      text: "On Free, the account pauses until the next cycle. Paid plans bill the extra.",
+      sources: [HAPPO_PRICING],
+    },
+    seats: {
+      text: "Unlimited users.",
+      sources: [HAPPO_PRICING],
+    },
+    renders: {
+      text: "Happo's browser workers, from the suite the CLI uploads.",
+      sources: [HAPPO_GETTING_STARTED],
+    },
+    compares: {
+      text: "Happo's service.",
+      sources: [
+        HAPPO_GETTING_STARTED,
+        {
+          label: "Happo reviewing diffs",
+          url: "https://docs.happo.io/docs/reviewing-diffs",
+        },
+      ],
+    },
+    browsers: {
+      text: "Chrome, Firefox, Edge, Safari and iOS Safari, by plan. Safari starts on Growth, $399 a month.",
+      sources: [HAPPO_BROWSERS, HAPPO_PRICING],
+    },
+    runners: {
+      text: "Storybook, Cypress, Playwright, page URLs, or a custom bundle.",
+      sources: [HAPPO_GETTING_STARTED],
+    },
+    git: {
+      text: "GitHub, GitLab, Bitbucket and Azure DevOps.",
+      sources: [
+        {
+          label: "Happo continuous integration",
+          url: "https://docs.happo.io/docs/continuous-integration",
+        },
+      ],
+    },
+    openSource: {
+      text: "The happo client is MIT licensed. The service is not open source.",
+      sources: [
+        { label: "happo on npm", url: "https://www.npmjs.com/package/happo" },
+        {
+          label: "Happo client repository",
+          url: "https://github.com/happo/happo",
+        },
+      ],
+    },
+  },
+  differences: [
+    [
+      "One renderer",
+      "Your tests already render in CI. We compare those pixels, so there is no second browser that disagrees with your test run.",
+    ],
+    [
+      "Browsers don't multiply the bill",
+      "Happo counts one snapshot per variant per browser. We bill for bytes stored, and an unchanged screenshot is one hash.",
+    ],
+    [
+      "The free plan never stops CI",
+      `Happo pauses a free account at its quota until the next cycle. Ours warns, waits ${facts.graceDays} days, then passes the check with a note.`,
+    ],
+  ],
+  ahead: [
+    [
+      "Safari, iOS and Edge",
+      "Happo renders them on its own machines. With stateofpixel, your CI renders every browser you want to compare.",
+    ],
+    [
+      "Accessibility checks",
+      "Happo runs axe-core as a target on every plan. stateofpixel only compares screenshots.",
+    ],
+    [
+      "GitLab, Bitbucket and Azure DevOps",
+      "Happo reports to all three. stateofpixel works with GitHub only.",
+    ],
+  ],
+  switchSteps: [
+    [
+      "Install the GitHub App",
+      "Pick the repositories. On GitHub Actions there is no token to copy.",
+    ],
+    [
+      "Replace the Happo step",
+      "Storybook stories are captured at each width you list. For Cypress or Playwright, upload the screenshots your tests write.",
+    ],
+    [
+      "Merge to main",
+      "That build becomes the baseline. There is nothing to export from Happo.",
+    ],
+  ],
+  faq: [
+    [
+      "Can I keep my Storybook stories as they are?",
+      "Yes. stateofpixel storybook opens your built Storybook and captures every story at each width. A story named Button/Primary becomes the snapshot Button/Primary [chromium 1280].",
+    ],
+    [
+      "Why is stateofpixel cheaper than Happo?",
+      "Happo renders every snapshot in every browser on its own machines. stateofpixel never runs a browser: your CI renders and compares, and our server stores the images that changed.",
+    ],
+    [
+      "Do I lose my Happo baselines?",
+      "You start fresh. The first build on your default branch becomes the baseline, and pull requests compare against it from then on.",
+    ],
+  ],
+};
+
+const BACKSTOP_README = {
+  label: "BackstopJS README",
+  url: "https://github.com/garris/BackstopJS/blob/master/README.md",
+};
+const BACKSTOP_NPM = {
+  label: "backstopjs on npm",
+  url: "https://www.npmjs.com/package/backstopjs",
+};
+
+const backstopjs: Competitor = {
+  slug: "backstopjs",
+  name: "BackstopJS",
+  logo: "/logos/compare/backstopjs.png",
+  meta: {
+    path: "/compare/backstopjs",
+    title: "stateofpixel vs BackstopJS",
+    description:
+      "BackstopJS compares screenshots on your machine and writes an HTML report. stateofpixel keeps the baselines and asks for review on the pull request.",
+  },
+  headline: "Keep the visual tests. Get a review page.",
+  lead: "BackstopJS compares screenshots on the machine that runs it and writes an HTML report there. stateofpixel takes the screenshots in your CI, keeps the baselines and asks for review on the pull request.",
+  hook: "Runs on your machine. Last release in September 2024.",
+  status: [
+    {
+      label: "Last release",
+      value: "6.3.25, 7 September 2024",
+      source: BACKSTOP_NPM,
+    },
+    {
+      label: "Open issues",
+      value: "517 on 5 October 2026",
+      source: {
+        label: "BackstopJS issues",
+        url: "https://github.com/garris/BackstopJS/issues",
+      },
+    },
+  ],
+  priced: null,
+  theirFlow: [
+    "Puppeteer or Playwright captures on your machine",
+    "Resemble.js compares locally",
+    "An HTML report opens on that machine",
+    "backstop approve copies the new images to the references",
+  ],
+  theirBill: "Free, you run it",
+  cells: {
+    billing: {
+      text: "Nothing. It is MIT licensed software you run yourself.",
+      sources: [BACKSTOP_NPM],
+    },
+    renders: {
+      text: "Your machine or CI, with Puppeteer or Playwright, optionally in its Docker image.",
+      sources: [BACKSTOP_README],
+    },
+    compares: {
+      text: "Your machine or CI, with Resemble.js.",
+      sources: [
+        BACKSTOP_README,
+        {
+          label: "BackstopJS package.json",
+          url: "https://github.com/garris/BackstopJS/blob/master/package.json",
+        },
+      ],
+    },
+    browsers: {
+      text: "Chrome through Puppeteer, or Chromium, Firefox and WebKit through Playwright.",
+      sources: [BACKSTOP_README],
+    },
+    runners: {
+      text: "Scenarios in backstop.json: URLs, selectors and interactions, plus custom scripts.",
+      sources: [BACKSTOP_README],
+    },
+    git: {
+      text: "No integration. CI gets a JUnit report.",
+      sources: [BACKSTOP_README],
+    },
+    retention: {
+      text: "Reference images stay in a folder you keep, in or out of source control.",
+      sources: [BACKSTOP_README],
+    },
+    openSource: {
+      text: "Yes, MIT licensed.",
+      sources: [
+        {
+          label: "BackstopJS license",
+          url: "https://github.com/garris/BackstopJS/blob/master/LICENSE",
+        },
+      ],
+    },
+  },
+  differences: [
+    [
+      "A review page on the pull request",
+      "BackstopJS writes its report on the machine that ran it, and backstop approve copies the new images over the references. We set a GitHub check and show every change on one page that anyone with write access can approve.",
+    ],
+    [
+      "Baselines out of your repository",
+      "BackstopJS keeps reference images in a folder you store yourself. We pick the baseline from your git history, so two pull requests never conflict over an image.",
+    ],
+    [
+      "Maintained",
+      "BackstopJS's last npm release was 6.3.25, in September 2024. stateofpixel is in active development.",
+    ],
+  ],
+  ahead: [
+    [
+      "Offline, with no service",
+      "BackstopJS captures, compares and reports on your machine, with no account anywhere.",
+    ],
+    [
+      "Scenarios without test code",
+      "backstop.json drives clicks, hovers and key presses on a list of URLs. stateofpixel needs a test runner or Storybook to take the screenshots.",
+    ],
+    [
+      "Compare two environments",
+      "A referenceUrl compares one site with another, like production with staging. stateofpixel compares builds of the same repository.",
+    ],
+  ],
+  switchSteps: [
+    [
+      "Install the GitHub App",
+      "Pick the repositories. On GitHub Actions there is no token to copy.",
+    ],
+    [
+      "Move scenarios to Playwright",
+      "Each scenario becomes a test that visits the URL and calls snapshot(). The reporter uploads when the run ends.",
+    ],
+    [
+      "Delete the reference images",
+      "Remove backstop_data/bitmaps_reference. The first build on your default branch becomes the baseline.",
+    ],
+  ],
+  faq: [
+    [
+      "Is BackstopJS still maintained?",
+      "Its last npm release, 6.3.25, came out on 7 September 2024. The repository had 517 open issues on 5 October 2026.",
+    ],
+    [
+      "Can I keep backstop.json?",
+      "No. stateofpixel does not run scenarios. Take the screenshots with Playwright, or any tool that writes PNG files, and upload the folder.",
+    ],
+    [
+      "Do I need to commit reference images?",
+      "No. stateofpixel stores the images and picks each baseline from your git history.",
+    ],
+  ],
+};
+
+export const COMPETITORS: Competitor[] = [
+  chromatic,
+  argos,
+  percy,
+  applitools,
+  happo,
+  lostPixel,
+  backstopjs,
+];
 
 export const COMPARE_PAGE: PageMeta = {
   path: "/compare",
   title: "Compare",
   description:
-    "How stateofpixel compares with Chromatic, Argos, Percy and Lost Pixel, with a source for every fact.",
+    "How stateofpixel compares with Chromatic, Argos, Percy, Applitools, Happo, Lost Pixel and BackstopJS, with a source for every fact.",
 };
 
 export function findCompetitor(slug: string): Competitor | undefined {

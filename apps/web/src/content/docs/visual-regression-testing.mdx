@@ -1,0 +1,37 @@
+export const meta = {
+  title: "What is visual regression testing?",
+  description: "How visual regression testing works: screenshots, baselines, pixel diffs and review, and where each tool takes and compares the images.",
+  lead: "Visual regression testing compares screenshots of your UI with approved screenshots from before the change. A person looks at each difference and decides whether it was meant.",
+};
+
+## What it catches
+
+Unit and end-to-end tests check what a page does: a button submits, a list has ten rows. They pass when a CSS change pushes the button under the footer or a font fails to load. A screenshot shows those changes, because it records how the page looks.
+
+## How it works
+
+1. **Capture.** A browser opens each page, component or story and saves a screenshot. Each screenshot has a stable name, like `checkout/empty-cart`.
+2. **Pick the baseline.** The baseline is the set of screenshots someone approved before. Most tools take it from the main branch.
+3. **Compare.** Each new screenshot is compared with the baseline screenshot of the same name, pixel by pixel. Small color differences under a threshold are ignored, so anti-aliasing does not count as a change.
+4. **Review.** Changed screenshots are shown next to the baseline, with the differing pixels marked. A person approves the change or rejects it.
+5. **Update the baseline.** Approved screenshots become the new baseline for the next change.
+
+On a pull request, the result is usually a status check that waits until every change is approved.
+
+## Where the screenshots come from
+
+Tools differ most in who runs the browser:
+
+- **A cloud renderer.** You upload your built app or Storybook, and the service renders every page in its own browsers. It can render browsers you do not run, and it usually bills per screenshot.
+- **Your own CI.** Your tests take the screenshots in the browser they already run, and only the images are uploaded. The screenshot matches what your test saw, and there is no second browser to disagree with it.
+- **Your machine, with baselines in git.** Tools like Playwright's `toHaveScreenshot()` compare locally against PNG files committed to the repository. See [Playwright snapshots in git](/docs/snapshots-in-git).
+
+stateofpixel uses your CI. See [How stateofpixel compares](/compare) for the other tools.
+
+## What makes it noisy
+
+A screenshot that changes on every run asks for review on every run. The usual causes are fonts and rendering that differ between machines, animations, dates and random data. Taking every screenshot in the same environment and freezing time removes most of it. See [Stable screenshots](/docs/stable-screenshots).
+
+## Try it
+
+The [Quickstart](/docs) sets up stateofpixel on a GitHub repository with Playwright, Storybook or any tool that writes PNG files.

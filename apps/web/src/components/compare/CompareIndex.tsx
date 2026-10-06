@@ -117,9 +117,10 @@ export function CompareIndex() {
           How stateofpixel compares.
         </h1>
         <p className={`${LEAD} mt-6 max-w-[720px]`}>
-          Chromatic and Percy render in their own browsers. Argos and Lost Pixel
-          use your CI, like we do. Their paid plans bill per screenshot. We bill
-          for storage.
+          Chromatic, Percy, Applitools and Happo render in their own browsers.
+          Argos and Lost Pixel use your CI, like we do, and BackstopJS runs
+          wherever you run it. The paid plans bill per screenshot. We bill for
+          storage.
         </p>
         <p className="mt-4 text-xs text-muted">
           Every fact about them links to its source, checked on {CHECKED}.

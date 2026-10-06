@@ -1,0 +1,65 @@
+export const meta = {
+  title: "Cypress",
+  description: "Take screenshots in Cypress tests and upload them to stateofpixel for review on the pull request.",
+  lead: "Call cy.screenshot() in your tests and upload the screenshots folder after cypress run. No plugin is needed.",
+};
+
+## Install
+
+```sh terminal
+npm install -D stateofpixel
+```
+
+## Take screenshots
+
+```ts cypress/e2e/cart.cy.ts
+describe("cart", () => {
+  it("shows the empty cart", () => {
+    cy.visit("/cart");
+    cy.screenshot("empty-cart");
+  });
+});
+```
+
+From the [Cypress docs](https://docs.cypress.io/api/commands/screenshot), a named screenshot is saved as `{screenshotsFolder}/{adjustedSpecPath}/{name}.png`, and `cypress/screenshots` is the default folder. The spec path drops the folders that all specs share, so the example above saves `cypress/screenshots/cart.cy.ts/empty-cart.png`, and its snapshot name is `cart.cy.ts/empty-cart`. See [Snapshot names](/docs/any-screenshots#snapshot-names).
+
+Always pass a name. Without one, Cypress names the file after the test titles, so renaming a test makes a new snapshot.
+
+`cy.screenshot()` captures the full page by default and pauses timers and animations while it captures. Pass `{ capture: "viewport" }` to capture only the viewport, and `{ blackout: [".clock"] }` to cover parts that change on every run.
+
+## Configure Cypress
+
+```ts cypress.config.ts
+import { defineConfig } from "cypress";
+
+export default defineConfig({
+  screenshotOnRunFailure: false,
+  viewportWidth: 1280,
+  viewportHeight: 800,
+  e2e: {
+    baseUrl: "http://localhost:3000",
+  },
+});
+```
+
+- `screenshotOnRunFailure: false` stops Cypress from saving a `(failed)` screenshot of each failing test, which would upload as a new snapshot.
+- `cypress run` empties the screenshots folder before it starts, so old screenshots never upload. That is `trashAssetsBeforeRuns`, on by default.
+- A fixed viewport keeps the width the same on every machine.
+
+## Run it on CI
+
+```yaml .github/workflows/visual.yml
+steps:
+  - uses: actions/checkout@v7
+    with:
+      fetch-depth: 0
+  - run: npm ci
+  - run: npx cypress run
+  - run: npx stateofpixel upload cypress/screenshots
+```
+
+The workflow needs `id-token: write`, as in the [Quickstart](/docs). If you run only some specs, for example with `--spec`, add `--subset` to the upload so the snapshots of the other specs are not reported as removed.
+
+With several Cypress machines in parallel, upload from each one with `--shard`. See [Sharding](/docs/sharding).
+
+Screenshots taken on a laptop and on CI differ in fonts and rendering. Compare CI with CI only. See [Stable screenshots](/docs/stable-screenshots).

@@ -23,6 +23,13 @@ export const PERCY: Plan[] = [
   { name: "Desktop 25k", price: 549, included: 25_000, extra: 0.036 },
 ];
 
+export const HAPPO: Plan[] = [
+  { name: "Free", price: 0, included: 5_000, extra: null, browsers: 1 },
+  { name: "Starter", price: 149, included: 50_000, extra: 0.006, browsers: 2 },
+  { name: "Growth", price: 399, included: 150_000, extra: 0.006, browsers: 3 },
+  { name: "Pro", price: 749, included: 300_000, extra: 0.006, browsers: 5 },
+];
+
 export type Quote = { plan: Plan; cost: number; extra: number };
 
 export function cheapestPlan(
