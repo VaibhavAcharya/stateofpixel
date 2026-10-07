@@ -13,6 +13,10 @@ export const DOCS_NAV = [
     pages: [
       { slug: "quickstart", label: "Quickstart" },
       { slug: "moving", label: "Moving from another tool" },
+      {
+        slug: "visual-regression-testing",
+        label: "What is visual regression testing?",
+      },
     ],
   },
   {
@@ -20,6 +24,7 @@ export const DOCS_NAV = [
     pages: [
       { slug: "playwright", label: "Playwright" },
       { slug: "storybook", label: "Storybook" },
+      { slug: "cypress", label: "Cypress" },
       { slug: "any-screenshots", label: "Any screenshots" },
     ],
   },

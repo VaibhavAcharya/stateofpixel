@@ -5,6 +5,7 @@ import {
   ARGOS,
   CHROMATIC,
   cheapestPlan,
+  HAPPO,
   PERCY,
   type Plan,
 } from "../../lib/competitorPricing";
@@ -46,6 +47,13 @@ const PRICED: Record<
     plans: PERCY,
     url: "https://www.browserstack.com/pricing?product=percy",
     note: "Percy prices are month to month; yearly billing is lower.",
+  },
+  happo: {
+    name: "Happo",
+    logo: "/logos/compare/happo.png",
+    plans: HAPPO,
+    url: "https://happo.io/pricing",
+    note: "Happo counts each browser as its own snapshot.",
   },
 };
 

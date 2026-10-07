@@ -15,10 +15,16 @@ import {
   type RowKey,
   type Source,
 } from "../../content/compare";
+import applitoolsAfter from "../../snippets/compare/applitools-after.yml?highlight";
+import applitoolsBefore from "../../snippets/compare/applitools-before.yml?highlight";
 import argosAfter from "../../snippets/compare/argos-after.yml?highlight";
 import argosBefore from "../../snippets/compare/argos-before.yml?highlight";
+import backstopjsAfter from "../../snippets/compare/backstopjs-after.yml?highlight";
+import backstopjsBefore from "../../snippets/compare/backstopjs-before.yml?highlight";
 import chromaticAfter from "../../snippets/compare/chromatic-after.yml?highlight";
 import chromaticBefore from "../../snippets/compare/chromatic-before.yml?highlight";
+import happoAfter from "../../snippets/compare/happo-after.yml?highlight";
+import happoBefore from "../../snippets/compare/happo-before.yml?highlight";
 import lostPixelAfter from "../../snippets/compare/lost-pixel-after.yml?highlight";
 import lostPixelBefore from "../../snippets/compare/lost-pixel-before.yml?highlight";
 import percyAfter from "../../snippets/compare/percy-after.yml?highlight";
@@ -63,6 +69,21 @@ const SWITCH_SNIPPETS: Record<
   "lost-pixel": {
     before: lostPixelBefore,
     after: [{ file: WORKFLOW, snippet: lostPixelAfter }],
+  },
+  applitools: {
+    before: applitoolsBefore,
+    after: [{ file: WORKFLOW, snippet: applitoolsAfter }],
+  },
+  happo: {
+    before: happoBefore,
+    after: [{ file: WORKFLOW, snippet: happoAfter }],
+  },
+  backstopjs: {
+    before: backstopjsBefore,
+    after: [
+      { file: WORKFLOW, snippet: backstopjsAfter },
+      { file: "playwright.config.ts", snippet: playwrightConfig },
+    ],
   },
 };
 

@@ -1,0 +1,8 @@
+permissions:
+  contents: read
+  id-token: write
+
+steps:
+  - run: npm ci
+  - run: npx playwright install --with-deps chromium
+  - run: npx playwright test
