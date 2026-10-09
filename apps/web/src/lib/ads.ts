@@ -28,13 +28,14 @@ export const GOOGLE_TAG_SCRIPT = `if (location.hostname === "stateofpixel.com") 
     analytics_storage: "denied",
   });
   gtag("js", new Date());
+  const publicPage = isPublic(location.pathname);
   gtag("set", {
-    page_location: isPublic(location.pathname)
+    page_location: publicPage
       ? location.origin + location.pathname + location.search
       : location.origin + "/",
     page_referrer: "",
   });
-  gtag("config", "${GOOGLE_ADS_ID}", { send_page_view: false });
+  gtag("config", "${GOOGLE_ADS_ID}", { send_page_view: publicPage });
   const script = document.createElement("script");
   script.async = true;
   script.src = "https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}";

@@ -17,7 +17,7 @@ export const Route = createFileRoute("/privacy")({
 
 function Privacy() {
   return (
-    <LegalPage title="Privacy policy" updated="October 9, 2026">
+    <LegalPage title="Privacy policy" updated="October 10, 2026">
       <p>
         This policy explains what data stateofpixel ("we", "us") collects when
         you use stateofpixel.com, the GitHub App and the stateofpixel CLI, and
@@ -119,10 +119,12 @@ function Privacy() {
       <h2>Advertising</h2>
       <p>
         We use Google Ads to measure which of our ads bring sign-ups. When you
-        sign up, the site tells Google Ads that a sign-up happened. We do not
-        send your name, email address or GitHub account, and pages behind
-        sign-in are reported as the home page. If you decline cookies, Google
-        still learns that a sign-up happened, without cookies.
+        open a public page, such as the home page, the docs or a comparison, the
+        site tells Google Ads which page it was. When you sign up, it tells
+        Google Ads that a sign-up happened. We do not send your name, email
+        address or GitHub account, and pages behind sign-in are not reported. If
+        you decline cookies, Google still learns about these visits and
+        sign-ups, without cookies.
       </p>
 
       <h2>How we use it</h2>
