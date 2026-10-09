@@ -45,11 +45,10 @@ export function AdsConsentPrompt({
         className="pointer-events-auto flex w-full max-w-[420px] animate-enter flex-col gap-3 rounded-md bg-surface p-3 text-sm shadow-menu ring-1 ring-border"
       >
         <p>
-          We use Google Ads cookies to see which ads bring sign-ups. See the{" "}
+          We use cookies to measure our marketing.{" "}
           <Link to="/privacy" className="text-link hover:underline">
-            privacy policy
+            Privacy policy
           </Link>
-          .
         </p>
         <div className="flex justify-end gap-2">
           <button
@@ -64,7 +63,7 @@ export function AdsConsentPrompt({
             className={buttonClass("secondary")}
             onClick={() => onChoose("granted")}
           >
-            Allow
+            Accept
           </button>
         </div>
       </section>
