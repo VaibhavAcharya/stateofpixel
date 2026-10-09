@@ -15,6 +15,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { reportSignUp } from "./ads";
 
 type AuthState = { isLoading: boolean; isAuthenticated: boolean };
 
@@ -50,7 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let unsubscribe = () => {};
     void (async () => {
       if (isAuthCallback()) {
-        await handleAuthCallback().catch(() => null);
+        const result = await handleAuthCallback().catch(() => null);
+        if (result?.type === "oauth") {
+          await reportSignUp(result.user);
+        }
         window.location.replace(takeRedirectTo());
         return;
       }
