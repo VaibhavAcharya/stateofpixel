@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { facts } from "../components/docs/facts";
 import { LegalPage, SupportEmail } from "../components/LegalPage";
+import { setAdsConsent } from "../lib/ads";
 import { PAGES, pageLinks, pageMeta } from "../lib/pageMeta";
 
 export const Route = createFileRoute("/privacy")({
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/privacy")({
 
 function Privacy() {
   return (
-    <LegalPage title="Privacy policy" updated="September 30, 2026">
+    <LegalPage title="Privacy policy" updated="October 9, 2026">
       <p>
         This policy explains what data stateofpixel ("we", "us") collects when
         you use stateofpixel.com, the GitHub App and the stateofpixel CLI, and
@@ -88,8 +89,19 @@ function Privacy() {
       <p>
         Signing in sets two cookies, nf_jwt and nf_refresh, that keep you signed
         in. The site also keeps your session, your theme choice and the page to
-        return to after sign-in in your browser's storage. We do not use
-        advertising or tracking cookies.
+        return to after sign-in in your browser's storage. If you allow cookies
+        in the cookie banner, Google Ads sets cookies such as _gcl_au that link
+        a sign-up to the ad you clicked. If you decline, it sets none. We keep
+        your choice in your browser's storage.
+      </p>
+      <p>
+        <button
+          type="button"
+          className="text-link hover:underline"
+          onClick={() => setAdsConsent(null)}
+        >
+          Change your cookie choice
+        </button>
       </p>
 
       <h2>Analytics</h2>
@@ -104,6 +116,15 @@ function Privacy() {
         nothing is sent.
       </p>
 
+      <h2>Advertising</h2>
+      <p>
+        We use Google Ads to measure which of our ads bring sign-ups. When you
+        sign up, the site tells Google Ads that a sign-up happened. We do not
+        send your name, email address or GitHub account, and pages behind
+        sign-in are reported as the home page. If you decline cookies, Google
+        still learns that a sign-up happened, without cookies.
+      </p>
+
       <h2>How we use it</h2>
       <ul>
         <li>
@@ -113,13 +134,16 @@ function Privacy() {
         <li>To check that you are allowed to see or review a project.</li>
         <li>To reply when you contact us.</li>
       </ul>
-      <p>We do not sell your data and we do not use it for advertising.</p>
+      <p>
+        We do not sell your data. Apart from the sign-up measurement above, we
+        do not use it for advertising.
+      </p>
 
       <h2>Who processes it</h2>
       <p>We use these providers to run stateofpixel:</p>
       <ul>
         <li>GitHub, for sign-in, the GitHub App and commit statuses.</li>
-        <li>Google, for sign-in.</li>
+        <li>Google, for sign-in and Google Ads.</li>
         <li>Dodo Payments, to take payments for paid plans.</li>
         <li>
           Netlify, to host the website, run sign-in and the database, and store

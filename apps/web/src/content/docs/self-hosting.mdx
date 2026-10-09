@@ -31,9 +31,9 @@ Then set `STATEOFPIXEL_SELF_HOSTED` to `true`. With it:
 
 - Accounts are on the Unlimited plan, with no storage limit. Accounts created before you set it move to Unlimited the next time their installation syncs, for example when you add a repository to the installation. An account on a custom plan keeps it.
 - The daily limits on builds and uploaded bytes do not apply. The other [limits](/docs/limits#limits) still do.
-- Pages load no analytics script.
+- Pages load no analytics or ads script.
 
-Redeploy after changing it. The build reads it to leave out the analytics script.
+Redeploy after changing it. The build reads it to leave out these scripts.
 
 ## Point CI at your site
 

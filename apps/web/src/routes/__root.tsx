@@ -6,6 +6,8 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { AdsConsentBanner } from "../components/AdsConsentBanner";
+import { GOOGLE_TAG_SCRIPT } from "../lib/ads";
 import { UMAMI_BEFORE_SEND_SCRIPT } from "../lib/analytics";
 import appCss from "../styles.css?url";
 
@@ -25,7 +27,9 @@ export const Route = createRootRouteWithContext<{
     ],
     scripts: [
       { children: THEME_SCRIPT },
-      ...(import.meta.env.STATEOFPIXEL_SELF_HOSTED ? [] : UMAMI_SCRIPTS),
+      ...(import.meta.env.STATEOFPIXEL_SELF_HOSTED
+        ? []
+        : [...UMAMI_SCRIPTS, { children: GOOGLE_TAG_SCRIPT }]),
     ],
   }),
   headers: () => ({
@@ -78,6 +82,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       </head>
       <body>
         {children}
+        <AdsConsentBanner />
         <Scripts />
       </body>
     </html>

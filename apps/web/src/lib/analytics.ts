@@ -10,12 +10,14 @@ export function track(event: string, data?: EventData) {
   window.umami?.track(event, data);
 }
 
-export const UMAMI_BEFORE_SEND_SCRIPT = `window.umamiBeforeSend = (type, payload) => {
-  const publicPaths = ["/", "/brand", "/privacy", "/terms", "/refunds", "/install"];
+export const IS_PUBLIC_PATH_SCRIPT = `const publicPaths = ["/", "/brand", "/privacy", "/terms", "/refunds", "/install"];
   const publicSections = ["/compare", "/docs"];
   const isPublic = (path) =>
     publicPaths.includes(path) ||
-    publicSections.some((section) => path === section || path.startsWith(section + "/"));
+    publicSections.some((section) => path === section || path.startsWith(section + "/"));`;
+
+export const UMAMI_BEFORE_SEND_SCRIPT = `window.umamiBeforeSend = (type, payload) => {
+  ${IS_PUBLIC_PATH_SCRIPT}
   const maskPath = (path) => {
     const [, repo, section, ...rest] = path.split("/").slice(1);
     const parts = [":owner"];
