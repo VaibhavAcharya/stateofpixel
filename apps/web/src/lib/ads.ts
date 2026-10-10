@@ -1,8 +1,8 @@
 import type { User } from "@netlify/identity";
 import { IS_PUBLIC_PATH_SCRIPT } from "./analytics";
 
-const GOOGLE_ADS_ID = "AW-11097797863";
-const SIGN_UP_CONVERSION = `${GOOGLE_ADS_ID}/OZyeCI3sjJcdEOfp66sp`;
+const GOOGLE_ADS_ID = "AW-18504663956";
+const SIGN_UP_CONVERSION = `${GOOGLE_ADS_ID}/fP0YCPXr05cdEJSH2_dE`;
 const CONSENT_KEY = "adsConsent";
 const NEW_USER_MS = 10 * 60 * 1000;
 const CONVERSION_TIMEOUT_MS = 1000;
