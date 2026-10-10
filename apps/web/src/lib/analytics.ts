@@ -36,9 +36,11 @@ export const UMAMI_BEFORE_SEND_SCRIPT = `window.umamiBeforeSend = (type, payload
     const path = maskPath(url.pathname);
     return { value: value.startsWith("/") ? path : url.origin + path, masked: true };
   };
-  const url = mask(payload.url);
+  const dropTokenHash = (value) =>
+    value && /#.*token=/.test(value) ? value.split("#")[0] : value;
+  const url = mask(dropTokenHash(payload.url));
   payload.url = url.value;
-  payload.referrer = mask(payload.referrer).value;
+  payload.referrer = mask(dropTokenHash(payload.referrer)).value;
   if (url.masked && payload.title) payload.title = "stateofpixel";
   return payload;
 };`;
