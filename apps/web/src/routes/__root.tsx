@@ -48,7 +48,6 @@ const UMAMI_SCRIPTS = [
     "data-website-id": "82c68e9d-e447-43cc-9f60-87ef5c9b1f7f",
     "data-domains": "stateofpixel.com",
     "data-before-send": "umamiBeforeSend",
-    "data-exclude-search": "true",
     "data-do-not-track": "true",
     "data-performance": "true",
   },

@@ -111,9 +111,9 @@ function Privacy() {
         records the page, the page you came from, your browser, operating
         system, device type, screen size, language, country and page load times.
         Before anything is sent, we replace account names, repository names,
-        build numbers and snapshot names in page addresses with placeholders,
-        and we leave out search parameters. If your browser sends Do Not Track,
-        nothing is sent.
+        build numbers and snapshot names in page addresses with placeholders. We
+        keep search parameters on public pages and leave them out on pages
+        behind sign-in. If your browser sends Do Not Track, nothing is sent.
       </p>
 
       <h2>Advertising</h2>
