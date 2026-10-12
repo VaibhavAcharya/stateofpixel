@@ -90,5 +90,10 @@ function organizationJsonLd() {
     logo: `${SITE_URL}/brand/stateofpixel-mark.png`,
     email: SUPPORT_EMAIL,
     sameAs: [REPO_URL, "https://www.npmjs.com/package/stateofpixel"],
+    parentOrganization: {
+      "@type": "Organization",
+      name: "Company of Craft",
+      url: "https://companyofcraft.com",
+    },
   });
 }

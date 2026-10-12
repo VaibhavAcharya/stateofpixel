@@ -23,6 +23,7 @@ import { facts } from "../docs/facts";
 import { Menu, menuItemClass, useCloseMenu } from "../Menu";
 import { AuthButton, SignInButton } from "../SignIn";
 import { buttonClass, type Icon, Kbd, LeadCopy, Wordmark } from "../ui";
+import { CompanyOfCraftMark } from "./CompanyOfCraftMark";
 import { ReviewDemo } from "./ReviewDemo";
 
 export const WIDE = "mx-auto max-w-[1448px] px-6 max-sm:px-4";
@@ -718,6 +719,8 @@ export function Footer() {
           ))}
           <a
             href={REPO_URL}
+            target="_blank"
+            rel="noopener"
             data-umami-event="GitHub"
             className="hover:text-text"
           >
@@ -728,9 +731,23 @@ export function Footer() {
           </a>
         </nav>
         <a
+          href="https://companyofcraft.com"
+          target="_blank"
+          rel="noopener"
+          data-umami-event="Company of Craft"
+          className="ml-auto flex items-center gap-2 hover:text-text max-sm:ml-0"
+        >
+          <CompanyOfCraftMark size={36} />
+          <span className="leading-tight">
+            A product by
+            <br />
+            <span className="text-text">Company of Craft</span>
+          </span>
+        </a>
+        <a
           href={`mailto:${SUPPORT_EMAIL}`}
           data-umami-event="Email"
-          className="ml-auto hover:text-text max-sm:ml-0"
+          className="hover:text-text"
         >
           {SUPPORT_EMAIL}
         </a>
