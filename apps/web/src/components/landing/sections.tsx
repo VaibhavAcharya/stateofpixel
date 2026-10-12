@@ -138,6 +138,7 @@ export function HeroCentered() {
           Free up to {facts.freeStorage}. No card. Playwright, Storybook or any
           folder of PNGs.
         </p>
+        <CompanyOfCraftLink className="mx-auto mt-8 w-fit text-xs text-muted" />
       </div>
       <DemoSection />
     </section>
@@ -706,6 +707,25 @@ const FOOTER_LINKS = [
   ["Refunds", "/refunds"],
 ] as const;
 
+function CompanyOfCraftLink({ className }: { className: string }) {
+  return (
+    <a
+      href="https://companyofcraft.com"
+      target="_blank"
+      rel="noopener"
+      data-umami-event="Company of Craft"
+      className={`flex items-center gap-2 text-left hover:text-text ${className}`}
+    >
+      <CompanyOfCraftMark size={36} />
+      <span className="leading-tight">
+        A product by
+        <br />
+        <span className="text-text">Company of Craft</span>
+      </span>
+    </a>
+  );
+}
+
 export function Footer() {
   return (
     <footer className="border-t border-dotted border-field-border/50">
@@ -730,20 +750,7 @@ export function Footer() {
             CLI changelog
           </a>
         </nav>
-        <a
-          href="https://companyofcraft.com"
-          target="_blank"
-          rel="noopener"
-          data-umami-event="Company of Craft"
-          className="ml-auto flex items-center gap-2 hover:text-text max-sm:ml-0"
-        >
-          <CompanyOfCraftMark size={36} />
-          <span className="leading-tight">
-            A product by
-            <br />
-            <span className="text-text">Company of Craft</span>
-          </span>
-        </a>
+        <CompanyOfCraftLink className="ml-auto max-sm:ml-0" />
         <a
           href={`mailto:${SUPPORT_EMAIL}`}
           data-umami-event="Email"
