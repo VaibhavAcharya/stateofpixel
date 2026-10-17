@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { first, one } from "./db/index.ts";
+import { notifyLater } from "./notify.ts";
 import { users } from "./schema.ts";
 import {
   internalMutation,
@@ -61,6 +62,10 @@ export const userForIdentity = internalMutation({
           })
           .returning({ _id: users._id }),
       );
+      await notifyLater(ctx, {
+        title: "New sign-up",
+        message: [name, email].filter(Boolean).join(", ") || identityId,
+      });
       return created._id;
     }
     if (now - user.lastSeenAt > LAST_SEEN_INTERVAL_MS) {

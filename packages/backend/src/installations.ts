@@ -16,6 +16,7 @@ import {
   DEFAULT_RETENTION_DAYS,
 } from "./lib/limits.ts";
 import { PLAN_STORAGE_LIMIT_BYTES } from "./lib/storage.ts";
+import { notifyLater } from "./notify.ts";
 import { accounts, projects } from "./schema.ts";
 import {
   type ActionCtx,
@@ -144,6 +145,11 @@ export const upsertAccount = internalMutation({
         })
         .returning({ _id: accounts._id }),
     );
+    await notifyLater(ctx, {
+      title: "GitHub App installed",
+      message: `${args.login} (${args.type})`,
+      link: `https://github.com/${args.login}`,
+    });
     return account._id;
   },
 });

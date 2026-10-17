@@ -25,6 +25,7 @@ import {
   storageWarnings,
 } from "./lib/storage.ts";
 import { buildUrl } from "./lib/urls.ts";
+import { notifyLater } from "./notify.ts";
 import { rateLimiter } from "./rateLimits.ts";
 import {
   accounts,
@@ -307,6 +308,13 @@ async function createBuild(
     .set({ expiryJobId })
     .where(eq(builds._id, buildId));
   await touchCheck(ctx, buildId);
+  if (number === 1) {
+    await notifyLater(ctx, {
+      title: "First build",
+      message: `${project.owner}/${project.name}`,
+      link: buildUrl(project, number),
+    });
+  }
   const build = await getBuild(ctx, buildId);
   if (build === null) {
     throw new Error("Build insert failed");

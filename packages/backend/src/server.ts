@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, isNull, lt, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import { type Database, database, first, one } from "./db/index.ts";
+import { sendNotification } from "./lib/notify.ts";
 import { jobs } from "./schema.ts";
 
 export class AppError extends Error {
@@ -377,6 +378,12 @@ async function runJob(job: Job) {
       .update(jobs)
       .set({ failedAt: Date.now(), error: String(error) })
       .where(eq(jobs._id, job._id));
+    await sendNotification({
+      title: "Job failed",
+      message: `${job.name}: ${String(error)}`,
+    }).catch((notifyError: unknown) => {
+      console.error("Could not send the job failure notification", notifyError);
+    });
   }
 }
 

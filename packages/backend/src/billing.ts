@@ -17,6 +17,7 @@ import {
 } from "./lib/billing.ts";
 import { PLAN_STORAGE_LIMIT_BYTES } from "./lib/storage.ts";
 import { isAccountOwner } from "./members.ts";
+import { notifyLater } from "./notify.ts";
 import { accountMembers, accounts, connections, users } from "./schema.ts";
 import {
   type ActionCtx,
@@ -338,6 +339,17 @@ export const syncSubscription = internalMutation({
       );
       return null;
     }
+    if (
+      args.cancelsAtPeriodEnd &&
+      account.billingCancelsAtPeriodEnd !== true &&
+      account.billingSubscriptionId === args.subscriptionId &&
+      !isEndedStatus(args.status)
+    ) {
+      await notifyLater(ctx, {
+        title: "Subscription set to cancel",
+        message: `${account.login} cancels on ${new Date(args.periodEndsAt).toISOString().slice(0, 10)}`,
+      });
+    }
     if (args.status === "active") {
       const product = productPlan(billingEnvironment(), args.productId);
       if (product === null) {
@@ -358,6 +370,12 @@ export const syncSubscription = internalMutation({
           billingCancelsAtPeriodEnd: args.cancelsAtPeriodEnd,
         })
         .where(eq(accounts._id, account._id));
+      if (account.plan !== product.plan) {
+        await notifyLater(ctx, {
+          title: account.plan === "free" ? "New subscription" : "Plan changed",
+          message: `${account.login} moved from ${account.plan} to ${product.plan} (${product.interval})`,
+        });
+      }
     } else if (account.billingSubscriptionId !== args.subscriptionId) {
       return null;
     } else if (isEndedStatus(args.status)) {
@@ -372,6 +390,10 @@ export const syncSubscription = internalMutation({
           billingCancelsAtPeriodEnd: null,
         })
         .where(eq(accounts._id, account._id));
+      await notifyLater(ctx, {
+        title: "Subscription ended",
+        message: `${account.login} moved from ${account.plan} to free`,
+      });
     } else {
       await ctx.db
         .update(accounts)

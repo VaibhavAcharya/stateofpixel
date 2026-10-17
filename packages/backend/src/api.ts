@@ -13,6 +13,7 @@ import * as images from "./images.ts";
 import * as installations from "./installations.ts";
 import * as me from "./me.ts";
 import * as members from "./members.ts";
+import * as notify from "./notify.ts";
 import * as permissions from "./permissions.ts";
 import * as projects from "./projects.ts";
 import * as retention from "./retention.ts";
@@ -39,6 +40,7 @@ const modules = {
   installations,
   me,
   members,
+  notify,
   permissions,
   projects,
   retention,

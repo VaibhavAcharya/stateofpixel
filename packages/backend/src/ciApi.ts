@@ -24,6 +24,7 @@ import {
   MAX_SNAPSHOT_NAME_LENGTH,
   MAX_SNAPSHOTS_PER_BUILD,
 } from "./lib/limits.ts";
+import { notifyLater } from "./notify.ts";
 import { rateLimiter } from "./rateLimits.ts";
 import { DEFAULT_BUILD_NAME } from "./schema.ts";
 import {
@@ -46,6 +47,11 @@ type CiHandler = (
   request: Request,
   auth: CiAuth,
 ) => Promise<Response>;
+
+const DAILY_LIMIT_CODES = new Set([
+  "upload_limit_reached",
+  "build_limit_reached",
+]);
 
 function ciRoute(handler: CiHandler) {
   return httpAction(async (ctx, request) => {
@@ -76,6 +82,12 @@ function ciRoute(handler: CiHandler) {
       return await handler(ctx, request, auth);
     } catch (error) {
       if (error instanceof AppError && isCiErrorData(error.data)) {
+        if (DAILY_LIMIT_CODES.has(error.data.code)) {
+          await notifyLater(ctx, {
+            title: "Daily limit reached",
+            message: `${auth.project.fullName}: ${error.data.code}`,
+          });
+        }
         return errorResponse(
           error.data.status,
           error.data.code,

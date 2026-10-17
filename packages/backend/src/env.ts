@@ -47,4 +47,10 @@ export const env = {
     const value = process.env.DODO_PAYMENTS_ENVIRONMENT;
     return value === "test_mode" || value === "live_mode" ? value : undefined;
   },
+  get NOTIFY_URL() {
+    return process.env.NOTIFY_URL;
+  },
+  get NOTIFY_API_KEY() {
+    return process.env.NOTIFY_API_KEY;
+  },
 };
