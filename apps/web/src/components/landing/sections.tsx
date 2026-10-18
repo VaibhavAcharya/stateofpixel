@@ -698,14 +698,51 @@ export function FinalStartFree() {
   );
 }
 
-const FOOTER_LINKS = [
-  ["Docs", "/docs"],
-  ["Compare", "/compare"],
-  ["Brand", "/brand"],
-  ["Privacy", "/privacy"],
-  ["Terms", "/terms"],
-  ["Refunds", "/refunds"],
-] as const;
+type FooterLink =
+  | {
+      label: string;
+      to:
+        | "/"
+        | "/docs"
+        | "/compare"
+        | "/image-diff"
+        | "/brand"
+        | "/privacy"
+        | "/terms"
+        | "/refunds";
+      hash?: string;
+    }
+  | { label: string; href: string; event?: string };
+
+const FOOTER_GROUPS: [string, FooterLink[]][] = [
+  [
+    "Product",
+    [
+      { label: "Docs", to: "/docs" },
+      { label: "Pricing", to: "/", hash: "pricing" },
+      { label: "Compare", to: "/compare" },
+    ],
+  ],
+  [
+    "Company",
+    [
+      { label: "Brand", to: "/brand" },
+      { label: "Open source", href: REPO_URL, event: "GitHub" },
+      { label: "CLI changelog", href: CHANGELOG_URL },
+    ],
+  ],
+  [
+    "Legal",
+    [
+      { label: "Privacy", to: "/privacy" },
+      { label: "Terms", to: "/terms" },
+      { label: "Refunds", to: "/refunds" },
+    ],
+  ],
+  ["Small free tools", [{ label: "Image diff", to: "/image-diff" }]],
+];
+
+const DOTTED_LINE = "border-dotted border-field-border/50";
 
 function CompanyOfCraftLink({ className }: { className: string }) {
   return (
@@ -726,38 +763,70 @@ function CompanyOfCraftLink({ className }: { className: string }) {
   );
 }
 
+function FooterLinkItem({ link }: { link: FooterLink }) {
+  const className = "text-muted hover:text-text";
+  if ("to" in link) {
+    return (
+      <Link to={link.to} hash={link.hash} className={className}>
+        {link.label}
+      </Link>
+    );
+  }
+  return (
+    <a
+      href={link.href}
+      target="_blank"
+      rel="noopener"
+      data-umami-event={link.event}
+      className={className}
+    >
+      {link.label}
+    </a>
+  );
+}
+
 export function Footer() {
   return (
-    <footer className="border-t border-dotted border-field-border/50">
-      <div className="mx-auto flex min-h-16 max-w-[1448px] flex-wrap items-center gap-x-6 gap-y-3 px-6 py-4 text-xs text-muted max-sm:px-4">
-        <Wordmark />
-        <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          {FOOTER_LINKS.map(([label, to]) => (
-            <Link key={to} to={to} className="hover:text-text">
-              {label}
-            </Link>
-          ))}
+    <footer className={`border-t ${DOTTED_LINE}`}>
+      <div className="mx-auto max-w-[1448px] px-6 max-sm:px-4">
+        <div className="flex flex-wrap justify-between gap-x-12 gap-y-10 py-12 max-sm:py-10">
+          <div className="flex flex-col gap-3">
+            <Wordmark />
+            <p className="text-sm text-muted">
+              Catch UI regressions before they merge.
+            </p>
+            <CompanyOfCraftLink className="mt-3 text-xs text-muted" />
+          </div>
+          <nav
+            aria-label="Footer"
+            className="grid grid-cols-4 gap-x-16 gap-y-8 max-md:grid-cols-2 max-md:gap-x-12"
+          >
+            {FOOTER_GROUPS.map(([label, links]) => (
+              <div key={label}>
+                <h2 className="text-xs font-medium">{label}</h2>
+                <ul className="mt-3 flex flex-col gap-2 text-sm">
+                  {links.map((link) => (
+                    <li key={link.label}>
+                      <FooterLinkItem link={link} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
+        </div>
+        <div
+          className={`flex flex-wrap items-center justify-between gap-3 border-t ${DOTTED_LINE} py-4 text-xs text-muted`}
+        >
+          <span>&copy; 2026 Company of Craft</span>
           <a
-            href={REPO_URL}
-            target="_blank"
-            rel="noopener"
-            data-umami-event="GitHub"
+            href={`mailto:${SUPPORT_EMAIL}`}
+            data-umami-event="Email"
             className="hover:text-text"
           >
-            Open source
+            {SUPPORT_EMAIL}
           </a>
-          <a href={CHANGELOG_URL} className="hover:text-text">
-            CLI changelog
-          </a>
-        </nav>
-        <CompanyOfCraftLink className="ml-auto max-sm:ml-0" />
-        <a
-          href={`mailto:${SUPPORT_EMAIL}`}
-          data-umami-event="Email"
-          className="hover:text-text"
-        >
-          {SUPPORT_EMAIL}
-        </a>
+        </div>
       </div>
     </footer>
   );
