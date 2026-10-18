@@ -48,9 +48,9 @@ export const Route = createRootRouteWithContext<{
 const UMAMI_SCRIPTS = [
   { children: UMAMI_BEFORE_SEND_SCRIPT },
   {
-    src: "https://cloud.umami.is/script.js",
+    src: "https://umami.vaibhavacharya.com/script.js",
     defer: true,
-    "data-website-id": "82c68e9d-e447-43cc-9f60-87ef5c9b1f7f",
+    "data-website-id": "6a9a072c-a704-48ea-b92f-f31f1006986f",
     "data-domains": "stateofpixel.com",
     "data-before-send": "umamiBeforeSend",
     "data-do-not-track": "true",

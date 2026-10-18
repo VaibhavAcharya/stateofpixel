@@ -17,7 +17,7 @@ export const Route = createFileRoute("/privacy")({
 
 function Privacy() {
   return (
-    <LegalPage title="Privacy policy" updated="October 10, 2026">
+    <LegalPage title="Privacy policy" updated="October 19, 2026">
       <p>
         This policy explains what data stateofpixel ("we", "us") collects when
         you use stateofpixel.com, the GitHub App and the stateofpixel CLI, and
@@ -106,14 +106,15 @@ function Privacy() {
 
       <h2>Analytics</h2>
       <p>
-        We use Umami Cloud to count page views and clicks on some buttons, such
-        as sign in, copy code and approve. Umami does not use cookies. It
-        records the page, the page you came from, your browser, operating
-        system, device type, screen size, language, country and page load times.
-        Before anything is sent, we replace account names, repository names,
-        build numbers and snapshot names in page addresses with placeholders. We
-        keep search parameters on public pages and leave them out on pages
-        behind sign-in. If your browser sends Do Not Track, nothing is sent.
+        We use Umami, which we host ourselves, to count page views and clicks on
+        some buttons, such as sign in, copy code and approve. Umami does not use
+        cookies. It records the page, the page you came from, your browser,
+        operating system, device type, screen size, language, country and page
+        load times. Before anything is sent, we replace account names,
+        repository names, build numbers and snapshot names in page addresses
+        with placeholders. We keep search parameters on public pages and leave
+        them out on pages behind sign-in. If your browser sends Do Not Track,
+        nothing is sent.
       </p>
 
       <h2>Advertising</h2>
@@ -151,7 +152,6 @@ function Privacy() {
           Netlify, to host the website, run sign-in and the database, and store
           screenshots.
         </li>
-        <li>Umami, for the analytics described above.</li>
       </ul>
       <p>These providers may process data in other countries.</p>
 
