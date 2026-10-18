@@ -14,6 +14,12 @@ export const PAGES = {
     title: "Catch UI regressions before they merge.",
     description: `Visual regression testing for GitHub pull requests. Your CI takes the screenshots, a person approves each change. Free up to ${facts.freeStorage}.`,
   },
+  imageDiff: {
+    path: "/image-diff",
+    title: "Image diff: compare two images online",
+    description:
+      "Compare two images online and see every changed pixel side by side, as a diff, with a slider or by flipping. The images stay in your browser.",
+  },
   brand: {
     path: "/brand",
     title: "Brand",

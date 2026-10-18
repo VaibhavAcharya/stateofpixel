@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BrandRouteImport } from './routes/brand'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as ImageDiffRouteImport } from './routes/image-diff'
 import { Route as InstallRouteImport } from './routes/install'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -60,6 +61,11 @@ const ChangelogRoute = ChangelogRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImageDiffRoute = ImageDiffRouteImport.update({
+  id: '/image-diff',
+  path: '/image-diff',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InstallRoute = InstallRouteImport.update({
@@ -211,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/brand': typeof BrandRoute
   '/changelog': typeof ChangelogRoute
   '/docs': typeof DocsRouteWithChildren
+  '/image-diff': typeof ImageDiffRoute
   '/install': typeof InstallRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/brand': typeof BrandRoute
   '/changelog': typeof ChangelogRoute
+  '/image-diff': typeof ImageDiffRoute
   '/install': typeof InstallRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -278,6 +286,7 @@ export interface FileRoutesById {
   '/brand': typeof BrandRoute
   '/changelog': typeof ChangelogRoute
   '/docs': typeof DocsRouteWithChildren
+  '/image-diff': typeof ImageDiffRoute
   '/install': typeof InstallRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -314,6 +323,7 @@ export interface FileRouteTypes {
     | '/brand'
     | '/changelog'
     | '/docs'
+    | '/image-diff'
     | '/install'
     | '/pricing'
     | '/privacy'
@@ -347,6 +357,7 @@ export interface FileRouteTypes {
     | '/'
     | '/brand'
     | '/changelog'
+    | '/image-diff'
     | '/install'
     | '/pricing'
     | '/privacy'
@@ -380,6 +391,7 @@ export interface FileRouteTypes {
     | '/brand'
     | '/changelog'
     | '/docs'
+    | '/image-diff'
     | '/install'
     | '/pricing'
     | '/privacy'
@@ -415,6 +427,7 @@ export interface RootRouteChildren {
   BrandRoute: typeof BrandRoute
   ChangelogRoute: typeof ChangelogRoute
   DocsRoute: typeof DocsRouteWithChildren
+  ImageDiffRoute: typeof ImageDiffRoute
   InstallRoute: typeof InstallRoute
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -469,6 +482,13 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/image-diff': {
+      id: '/image-diff'
+      path: '/image-diff'
+      fullPath: '/image-diff'
+      preLoaderRoute: typeof ImageDiffRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/install': {
@@ -703,6 +723,7 @@ const rootRouteChildren: RootRouteChildren = {
   BrandRoute: BrandRoute,
   ChangelogRoute: ChangelogRoute,
   DocsRoute: DocsRouteWithChildren,
+  ImageDiffRoute: ImageDiffRoute,
   InstallRoute: InstallRoute,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,

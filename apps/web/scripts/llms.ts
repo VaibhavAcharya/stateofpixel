@@ -346,6 +346,10 @@ function llmsSections(modules: Modules): Section[] {
       ],
     },
     {
+      title: "Small free tools",
+      entries: [PAGES.imageDiff],
+    },
+    {
       title: "Optional",
       entries: [PAGES.privacy, PAGES.terms, PAGES.refunds, PAGES.brand],
     },
