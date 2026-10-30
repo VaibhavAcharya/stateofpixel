@@ -239,6 +239,18 @@ function pgCode(error: unknown): string | undefined {
   return undefined;
 }
 
+function describeError(error: unknown): string {
+  const lines: string[] = [];
+  for (let cause = error; cause instanceof Error; cause = cause.cause) {
+    lines.push(
+      "code" in cause && typeof cause.code === "string"
+        ? `${String(cause)} (${cause.code})`
+        : String(cause),
+    );
+  }
+  return lines.length === 0 ? String(error) : lines.join("\ncaused by: ");
+}
+
 export async function transaction<T>(
   fn: (db: Database, onScheduled: (runAt: number) => void) => Promise<T>,
 ): Promise<T> {
@@ -376,11 +388,11 @@ async function runJob(job: Job) {
     console.error(`Job ${job.name} failed`, error);
     await database()
       .update(jobs)
-      .set({ failedAt: Date.now(), error: String(error) })
+      .set({ failedAt: Date.now(), error: describeError(error) })
       .where(eq(jobs._id, job._id));
     await sendNotification({
       title: "Job failed",
-      message: `${job.name}: ${String(error)}`,
+      message: `${job.name}: ${describeError(error)}`,
     }).catch((notifyError: unknown) => {
       console.error("Could not send the job failure notification", notifyError);
     });
