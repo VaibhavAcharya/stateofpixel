@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, lt, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lt, or } from "drizzle-orm";
 import { z } from "zod";
 import { internal } from "./api.ts";
 import { deleteImage } from "./blobs.ts";
@@ -215,14 +215,29 @@ export async function deleteBuildRows(
     .from(comments)
     .where(eq(comments.buildId, buildId))
     .limit(DELETE_PAGE_SIZE);
-  for (const snapshot of snapshotIds) {
-    await ctx.db.delete(snapshots).where(eq(snapshots._id, snapshot._id));
+  if (snapshotIds.length > 0) {
+    await ctx.db.delete(snapshots).where(
+      inArray(
+        snapshots._id,
+        snapshotIds.map((snapshot) => snapshot._id),
+      ),
+    );
   }
-  for (const review of reviewIds) {
-    await ctx.db.delete(reviews).where(eq(reviews._id, review._id));
+  if (reviewIds.length > 0) {
+    await ctx.db.delete(reviews).where(
+      inArray(
+        reviews._id,
+        reviewIds.map((review) => review._id),
+      ),
+    );
   }
-  for (const comment of commentIds) {
-    await ctx.db.delete(comments).where(eq(comments._id, comment._id));
+  if (commentIds.length > 0) {
+    await ctx.db.delete(comments).where(
+      inArray(
+        comments._id,
+        commentIds.map((comment) => comment._id),
+      ),
+    );
   }
   return (
     snapshotIds.length < DELETE_PAGE_SIZE &&
