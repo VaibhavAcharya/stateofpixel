@@ -229,6 +229,7 @@ function schedulerFor(
 
 const RETRYABLE = new Set(["40001", "40P01"]);
 const MAX_ATTEMPTS = 8;
+const CONNECTION_TERMINATED = "Connection terminated unexpectedly";
 
 function pgCode(error: unknown): string | undefined {
   for (let cause = error; cause instanceof Error; cause = cause.cause) {
@@ -237,6 +238,16 @@ function pgCode(error: unknown): string | undefined {
     }
   }
   return undefined;
+}
+
+function isTransient(error: unknown): boolean {
+  for (let cause = error; cause instanceof Error; cause = cause.cause) {
+    if (cause.message === CONNECTION_TERMINATED) {
+      return true;
+    }
+  }
+  const code = pgCode(error);
+  return code !== undefined && RETRYABLE.has(code);
 }
 
 function describeError(error: unknown): string {
@@ -338,6 +349,7 @@ export async function run<Ref extends FunctionReference>(
 }
 
 const JOB_LOCK_MS = 15 * 60 * 1000;
+const JOB_RETRY_MS = 60 * 1000;
 
 type Job = typeof jobs.$inferSelect;
 
@@ -385,6 +397,14 @@ async function runJob(job: Job) {
       await database().delete(jobs).where(eq(jobs._id, job._id));
     }
   } catch (error) {
+    if (ref?.kind === "mutation" && isTransient(error)) {
+      console.error(`Job ${job.name} failed, retrying`, error);
+      await database()
+        .update(jobs)
+        .set({ runAt: Date.now() + JOB_RETRY_MS, lockedUntil: null })
+        .where(eq(jobs._id, job._id));
+      return;
+    }
     console.error(`Job ${job.name} failed`, error);
     await database()
       .update(jobs)
