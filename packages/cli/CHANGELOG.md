@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.8.0...v1.9.0) (2026-11-02)
+
+
+### Features
+
+* **cli:** add --tag, --globals and CircleCI detection ([#85](https://github.com/VaibhavAcharya/stateofpixel/issues/85)) ([d146c84](https://github.com/VaibhavAcharya/stateofpixel/commit/d146c8429caa600c6af0eeea81b8ab997c6b9a41))
+
 ## [1.8.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.7.0...v1.8.0) (2026-10-01)
 
 
