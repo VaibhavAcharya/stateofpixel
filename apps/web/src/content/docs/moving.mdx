@@ -29,7 +29,7 @@ steps:
   - run: npx stateofpixel storybook storybook-static --viewports 375,1280
 ```
 
-Screenshots render in Chromium on your CI, not in the other tool's browsers. Remove the project token secret, since GitHub Actions signs in with OIDC. For Lost Pixel, also delete `.lostpixel/baseline` from the repository. See [Storybook](/docs/storybook).
+For Chromatic, add `--chromatic` to keep the stories, modes and widths set in `parameters.chromatic`. Screenshots render in Chromium on your CI, not in the other tool's browsers. Remove the project token secret, since GitHub Actions signs in with OIDC. For Lost Pixel, also delete `.lostpixel/baseline` from the repository. See [Storybook](/docs/storybook).
 
 ## Argos and Percy with Playwright
 

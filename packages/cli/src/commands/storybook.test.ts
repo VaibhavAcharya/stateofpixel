@@ -1,8 +1,10 @@
 import { expect, it } from "vitest";
 import {
   filterStories,
+  isCapturedByChromatic,
   parseGlobals,
   parseViewports,
+  planCaptures,
   type Story,
   shardStories,
   storybookCommand,
@@ -59,6 +61,103 @@ it("opens a story with its Storybook globals", () => {
   expect(storyUrl("http://127.0.0.1:6006", story, "brand:new;theme:dark")).toBe(
     "http://127.0.0.1:6006/iframe.html?id=button--primary&viewMode=story&globals=brand%3Anew%3Btheme%3Adark",
   );
+});
+
+it("picks the stories Chromatic captures", () => {
+  const story = stories[0] as Story;
+  expect(isCapturedByChromatic(story)).toBe(true);
+  expect(
+    isCapturedByChromatic({ ...story, chromatic: { disableSnapshot: false } }),
+  ).toBe(true);
+  expect(
+    isCapturedByChromatic({ ...story, chromatic: { disableSnapshot: true } }),
+  ).toBe(false);
+  expect(
+    isCapturedByChromatic({ ...story, chromatic: { disable: true } }),
+  ).toBe(false);
+});
+
+it("captures each enabled Chromatic mode with its width and globals", () => {
+  const story: Story = {
+    ...(stories[0] as Story),
+    chromatic: {
+      delay: 300,
+      modes: {
+        "current 720px": { viewport: 720, brand: "current" },
+        "hues 720px": { viewport: 720, brand: "hues" },
+        "hues 1120px": { disable: true },
+        mobile: { viewport: "small", dark: true },
+        default: { brand: "hues" },
+      },
+    },
+    namedViewports: { small: 375 },
+  };
+  const captures = planCaptures([story], {
+    viewports: [1280, 375],
+    globals: "theme:light;brand:old",
+    chromatic: true,
+    delay: 0,
+  });
+  expect(
+    captures.map(({ name, width, globals, delay }) => ({
+      name,
+      width,
+      globals,
+      delay,
+    })),
+  ).toEqual([
+    {
+      name: "Components/Button/Primary [chromium current 720px]",
+      width: 720,
+      globals: "theme:light;brand:current",
+      delay: 300,
+    },
+    {
+      name: "Components/Button/Primary [chromium hues 720px]",
+      width: 720,
+      globals: "theme:light;brand:hues",
+      delay: 300,
+    },
+    {
+      name: "Components/Button/Primary [chromium mobile]",
+      width: 375,
+      globals: "theme:light;brand:old;dark:!true",
+      delay: 300,
+    },
+    {
+      name: "Components/Button/Primary [chromium default]",
+      width: 1280,
+      globals: "theme:light;brand:hues",
+      delay: 300,
+    },
+  ]);
+});
+
+it("uses Chromatic viewports, or the flags, for stories without modes", () => {
+  const story: Story = {
+    ...(stories[0] as Story),
+    chromatic: { viewports: [320] },
+  };
+  const names = (chromatic: boolean) =>
+    planCaptures([story], { viewports: [1280], chromatic, delay: 0 }).map(
+      (capture) => capture.name,
+    );
+  expect(names(true)).toEqual(["Components/Button/Primary [chromium 320]"]);
+  expect(names(false)).toEqual(["Components/Button/Primary [chromium 1280]"]);
+});
+
+it("refuses a mode viewport that is not a width", () => {
+  expect(() =>
+    planCaptures(
+      [
+        {
+          ...(stories[0] as Story),
+          chromatic: { modes: { tablet: { viewport: "ipad" } } },
+        },
+      ],
+      { viewports: [1280], chromatic: true, delay: 0 },
+    ),
+  ).toThrow('mode "tablet" has viewport "ipad", which is not a width');
 });
 
 it("parses viewport widths", () => {
