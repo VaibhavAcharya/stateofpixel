@@ -113,6 +113,14 @@ export const COMMANDS: CommandSpec[] = [
         description: "skip stories whose title/name match",
       },
       {
+        flags: "--tag <tag>",
+        description: "only stories with this tag",
+      },
+      {
+        flags: "--globals <globals>",
+        description: "Storybook globals for every story, like brand:new",
+      },
+      {
         flags: "--wait-for-selector <selector>",
         description: "wait for this before each screenshot",
         default: "#storybook-root > *",

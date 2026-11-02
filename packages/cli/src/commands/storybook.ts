@@ -41,6 +41,8 @@ export type StorybookCommandOptions = UploadCommandOptions & {
   viewports: number[];
   include?: string;
   exclude?: string;
+  tag?: string;
+  globals?: string;
   waitForSelector: string;
   delay: number;
 };
@@ -50,6 +52,7 @@ export type Story = {
   title: string;
   name: string;
   importPath?: string;
+  tags?: string[];
 };
 
 export async function storybookCommand(
@@ -67,6 +70,7 @@ export async function storybookCommand(
       await readStories(staticDir),
       options.include,
       options.exclude,
+      options.tag,
     ),
     shard,
   );
@@ -98,11 +102,12 @@ async function readStories(staticDir: string): Promise<Story[]> {
   };
   return Object.values(index.entries ?? {})
     .filter((entry) => entry.type === "story")
-    .map(({ id, title, name, importPath }) => ({
+    .map(({ id, title, name, importPath, tags }) => ({
       id,
       title,
       name,
       importPath,
+      tags,
     }));
 }
 
@@ -110,6 +115,7 @@ export function filterStories(
   stories: Story[],
   include: string | undefined,
   exclude: string | undefined,
+  tag?: string,
 ): Story[] {
   const includes = include === undefined ? null : globToRegExp(include);
   const excludes = exclude === undefined ? null : globToRegExp(exclude);
@@ -117,7 +123,8 @@ export function filterStories(
     const name = `${story.title}/${story.name}`;
     return (
       (includes === null || includes.test(name)) &&
-      (excludes === null || !excludes.test(name))
+      (excludes === null || !excludes.test(name)) &&
+      (tag === undefined || (story.tags ?? []).includes(tag))
     );
   });
 }
@@ -147,6 +154,17 @@ export function storySnapshotName(story: Story, width: number): string {
   return `${story.title}/${story.name} [chromium ${width}]`;
 }
 
+export function storyUrl(
+  baseUrl: string,
+  story: Story,
+  globals: string | undefined,
+): string {
+  const url = `${baseUrl}/iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story`;
+  return globals === undefined
+    ? url
+    : `${url}&globals=${encodeURIComponent(globals)}`;
+}
+
 async function captureStories(
   staticDir: string,
   outDir: string,
@@ -174,10 +192,9 @@ async function captureStories(
         const file = path.join(outDir, `${name}.png`);
         const page = await context.newPage();
         try {
-          await page.goto(
-            `${baseUrl}/iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story`,
-            { timeout: STORY_TIMEOUT_MS },
-          );
+          await page.goto(storyUrl(baseUrl, story, options.globals), {
+            timeout: STORY_TIMEOUT_MS,
+          });
           await page.waitForSelector(options.waitForSelector, {
             timeout: STORY_TIMEOUT_MS,
           });
@@ -263,6 +280,13 @@ export function parseViewports(value: string): number[] {
     throw new InvalidArgumentError("Must look like 375,1280.");
   }
   return widths;
+}
+
+export function parseGlobals(value: string): string {
+  if (!/^[\w-]+:[^;:]+(;[\w-]+:[^;:]+)*$/.test(value)) {
+    throw new InvalidArgumentError("Must look like brand:new;theme:dark.");
+  }
+  return value;
 }
 
 export function parseDelay(value: string): number {

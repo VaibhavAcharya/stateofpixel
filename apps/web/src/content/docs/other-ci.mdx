@@ -28,8 +28,8 @@ On other CI the CLI reads the commit, branch and history from the local checkout
 - The baseline branch is `origin/HEAD`, or `main` when that is not set. Pass `--baseline-branch` to pick another one.
 - stateofpixel works with GitHub repositories only. The commit has to be on GitHub, because the check is set on it there.
 
-The pull request number comes from the GitHub Actions event, so on other CI builds are linked to their branch and commit only. A new push does not carry over approvals from the last build, and builds are not marked superseded.
+The pull request number comes from the GitHub Actions event, or from `CIRCLE_PULL_REQUEST` on CircleCI. On any other CI, builds are linked to their branch and commit only. A new push does not carry over approvals from the last build, and builds are not marked superseded.
 
 ## Shards
 
-GitHub Actions gives every job of a run the same id. Elsewhere, set `STATEOFPIXEL_NONCE` to an id your CI shares between the jobs of one run. See [Sharding](/docs/sharding).
+GitHub Actions gives every job of a run the same id, and on CircleCI the CLI uses `CIRCLE_WORKFLOW_ID`. Elsewhere, set `STATEOFPIXEL_NONCE` to an id your CI shares between the jobs of one run. See [Sharding](/docs/sharding).

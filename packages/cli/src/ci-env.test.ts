@@ -8,6 +8,7 @@ import {
   defaultNonce,
   ForkPullRequestError,
   previousNonces,
+  readCiInfo,
   readGitInfo,
   resolveApiUrl,
   resolveToken,
@@ -94,10 +95,37 @@ it("ignores empty GitHub env values on push runs", async () => {
   });
 });
 
+it("reads the pull request number on CircleCI", async () => {
+  const info = await readGitInfo(
+    {
+      CIRCLE_PULL_REQUEST: "https://github.com/acme/web/pull/42",
+    },
+    repo,
+  );
+  expect(info.prNumber).toBe(42);
+  expect((await readGitInfo({ CIRCLE_PULL_REQUEST: "" }, repo)).prNumber).toBe(
+    null,
+  );
+});
+
+it("reads the CircleCI provider and job URL", () => {
+  expect(
+    readCiInfo({
+      CI: "true",
+      CIRCLECI: "true",
+      CIRCLE_BUILD_URL: "https://circleci.com/gh/acme/web/7",
+    }),
+  ).toEqual({
+    provider: "circleci",
+    runUrl: "https://circleci.com/gh/acme/web/7",
+  });
+});
+
 it("builds the nonce from the GitHub run", () => {
   expect(defaultNonce({ GITHUB_RUN_ID: "123", GITHUB_RUN_ATTEMPT: "2" })).toBe(
     "123-2",
   );
+  expect(defaultNonce({ CIRCLE_WORKFLOW_ID: "wf-1" })).toBe("wf-1");
   expect(defaultNonce({})).toBeNull();
 });
 

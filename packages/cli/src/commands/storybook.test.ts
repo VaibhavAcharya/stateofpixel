@@ -1,15 +1,22 @@
 import { expect, it } from "vitest";
 import {
   filterStories,
+  parseGlobals,
   parseViewports,
   type Story,
   shardStories,
   storybookCommand,
   storySnapshotName,
+  storyUrl,
 } from "./storybook";
 
 const stories: Story[] = [
-  { id: "button--primary", title: "Components/Button", name: "Primary" },
+  {
+    id: "button--primary",
+    title: "Components/Button",
+    name: "Primary",
+    tags: ["dev", "snapshot"],
+  },
   { id: "button--secondary", title: "Components/Button", name: "Secondary" },
   { id: "home--default", title: "Pages/Home", name: "Default" },
 ];
@@ -22,6 +29,12 @@ it("filters stories by title and name globs", () => {
     filterStories(stories, undefined, "*/Button/Secondary").map((s) => s.id),
   ).toEqual(["button--primary", "home--default"]);
   expect(filterStories(stories, "Pages/*", undefined)).toEqual([]);
+});
+
+it("filters stories by tag", () => {
+  expect(
+    filterStories(stories, undefined, undefined, "snapshot").map((s) => s.id),
+  ).toEqual(["button--primary"]);
 });
 
 it("splits stories between shards", () => {
@@ -38,9 +51,26 @@ it("names a story snapshot after its title, name and viewport", () => {
   );
 });
 
+it("opens a story with its Storybook globals", () => {
+  const story = stories[0] as Story;
+  expect(storyUrl("http://127.0.0.1:6006", story, undefined)).toBe(
+    "http://127.0.0.1:6006/iframe.html?id=button--primary&viewMode=story",
+  );
+  expect(storyUrl("http://127.0.0.1:6006", story, "brand:new;theme:dark")).toBe(
+    "http://127.0.0.1:6006/iframe.html?id=button--primary&viewMode=story&globals=brand%3Anew%3Btheme%3Adark",
+  );
+});
+
 it("parses viewport widths", () => {
   expect(parseViewports("375, 1280")).toEqual([375, 1280]);
   expect(() => parseViewports("wide")).toThrow("Must look like 375,1280.");
+});
+
+it("parses Storybook globals", () => {
+  expect(parseGlobals("brand:new;theme:dark")).toBe("brand:new;theme:dark");
+  expect(() => parseGlobals("brand")).toThrow(
+    "Must look like brand:new;theme:dark.",
+  );
 });
 
 it("refuses --shard auto, which cannot split stories", async () => {
