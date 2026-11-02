@@ -121,6 +121,12 @@ export const COMMANDS: CommandSpec[] = [
         description: "Storybook globals for every story, like brand:new",
       },
       {
+        flags: "--chromatic",
+        description:
+          "pick stories, modes, widths and delay from parameters.chromatic",
+        default: false,
+      },
+      {
         flags: "--wait-for-selector <selector>",
         description: "wait for this before each screenshot",
         default: "#storybook-root > *",

@@ -61,3 +61,19 @@ Stories that load data or fonts late are the usual cause of noisy diffs. [Stable
 npx stateofpixel storybook storybook-static --build-name storybook
 npx stateofpixel storybook storybook-static --build-name storybook-dark --globals theme:dark
 ```
+
+## Use your Chromatic parameters
+
+With `--chromatic`, the CLI loads the built Storybook, reads each story's `parameters.chromatic` and captures what Chromatic captures:
+
+- Stories with `disableSnapshot: true` or `disable: true` are skipped.
+- Each mode in `modes` is one screenshot named after the mode, like `Button/Primary [chromium dark 1280px]`. Modes with `disable: true` are skipped.
+- A mode's `viewport` sets the width, in pixels or as the name of a viewport in `parameters.viewport` whose width is in pixels. Without `viewport`, the mode uses the first width in `--viewports`. The mode's other keys are passed as globals and override `--globals`.
+- Stories without modes use `viewports` from `parameters.chromatic`, or `--viewports`.
+- `delay` replaces `--delay` for that story.
+
+```sh terminal
+npx stateofpixel storybook storybook-static --chromatic
+```
+
+Parameters and tags come from Storybook at runtime, so values set through shared objects or helper functions count too. `--include`, `--exclude` and `--tag` still apply on top. `diffThreshold` is not read, so use `--threshold` for the whole build.
