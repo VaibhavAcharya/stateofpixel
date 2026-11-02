@@ -5,6 +5,7 @@ import { compareCommand, parseThreshold } from "./commands/compare";
 import { finalizeCommand } from "./commands/finalize";
 import {
   parseDelay,
+  parseGlobals,
   parseViewports,
   storybookCommand,
 } from "./commands/storybook";
@@ -16,6 +17,7 @@ const PARSERS: Record<string, (value: string) => unknown> = {
   "--shard <i/n>": parseShard,
   "--viewports <widths>": parseViewports,
   "--delay <ms>": parseDelay,
+  "--globals <globals>": parseGlobals,
 };
 
 const ACTIONS: Record<CommandSpec["name"], Parameters<Command["action"]>[0]> = {

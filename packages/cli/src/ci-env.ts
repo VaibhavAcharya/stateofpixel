@@ -69,7 +69,7 @@ export async function readGitInfo(
       "",
     branch,
     baselineBranch,
-    prNumber: pullRequest?.number ?? null,
+    prNumber: pullRequest?.number ?? circlePullRequestNumber(env),
     mergeBase: await git(cwd, "merge-base", commit, `origin/${baselineBranch}`),
     ancestors: await ancestors(cwd, commit),
   };
@@ -85,6 +85,9 @@ export function readCiInfo(env: Env): CiInfo {
           : undefined,
     };
   }
+  if (env.CIRCLECI === "true") {
+    return { provider: "circleci", runUrl: env.CIRCLE_BUILD_URL || undefined };
+  }
   return env.CI ? { provider: "unknown" } : {};
 }
 
@@ -92,7 +95,7 @@ export function defaultNonce(env: Env): string | null {
   if (env.GITHUB_RUN_ID) {
     return `${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT ?? "1"}`;
   }
-  return null;
+  return env.CIRCLE_WORKFLOW_ID || null;
 }
 
 export function previousNonces(env: Env): string[] {
@@ -151,6 +154,11 @@ export async function resolveToken(
     3,
     retryDelayMs,
   );
+}
+
+function circlePullRequestNumber(env: Env): number | null {
+  const match = env.CIRCLE_PULL_REQUEST?.match(/\/pull\/(\d+)$/);
+  return match ? Number(match[1]) : null;
 }
 
 function isForkPullRequest(event: GithubEvent | null): boolean {

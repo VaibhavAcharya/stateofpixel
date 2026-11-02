@@ -36,16 +36,28 @@ Each story is captured at every width in `--viewports` and named `Title/Name [ch
 npx stateofpixel storybook storybook-static \
   --include "Components/**" \
   --exclude "**/Playground" \
+  --tag snapshot \
   --wait-for-selector "[data-ready]" \
   --delay 200
 ```
 
-<CliOptions name="storybook" only={["--viewports", "--include", "--exclude", "--wait-for-selector", "--delay"]} />
+<CliOptions name="storybook" only={["--viewports", "--include", "--exclude", "--tag", "--wait-for-selector", "--delay"]} />
 
 Each story opens in Chromium at a height of 720px, with reduced motion and a device scale factor of 1, and the screenshot covers the full page. A story has 15 seconds to load and to match `--wait-for-selector`. When a story does not render, the command lists it and stops before anything uploads.
 
 In `--include` and `--exclude`, `*` stays inside one segment of `Title/Name` and `**` crosses segments.
 
+`--tag` keeps only stories that have that tag in their `tags`.
+
 `storybook` also takes every flag of `upload`, like `--build-name`, `--shard` and `--threshold`. With `--shard 2/4`, it captures only every fourth story, starting at the second, so each CI job takes its share. See the [CLI](/docs/cli) reference. Use `--dry-run` to capture and print the plan without uploading.
 
 Stories that load data or fonts late are the usual cause of noisy diffs. [Stable screenshots](/docs/stable-screenshots) has the fixes.
+
+## Capture with Storybook globals
+
+`--globals` sets [Storybook globals](https://storybook.js.org/docs/essentials/toolbars-and-globals) for every story, in the same `key:value;key:value` form as the `globals` URL parameter. To capture each value of a global, run once per value with its own `--build-name`, so each one gets its own baselines:
+
+```sh terminal
+npx stateofpixel storybook storybook-static --build-name storybook
+npx stateofpixel storybook storybook-static --build-name storybook-dark --globals theme:dark
+```
