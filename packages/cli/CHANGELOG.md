@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.9.0...v1.10.0) (2026-11-02)
+
+
+### Features
+
+* **cli:** add --chromatic to capture from parameters.chromatic ([#87](https://github.com/VaibhavAcharya/stateofpixel/issues/87)) ([e8c6227](https://github.com/VaibhavAcharya/stateofpixel/commit/e8c62271b18658dc732040eadbcd76c133e91bcc))
+
 ## [1.9.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.8.0...v1.9.0) (2026-11-02)
 
 
