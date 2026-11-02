@@ -154,6 +154,17 @@ export function storySnapshotName(story: Story, width: number): string {
   return `${story.title}/${story.name} [chromium ${width}]`;
 }
 
+export function storyUrl(
+  baseUrl: string,
+  story: Story,
+  globals: string | undefined,
+): string {
+  const url = `${baseUrl}/iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story`;
+  return globals === undefined
+    ? url
+    : `${url}&globals=${encodeURIComponent(globals)}`;
+}
+
 async function captureStories(
   staticDir: string,
   outDir: string,
@@ -167,10 +178,6 @@ async function captureStories(
   });
   const server = await serveStatic(staticDir);
   const baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-  const globals =
-    options.globals === undefined
-      ? ""
-      : `&globals=${encodeURIComponent(options.globals)}`;
   const browser = await chromium.launch();
   const failed: string[] = [];
   try {
@@ -185,10 +192,9 @@ async function captureStories(
         const file = path.join(outDir, `${name}.png`);
         const page = await context.newPage();
         try {
-          await page.goto(
-            `${baseUrl}/iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story${globals}`,
-            { timeout: STORY_TIMEOUT_MS },
-          );
+          await page.goto(storyUrl(baseUrl, story, options.globals), {
+            timeout: STORY_TIMEOUT_MS,
+          });
           await page.waitForSelector(options.waitForSelector, {
             timeout: STORY_TIMEOUT_MS,
           });

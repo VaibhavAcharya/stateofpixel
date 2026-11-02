@@ -7,6 +7,7 @@ import {
   shardStories,
   storybookCommand,
   storySnapshotName,
+  storyUrl,
 } from "./storybook";
 
 const stories: Story[] = [
@@ -47,6 +48,16 @@ it("splits stories between shards", () => {
 it("names a story snapshot after its title, name and viewport", () => {
   expect(storySnapshotName(stories[0] as Story, 375)).toBe(
     "Components/Button/Primary [chromium 375]",
+  );
+});
+
+it("opens a story with its Storybook globals", () => {
+  const story = stories[0] as Story;
+  expect(storyUrl("http://127.0.0.1:6006", story, undefined)).toBe(
+    "http://127.0.0.1:6006/iframe.html?id=button--primary&viewMode=story",
+  );
+  expect(storyUrl("http://127.0.0.1:6006", story, "brand:new;theme:dark")).toBe(
+    "http://127.0.0.1:6006/iframe.html?id=button--primary&viewMode=story&globals=brand%3Anew%3Btheme%3Adark",
   );
 });
 
