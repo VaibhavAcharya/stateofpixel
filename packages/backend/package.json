@@ -23,6 +23,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@netlify/blobs": "^11.1.1",
     "@netlify/database": "^2.0.1",
     "dodopayments": "^2.51.0",

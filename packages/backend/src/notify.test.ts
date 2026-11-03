@@ -294,3 +294,29 @@ it("retries a job after a dropped connection without notifying", async () => {
 
   expect(await pending()).toEqual([]);
 });
+
+it("retries a job after a query timeout without notifying", async () => {
+  vi.useFakeTimers();
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  vi.spyOn(internal.retention.deleteBuildData, "handler").mockRejectedValueOnce(
+    new Error("Query read timeout"),
+  );
+  const t = testBackend();
+  await t.run((ctx) =>
+    ctx.scheduler.runAfter(0, internal.retention.deleteBuildData, {
+      buildId: "missing",
+    }),
+  );
+  const pending = () =>
+    t.run((ctx) => ctx.db.select({ failedAt: jobs.failedAt }).from(jobs));
+
+  await t.runDueJobs();
+
+  expect(sent).toHaveLength(0);
+  expect(await pending()).toEqual([{ failedAt: null }]);
+
+  vi.advanceTimersByTime(60 * 1000);
+  await t.runDueJobs();
+
+  expect(await pending()).toEqual([]);
+});
