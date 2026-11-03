@@ -26,6 +26,31 @@ const SETTLE_TIMEOUT_MS = 10_000;
 const STABLE_SCREENSHOT_WAITS_MS = [0, 100, 250, 500, 1000];
 const FREEZE_SVG_STYLE =
   "<style>*,*::before,*::after{animation:none!important;transition:none!important}</style>";
+const SVG_ANIMATION_ELEMENTS =
+  /<(animate|animateTransform|animateMotion|animateColor|set)\b[^>]*?(\/>|>[\s\S]*?<\/\1>)/g;
+const FREEZE_MEDIA = `(async () => {
+  for (const svg of document.querySelectorAll("svg")) {
+    svg.pauseAnimations();
+    svg.setCurrentTime(0);
+  }
+  for (const video of document.querySelectorAll("video")) {
+    video.pause();
+    video.currentTime = 0;
+  }
+  const gifs = Array.from(document.images).filter((image) => /\\.gif(\\?|#|$)/i.test(image.currentSrc));
+  await Promise.all(gifs.map(async (image) => {
+    try {
+      const frame = await createImageBitmap(await (await fetch(image.currentSrc)).blob());
+      const canvas = document.createElement("canvas");
+      canvas.width = frame.width;
+      canvas.height = frame.height;
+      canvas.getContext("2d").drawImage(frame, 0, 0);
+      image.srcset = "";
+      image.src = canvas.toDataURL();
+      await image.decode();
+    } catch {}
+  }));
+})()`;
 
 const CONTENT_TYPES: Record<string, string> = {
   ".html": "text/html",
@@ -443,6 +468,7 @@ async function captureStories(
         });
         await page.evaluate("document.fonts.ready");
         await waitForResources(page);
+        await page.evaluate(FREEZE_MEDIA);
         if (delay > 0) {
           await page.waitForTimeout(delay);
         }
@@ -482,7 +508,9 @@ async function freezeSvgAnimations(route: Route): Promise<void> {
   await route.fulfill({
     status: response.status(),
     contentType: "image/svg+xml",
-    body: body.replace(/<svg\b[^>]*>/, (tag) => `${tag}${FREEZE_SVG_STYLE}`),
+    body: body
+      .replace(SVG_ANIMATION_ELEMENTS, "")
+      .replace(/<svg\b[^>]*>/, (tag) => `${tag}${FREEZE_SVG_STYLE}`),
   });
 }
 
