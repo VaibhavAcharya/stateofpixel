@@ -38,16 +38,19 @@ npx stateofpixel storybook storybook-static \
   --exclude "**/Playground" \
   --tag snapshot \
   --wait-for-selector "[data-ready]" \
-  --delay 200
+  --delay 200 \
+  --device-scale-factor 2
 ```
 
-<CliOptions name="storybook" only={["--viewports", "--include", "--exclude", "--tag", "--wait-for-selector", "--delay"]} />
+<CliOptions name="storybook" only={["--viewports", "--include", "--exclude", "--tag", "--wait-for-selector", "--delay", "--device-scale-factor"]} />
 
-Each story opens in Chromium at a height of 720px, with reduced motion and a device scale factor of 1, and the screenshot covers the full page. A story has 15 seconds to load and to match `--wait-for-selector`. When a story does not render, the command lists it and stops before anything uploads.
+Each story opens in Chromium at a height of 720px, with reduced motion and the device scale factor from `--device-scale-factor`, and the screenshot covers the full page. A story has 15 seconds to load and to match `--wait-for-selector`. When a story does not render, the command lists it and stops before anything uploads.
 
 In `--include` and `--exclude`, `*` stays inside one segment of `Title/Name` and `**` crosses segments.
 
 `--tag` keeps only stories that have that tag in their `tags`.
+
+With `--device-scale-factor 2`, a screenshot has twice the width and height in pixels. Each image can be up to 4 MB, so a tall story at 2 may go over it. See [Limits](/docs/limits#limits).
 
 `storybook` also takes every flag of `upload`, like `--build-name`, `--shard` and `--threshold`. With `--shard 2/4`, it captures only every fourth story, starting at the second, so each CI job takes its share. See the [CLI](/docs/cli) reference. Use `--dry-run` to capture and print the plan without uploading.
 

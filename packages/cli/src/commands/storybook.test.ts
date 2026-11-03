@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import {
   filterStories,
   isCapturedByChromatic,
+  parseDeviceScaleFactor,
   parseGlobals,
   parseViewports,
   planCaptures,
@@ -169,6 +170,14 @@ it("parses Storybook globals", () => {
   expect(parseGlobals("brand:new;theme:dark")).toBe("brand:new;theme:dark");
   expect(() => parseGlobals("brand")).toThrow(
     "Must look like brand:new;theme:dark.",
+  );
+});
+
+it("parses the device scale factor", () => {
+  expect(parseDeviceScaleFactor("2")).toBe(2);
+  expect(parseDeviceScaleFactor("1.5")).toBe(1.5);
+  expect(() => parseDeviceScaleFactor("0")).toThrow(
+    "Must be a number above 0, like 2.",
   );
 });
 
