@@ -12,7 +12,7 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { InvalidArgumentError } from "commander";
-import type { Browser } from "playwright";
+import type { Browser, BrowserContext } from "playwright";
 import { mapConcurrent } from "../map-concurrent";
 import { ENV } from "../reference";
 import { metadataFile, type Shard } from "../upload";
@@ -136,7 +136,7 @@ export async function storybookCommand(
       return notRendered;
     });
     if (failed.length > 0) {
-      throw new Error(`Stories that did not render: ${failed.join(", ")}`);
+      throw new Error(`Stories that did not render:\n  ${failed.join("\n  ")}`);
     }
     await uploadCommand(outDir, { ...options, shard });
   } finally {
@@ -406,54 +406,55 @@ async function captureStories(
   waitForSelector: string,
 ): Promise<string[]> {
   const failed: string[] = [];
-  for (const width of new Set(captures.map((capture) => capture.width))) {
-    const context = await storybook.browser.newContext({
-      viewport: { width, height: VIEWPORT_HEIGHT },
-      deviceScaleFactor: 1,
-      reducedMotion: "reduce",
-    });
-    await mapConcurrent(
-      captures.filter((capture) => capture.width === width),
-      CAPTURE_CONCURRENCY,
-      async ({ story, name, globals, delay }) => {
-        const file = path.join(outDir, `${name}.png`);
+  await mapConcurrent(
+    captures,
+    CAPTURE_CONCURRENCY,
+    async ({ story, name, width, globals, delay }) => {
+      const file = path.join(outDir, `${name}.png`);
+      let context: BrowserContext | undefined;
+      try {
+        context = await storybook.browser.newContext({
+          viewport: { width, height: VIEWPORT_HEIGHT },
+          deviceScaleFactor: 1,
+          reducedMotion: "reduce",
+        });
         const page = await context.newPage();
-        try {
-          await page.goto(storyUrl(storybook.baseUrl, story, globals), {
-            timeout: STORY_TIMEOUT_MS,
-          });
-          await page.waitForSelector(waitForSelector, {
-            timeout: STORY_TIMEOUT_MS,
-          });
-          await page.evaluate("document.fonts.ready");
-          if (delay > 0) {
-            await page.waitForTimeout(delay);
-          }
-          await mkdir(path.dirname(file), { recursive: true });
-          await page.screenshot({
-            path: file,
-            fullPage: true,
-            animations: "disabled",
-            caret: "hide",
-          });
-          await writeFile(
-            metadataFile(file),
-            JSON.stringify({
-              browser: "chromium",
-              viewport: width,
-              storyId: story.id,
-              importPath: story.importPath,
-            }),
-          );
-        } catch {
-          failed.push(name);
-        } finally {
-          await page.close();
+        await page.goto(storyUrl(storybook.baseUrl, story, globals), {
+          timeout: STORY_TIMEOUT_MS,
+        });
+        await page.waitForSelector(waitForSelector, {
+          timeout: STORY_TIMEOUT_MS,
+        });
+        await page.evaluate("document.fonts.ready");
+        if (delay > 0) {
+          await page.waitForTimeout(delay);
         }
-      },
-    );
-    await context.close();
-  }
+        await mkdir(path.dirname(file), { recursive: true });
+        await page.screenshot({
+          path: file,
+          fullPage: true,
+          animations: "disabled",
+          caret: "hide",
+        });
+        await writeFile(
+          metadataFile(file),
+          JSON.stringify({
+            browser: "chromium",
+            viewport: width,
+            storyId: story.id,
+            importPath: story.importPath,
+          }),
+        );
+      } catch (error) {
+        const reason = (
+          error instanceof Error ? error.message : String(error)
+        ).split("\n")[0];
+        failed.push(`${name}: ${reason}`);
+      } finally {
+        await context?.close();
+      }
+    },
+  );
   return failed;
 }
 
