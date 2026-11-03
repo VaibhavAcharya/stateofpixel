@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.11.0...v1.11.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **cli:** render storybook text with grayscale anti-aliasing ([#96](https://github.com/VaibhavAcharya/stateofpixel/issues/96)) ([6474657](https://github.com/VaibhavAcharya/stateofpixel/commit/647465729c5604a274ab81aae472add53aebf6c0))
+
 ## [1.11.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.10.1...v1.11.0) (2026-11-03)
 
 
