@@ -48,6 +48,7 @@ export type StorybookCommandOptions = UploadCommandOptions & {
   chromatic: boolean;
   waitForSelector: string;
   delay: number;
+  deviceScaleFactor: number;
 };
 
 export type ChromaticParameters = {
@@ -129,6 +130,7 @@ export async function storybookCommand(
         outDir,
         captures,
         options.waitForSelector,
+        options.deviceScaleFactor,
       );
       console.log(
         `stateofpixel  captured ${captures.length - notRendered.length} screenshots from ${stories.length} stories`,
@@ -404,6 +406,7 @@ async function captureStories(
   outDir: string,
   captures: Capture[],
   waitForSelector: string,
+  deviceScaleFactor: number,
 ): Promise<string[]> {
   const failed: string[] = [];
   await mapConcurrent(
@@ -415,7 +418,7 @@ async function captureStories(
       try {
         context = await storybook.browser.newContext({
           viewport: { width, height: VIEWPORT_HEIGHT },
-          deviceScaleFactor: 1,
+          deviceScaleFactor,
           reducedMotion: "reduce",
         });
         const page = await context.newPage();
@@ -517,4 +520,12 @@ export function parseDelay(value: string): number {
     throw new InvalidArgumentError("Must be a whole number of milliseconds.");
   }
   return delay;
+}
+
+export function parseDeviceScaleFactor(value: string): number {
+  const scale = Number(value);
+  if (!Number.isFinite(scale) || scale <= 0) {
+    throw new InvalidArgumentError("Must be a number above 0, like 2.");
+  }
+  return scale;
 }

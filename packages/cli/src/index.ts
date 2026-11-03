@@ -5,6 +5,7 @@ import { compareCommand, parseThreshold } from "./commands/compare";
 import { finalizeCommand } from "./commands/finalize";
 import {
   parseDelay,
+  parseDeviceScaleFactor,
   parseGlobals,
   parseViewports,
   storybookCommand,
@@ -18,6 +19,7 @@ const PARSERS: Record<string, (value: string) => unknown> = {
   "--viewports <widths>": parseViewports,
   "--delay <ms>": parseDelay,
   "--globals <globals>": parseGlobals,
+  "--device-scale-factor <n>": parseDeviceScaleFactor,
 };
 
 const ACTIONS: Record<CommandSpec["name"], Parameters<Command["action"]>[0]> = {

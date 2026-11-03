@@ -136,6 +136,11 @@ export const COMMANDS: CommandSpec[] = [
         description: "wait this long before each screenshot",
         default: 0,
       },
+      {
+        flags: "--device-scale-factor <n>",
+        description: "pixels per CSS pixel, like 2 for retina",
+        default: 1,
+      },
       ...buildOptions("capture and print the plan, upload nothing"),
     ],
   },
