@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.10.0...v1.10.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **cli:** capture each story in its own browser context ([#89](https://github.com/VaibhavAcharya/stateofpixel/issues/89)) ([8ba916b](https://github.com/VaibhavAcharya/stateofpixel/commit/8ba916baaab88296a6a19abde3e498a99fcceb68))
+
 ## [1.10.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.9.0...v1.10.0) (2026-11-02)
 
 
