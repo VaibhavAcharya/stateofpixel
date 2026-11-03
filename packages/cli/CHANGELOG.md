@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.3](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.11.2...v1.11.3) (2026-11-03)
+
+
+### Bug Fixes
+
+* **cli:** wait for storybook play functions and requests before capture ([#100](https://github.com/VaibhavAcharya/stateofpixel/issues/100)) ([5f8fd86](https://github.com/VaibhavAcharya/stateofpixel/commit/5f8fd864927944bd2a8945d3e3b4d733549a403e))
+
 ## [1.11.2](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.11.1...v1.11.2) (2026-11-03)
 
 
