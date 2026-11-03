@@ -27,7 +27,7 @@ export function ProjectHeader({
     access !== undefined &&
     access !== null &&
     access.permission !== null &&
-    !access.canAdmin;
+    !access.canWrite;
 
   return (
     <>
@@ -78,7 +78,7 @@ export function ProjectHeader({
           active={tab === "settings"}
           disabledReason={
             settingsLocked
-              ? "Only admins of this repository on GitHub can change its settings."
+              ? "Only people with write access to this repository on GitHub can change its settings."
               : undefined
           }
         />
