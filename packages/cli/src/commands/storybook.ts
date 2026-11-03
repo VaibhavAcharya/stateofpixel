@@ -347,7 +347,12 @@ async function readChromaticParameters(
     await page.waitForFunction(
       () => {
         const preview = (globalThis as StorybookWindow).__STORYBOOK_PREVIEW__;
-        return preview?.storyStoreValue ?? preview?.storyStore;
+        try {
+          const store = preview?.storyStoreValue ?? preview?.storyStore;
+          return typeof store?.extract === "function";
+        } catch {
+          return false;
+        }
       },
       undefined,
       { timeout: PARAMETERS_TIMEOUT_MS },
