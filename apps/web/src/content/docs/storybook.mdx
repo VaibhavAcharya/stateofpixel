@@ -44,7 +44,7 @@ npx stateofpixel storybook storybook-static \
 
 <CliOptions name="storybook" only={["--viewports", "--include", "--exclude", "--tag", "--wait-for-selector", "--delay", "--device-scale-factor"]} />
 
-Each story opens in Chromium at a height of 720px, with reduced motion, grayscale text anti-aliasing and the device scale factor from `--device-scale-factor`, and the screenshot covers the full page. A story has 15 seconds to load and to match `--wait-for-selector`. After that, the CLI waits for the network to go idle and for images to load, freezes animations inside SVG files, and takes screenshots until two in a row match. A story that keeps changing gets its last screenshot and a warning. When a story does not render, the command lists it and stops before anything uploads.
+Each story opens in Chromium at a height of 720px, with reduced motion, grayscale text anti-aliasing and the device scale factor from `--device-scale-factor`, and the screenshot covers the full page. A story has 15 seconds to load and to match `--wait-for-selector`. After that, the CLI waits for the network to go idle and for images to load, pauses GIFs, videos and SVG animations on their first frame, and takes screenshots until two in a row match. A story that keeps changing gets its last screenshot and a warning. When a story does not render, the command lists it and stops before anything uploads.
 
 In `--include` and `--exclude`, `*` stays inside one segment of `Title/Name` and `**` crosses segments.
 
