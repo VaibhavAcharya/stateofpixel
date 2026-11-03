@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.2](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.11.1...v1.11.2) (2026-11-03)
+
+
+### Bug Fixes
+
+* **cli:** wait for storybook stories to settle before capture ([#98](https://github.com/VaibhavAcharya/stateofpixel/issues/98)) ([42faacd](https://github.com/VaibhavAcharya/stateofpixel/commit/42faacdbe60802387607c88504c91e6bb368ea15))
+
 ## [1.11.1](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.11.0...v1.11.1) (2026-11-03)
 
 
