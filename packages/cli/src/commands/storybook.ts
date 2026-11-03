@@ -49,6 +49,37 @@ const PAGE_HELPERS = `(() => {
     this.addEventListener("loadend", end, { once: true });
     return send.apply(this, args);
   };
+  const NativeWorker = globalThis.Worker;
+  if (NativeWorker !== undefined) {
+    globalThis.Worker = class extends NativeWorker {
+      #waiting = 0;
+      constructor(...args) {
+        super(...args);
+        this.addEventListener("message", () => {
+          if (this.#waiting > 0) {
+            this.#waiting--;
+            end();
+          }
+        });
+        this.addEventListener("error", () => this.#settle());
+      }
+      postMessage(...args) {
+        this.#waiting++;
+        start();
+        return super.postMessage(...args);
+      }
+      terminate() {
+        this.#settle();
+        return super.terminate();
+      }
+      #settle() {
+        while (this.#waiting > 0) {
+          this.#waiting--;
+          end();
+        }
+      }
+    };
+  }
   const loadEagerly = (element) => {
     if (element.loading === "lazy") {
       element.loading = "eager";
