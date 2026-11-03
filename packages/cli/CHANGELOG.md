@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.10.1...v1.11.0) (2026-11-03)
+
+
+### Features
+
+* **cli:** add --device-scale-factor to storybook ([#92](https://github.com/VaibhavAcharya/stateofpixel/issues/92)) ([a1fdfa1](https://github.com/VaibhavAcharya/stateofpixel/commit/a1fdfa1aa8ff2fefc0f7591033f2ed851e1dd946))
+
+
+### Bug Fixes
+
+* **cli:** wait for the Storybook store without touching the deprecated proxy ([#93](https://github.com/VaibhavAcharya/stateofpixel/issues/93)) ([880b022](https://github.com/VaibhavAcharya/stateofpixel/commit/880b022d2b21415203be98c3d1c358490b778a79))
+
 ## [1.10.1](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.10.0...v1.10.1) (2026-11-03)
 
 
