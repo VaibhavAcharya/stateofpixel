@@ -323,7 +323,7 @@ async function withStorybook<T>(
     );
   });
   const server = await serveStatic(staticDir);
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: ["--disable-lcd-text"] });
   try {
     return await run({
       browser,
