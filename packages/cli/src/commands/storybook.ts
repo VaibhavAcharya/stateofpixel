@@ -89,6 +89,7 @@ type PreviewStore = {
 type StorybookWindow = {
   __STORYBOOK_PREVIEW__?: {
     storyStoreValue?: PreviewStore;
+    storyStore?: PreviewStore;
   };
 };
 
@@ -344,14 +345,20 @@ async function readChromaticParameters(
     await page.waitForFunction(
       () => {
         const preview = (globalThis as StorybookWindow).__STORYBOOK_PREVIEW__;
-        return preview?.storyStoreValue !== undefined;
+        try {
+          const store = preview?.storyStoreValue ?? preview?.storyStore;
+          return typeof store?.extract === "function";
+        } catch {
+          return false;
+        }
       },
       undefined,
       { timeout: PARAMETERS_TIMEOUT_MS },
     );
     const text = await page.evaluate(async () => {
       const preview = (globalThis as StorybookWindow).__STORYBOOK_PREVIEW__;
-      const store = preview?.storyStoreValue as PreviewStore;
+      const store = (preview?.storyStoreValue ??
+        preview?.storyStore) as PreviewStore;
       await store.cacheAllCSFFiles();
       return JSON.stringify(
         Object.values(store.extract()).map(({ id, tags, parameters }) => {
