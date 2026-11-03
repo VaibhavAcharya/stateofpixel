@@ -1,6 +1,12 @@
 import { and, asc, eq, inArray, isNull, lt, lte, or } from "drizzle-orm";
 import { z } from "zod";
-import { type Database, database, first, one } from "./db/index.ts";
+import {
+  closeDatabase,
+  type Database,
+  database,
+  first,
+  one,
+} from "./db/index.ts";
 import { sendNotification } from "./lib/notify.ts";
 import { jobs } from "./schema.ts";
 
@@ -229,7 +235,12 @@ function schedulerFor(
 
 const RETRYABLE = new Set(["40001", "40P01"]);
 const MAX_ATTEMPTS = 8;
-const CONNECTION_TERMINATED = "Connection terminated unexpectedly";
+const DROPPED_CONNECTION = new Set([
+  "Connection terminated unexpectedly",
+  "Connection terminated due to connection timeout",
+  "timeout exceeded when trying to connect",
+  "Query read timeout",
+]);
 
 function pgCode(error: unknown): string | undefined {
   for (let cause = error; cause instanceof Error; cause = cause.cause) {
@@ -242,7 +253,7 @@ function pgCode(error: unknown): string | undefined {
 
 function isTransient(error: unknown): boolean {
   for (let cause = error; cause instanceof Error; cause = cause.cause) {
-    if (cause.message === CONNECTION_TERMINATED) {
+    if (DROPPED_CONNECTION.has(cause.message)) {
       return true;
     }
   }
@@ -399,6 +410,7 @@ async function runJob(job: Job) {
   } catch (error) {
     if (ref?.kind === "mutation" && isTransient(error)) {
       console.error(`Job ${job.name} failed, retrying`, error);
+      closeDatabase();
       await database()
         .update(jobs)
         .set({ runAt: Date.now() + JOB_RETRY_MS, lockedUntil: null })
@@ -420,12 +432,16 @@ async function runJob(job: Job) {
 }
 
 export async function runDueJobs(deadline = Number.POSITIVE_INFINITY) {
-  while (Date.now() < deadline) {
-    const job = await claimJob();
-    if (job === null) {
-      return;
+  try {
+    while (Date.now() < deadline) {
+      const job = await claimJob();
+      if (job === null) {
+        return;
+      }
+      await runJob(job);
     }
-    await runJob(job);
+  } finally {
+    closeDatabase();
   }
 }
 
