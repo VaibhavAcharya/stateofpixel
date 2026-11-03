@@ -114,7 +114,7 @@ export const access = query({
 export const settings = query({
   args: { projectId: z.string() },
   handler: async (ctx, { projectId }) => {
-    const project = await findAllowedProject(ctx, projectId, "admin");
+    const project = await findAllowedProject(ctx, projectId, "write");
     if (project === null) {
       return null;
     }
@@ -137,7 +137,10 @@ export const updateSettings = mutation({
     prRetentionDays: z.number().optional(),
   },
   handler: async (ctx, { projectId, ...changes }) => {
-    await requirePermission(ctx, projectId, "admin");
+    const needsAdmin =
+      changes.autoApproveBranches !== undefined ||
+      changes.prRetentionDays !== undefined;
+    await requirePermission(ctx, projectId, needsAdmin ? "admin" : "write");
     const autoApproveBranches = changes.autoApproveBranches
       ?.map((pattern) => pattern.trim())
       .filter((pattern) => pattern !== "");

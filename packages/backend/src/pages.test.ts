@@ -868,15 +868,48 @@ it("undoes a build action, then every review once no build action is left", asyn
   });
 });
 
-it("saves settings for admins only and checks the values", async () => {
-  const writer = await setup();
-  await writer.grant("write");
+it("lets writers change only the diff settings", async () => {
+  const reader = await setup();
+  await reader.grant("read");
   expect(
-    await writer.user.query(api.projects.settings, {
-      projectId: writer.projectId,
+    await reader.user.query(api.projects.settings, {
+      projectId: reader.projectId,
     }),
   ).toBeNull();
+  await expect(
+    reader.user.mutation(api.projects.updateSettings, {
+      projectId: reader.projectId,
+      diffThreshold: 0.3,
+    }),
+  ).rejects.toThrow(/forbidden/);
 
+  const { user, grant, projectId } = await setup();
+  await grant("write");
+  await user.mutation(api.projects.updateSettings, {
+    projectId,
+    diffThreshold: 0.3,
+    diffIncludeAA: true,
+  });
+  expect(await user.query(api.projects.settings, { projectId })).toMatchObject({
+    diffThreshold: 0.3,
+    diffIncludeAA: true,
+  });
+  await expect(
+    user.mutation(api.projects.updateSettings, {
+      projectId,
+      autoApproveBranches: ["main"],
+    }),
+  ).rejects.toThrow(/forbidden/);
+  await expect(
+    user.mutation(api.projects.updateSettings, {
+      projectId,
+      diffThreshold: 0.1,
+      prRetentionDays: 60,
+    }),
+  ).rejects.toThrow(/forbidden/);
+});
+
+it("saves settings for admins and checks the values", async () => {
   const { user, grant, projectId } = await setup();
   await grant("admin");
   await user.mutation(api.projects.updateSettings, {

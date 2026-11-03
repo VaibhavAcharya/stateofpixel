@@ -61,10 +61,10 @@ function SettingsAccess({ owner, repo }: { owner: string; repo: string }) {
   if (result.state === "not_found") {
     return <ProjectNotFound />;
   }
-  if (!result.access.canAdmin) {
+  if (!result.access.canWrite) {
     return (
-      <EmptyState title="Admins only.">
-        You need admin access to this repository on GitHub to change its
+      <EmptyState title="Write access only.">
+        You need write access to this repository on GitHub to change its
         settings.
       </EmptyState>
     );
@@ -74,6 +74,7 @@ function SettingsAccess({ owner, repo }: { owner: string; repo: string }) {
       owner={owner}
       repo={repo}
       projectId={result.access.projectId}
+      canAdmin={result.access.canAdmin}
     />
   );
 }
@@ -82,10 +83,12 @@ function SettingsForm({
   owner,
   repo,
   projectId,
+  canAdmin,
 }: {
   owner: string;
   repo: string;
   projectId: Id<"projects">;
+  canAdmin: boolean;
 }) {
   const settings = useQuery(api.projects.settings, { projectId });
   const update = useMutation(api.projects.updateSettings);
@@ -105,12 +108,14 @@ function SettingsForm({
             </p>
           )}
         </Field>
-        <TextSetting
-          label="Auto-approve branches"
-          hint="Comma separated globs. Builds on these branches without a PR become baselines."
-          value={settings.autoApproveBranches.join(", ")}
-          onSave={(value) => save({ autoApproveBranches: value.split(",") })}
-        />
+        {canAdmin && (
+          <TextSetting
+            label="Auto-approve branches"
+            hint="Comma separated globs. Builds on these branches without a PR become baselines."
+            value={settings.autoApproveBranches.join(", ")}
+            onSave={(value) => save({ autoApproveBranches: value.split(",") })}
+          />
+        )}
       </Section>
       <Section title="Diff">
         <TextSetting
@@ -136,21 +141,25 @@ function SettingsForm({
           )}
         </Field>
       </Section>
-      <Section title="Retention">
-        <TextSetting
-          label="Keep PR-only images for"
-          hint="Days, from 7 to 365."
-          inputMode="numeric"
-          value={String(settings.prRetentionDays)}
-          onSave={(value) => save({ prRetentionDays: Number(value) })}
-        />
-      </Section>
-      <Section title="Tokens">
-        <Tokens projectId={projectId} />
-      </Section>
-      <Section title="Danger">
-        <DeleteProject owner={owner} repo={repo} projectId={projectId} />
-      </Section>
+      {canAdmin && (
+        <>
+          <Section title="Retention">
+            <TextSetting
+              label="Keep PR-only images for"
+              hint="Days, from 7 to 365."
+              inputMode="numeric"
+              value={String(settings.prRetentionDays)}
+              onSave={(value) => save({ prRetentionDays: Number(value) })}
+            />
+          </Section>
+          <Section title="Tokens">
+            <Tokens projectId={projectId} />
+          </Section>
+          <Section title="Danger">
+            <DeleteProject owner={owner} repo={repo} projectId={projectId} />
+          </Section>
+        </>
+      )}
     </div>
   );
 }
