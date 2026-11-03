@@ -12,7 +12,7 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { InvalidArgumentError } from "commander";
-import type { Browser, BrowserContext } from "playwright";
+import type { Browser, BrowserContext, Page, Route } from "playwright";
 import { mapConcurrent } from "../map-concurrent";
 import { ENV } from "../reference";
 import { metadataFile, type Shard } from "../upload";
@@ -22,6 +22,10 @@ const CAPTURE_CONCURRENCY = 4;
 const STORY_TIMEOUT_MS = 15_000;
 const PARAMETERS_TIMEOUT_MS = 60_000;
 const VIEWPORT_HEIGHT = 720;
+const SETTLE_TIMEOUT_MS = 10_000;
+const STABLE_SCREENSHOT_WAITS_MS = [0, 100, 250, 500, 1000];
+const FREEZE_SVG_STYLE =
+  "<style>*,*::before,*::after{animation:none!important;transition:none!important}</style>";
 
 const CONTENT_TYPES: Record<string, string> = {
   ".html": "text/html",
@@ -426,6 +430,10 @@ async function captureStories(
           deviceScaleFactor,
           reducedMotion: "reduce",
         });
+        await context.route(
+          (url) => url.pathname.endsWith(".svg"),
+          freezeSvgAnimations,
+        );
         const page = await context.newPage();
         await page.goto(storyUrl(storybook.baseUrl, story, globals), {
           timeout: STORY_TIMEOUT_MS,
@@ -434,16 +442,18 @@ async function captureStories(
           timeout: STORY_TIMEOUT_MS,
         });
         await page.evaluate("document.fonts.ready");
+        await waitForResources(page);
         if (delay > 0) {
           await page.waitForTimeout(delay);
         }
+        const { screenshot, stable } = await stableScreenshot(page);
+        if (!stable) {
+          console.warn(
+            `stateofpixel  ${name} kept changing, uploading its last screenshot`,
+          );
+        }
         await mkdir(path.dirname(file), { recursive: true });
-        await page.screenshot({
-          path: file,
-          fullPage: true,
-          animations: "disabled",
-          caret: "hide",
-        });
+        await writeFile(file, screenshot);
         await writeFile(
           metadataFile(file),
           JSON.stringify({
@@ -464,6 +474,49 @@ async function captureStories(
     },
   );
   return failed;
+}
+
+async function freezeSvgAnimations(route: Route): Promise<void> {
+  const response = await route.fetch();
+  const body = await response.text();
+  await route.fulfill({
+    status: response.status(),
+    contentType: "image/svg+xml",
+    body: body.replace(/<svg\b[^>]*>/, (tag) => `${tag}${FREEZE_SVG_STYLE}`),
+  });
+}
+
+async function waitForResources(page: Page): Promise<void> {
+  await page
+    .waitForLoadState("networkidle", { timeout: SETTLE_TIMEOUT_MS })
+    .catch(() => undefined);
+  await page.evaluate(`Promise.race([
+    Promise.all(Array.from(document.images, (image) => image.decode().catch(() => undefined))),
+    new Promise((resolve) => setTimeout(resolve, ${SETTLE_TIMEOUT_MS})),
+  ])`);
+}
+
+async function stableScreenshot(
+  page: Page,
+): Promise<{ screenshot: Buffer; stable: boolean }> {
+  let previous = await takeScreenshot(page);
+  for (const wait of STABLE_SCREENSHOT_WAITS_MS) {
+    await page.waitForTimeout(wait);
+    const screenshot = await takeScreenshot(page);
+    if (screenshot.equals(previous)) {
+      return { screenshot, stable: true };
+    }
+    previous = screenshot;
+  }
+  return { screenshot: previous, stable: false };
+}
+
+function takeScreenshot(page: Page): Promise<Buffer> {
+  return page.screenshot({
+    fullPage: true,
+    animations: "disabled",
+    caret: "hide",
+  });
 }
 
 async function serveStatic(root: string): Promise<Server> {
