@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.4](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.11.3...v1.11.4) (2026-11-03)
+
+
+### Bug Fixes
+
+* **cli:** wait for web worker replies before storybook capture ([#103](https://github.com/VaibhavAcharya/stateofpixel/issues/103)) ([a9b106d](https://github.com/VaibhavAcharya/stateofpixel/commit/a9b106d104ac40a0d2cadc7852a09c00f3e34723))
+
 ## [1.11.3](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.11.2...v1.11.3) (2026-11-03)
 
 
