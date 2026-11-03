@@ -24,6 +24,67 @@ const PARAMETERS_TIMEOUT_MS = 60_000;
 const VIEWPORT_HEIGHT = 720;
 const SETTLE_TIMEOUT_MS = 10_000;
 const STABLE_SCREENSHOT_WAITS_MS = [0, 100, 250, 500, 1000];
+const QUIET_REQUESTS_MS = 500;
+const PAGE_HELPERS = `(() => {
+  const now = Date.now.bind(Date);
+  const wait = setTimeout.bind(globalThis);
+  let pending = 0;
+  let lastActivity = 0;
+  const start = () => {
+    pending++;
+    lastActivity = now();
+  };
+  const end = () => {
+    pending--;
+    lastActivity = now();
+  };
+  const fetch = globalThis.fetch;
+  globalThis.fetch = function (...args) {
+    start();
+    return fetch.apply(this, args).finally(end);
+  };
+  const send = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.send = function (...args) {
+    start();
+    this.addEventListener("loadend", end, { once: true });
+    return send.apply(this, args);
+  };
+  const loadEagerly = (element) => {
+    if (element.loading === "lazy") {
+      element.loading = "eager";
+    }
+  };
+  new MutationObserver((records) => {
+    for (const record of records) {
+      loadEagerly(record.target);
+      for (const node of record.addedNodes) {
+        if (node instanceof Element) {
+          loadEagerly(node);
+          node.querySelectorAll("[loading=lazy]").forEach(loadEagerly);
+        }
+      }
+    }
+  }).observe(document, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ["loading"],
+  });
+  globalThis.__stateofpixelTimeout = (ms) => new Promise((resolve) => wait(resolve, ms));
+  globalThis.__stateofpixelRequestsSettled = (quietMs, timeoutMs) =>
+    new Promise((resolve) => {
+      const deadline = now() + timeoutMs;
+      const check = () => {
+        const quiet = pending === 0 && now() - lastActivity >= quietMs;
+        if (quiet || now() > deadline) {
+          resolve();
+        } else {
+          wait(check, 50);
+        }
+      };
+      check();
+    });
+})()`;
 const FREEZE_SVG_STYLE =
   "<style>*,*::before,*::after{animation:none!important;transition:none!important}</style>";
 const SVG_ANIMATION_ELEMENTS =
@@ -120,6 +181,7 @@ type StorybookWindow = {
   __STORYBOOK_PREVIEW__?: {
     storyStoreValue?: PreviewStore;
     storyStore?: PreviewStore;
+    currentRender?: { phase?: string };
   };
 };
 
@@ -459,6 +521,7 @@ async function captureStories(
           (url) => url.pathname.endsWith(".svg"),
           freezeSvgAnimations,
         );
+        await context.addInitScript(PAGE_HELPERS);
         const page = await context.newPage();
         await page.goto(storyUrl(storybook.baseUrl, story, globals), {
           timeout: STORY_TIMEOUT_MS,
@@ -466,6 +529,7 @@ async function captureStories(
         await page.waitForSelector(waitForSelector, {
           timeout: STORY_TIMEOUT_MS,
         });
+        await waitForRender(page);
         await page.evaluate("document.fonts.ready");
         await waitForResources(page);
         await page.evaluate(FREEZE_MEDIA);
@@ -514,13 +578,36 @@ async function freezeSvgAnimations(route: Route): Promise<void> {
   });
 }
 
+async function waitForRender(page: Page): Promise<void> {
+  await page
+    .waitForFunction(
+      () => {
+        const phase = (globalThis as StorybookWindow).__STORYBOOK_PREVIEW__
+          ?.currentRender?.phase;
+        return (
+          phase === undefined ||
+          phase === "completed" ||
+          phase === "finished" ||
+          phase === "errored" ||
+          phase === "aborted"
+        );
+      },
+      undefined,
+      { timeout: SETTLE_TIMEOUT_MS },
+    )
+    .catch(() => undefined);
+}
+
 async function waitForResources(page: Page): Promise<void> {
   await page
     .waitForLoadState("networkidle", { timeout: SETTLE_TIMEOUT_MS })
     .catch(() => undefined);
+  await page.evaluate(
+    `globalThis.__stateofpixelRequestsSettled?.(${QUIET_REQUESTS_MS}, ${SETTLE_TIMEOUT_MS})`,
+  );
   await page.evaluate(`Promise.race([
     Promise.all(Array.from(document.images, (image) => image.decode().catch(() => undefined))),
-    new Promise((resolve) => setTimeout(resolve, ${SETTLE_TIMEOUT_MS})),
+    globalThis.__stateofpixelTimeout(${SETTLE_TIMEOUT_MS}),
   ])`);
 }
 
