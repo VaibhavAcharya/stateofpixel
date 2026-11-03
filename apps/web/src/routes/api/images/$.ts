@@ -7,7 +7,7 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { imageSecret, verifyUntil } from "../../../lib/imageStore";
 
-const FILE = /^([a-z0-9]+)\.([0-9a-f-]{36})$/;
+const FILE = /^([a-z0-9-]+)\.([0-9a-f-]{36})$/;
 const PUBLIC_CACHE = "public, max-age=31536000, immutable";
 
 export const Route = createFileRoute("/api/images/$")({
