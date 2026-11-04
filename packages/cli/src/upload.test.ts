@@ -27,6 +27,7 @@ function fakeApi(
   lookups: CreateBuildResponse["snapshots"],
   shardIndex = 1,
   diff: CreateBuildResponse["diff"] = { threshold: 0.1, includeAA: false },
+  directUploads?: boolean,
 ) {
   const calls: { method: string; path: string; body: unknown }[] = [];
   const uploaded: Buffer[] = [];
@@ -43,6 +44,7 @@ function fakeApi(
           baseline: { buildNumber: 1, commit: "c1" },
           snapshots: lookups,
           warnings: [],
+          directUploads,
         },
         "POST /builds/b1/upload-urls": {
           uploads: ((body as { hashes: string[] })?.hashes ?? []).map(
@@ -67,12 +69,54 @@ function fakeApi(
       uploaded.push(bytes);
       return `storage-${uploadUrl}`;
     },
+    async uploadDirect(uploadUrl: string, bytes: Buffer) {
+      uploaded.push(bytes);
+      return `direct-${uploadUrl}`;
+    },
     async download(url: string) {
       return { "baseline:white": white }[url] as Buffer;
     },
   };
   return { api, calls, uploaded };
 }
+
+it("uploads straight to storage when the server supports it", async () => {
+  const dir = path.join(root, "shots");
+  await writeFixture(dir, "new", changed);
+  const { api, calls } = fakeApi(
+    [{ name: "new", status: "added", uploadUrl: "u-new" }],
+    1,
+    undefined,
+    true,
+  );
+
+  await uploadDirectory({
+    dir,
+    workDir: root,
+    api,
+    engine: createPixelmatchEngine(),
+    buildName: "default",
+    nonce: "run-1",
+    shard: { index: 1, total: 1 },
+    subset: false,
+    git: {
+      commit: "c2",
+      commitMessage: "Change",
+      branch: "feature",
+      baselineBranch: "main",
+      prNumber: 7,
+      mergeBase: null,
+      ancestors: ["c1"],
+    },
+    ci: {},
+  });
+
+  const complete = calls.find((call) => call.path.endsWith("/complete"))
+    ?.body as { uploads: { storageId: string }[] };
+  expect(complete.uploads.map((upload) => upload.storageId)).toEqual([
+    "direct-u-new",
+  ]);
+});
 
 it("uploads missing images once and diffs changed snapshots", async () => {
   const dir = path.join(root, "shots");

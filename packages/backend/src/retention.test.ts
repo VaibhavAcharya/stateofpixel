@@ -10,6 +10,7 @@ import {
   deletedBuilds as deletedBuildsTable,
   githubEvents,
   images,
+  pendingUploads,
   reviews,
   snapshots,
 } from "./schema.ts";
@@ -397,6 +398,45 @@ it("deletes images that no snapshot uses after a day", async () => {
     )?.storageBytes,
   }));
   expect(state).toEqual({ files: 1, storageBytes: 20 });
+});
+
+it("deletes uploads that were never confirmed after a day", async () => {
+  vi.stubEnv(
+    "NETLIFY_BLOBS_CONTEXT",
+    btoa(
+      JSON.stringify({
+        siteID: "site",
+        token: "token",
+        apiURL: "https://blobs.test",
+      }),
+    ),
+  );
+  vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
+    const { pathname } = new URL(input);
+    if (init?.method === "delete") {
+      blobs.delete(pathname.replace("/api/v1/blobs/site/site:images-dev/", ""));
+    }
+    return new Response(null, { status: 204 });
+  });
+  const { t, accountId } = await setup();
+  const insertPending = (blobKey: string, createdAt: number) =>
+    t.run(async (ctx) => {
+      blobs.add(blobKey);
+      await ctx.db
+        .insert(pendingUploads)
+        .values({ blobKey, _creationTime: createdAt });
+    });
+  await insertPending(`${accountId}/abandoned`, Date.now() - DAY_MS - 1);
+  await insertPending(`${accountId}/recent`, Date.now());
+
+  await t.mutation(internal.blobs.deleteAbandonedUploads, {});
+  await t.runAllJobs();
+
+  expect([...blobs]).toEqual([`${accountId}/recent`]);
+  const pending = await t.run((ctx) => ctx.db.select().from(pendingUploads));
+  expect(pending.map((upload) => upload.blobKey)).toEqual([
+    `${accountId}/recent`,
+  ]);
 });
 
 it("deletes GitHub delivery ids older than a week", async () => {

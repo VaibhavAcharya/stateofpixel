@@ -1,5 +1,7 @@
 export const DEFAULT_API_URL = "https://stateofpixel.com/api/v1";
 
+const BYTES_PER_TRANSFER_TIMEOUT = 4 * 1024 * 1024;
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -26,6 +28,7 @@ export type CreateBuildResponse = {
   baseline: { buildNumber: number; commit: string } | null;
   snapshots: SnapshotLookup[];
   warnings: string[];
+  directUploads?: boolean;
 };
 
 export type BuildCounts = {
@@ -131,6 +134,50 @@ export function createApiClient({
     });
   }
 
+  async function uploadDirect(
+    uploadUrl: string,
+    bytes: Buffer,
+  ): Promise<string> {
+    await withRetries(async () => {
+      const presigned = await uploadStep(uploadUrl, "presign");
+      if (presigned.status === 409) {
+        return;
+      }
+      if (!presigned.ok) {
+        throw await toApiError(presigned);
+      }
+      const { url } = (await presigned.json()) as { url: string };
+      const response = await fetch(url, {
+        method: "PUT",
+        body: new Uint8Array(bytes),
+        signal: AbortSignal.timeout(
+          transferTimeoutMs *
+            Math.max(1, Math.ceil(bytes.length / BYTES_PER_TRANSFER_TIMEOUT)),
+        ),
+      });
+      if (!response.ok) {
+        throw await toApiError(response);
+      }
+    });
+    return withRetries(async () => {
+      const response = await uploadStep(uploadUrl, "verify");
+      if (!response.ok) {
+        throw await toApiError(response);
+      }
+      const { storageId } = (await response.json()) as { storageId: string };
+      return storageId;
+    });
+  }
+
+  function uploadStep(uploadUrl: string, step: "presign" | "verify") {
+    const url = new URL(uploadUrl);
+    url.searchParams.set("step", step);
+    return fetch(url, {
+      method: "POST",
+      signal: AbortSignal.timeout(transferTimeoutMs),
+    });
+  }
+
   function download(url: string): Promise<Buffer> {
     return withRetries(async () => {
       const response = await fetch(url, {
@@ -143,7 +190,7 @@ export function createApiClient({
     });
   }
 
-  return { request, upload, download };
+  return { request, upload, uploadDirect, download };
 }
 
 export async function retryServerErrors<Result>(

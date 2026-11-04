@@ -14,6 +14,7 @@ type Tables = {
   comments: typeof schema.comments;
   approvedImages: typeof schema.approvedImages;
   images: typeof schema.images;
+  pendingUploads: typeof schema.pendingUploads;
   usageDaily: typeof schema.usageDaily;
   repoPermissions: typeof schema.repoPermissions;
   githubEvents: typeof schema.githubEvents;

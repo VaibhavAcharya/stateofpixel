@@ -382,6 +382,16 @@ export const images = pgTable(
   (table) => [index().on(table.accountId, table.hash)],
 );
 
+export const pendingUploads = pgTable(
+  "pending_uploads",
+  {
+    _id: id(),
+    _creationTime: creationTime(),
+    blobKey: text().notNull(),
+  },
+  (table) => [uniqueIndex().on(table.blobKey), index().on(table._creationTime)],
+);
+
 export const usageDaily = pgTable(
   "usage_daily",
   {

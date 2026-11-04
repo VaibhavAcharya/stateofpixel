@@ -1,5 +1,6 @@
 import type { Id } from "../dataModel.ts";
 import { env } from "../env.ts";
+import { MAX_PROXIED_IMAGE_BYTES } from "./limits.ts";
 import { messages, PUBLIC_IMAGE_SCOPE, sign, verify } from "./signing.ts";
 
 const BLOB_IMAGE_ROUTE = "/api/images/";
@@ -12,14 +13,16 @@ export type ImageGrant = { exp: number; sig: string };
 export async function blobImageUrl(
   project: { _id: Id<"projects">; private: boolean },
   blobKey: string,
+  bytes: number,
 ): Promise<string> {
   const file = blobKey.replace("/", ".");
+  const direct = bytes > MAX_PROXIED_IMAGE_BYTES ? "&direct=1" : "";
   if (!project.private) {
     const token = await imageToken(PUBLIC_IMAGE_SCOPE, blobKey);
-    return `${env.SITE_URL}${BLOB_IMAGE_ROUTE}${file}?t=${token}`;
+    return `${env.SITE_URL}${BLOB_IMAGE_ROUTE}${file}?t=${token}${direct}`;
   }
   const token = await imageToken(project._id, blobKey);
-  return `${env.SITE_URL}${BLOB_IMAGE_ROUTE}${project._id}/${file}?t=${token}`;
+  return `${env.SITE_URL}${BLOB_IMAGE_ROUTE}${project._id}/${file}?t=${token}${direct}`;
 }
 
 function imageToken(scope: string, key: string): Promise<string> {
