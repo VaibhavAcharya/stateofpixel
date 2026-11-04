@@ -360,6 +360,7 @@ export async function run<Ref extends FunctionReference>(
 }
 
 const JOB_LOCK_MS = 15 * 60 * 1000;
+const MUTATION_JOB_LOCK_MS = 2 * 60 * 1000;
 const JOB_RETRY_MS = 60 * 1000;
 
 type Job = typeof jobs.$inferSelect;
@@ -382,7 +383,7 @@ async function claimJob(): Promise<Job | null> {
   return first(
     await database()
       .update(jobs)
-      .set({ lockedUntil: now + JOB_LOCK_MS })
+      .set({ lockedUntil: now + MUTATION_JOB_LOCK_MS })
       .where(inArray(jobs._id, due))
       .returning(),
   );
@@ -390,6 +391,8 @@ async function claimJob(): Promise<Job | null> {
 
 async function runJob(job: Job) {
   const ref = lookup(job.name);
+  const startedAt = Date.now();
+  console.log(`Job ${job.name} ${job._id} claimed`);
   try {
     if (ref === null) {
       throw new Error(`Unknown job ${job.name}`);
@@ -404,9 +407,16 @@ async function runJob(job: Job) {
         await db.delete(jobs).where(eq(jobs._id, job._id));
       });
     } else {
+      await database()
+        .update(jobs)
+        .set({ lockedUntil: Date.now() + JOB_LOCK_MS })
+        .where(eq(jobs._id, job._id));
       await run(ref, args);
       await database().delete(jobs).where(eq(jobs._id, job._id));
     }
+    console.log(
+      `Job ${job.name} ${job._id} finished in ${Date.now() - startedAt} ms`,
+    );
   } catch (error) {
     if (ref?.kind === "mutation" && isTransient(error)) {
       console.error(`Job ${job.name} failed, retrying`, error);
