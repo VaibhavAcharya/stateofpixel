@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.11.5...v1.12.0) (2026-11-04)
+
+
+### Features
+
+* ignore snapshots with up to a set number of changed pixels ([#108](https://github.com/VaibhavAcharya/stateofpixel/issues/108)) ([bc09eaf](https://github.com/VaibhavAcharya/stateofpixel/commit/bc09eaf708770df0434fe98592f8eb9db96a2bf3))
+
 ## [1.11.5](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.11.4...v1.11.5) (2026-11-04)
 
 
