@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.5](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.11.4...v1.11.5) (2026-11-04)
+
+
+### Bug Fixes
+
+* **cli:** disable partial raster in storybook captures ([#106](https://github.com/VaibhavAcharya/stateofpixel/issues/106)) ([19bc99e](https://github.com/VaibhavAcharya/stateofpixel/commit/19bc99e0fe51df6b1b181b828b5f0e2224b074f3))
+
 ## [1.11.4](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.11.3...v1.11.4) (2026-11-03)
 
 
