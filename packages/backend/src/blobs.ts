@@ -16,6 +16,7 @@ import { accounts, images } from "./schema.ts";
 import {
   internalAction,
   internalMutation,
+  internalQuery,
   type MutationCtx,
   type QueryCtx,
 } from "./server.ts";
@@ -29,6 +30,9 @@ const DELETE_RETRY_DELAYS_MS = [
   6 * 60 * MINUTE_MS,
   24 * 60 * MINUTE_MS,
 ];
+const ORPHAN_GRACE_MS = 24 * 60 * MINUTE_MS;
+const UUID_V7 =
+  /^([0-9a-f]{8})-([0-9a-f]{4})-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const BLOB_RECEIPT = /^blob\.([0-9a-f-]{36})\.(\d+)\.([A-Za-z0-9_-]{43})$/;
 
 export const createUploadTargets = internalMutation({
@@ -51,7 +55,7 @@ export const createUploadTargets = internalMutation({
         targets.push({
           hash,
           uploadUrl: await blobUploadUrl(
-            `${accountId}/${crypto.randomUUID()}`,
+            `${accountId}/${newUploadId(now)}`,
             hash,
             now,
           ),
@@ -245,3 +249,70 @@ export const deleteBlob = internalAction({
     return null;
   },
 });
+
+export const sweepOrphanBlobs = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const cutoff = Date.now() - ORPHAN_GRACE_MS;
+    const store = imageStore();
+    for await (const page of store.list({ paginate: true })) {
+      const candidates = page.blobs
+        .map((blob) => blob.key)
+        .filter((blobKey) => (uploadTime(blobKey) ?? 0) < cutoff);
+      if (candidates.length === 0) {
+        continue;
+      }
+      const known = new Set(
+        await ctx.runQuery(internal.blobs.knownBlobKeys, {
+          blobKeys: candidates,
+        }),
+      );
+      for (const blobKey of candidates) {
+        if (!known.has(blobKey)) {
+          await store.delete(blobKey);
+        }
+      }
+    }
+    return null;
+  },
+});
+
+export const knownBlobKeys = internalQuery({
+  args: { blobKeys: z.array(z.string()) },
+  handler: async (ctx, { blobKeys }) => {
+    const rows = await ctx.db
+      .select({ blobKey: images.blobKey })
+      .from(images)
+      .where(inArray(images.blobKey, blobKeys));
+    return rows.map((row) => row.blobKey);
+  },
+});
+
+export function newUploadId(now: number): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  let time = now;
+  for (let index = 5; index >= 0; index--) {
+    bytes[index] = time % 256;
+    time = Math.floor(time / 256);
+  }
+  bytes[6] = 0x70 | ((bytes[6] ?? 0) & 0x0f);
+  bytes[8] = 0x80 | ((bytes[8] ?? 0) & 0x3f);
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0"));
+  return [
+    hex.slice(0, 4),
+    hex.slice(4, 6),
+    hex.slice(6, 8),
+    hex.slice(8, 10),
+    hex.slice(10),
+  ]
+    .map((part) => part.join(""))
+    .join("-");
+}
+
+function uploadTime(blobKey: string): number | null {
+  const match = UUID_V7.exec(blobKey.split("/")[1] ?? "");
+  if (match === null) {
+    return null;
+  }
+  return Number.parseInt(`${match[1]}${match[2]}`, 16);
+}

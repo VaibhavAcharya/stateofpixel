@@ -1,0 +1,1 @@
+CREATE INDEX "images_blob_key_index" ON "images" USING btree ("blob_key");

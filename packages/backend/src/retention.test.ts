@@ -1,6 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { internal } from "./api.ts";
+import { newUploadId } from "./blobs.ts";
 import type { Id } from "./dataModel.ts";
 import { first, one } from "./db/index.ts";
 import {
@@ -397,6 +398,42 @@ it("deletes images that no snapshot uses after a day", async () => {
     )?.storageBytes,
   }));
   expect(state).toEqual({ files: 1, storageBytes: 20 });
+});
+
+it("deletes blobs without an image row a day after upload", async () => {
+  vi.stubEnv(
+    "NETLIFY_BLOBS_CONTEXT",
+    btoa(
+      JSON.stringify({
+        siteID: "site",
+        token: "token",
+        apiURL: "https://blobs.test",
+      }),
+    ),
+  );
+  vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
+    const { pathname } = new URL(input);
+    if (init?.method === "delete") {
+      blobs.delete(pathname.replace("/api/v1/blobs/site/site:images-dev/", ""));
+      return new Response(null, { status: 204 });
+    }
+    return Response.json({
+      blobs: [...blobs].map((key) => ({ key, etag: "etag" })),
+      directories: [],
+    });
+  });
+  const { t, accountId, insertImage } = await setup();
+  await insertImage("stored");
+  const recent = `${accountId}/${newUploadId(Date.now())}`;
+  const orphan = `${accountId}/${newUploadId(Date.now() - DAY_MS - 1)}`;
+  const legacy = `${accountId}/${crypto.randomUUID()}`;
+  blobs.add(recent);
+  blobs.add(orphan);
+  blobs.add(legacy);
+
+  await t.action(internal.blobs.sweepOrphanBlobs, {});
+
+  expect([...blobs].sort()).toEqual([`${accountId}/stored`, recent].sort());
 });
 
 it("deletes GitHub delivery ids older than a week", async () => {

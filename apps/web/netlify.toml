@@ -38,6 +38,9 @@
 [functions."collect-images"]
   schedule = "0 4 * * *"
 
+[functions."sweep-blobs"]
+  schedule = "15 4 * * *"
+
 [functions."cleanup-events"]
   schedule = "30 4 * * *"
 

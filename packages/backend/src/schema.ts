@@ -379,7 +379,10 @@ export const images = pgTable(
     projectId: text(),
     baseline: boolean(),
   },
-  (table) => [index().on(table.accountId, table.hash)],
+  (table) => [
+    index().on(table.accountId, table.hash),
+    index().on(table.blobKey),
+  ],
 );
 
 export const usageDaily = pgTable(
