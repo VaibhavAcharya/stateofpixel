@@ -11,6 +11,7 @@ import {
   accounts,
   builds,
   images as imagesTable,
+  pendingUploads,
   projects,
   projectTokens,
   repoPermissions,
@@ -1310,6 +1311,9 @@ it("stores uploads in Blobs and deletes a duplicate blob of the same image", asy
   expect(blobDeletes).toEqual([second.blobKey]);
   const images = await t.run((ctx) => ctx.db.select().from(imagesTable));
   expect(images).toMatchObject([{ hash, blobKey: first.blobKey, bytes: 9 }]);
+  expect(await t.run((ctx) => ctx.db.select().from(pendingUploads))).toEqual(
+    [],
+  );
 });
 
 it("rejects a Blobs receipt that the upload route did not sign", async () => {
@@ -1351,6 +1355,9 @@ it("rejects a Blobs receipt that the upload route did not sign", async () => {
   );
   expect(completed.body.rejectedUploads).toEqual([header?.hash]);
   expect(await t.run((ctx) => ctx.db.select().from(imagesTable))).toEqual([]);
+  expect(
+    await t.run((ctx) => ctx.db.select().from(pendingUploads)),
+  ).toHaveLength(1);
 });
 
 it("hands out Blobs upload URLs", async () => {

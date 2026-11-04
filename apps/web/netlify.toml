@@ -38,7 +38,7 @@
 [functions."collect-images"]
   schedule = "0 4 * * *"
 
-[functions."sweep-blobs"]
+[functions."delete-abandoned-uploads"]
   schedule = "15 4 * * *"
 
 [functions."cleanup-events"]

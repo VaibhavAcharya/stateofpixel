@@ -5,5 +5,5 @@ import { withBackend } from "../src/server/backend";
 
 export default async () => {
   withBackend(env.SITE_URL);
-  await schedule(internal.blobs.sweepOrphanBlobs, {});
+  await schedule(internal.blobs.deleteAbandonedUploads, {});
 };

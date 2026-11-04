@@ -1,5 +1,5 @@
 {
-  "id": "a1fc8ffa-a6a3-43d6-90fe-5ae603e0bdad",
+  "id": "391c439e-91d9-445a-84b0-ddb01e2696b1",
   "prevId": "60c44b77-1aa4-4847-9e82-ca972acfc781",
   "version": "7",
   "dialect": "postgresql",
@@ -1240,21 +1240,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "images_blob_key_index": {
-          "name": "images_blob_key_index",
-          "columns": [
-            {
-              "expression": "blob_key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {},
@@ -1332,6 +1317,70 @@
           ],
           "isUnique": false,
           "where": "\"jobs\".\"failed_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pending_uploads": {
+      "name": "pending_uploads",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "extract(epoch from clock_timestamp()) * 1000"
+        },
+        "blob_key": {
+          "name": "blob_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "pending_uploads_blob_key_index": {
+          "name": "pending_uploads_blob_key_index",
+          "columns": [
+            {
+              "expression": "blob_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pending_uploads_created_at_index": {
+          "name": "pending_uploads_created_at_index",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}

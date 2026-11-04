@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, lt } from "drizzle-orm";
 import { z } from "zod";
 import { internal } from "./api.ts";
 import type { Doc, Id } from "./dataModel.ts";
@@ -12,11 +12,10 @@ import {
 } from "./lib/limits.ts";
 import { withStorageBytes } from "./lib/storage.ts";
 import { rateLimiter } from "./rateLimits.ts";
-import { accounts, images } from "./schema.ts";
+import { accounts, images, pendingUploads } from "./schema.ts";
 import {
   internalAction,
   internalMutation,
-  internalQuery,
   type MutationCtx,
   type QueryCtx,
 } from "./server.ts";
@@ -30,9 +29,8 @@ const DELETE_RETRY_DELAYS_MS = [
   6 * 60 * MINUTE_MS,
   24 * 60 * MINUTE_MS,
 ];
-const ORPHAN_GRACE_MS = 24 * 60 * MINUTE_MS;
-const UUID_V7 =
-  /^([0-9a-f]{8})-([0-9a-f]{4})-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const ABANDONED_UPLOAD_MS = 24 * 60 * MINUTE_MS;
+const DELETE_PAGE_SIZE = 500;
 const BLOB_RECEIPT = /^blob\.([0-9a-f-]{36})\.(\d+)\.([A-Za-z0-9_-]{43})$/;
 
 export const createUploadTargets = internalMutation({
@@ -44,6 +42,7 @@ export const createUploadTargets = internalMutation({
   handler: async (ctx, { accountId, storageBlocked, hashes }) => {
     const targets = [];
     const staleImageIds = [];
+    const pendingBlobKeys: string[] = [];
     const now = Date.now();
     const existing = await findImages(ctx, accountId, hashes);
     for (const hash of new Set(hashes)) {
@@ -52,17 +51,20 @@ export const createUploadTargets = internalMutation({
         if (storageBlocked) {
           continue;
         }
+        const blobKey = `${accountId}/${crypto.randomUUID()}`;
+        pendingBlobKeys.push(blobKey);
         targets.push({
           hash,
-          uploadUrl: await blobUploadUrl(
-            `${accountId}/${newUploadId(now)}`,
-            hash,
-            now,
-          ),
+          uploadUrl: await blobUploadUrl(blobKey, hash, now),
         });
       } else if (now - image.lastReferencedAt > TOUCH_AFTER_MS) {
         staleImageIds.push(image._id);
       }
+    }
+    if (pendingBlobKeys.length > 0) {
+      await ctx.db
+        .insert(pendingUploads)
+        .values(pendingBlobKeys.map((blobKey) => ({ blobKey })));
     }
     if (staleImageIds.length > 0) {
       await ctx.db
@@ -121,6 +123,7 @@ export async function confirmUploadedImages(
   );
   const results = [];
   const inserts: (typeof images.$inferInsert)[] = [];
+  const settledBlobKeys: string[] = [];
   for (const upload of uploads) {
     const receipt = BLOB_RECEIPT.exec(upload.storageId);
     const confirmed =
@@ -132,11 +135,17 @@ export async function confirmUploadedImages(
         receipt,
         existing,
         inserts,
+        settledBlobKeys,
       ));
     results.push({ hash: upload.hash, confirmed });
   }
   if (inserts.length > 0) {
     await insertImages(ctx, accountId, inserts);
+  }
+  if (settledBlobKeys.length > 0) {
+    await ctx.db
+      .delete(pendingUploads)
+      .where(inArray(pendingUploads.blobKey, settledBlobKeys));
   }
   return results;
 }
@@ -148,6 +157,7 @@ async function confirmBlobUpload(
   [, uploadId, bytesText, sig]: RegExpExecArray,
   existing: Map<string, { blobKey: string }>,
   inserts: (typeof images.$inferInsert)[],
+  settledBlobKeys: string[],
 ): Promise<boolean> {
   const blobKey = `${accountId}/${uploadId}`;
   const hash = upload.hash.toLowerCase();
@@ -155,6 +165,7 @@ async function confirmBlobUpload(
   if (!(await verifyStored(blobKey, hash, bytes, sig ?? ""))) {
     return false;
   }
+  settledBlobKeys.push(blobKey);
   if (
     bytes > MAX_IMAGE_BYTES ||
     upload.width > MAX_IMAGE_WIDTH ||
@@ -222,6 +233,37 @@ export async function deleteImage(ctx: MutationCtx, image: Doc<"images">) {
   await ctx.db.delete(images).where(eq(images._id, image._id));
 }
 
+export const deleteAbandonedUploads = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const abandoned = await ctx.db
+      .select()
+      .from(pendingUploads)
+      .where(lt(pendingUploads._creationTime, Date.now() - ABANDONED_UPLOAD_MS))
+      .orderBy(asc(pendingUploads._creationTime))
+      .limit(DELETE_PAGE_SIZE);
+    for (const upload of abandoned) {
+      await scheduleBlobDelete(ctx, upload.blobKey);
+    }
+    if (abandoned.length > 0) {
+      await ctx.db.delete(pendingUploads).where(
+        inArray(
+          pendingUploads._id,
+          abandoned.map((upload) => upload._id),
+        ),
+      );
+    }
+    if (abandoned.length === DELETE_PAGE_SIZE) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.blobs.deleteAbandonedUploads,
+        {},
+      );
+    }
+    return null;
+  },
+});
+
 function scheduleBlobDelete(ctx: MutationCtx, blobKey: string) {
   return ctx.scheduler.runAfter(0, internal.blobs.deleteBlob, { blobKey });
 }
@@ -249,70 +291,3 @@ export const deleteBlob = internalAction({
     return null;
   },
 });
-
-export const sweepOrphanBlobs = internalAction({
-  args: {},
-  handler: async (ctx) => {
-    const cutoff = Date.now() - ORPHAN_GRACE_MS;
-    const store = imageStore();
-    for await (const page of store.list({ paginate: true })) {
-      const candidates = page.blobs
-        .map((blob) => blob.key)
-        .filter((blobKey) => (uploadTime(blobKey) ?? 0) < cutoff);
-      if (candidates.length === 0) {
-        continue;
-      }
-      const known = new Set(
-        await ctx.runQuery(internal.blobs.knownBlobKeys, {
-          blobKeys: candidates,
-        }),
-      );
-      for (const blobKey of candidates) {
-        if (!known.has(blobKey)) {
-          await store.delete(blobKey);
-        }
-      }
-    }
-    return null;
-  },
-});
-
-export const knownBlobKeys = internalQuery({
-  args: { blobKeys: z.array(z.string()) },
-  handler: async (ctx, { blobKeys }) => {
-    const rows = await ctx.db
-      .select({ blobKey: images.blobKey })
-      .from(images)
-      .where(inArray(images.blobKey, blobKeys));
-    return rows.map((row) => row.blobKey);
-  },
-});
-
-export function newUploadId(now: number): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  let time = now;
-  for (let index = 5; index >= 0; index--) {
-    bytes[index] = time % 256;
-    time = Math.floor(time / 256);
-  }
-  bytes[6] = 0x70 | ((bytes[6] ?? 0) & 0x0f);
-  bytes[8] = 0x80 | ((bytes[8] ?? 0) & 0x3f);
-  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0"));
-  return [
-    hex.slice(0, 4),
-    hex.slice(4, 6),
-    hex.slice(6, 8),
-    hex.slice(8, 10),
-    hex.slice(10),
-  ]
-    .map((part) => part.join(""))
-    .join("-");
-}
-
-function uploadTime(blobKey: string): number | null {
-  const match = UUID_V7.exec(blobKey.split("/")[1] ?? "");
-  if (match === null) {
-    return null;
-  }
-  return Number.parseInt(`${match[1]}${match[2]}`, 16);
-}

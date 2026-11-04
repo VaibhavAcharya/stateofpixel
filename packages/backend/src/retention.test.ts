@@ -1,7 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { internal } from "./api.ts";
-import { newUploadId } from "./blobs.ts";
 import type { Id } from "./dataModel.ts";
 import { first, one } from "./db/index.ts";
 import {
@@ -11,6 +10,7 @@ import {
   deletedBuilds as deletedBuildsTable,
   githubEvents,
   images,
+  pendingUploads,
   reviews,
   snapshots,
 } from "./schema.ts";
@@ -400,7 +400,7 @@ it("deletes images that no snapshot uses after a day", async () => {
   expect(state).toEqual({ files: 1, storageBytes: 20 });
 });
 
-it("deletes blobs without an image row a day after upload", async () => {
+it("deletes uploads that were never confirmed after a day", async () => {
   vi.stubEnv(
     "NETLIFY_BLOBS_CONTEXT",
     btoa(
@@ -415,25 +415,28 @@ it("deletes blobs without an image row a day after upload", async () => {
     const { pathname } = new URL(input);
     if (init?.method === "delete") {
       blobs.delete(pathname.replace("/api/v1/blobs/site/site:images-dev/", ""));
-      return new Response(null, { status: 204 });
     }
-    return Response.json({
-      blobs: [...blobs].map((key) => ({ key, etag: "etag" })),
-      directories: [],
-    });
+    return new Response(null, { status: 204 });
   });
-  const { t, accountId, insertImage } = await setup();
-  await insertImage("stored");
-  const recent = `${accountId}/${newUploadId(Date.now())}`;
-  const orphan = `${accountId}/${newUploadId(Date.now() - DAY_MS - 1)}`;
-  const legacy = `${accountId}/${crypto.randomUUID()}`;
-  blobs.add(recent);
-  blobs.add(orphan);
-  blobs.add(legacy);
+  const { t, accountId } = await setup();
+  const insertPending = (blobKey: string, createdAt: number) =>
+    t.run(async (ctx) => {
+      blobs.add(blobKey);
+      await ctx.db
+        .insert(pendingUploads)
+        .values({ blobKey, _creationTime: createdAt });
+    });
+  await insertPending(`${accountId}/abandoned`, Date.now() - DAY_MS - 1);
+  await insertPending(`${accountId}/recent`, Date.now());
 
-  await t.action(internal.blobs.sweepOrphanBlobs, {});
+  await t.mutation(internal.blobs.deleteAbandonedUploads, {});
+  await t.runAllJobs();
 
-  expect([...blobs].sort()).toEqual([`${accountId}/stored`, recent].sort());
+  expect([...blobs]).toEqual([`${accountId}/recent`]);
+  const pending = await t.run((ctx) => ctx.db.select().from(pendingUploads));
+  expect(pending.map((upload) => upload.blobKey)).toEqual([
+    `${accountId}/recent`,
+  ]);
 });
 
 it("deletes GitHub delivery ids older than a week", async () => {
