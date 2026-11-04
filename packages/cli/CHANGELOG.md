@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.12.0...v1.13.0) (2026-11-04)
+
+
+### Features
+
+* upload images straight to Netlify Blobs ([#110](https://github.com/VaibhavAcharya/stateofpixel/issues/110)) ([febbfba](https://github.com/VaibhavAcharya/stateofpixel/commit/febbfba3bde991f4f3b57ef267a8c8bf2327253b))
+
 ## [1.12.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.11.5...v1.12.0) (2026-11-04)
 
 
