@@ -1,4 +1,4 @@
-import { imageStore } from "@stateofpixel/backend/imageStore";
+import { imageStore, presignImageUrl } from "@stateofpixel/backend/imageStore";
 import {
   messages,
   PUBLIC_IMAGE_SCOPE,
@@ -48,6 +48,15 @@ export const Route = createFileRoute("/api/images/$")({
             return new Response("Forbidden", { status: 403 });
           }
           cacheControl = `private, max-age=${Math.floor((exp - Date.now()) / 1000)}, immutable`;
+        }
+        if (url.searchParams.get("direct") === "1") {
+          return new Response(null, {
+            status: 302,
+            headers: {
+              Location: await presignImageUrl(key, "GET"),
+              "Cache-Control": "no-store",
+            },
+          });
         }
         const image = await imageStore().get(key, {
           type: "stream",

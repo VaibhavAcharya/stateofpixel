@@ -1,3 +1,5 @@
+import { facts } from "../../components/docs/facts";
+
 export const meta = {
   title: "Storybook",
   description: "Capture every story of a built Storybook and upload it with one command.",
@@ -50,7 +52,7 @@ In `--include` and `--exclude`, `*` stays inside one segment of `Title/Name` and
 
 `--tag` keeps only stories that have that tag in their `tags`.
 
-With `--device-scale-factor 2`, a screenshot has twice the width and height in pixels. Each image can be up to 4 MB, so a tall story at 2 may go over it. See [Limits](/docs/limits#limits).
+With `--device-scale-factor 2`, a screenshot has twice the width and height in pixels. Each image can be up to {facts.imageSize}, so a tall story at 2 may go over it. See [Limits](/docs/limits#limits).
 
 `storybook` also takes every flag of `upload`, like `--build-name`, `--shard` and `--threshold`. With `--shard 2/4`, it captures only every fourth story, starting at the second, so each CI job takes its share. See the [CLI](/docs/cli) reference. Use `--dry-run` to capture and print the plan without uploading.
 

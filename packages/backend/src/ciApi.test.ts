@@ -253,6 +253,7 @@ async function runBuild(
     snapshots,
   });
   expect(created.status).toBe(200);
+  expect(created.body.directUploads).toBe(true);
 
   const uploads = [];
   for (const [index, snapshot] of created.body.snapshots.entries()) {

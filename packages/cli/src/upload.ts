@@ -152,6 +152,9 @@ export async function uploadDirectory(
   const compareErrors: string[] = [];
   const uploads: Upload[] = [];
   let uploadedBytes = 0;
+  const upload = build.directUploads
+    ? input.api.uploadDirect
+    : input.api.upload;
   const pendingUploads = uniqueByHash(
     snapshots.filter((snapshot) => lookups.get(snapshot.name)?.uploadUrl),
   );
@@ -161,7 +164,7 @@ export async function uploadDirectory(
       const bytes = await readFile(snapshot.file);
       uploads.push({
         hash: snapshot.hash,
-        storageId: await input.api.upload(uploadUrl, bytes),
+        storageId: await upload(uploadUrl, bytes),
         kind: "screenshot",
         width: snapshot.width,
         height: snapshot.height,
@@ -255,7 +258,7 @@ export async function uploadDirectory(
           const bytes = await readFile(diff.file);
           uploads.push({
             hash,
-            storageId: await input.api.upload(uploadUrl, bytes),
+            storageId: await upload(uploadUrl, bytes),
             kind: "diff",
             width: diff.width,
             height: diff.height,

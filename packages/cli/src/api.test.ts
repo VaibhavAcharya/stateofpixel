@@ -89,6 +89,97 @@ it("retries an upload that gets no response in time", async () => {
   expect(calls).toBe(2);
 });
 
+it("retries a direct upload that gets no response in time", async () => {
+  const requests: string[] = [];
+  const api = createApiClient({
+    baseUrl: "https://api.test/api/v1",
+    token: "sop_token",
+    retryDelayMs: 0,
+    transferTimeoutMs: 10,
+    fetch: async (input, init) => {
+      const url = new URL(String(input));
+      requests.push(`${init?.method} ${url.host}`);
+      if (url.host === "blobs.test") {
+        if (requests.length === 2) {
+          return new Promise((_resolve, reject) =>
+            init?.signal?.addEventListener("abort", () =>
+              reject(init.signal?.reason),
+            ),
+          );
+        }
+        return new Response(null, { status: 200 });
+      }
+      return url.searchParams.get("step") === "presign"
+        ? Response.json({ url: "https://blobs.test/put" })
+        : Response.json({ storageId: "blob.1" });
+    },
+  });
+  expect(
+    await api.uploadDirect("https://site.test/upload", Buffer.from("png")),
+  ).toBe("blob.1");
+  expect(requests).toEqual([
+    "POST site.test",
+    "PUT blobs.test",
+    "POST site.test",
+    "PUT blobs.test",
+    "POST site.test",
+  ]);
+});
+
+it("uploads images straight to storage and verifies them", async () => {
+  const requests: string[] = [];
+  const api = createApiClient({
+    baseUrl: "https://api.test/api/v1",
+    token: "sop_token",
+    retryDelayMs: 0,
+    fetch: async (input, init) => {
+      const url = new URL(String(input));
+      requests.push(
+        `${init?.method} ${url.host} ${url.searchParams.get("step")}`,
+      );
+      if (url.host === "blobs.test") {
+        return new Response(null, { status: 200 });
+      }
+      return url.searchParams.get("step") === "presign"
+        ? Response.json({ url: "https://blobs.test/put" })
+        : Response.json({ storageId: "blob.1" });
+    },
+  });
+  const bytes = Buffer.from("png");
+  expect(await api.uploadDirect("https://site.test/upload?sig=1", bytes)).toBe(
+    "blob.1",
+  );
+  expect(requests).toEqual([
+    "POST site.test presign",
+    "PUT blobs.test null",
+    "POST site.test verify",
+  ]);
+});
+
+it("verifies an image that is already uploaded", async () => {
+  const steps: (string | null)[] = [];
+  const api = createApiClient({
+    baseUrl: "https://api.test/api/v1",
+    token: "sop_token",
+    retryDelayMs: 0,
+    fetch: async (input) => {
+      const step = new URL(String(input)).searchParams.get("step");
+      steps.push(step);
+      return step === "presign"
+        ? Response.json(
+            { error: { code: "already_uploaded", message: "Uploaded." } },
+            { status: 409 },
+          )
+        : Response.json({ storageId: "blob.1" });
+    },
+  });
+  const bytes = Buffer.from("png");
+  expect(await api.uploadDirect("https://site.test/upload", bytes)).toBe(
+    "blob.1",
+  );
+  expect(steps).toEqual(["presign", "verify"]);
+});
+
 it("gets a new token and retries once after a 401", async () => {
   const tokens: (string | null)[] = [];
   const api = createApiClient({

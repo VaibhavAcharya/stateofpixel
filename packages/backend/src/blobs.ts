@@ -210,7 +210,7 @@ export async function getUrl(
   image: Doc<"images">,
   project: Doc<"projects">,
 ): Promise<string | null> {
-  return blobImageUrl(project, image.blobKey);
+  return blobImageUrl(project, image.blobKey, image.bytes);
 }
 
 export async function deleteImage(ctx: MutationCtx, image: Doc<"images">) {

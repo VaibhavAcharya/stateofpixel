@@ -317,6 +317,7 @@ export const createBuild = ciRoute(async (ctx, request, auth) => {
         : {}),
     })),
     warnings: build.warnings,
+    directUploads: true,
   });
 });
 
