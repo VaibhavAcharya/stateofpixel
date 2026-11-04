@@ -56,6 +56,7 @@ export type ReporterOptions = {
   baselineBranch?: string;
   subset?: boolean;
   threshold?: number;
+  maxDiffPixels?: number;
   strict?: boolean;
   uploadOutsideCi?: boolean;
 };
@@ -96,6 +97,7 @@ export default class StateofpixelReporter implements Reporter {
         baselineBranch: this.options.baselineBranch,
         subset: this.options.subset ?? result.status !== "passed",
         threshold: this.options.threshold,
+        maxDiffPixels: this.options.maxDiffPixels,
         strict: this.options.strict ?? false,
         dryRun: false,
       });

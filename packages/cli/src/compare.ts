@@ -87,7 +87,7 @@ export async function compareDirectories({
         workPath,
         options,
       );
-      if (diffPixels === 0) {
+      if (diffPixels <= (options.maxDiffPixels ?? 0)) {
         await rm(workPath, { force: true });
         return { name, status: "unchanged", image, baselineImage };
       }

@@ -1,0 +1,1 @@
+ALTER TABLE "projects" ADD COLUMN "diff_max_pixels" integer DEFAULT 0 NOT NULL;

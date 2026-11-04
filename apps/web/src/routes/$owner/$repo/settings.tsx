@@ -28,6 +28,7 @@ const INPUT_CLASS =
 const ERRORS: Record<string, string> = {
   invalid_branches: "Use at most 20 patterns of up to 200 characters.",
   invalid_threshold: "Use a number from 0 to 1.",
+  invalid_max_pixels: "Use a whole number of pixels from 0 to 10,000.",
   invalid_retention: "Use a whole number of days from 7 to 365.",
   invalid_name: "Use a name of 1 to 100 characters.",
   too_many_tokens:
@@ -124,6 +125,13 @@ function SettingsForm({
           inputMode="decimal"
           value={String(settings.diffThreshold)}
           onSave={(value) => save({ diffThreshold: Number(value) })}
+        />
+        <TextSetting
+          label="Changed pixels to ignore"
+          hint="A snapshot with this many changed pixels or fewer counts as unchanged. Sent to the CLI with each build."
+          inputMode="numeric"
+          value={String(settings.diffMaxPixels)}
+          onSave={(value) => save({ diffMaxPixels: Number(value) })}
         />
         <CheckboxSetting
           label="Count anti-aliased pixels as changes"

@@ -179,6 +179,7 @@ export const projects = pgTable(
     autoApproveBranches: text().array().notNull(),
     diffThreshold: doublePrecision().notNull(),
     diffIncludeAA: boolean("diff_include_aa").notNull(),
+    diffMaxPixels: integer().notNull().default(0),
     prRetentionDays: integer().notNull(),
     nextBuildNumber: integer().notNull(),
     lastBuildAt: time(),

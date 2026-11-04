@@ -889,10 +889,12 @@ it("lets writers change only the diff settings", async () => {
     projectId,
     diffThreshold: 0.3,
     diffIncludeAA: true,
+    diffMaxPixels: 5,
   });
   expect(await user.query(api.projects.settings, { projectId })).toMatchObject({
     diffThreshold: 0.3,
     diffIncludeAA: true,
+    diffMaxPixels: 5,
   });
   await expect(
     user.mutation(api.projects.updateSettings, {
@@ -922,6 +924,7 @@ it("saves settings for admins and checks the values", async () => {
     autoApproveBranches: ["main", "release/*"],
     diffThreshold: 0.2,
     diffIncludeAA: false,
+    diffMaxPixels: 0,
     prRetentionDays: 30,
   });
   await expect(
@@ -936,6 +939,11 @@ it("saves settings for admins and checks the values", async () => {
       diffThreshold: 2,
     }),
   ).rejects.toThrow(/invalid_threshold/);
+  for (const diffMaxPixels of [-1, 1.5, 10_001]) {
+    await expect(
+      user.mutation(api.projects.updateSettings, { projectId, diffMaxPixels }),
+    ).rejects.toThrow(/invalid_max_pixels/);
+  }
 });
 
 it("deletes a project and its builds after the name is confirmed", async () => {

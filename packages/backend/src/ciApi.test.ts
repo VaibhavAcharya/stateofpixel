@@ -318,7 +318,7 @@ it("auto-approves the first build as the baseline", async () => {
   expect(created).toMatchObject({
     buildNumber: 1,
     url: "https://stateofpixel.test/acme/web-app/builds/1",
-    diff: { threshold: 0.1, includeAA: false },
+    diff: { threshold: 0.1, includeAA: false, maxPixels: 0 },
     baseline: null,
   });
   expect(

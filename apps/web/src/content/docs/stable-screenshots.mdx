@@ -36,12 +36,13 @@ test("dashboard", async ({ page }) => {
 
 ## Tune the threshold
 
-Two project settings decide when pixels count as changed. Anyone with write access finds them under Settings, Diff:
+Three project settings decide when a snapshot counts as changed. Anyone with write access finds them under Settings, Diff:
 
 - **Threshold**, from 0 to 1, default {facts.diffThreshold}. How different a pixel's color has to be to count. Higher ignores more.
 - **Count anti-aliased pixels as changes**, off by default. Anti-aliased edges are ignored unless you turn it on.
+- **Changed pixels to ignore**, from 0 to 10,000, default 0. A snapshot with this many changed pixels or fewer counts as unchanged. A few pixels absorbs edge noise. Larger values can hide a small real change, like a new icon.
 
-`--threshold` on the CLI, or `threshold` on the Playwright reporter, overrides the setting for that upload. To try values before you change them, compare two folders on your machine:
+`--threshold` and `--max-diff-pixels` on the CLI, or `threshold` and `maxDiffPixels` on the Playwright reporter, override the settings for that upload. To try values before you change them, compare two folders on your machine:
 
 ```sh terminal
 npx stateofpixel compare screenshots baseline --threshold 0.2

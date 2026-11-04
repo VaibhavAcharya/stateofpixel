@@ -76,6 +76,11 @@ const buildOptions = (dryRun: string): OptionSpec[] => [
       "color difference threshold, 0 to 1, overrides project settings",
   },
   {
+    flags: "--max-diff-pixels <number>",
+    description:
+      "changed pixels to ignore per snapshot, overrides project settings",
+  },
+  {
     flags: "--strict",
     description:
       "fail instead of skipping on an outage, a rate limit or a fork",
@@ -197,6 +202,11 @@ export const COMMANDS: CommandSpec[] = [
         flags: "--threshold <number>",
         description: "color difference threshold, 0 to 1",
         default: 0.1,
+      },
+      {
+        flags: "--max-diff-pixels <number>",
+        description: "changed pixels to ignore per snapshot",
+        default: 0,
       },
       {
         flags: "--include-aa",
