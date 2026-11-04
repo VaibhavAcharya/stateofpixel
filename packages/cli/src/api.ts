@@ -22,7 +22,7 @@ export type CreateBuildResponse = {
   buildNumber: number;
   shardIndex: number;
   url: string;
-  diff: { threshold: number; includeAA: boolean };
+  diff: { threshold: number; includeAA: boolean; maxPixels?: number };
   baseline: { buildNumber: number; commit: string } | null;
   snapshots: SnapshotLookup[];
   warnings: string[];

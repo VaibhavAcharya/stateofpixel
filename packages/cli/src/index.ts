@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 import { Command, Option } from "commander";
 import packageJson from "../package.json" with { type: "json" };
-import { compareCommand, parseThreshold } from "./commands/compare";
+import {
+  compareCommand,
+  parseMaxDiffPixels,
+  parseThreshold,
+} from "./commands/compare";
 import { finalizeCommand } from "./commands/finalize";
 import {
   parseDelay,
@@ -15,6 +19,7 @@ import { COMMANDS, type CommandSpec } from "./reference";
 
 const PARSERS: Record<string, (value: string) => unknown> = {
   "--threshold <number>": parseThreshold,
+  "--max-diff-pixels <number>": parseMaxDiffPixels,
   "--shard <i/n>": parseShard,
   "--viewports <widths>": parseViewports,
   "--delay <ms>": parseDelay,

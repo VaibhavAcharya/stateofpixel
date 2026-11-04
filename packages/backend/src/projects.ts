@@ -3,7 +3,11 @@ import { z } from "zod";
 import { memberRole, toStorageUsage, toSubscription } from "./accounts.ts";
 import { internal } from "./api.ts";
 import { first } from "./db/index.ts";
-import { MAX_RETENTION_DAYS, MIN_RETENTION_DAYS } from "./lib/limits.ts";
+import {
+  MAX_DIFF_MAX_PIXELS,
+  MAX_RETENTION_DAYS,
+  MIN_RETENTION_DAYS,
+} from "./lib/limits.ts";
 import {
   allows,
   findAllowedProject,
@@ -123,6 +127,7 @@ export const settings = query({
       autoApproveBranches: project.autoApproveBranches,
       diffThreshold: project.diffThreshold,
       diffIncludeAA: project.diffIncludeAA,
+      diffMaxPixels: project.diffMaxPixels,
       prRetentionDays: project.prRetentionDays,
     };
   },
@@ -134,6 +139,7 @@ export const updateSettings = mutation({
     autoApproveBranches: z.array(z.string()).optional(),
     diffThreshold: z.number().optional(),
     diffIncludeAA: z.boolean().optional(),
+    diffMaxPixels: z.number().optional(),
     prRetentionDays: z.number().optional(),
   },
   handler: async (ctx, { projectId, ...changes }) => {
@@ -153,12 +159,22 @@ export const updateSettings = mutation({
     ) {
       throw new AppError({ code: "invalid_branches" });
     }
-    const { diffThreshold, prRetentionDays } = changes;
+    const { diffThreshold, diffMaxPixels, prRetentionDays } = changes;
     if (
       diffThreshold !== undefined &&
       !(diffThreshold >= 0 && diffThreshold <= 1)
     ) {
       throw new AppError({ code: "invalid_threshold" });
+    }
+    if (
+      diffMaxPixels !== undefined &&
+      !(
+        Number.isInteger(diffMaxPixels) &&
+        diffMaxPixels >= 0 &&
+        diffMaxPixels <= MAX_DIFF_MAX_PIXELS
+      )
+    ) {
+      throw new AppError({ code: "invalid_max_pixels" });
     }
     if (
       prRetentionDays !== undefined &&

@@ -35,6 +35,7 @@ export type UploadCommandOptions = {
   baselineBranch?: string;
   subset: boolean;
   threshold?: number;
+  maxDiffPixels?: number;
   strict: boolean;
   dryRun: boolean;
 };
@@ -93,6 +94,7 @@ export async function uploadCommand(
       shard,
       subset: options.subset,
       threshold: options.threshold,
+      maxDiffPixels: options.maxDiffPixels,
       git,
       ci: readCiInfo(env),
     });
@@ -146,7 +148,11 @@ function printSummary(
   console.log(
     `stateofpixel  build #${build.buildNumber}  ${branch} vs ${baselineBranch} (${baseline})`,
   );
-  console.log(formatCounts(results.length, counts));
+  const total =
+    final === undefined
+      ? results.length
+      : counts.unchanged + counts.changed + counts.added;
+  console.log(formatCounts(total, counts));
   console.log(
     `  uploaded ${formatCount(output.uploadedImages)} images (${megabytes} MB) in ${seconds} s`,
   );

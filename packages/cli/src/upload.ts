@@ -59,6 +59,7 @@ export type UploadInput = {
   shard: Shard;
   subset: boolean;
   threshold?: number;
+  maxDiffPixels?: number;
   git: GitInfo;
   ci: CiInfo;
 };
@@ -176,6 +177,7 @@ export async function uploadDirectory(
   const options = {
     threshold: input.threshold ?? build.diff.threshold,
     includeAA: build.diff.includeAA,
+    maxDiffPixels: input.maxDiffPixels ?? build.diff.maxPixels ?? 0,
   };
   const diffs = new Map<
     string,
@@ -215,7 +217,7 @@ export async function uploadDirectory(
           diffFile,
           options,
         );
-        if (diffPixels === 0) {
+        if (diffPixels <= options.maxDiffPixels) {
           return { ...base, status: "unchanged" };
         }
         const diffBytes = await readFile(diffFile);

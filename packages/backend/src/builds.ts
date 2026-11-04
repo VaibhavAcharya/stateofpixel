@@ -170,6 +170,7 @@ export const createOrJoin = internalMutation({
       diff: {
         threshold: project.diffThreshold,
         includeAA: project.diffIncludeAA,
+        maxPixels: project.diffMaxPixels,
       },
     };
   },

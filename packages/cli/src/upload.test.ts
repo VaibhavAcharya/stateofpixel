@@ -23,7 +23,11 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-function fakeApi(lookups: CreateBuildResponse["snapshots"], shardIndex = 1) {
+function fakeApi(
+  lookups: CreateBuildResponse["snapshots"],
+  shardIndex = 1,
+  diff: CreateBuildResponse["diff"] = { threshold: 0.1, includeAA: false },
+) {
   const calls: { method: string; path: string; body: unknown }[] = [];
   const uploaded: Buffer[] = [];
   const api: ApiClient = {
@@ -35,7 +39,7 @@ function fakeApi(lookups: CreateBuildResponse["snapshots"], shardIndex = 1) {
           buildNumber: 2,
           shardIndex,
           url: "https://stateofpixel.test/acme/web/builds/2",
-          diff: { threshold: 0.1, includeAA: false },
+          diff,
           baseline: { buildNumber: 1, commit: "c1" },
           snapshots: lookups,
           warnings: [],
@@ -159,6 +163,51 @@ it("uploads missing images once and diffs changed snapshots", async () => {
   );
   expect(output.final?.status).toBe("finalized");
   expect(output.failedUploads).toEqual([]);
+});
+
+it("ignores changes up to the project's pixel limit unless the flag overrides it", async () => {
+  const dir = path.join(root, "shots");
+  await writeFixture(dir, "changed", changed);
+  const lookups: CreateBuildResponse["snapshots"] = [
+    {
+      name: "changed",
+      status: "changed",
+      baselineUrl: "baseline:white",
+      uploadUrl: "u-changed",
+    },
+  ];
+  const statusWith = async (maxDiffPixels?: number) => {
+    const { api } = fakeApi(lookups, 1, {
+      threshold: 0.1,
+      includeAA: false,
+      maxPixels: 100,
+    });
+    const output = await uploadDirectory({
+      dir,
+      workDir: root,
+      api,
+      engine: createPixelmatchEngine(),
+      buildName: "default",
+      nonce: "run-1",
+      shard: { index: 1, total: 1 },
+      subset: false,
+      maxDiffPixels,
+      git: {
+        commit: "c2",
+        commitMessage: "Change",
+        branch: "feature",
+        baselineBranch: "main",
+        prNumber: 7,
+        mergeBase: null,
+        ancestors: ["c1"],
+      },
+      ci: {},
+    });
+    return output.results[0]?.status;
+  };
+
+  expect(await statusWith()).toBe("unchanged");
+  expect(await statusWith(99)).toBe("changed");
 });
 
 it("completes the shard index the server assigned in auto mode", async () => {

@@ -9,6 +9,7 @@ import { writeReport } from "../report/write-report";
 export type CompareCommandOptions = {
   out: string;
   threshold: number;
+  maxDiffPixels: number;
   includeAa: boolean;
 };
 
@@ -27,7 +28,11 @@ export async function compareCommand(
     baselineDir,
     outDir: options.out,
     engine,
-    options: { threshold: options.threshold, includeAA: options.includeAa },
+    options: {
+      threshold: options.threshold,
+      includeAA: options.includeAa,
+      maxDiffPixels: options.maxDiffPixels,
+    },
   });
   const reportPath = await writeReport(options.out, results, {
     dir,
@@ -50,6 +55,14 @@ export function parseThreshold(value: string): number {
     throw new InvalidArgumentError("Must be a number from 0 to 1.");
   }
   return threshold;
+}
+
+export function parseMaxDiffPixels(value: string): number {
+  const pixels = Number(value);
+  if (!Number.isInteger(pixels) || pixels < 0) {
+    throw new InvalidArgumentError("Must be a whole number of 0 or more.");
+  }
+  return pixels;
 }
 
 async function assertDirectory(dir: string): Promise<void> {

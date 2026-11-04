@@ -24,7 +24,7 @@ Type in the filter at the top of the sidebar, or press <kbd>/</kbd>, to show onl
 
 Snapshots that differ only in the brackets at the end of the name, like `Checkout/Empty [chromium 1280]` and `Checkout/Empty [firefox 375]`, are listed under one row with their name and count. Click the count, or press <kbd>h</kbd> and <kbd>l</kbd>, to fold the row up and open it again. A folded row opens the snapshot with the largest change, and <kbd>j</kbd> and <kbd>k</kbd> move past it in one step. When a build has more than one browser, rows that changed in only some of them come first, under Some browsers, with the browsers they changed in.
 
-- **Changed**: pixels differ from the baseline above the threshold, or the size changed.
+- **Changed**: more pixels differ from the baseline than the project ignores, each by more than the threshold, or the size changed.
 - **Added**: the baseline has no snapshot with this name.
 - **Removed**: the baseline has it and this build does not. Removed snapshots never need review.
 - **Failed**: the upload or the diff failed on CI. A build with a failed snapshot cannot pass, so push again after fixing the cause.

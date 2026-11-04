@@ -4,6 +4,7 @@ import { createPixelmatchEngine } from "./pixelmatch";
 export type DiffOptions = {
   threshold: number;
   includeAA: boolean;
+  maxDiffPixels?: number;
 };
 
 export type DiffResult = {
