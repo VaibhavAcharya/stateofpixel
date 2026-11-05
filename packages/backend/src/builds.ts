@@ -24,6 +24,7 @@ import {
   storageState,
   storageWarnings,
 } from "./lib/storage.ts";
+import { isUnstable } from "./lib/unstable.ts";
 import { buildUrl } from "./lib/urls.ts";
 import { notifyLater } from "./notify.ts";
 import { rateLimiter } from "./rateLimits.ts";
@@ -745,16 +746,23 @@ export const insertSnapshots = internalMutation({
         compared.reviewState === "pending" && compared.imageId != null
           ? (carriedApprovals.get(compared.imageId) ?? null)
           : null;
+      const unstable =
+        !build.autoApproved &&
+        carriedApproval === null &&
+        compared.reviewState === "pending" &&
+        compared.diffStatus === "changed" &&
+        project !== null &&
+        isUnstable(project.unstableSnapshots, result.name);
       const snapshot =
         compared.reviewState === "pending" &&
-        (build.autoApproved || carriedApproval !== null)
+        (build.autoApproved || carriedApproval !== null || unstable)
           ? { ...compared, reviewState: "approved" as const }
           : compared;
       counts[snapshot.diffStatus]++;
       if (snapshot.reviewState !== "none") {
         counts[snapshot.reviewState]++;
       }
-      return { result, snapshot, carriedApproval };
+      return { result, snapshot, carriedApproval, unstable };
     });
     const inserted = new Map(
       (
@@ -782,10 +790,11 @@ export const insertSnapshots = internalMutation({
     await recordReviews(
       ctx,
       build,
-      rows.map(({ result, snapshot, carriedApproval }) => ({
+      rows.map(({ result, snapshot, carriedApproval, unstable }) => ({
         snapshotId: inserted.get(result.name) as Id<"snapshots">,
         snapshot,
         carriedApproval,
+        unstable,
       })),
     );
     await ctx.db.update(builds).set({ counts }).where(eq(builds._id, buildId));
@@ -942,6 +951,7 @@ async function recordReviews(
     snapshotId: Id<"snapshots">;
     snapshot: { reviewState: string; imageId?: Id<"images"> | null };
     carriedApproval: Doc<"approvedImages"> | null;
+    unstable: boolean;
   }[],
 ) {
   const carried = rows.flatMap(({ snapshotId, carriedApproval }) =>
@@ -960,12 +970,13 @@ async function recordReviews(
   if (carried.length > 0) {
     await ctx.db.insert(reviews).values(carried);
   }
-  const approved = rows.flatMap(({ snapshotId, snapshot, carriedApproval }) =>
-    carriedApproval === null &&
-    snapshot.reviewState === "approved" &&
-    snapshot.imageId
-      ? [{ snapshotId, imageId: snapshot.imageId }]
-      : [],
+  const approved = rows.flatMap(
+    ({ snapshotId, snapshot, carriedApproval, unstable }) =>
+      carriedApproval === null &&
+      snapshot.reviewState === "approved" &&
+      snapshot.imageId
+        ? [{ snapshotId, imageId: snapshot.imageId, unstable }]
+        : [],
   );
   if (approved.length === 0) {
     return;
@@ -973,12 +984,13 @@ async function recordReviews(
   const reviewIds = await ctx.db
     .insert(reviews)
     .values(
-      approved.map(({ snapshotId }) => ({
+      approved.map(({ snapshotId, unstable }) => ({
         snapshotId,
         buildId: build._id,
         action: "approve" as const,
-        source:
-          build.baselineBuildId === null
+        source: unstable
+          ? ("unstable" as const)
+          : build.baselineBuildId === null
             ? ("orphan" as const)
             : ("auto_branch" as const),
       })),

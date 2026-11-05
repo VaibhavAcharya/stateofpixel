@@ -993,6 +993,73 @@ it("carries approvals over to new builds of the same PR", async () => {
   expect(third.build.counts).toMatchObject({ pending: 2, approved: 0 });
 });
 
+it("auto-approves changed snapshots marked unstable", async () => {
+  const { t } = await setup();
+  await runBuild(t, {
+    commit: "c1",
+    images: [
+      { name: "Clock [chromium 1280]", content: "clock-v1" },
+      { name: "Header", content: "header-v1" },
+    ],
+  });
+  const images = [
+    { name: "Clock [chromium 1280]", content: "clock-v2" },
+    { name: "Clock [chromium 375]", content: "clock-small" },
+    { name: "Header", content: "header-v2" },
+  ];
+  const changed = ["Clock [chromium 1280]", "Header"];
+  const open = await runBuild(t, {
+    commit: "c2",
+    ancestors: ["c1"],
+    prNumber: 7,
+    images,
+    changed,
+  });
+  expect(open.build.counts).toMatchObject({ pending: 3, approved: 0 });
+
+  const { user, snapshot } = await reviewer(t);
+  const base = await snapshot(1, "Header");
+  if (base === null) {
+    throw new Error("snapshot not readable");
+  }
+  await user.mutation(functions.projects.markUnstable, {
+    buildId: base.buildId,
+    name: " Clock ",
+  });
+  await runDueJobs(t);
+  expect(await snapshot(2, "Clock [chromium 1280]")).toMatchObject({
+    reviewState: "approved",
+    unstable: true,
+    lastReview: { source: "unstable", login: null },
+  });
+  expect(await snapshot(2, "Clock [chromium 375]")).toMatchObject({
+    reviewState: "pending",
+    unstable: true,
+  });
+  expect(await snapshot(2, "Header")).toMatchObject({
+    reviewState: "pending",
+    unstable: false,
+  });
+
+  const next = await runBuild(t, {
+    commit: "c3",
+    ancestors: ["c1"],
+    prNumber: 8,
+    images,
+    changed,
+  });
+  expect(next.build.counts).toMatchObject({
+    changed: 2,
+    added: 1,
+    pending: 2,
+    approved: 1,
+  });
+  expect(await snapshot(3, "Clock [chromium 1280]")).toMatchObject({
+    reviewState: "approved",
+    lastReview: { source: "unstable", login: null },
+  });
+});
+
 it("links a squash-merged main build to its PR", async () => {
   const { t } = await setup();
   await runBuild(t, {

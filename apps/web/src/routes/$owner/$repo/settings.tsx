@@ -29,6 +29,8 @@ const ERRORS: Record<string, string> = {
   invalid_branches: "Use at most 20 patterns of up to 200 characters.",
   invalid_threshold: "Use a number from 0 to 1.",
   invalid_max_pixels: "Use a whole number of pixels from 0 to 10,000.",
+  invalid_unstable_snapshots:
+    "Use at most 100 names or patterns of up to 512 characters.",
   invalid_retention: "Use a whole number of days from 7 to 365.",
   invalid_name: "Use a name of 1 to 100 characters.",
   too_many_tokens:
@@ -138,6 +140,12 @@ function SettingsForm({
           checked={settings.diffIncludeAA}
           onSave={(diffIncludeAA) => save({ diffIncludeAA })}
         />
+        <ListSetting
+          label="Unstable snapshots"
+          hint="One story, snapshot name or glob per line. Changes to these are approved automatically. New snapshots still wait for review."
+          value={settings.unstableSnapshots.join("\n")}
+          onSave={(value) => save({ unstableSnapshots: value.split("\n") })}
+        />
       </Section>
       <Section title="Checks">
         <Field
@@ -208,6 +216,41 @@ function TextSetting({
             }
           }}
           className={`${INPUT_CLASS} ${inputMode ? "mono w-32" : ""}`}
+        />
+      )}
+    </Field>
+  );
+}
+
+function ListSetting({
+  label,
+  hint,
+  value,
+  onSave,
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  onSave: (value: string) => Promise<unknown>;
+}) {
+  const [draft, setDraft] = useState(value);
+  const { run, note, invalid } = useSaveStatus(errorMessage);
+  useEffect(() => setDraft(value), [value]);
+  return (
+    <Field label={label} hint={hint} status={note}>
+      {(id) => (
+        <textarea
+          id={id}
+          value={draft}
+          rows={4}
+          aria-invalid={invalid}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={() => {
+            if (draft.trim() !== value) {
+              void run(onSave(draft.trim()));
+            }
+          }}
+          className={`${INPUT_CLASS} mono h-auto py-1.5`}
         />
       )}
     </Field>

@@ -10,6 +10,7 @@ import type {
 import {
   hashKey,
   type InfiniteData,
+  keepPreviousData,
   type QueryClient,
   type QueryKey,
   useInfiniteQuery,
@@ -204,7 +205,10 @@ export type UsePaginatedQueryReturnType<Ref extends PaginatedReference> = {
 export function usePaginatedQuery<Ref extends PaginatedReference>(
   ref: Ref,
   args: PaginatedArgs<Ref> | "skip",
-  { initialNumItems }: { initialNumItems: number },
+  {
+    initialNumItems,
+    keepPrevious = false,
+  }: { initialNumItems: number; keepPrevious?: boolean },
 ): UsePaginatedQueryReturnType<Ref> {
   const skip = args === "skip";
   const nextNumItems = useRef(initialNumItems);
@@ -227,6 +231,7 @@ export function usePaginatedQuery<Ref extends PaginatedReference>(
           ? undefined
           : { numItems: nextNumItems.current, cursor: last.continueCursor },
       enabled: !skip,
+      placeholderData: keepPrevious && !skip ? keepPreviousData : undefined,
       ...LIVE_OPTIONS,
     });
   const results = useMemo(

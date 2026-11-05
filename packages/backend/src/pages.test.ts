@@ -290,6 +290,7 @@ it("lists builds by branch and returns build and snapshot details", async () => 
       reviewState: "pending",
       diffRatio: 0.01,
       browser: "chromium",
+      unstable: false,
     },
   ]);
 
@@ -347,6 +348,22 @@ it("stores the browsers of a build from snapshot metadata on finalize", async ()
     "chromium",
     null,
   ]);
+
+  const names = async (filter: { search?: string; browser?: string }) =>
+    (
+      await user.query(api.snapshots.list, {
+        buildId,
+        diffStatus: "unchanged",
+        paginationOpts: firstPage,
+        ...filter,
+      })
+    ).page.map((row) => row.name);
+  expect(await names({ browser: "webkit" })).toEqual(["Page 0"]);
+  expect(await names({ search: " page 1 " })).toEqual(["Page 1"]);
+  expect(await names({ search: "page", browser: "chromium" })).toEqual([
+    "Page 1",
+  ]);
+  expect(await names({ search: "%" })).toEqual([]);
 });
 
 it("flags a snapshot that flips between images or differs on the same commit", async () => {
@@ -925,6 +942,7 @@ it("saves settings for admins and checks the values", async () => {
     diffThreshold: 0.2,
     diffIncludeAA: false,
     diffMaxPixels: 0,
+    unstableSnapshots: [],
     prRetentionDays: 30,
   });
   await expect(
@@ -944,6 +962,19 @@ it("saves settings for admins and checks the values", async () => {
       user.mutation(api.projects.updateSettings, { projectId, diffMaxPixels }),
     ).rejects.toThrow(/invalid_max_pixels/);
   }
+  await user.mutation(api.projects.updateSettings, {
+    projectId,
+    unstableSnapshots: [" Clock ", "Charts/*", "", "Clock"],
+  });
+  expect(await user.query(api.projects.settings, { projectId })).toMatchObject({
+    unstableSnapshots: ["Clock", "Charts/*"],
+  });
+  await expect(
+    user.mutation(api.projects.updateSettings, {
+      projectId,
+      unstableSnapshots: Array.from({ length: 101 }, (_, i) => `Story ${i}`),
+    }),
+  ).rejects.toThrow(/invalid_unstable_snapshots/);
 });
 
 it("deletes a project and its builds after the name is confirmed", async () => {

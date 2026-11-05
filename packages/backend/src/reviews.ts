@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { internal } from "./api.ts";
 import { touchCheck } from "./checks.ts";
@@ -7,10 +7,12 @@ import { first, one } from "./db/index.ts";
 import { conclude } from "./lib/conclude.ts";
 import { MAX_COMMENT_LENGTH } from "./lib/limits.ts";
 import { requirePermission } from "./lib/permissions.ts";
+import { isUnstable } from "./lib/unstable.ts";
 import {
   approvedImages,
   type buildCounts,
   builds,
+  projects,
   reviews,
   snapshots,
 } from "./schema.ts";
@@ -25,12 +27,13 @@ import {
 
 const MAX_SNAPSHOTS_PER_CALL = 100;
 const ALL_PAGE_SIZE = 500;
+const UNSTABLE_BUILDS_PER_JOB = 20;
 
 const reviewAction = z.enum(["approve", "reject", "undo"]);
 
 type ReviewAction = z.infer<typeof reviewAction>;
 type Counts = z.infer<typeof buildCounts>;
-type Source = "user" | "approve_all" | "reject_all";
+type Source = "user" | "approve_all" | "reject_all" | "unstable";
 
 const BUILD_SOURCES = new Set(["approve_all", "reject_all"]);
 
@@ -210,6 +213,71 @@ export const applyAll = internalMutation({
   },
 });
 
+export const approveUnstable = internalMutation({
+  args: { projectId: z.string(), afterBuildId: z.string().nullable() },
+  handler: async (ctx, { projectId, afterBuildId }) => {
+    const project = first(
+      await ctx.db.select().from(projects).where(eq(projects._id, projectId)),
+    );
+    if (project === null || project.unstableSnapshots.length === 0) {
+      return null;
+    }
+    const page = await ctx.db
+      .select()
+      .from(builds)
+      .where(
+        and(
+          eq(builds.projectId, projectId),
+          eq(builds.status, "finalized"),
+          eq(builds.conclusion, "changes"),
+          isNull(builds.supersededById),
+          isNull(builds.prClosedAt),
+          afterBuildId === null ? undefined : gt(builds._id, afterBuildId),
+        ),
+      )
+      .orderBy(asc(builds._id))
+      .limit(UNSTABLE_BUILDS_PER_JOB);
+    for (const build of page) {
+      if (!isReviewable(build)) {
+        continue;
+      }
+      const pending = await ctx.db
+        .select()
+        .from(snapshots)
+        .where(
+          and(
+            eq(snapshots.buildId, build._id),
+            eq(snapshots.diffStatus, "changed"),
+            eq(snapshots.reviewState, "pending"),
+          ),
+        );
+      const matching = pending.filter((snapshot) =>
+        isUnstable(project.unstableSnapshots, snapshot.name),
+      );
+      if (matching.length === 0) {
+        continue;
+      }
+      const counts = { ...build.counts };
+      for (const snapshot of matching) {
+        await review(ctx, build, snapshot, counts, {
+          action: "approve",
+          userId: null,
+          source: "unstable",
+        });
+      }
+      await saveCounts(ctx, build, counts);
+    }
+    const last = page.at(-1);
+    if (page.length === UNSTABLE_BUILDS_PER_JOB && last !== undefined) {
+      await ctx.scheduler.runAfter(0, internal.reviews.approveUnstable, {
+        projectId,
+        afterBuildId: last._id,
+      });
+    }
+    return null;
+  },
+});
+
 function isReviewable(build: Doc<"builds">): boolean {
   return (
     build.status === "finalized" &&
@@ -286,7 +354,7 @@ async function review(
     comment,
   }: {
     action: ReviewAction;
-    userId: Id<"users">;
+    userId: Id<"users"> | null;
     source: Source;
     comment?: string;
   },

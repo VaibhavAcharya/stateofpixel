@@ -180,6 +180,7 @@ export const projects = pgTable(
     diffThreshold: doublePrecision().notNull(),
     diffIncludeAA: boolean("diff_include_aa").notNull(),
     diffMaxPixels: integer().notNull().default(0),
+    unstableSnapshots: text().array().notNull().default([]),
     prRetentionDays: integer().notNull(),
     nextBuildNumber: integer().notNull(),
     lastBuildAt: time(),
@@ -326,6 +327,7 @@ export const reviews = pgTable(
         | "carry_over"
         | "auto_branch"
         | "orphan"
+        | "unstable"
       >()
       .notNull(),
     sourceReviewId: text(),

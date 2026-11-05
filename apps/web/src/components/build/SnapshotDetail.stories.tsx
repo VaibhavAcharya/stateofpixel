@@ -31,6 +31,7 @@ const pending: Snapshot = {
   notReviewedOnPr: false,
   history: [],
   flaky: null,
+  unstable: false,
 };
 
 const review: NonNullable<Snapshot["lastReview"]> = {
@@ -59,6 +60,7 @@ function StoryDetail({
     useSnapshot: () => snapshot,
     useApplyReview: () => async () => {},
     useAddComment: () => async () => {},
+    useMarkUnstable: () => async () => {},
     useSelection: () => {
       throw new Error("not used");
     },
@@ -80,6 +82,7 @@ function StoryDetail({
           onCloseComments={fn()}
           onComment={fn()}
           onUndo={fn()}
+          onMarkUnstable={fn()}
           onPrevious={fn()}
           onNext={fn()}
           navigation={null}
@@ -178,6 +181,17 @@ export const ApprovedAutomatically: Story = {
       reviewState: "approved",
       lastReview: { ...review, source: "auto_branch", login: null },
       notReviewedOnPr: true,
+    },
+  },
+};
+
+export const MarkedUnstable: Story = {
+  args: {
+    snapshot: {
+      ...pending,
+      reviewState: "approved",
+      lastReview: { ...review, source: "unstable", login: null },
+      unstable: true,
     },
   },
 };

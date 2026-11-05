@@ -48,3 +48,14 @@ Three project settings decide when a snapshot counts as changed. Anyone with wri
 npx stateofpixel compare screenshots baseline --threshold 0.2
 # Writes stateofpixel-report/index.html
 ```
+
+## Mark snapshots unstable
+
+When you cannot fix a snapshot yet, mark it unstable so its changes stop blocking the check. Changes to an unstable snapshot are approved automatically. In the build page sidebar they carry an "unstable" tag, and the snapshot says "Approved automatically, marked unstable". New snapshots with a matching name still wait for review.
+
+- On the build page, open a changed snapshot and click **Mark unstable**. It adds the story name, without the browser and width in brackets, so every variant of the story is covered.
+- Under Settings, Diff, **Unstable snapshots** lists one name per line. A line matches a story name or a full snapshot name, and `*` matches any text without `/`, so `Charts/*` covers every story under Charts. Delete a line to make the snapshot need review again in later builds.
+
+Either way, the change also applies to builds that already wait for review: changes to matching snapshots in the latest build of each branch and open PR are approved in the background, and the GitHub checks update. Deleting a line does not undo approvals that were already made.
+
+The approved image becomes the baseline like any other approval, so the build page still shows how the snapshot changed. Anyone with write access can change the list, up to 100 lines.

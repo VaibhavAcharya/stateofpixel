@@ -6,6 +6,7 @@ import { first } from "./db/index.ts";
 import {
   MAX_DIFF_MAX_PIXELS,
   MAX_RETENTION_DAYS,
+  MAX_SNAPSHOT_NAME_LENGTH,
   MIN_RETENTION_DAYS,
 } from "./lib/limits.ts";
 import {
@@ -37,6 +38,7 @@ import {
 
 const MAX_BRANCH_PATTERNS = 20;
 const MAX_BRANCH_PATTERN_LENGTH = 200;
+const MAX_UNSTABLE_SNAPSHOTS = 100;
 const DELETE_PAGE_SIZE = 500;
 
 export const access = query({
@@ -128,6 +130,7 @@ export const settings = query({
       diffThreshold: project.diffThreshold,
       diffIncludeAA: project.diffIncludeAA,
       diffMaxPixels: project.diffMaxPixels,
+      unstableSnapshots: project.unstableSnapshots,
       prRetentionDays: project.prRetentionDays,
     };
   },
@@ -140,6 +143,7 @@ export const updateSettings = mutation({
     diffThreshold: z.number().optional(),
     diffIncludeAA: z.boolean().optional(),
     diffMaxPixels: z.number().optional(),
+    unstableSnapshots: z.array(z.string()).optional(),
     prRetentionDays: z.number().optional(),
   },
   handler: async (ctx, { projectId, ...changes }) => {
@@ -158,6 +162,22 @@ export const updateSettings = mutation({
         ))
     ) {
       throw new AppError({ code: "invalid_branches" });
+    }
+    const unstableSnapshots =
+      changes.unstableSnapshots === undefined
+        ? undefined
+        : [
+            ...new Set(
+              changes.unstableSnapshots
+                .map((pattern) => pattern.trim())
+                .filter((pattern) => pattern !== ""),
+            ),
+          ];
+    if (
+      unstableSnapshots !== undefined &&
+      !isValidUnstableList(unstableSnapshots)
+    ) {
+      throw new AppError({ code: "invalid_unstable_snapshots" });
     }
     const { diffThreshold, diffMaxPixels, prRetentionDays } = changes;
     if (
@@ -189,6 +209,7 @@ export const updateSettings = mutation({
     const fields = {
       ...changes,
       ...(autoApproveBranches === undefined ? {} : { autoApproveBranches }),
+      ...(unstableSnapshots === undefined ? {} : { unstableSnapshots }),
     };
     if (Object.keys(fields).length > 0) {
       await ctx.db
@@ -196,9 +217,52 @@ export const updateSettings = mutation({
         .set(fields)
         .where(eq(projects._id, projectId));
     }
+    if (unstableSnapshots !== undefined) {
+      await ctx.scheduler.runAfter(0, internal.reviews.approveUnstable, {
+        projectId,
+        afterBuildId: null,
+      });
+    }
     return null;
   },
 });
+
+export const markUnstable = mutation({
+  args: { buildId: z.string(), name: z.string() },
+  handler: async (ctx, { buildId, name }) => {
+    const build = first(
+      await ctx.db.select().from(builds).where(eq(builds._id, buildId)),
+    );
+    if (build === null) {
+      throw new AppError({ code: "not_found" });
+    }
+    const { project } = await requirePermission(ctx, build.projectId, "write");
+    const pattern = name.trim();
+    if (project.unstableSnapshots.includes(pattern)) {
+      return null;
+    }
+    const unstableSnapshots = [...project.unstableSnapshots, pattern];
+    if (pattern === "" || !isValidUnstableList(unstableSnapshots)) {
+      throw new AppError({ code: "invalid_unstable_snapshots" });
+    }
+    await ctx.db
+      .update(projects)
+      .set({ unstableSnapshots })
+      .where(eq(projects._id, project._id));
+    await ctx.scheduler.runAfter(0, internal.reviews.approveUnstable, {
+      projectId: project._id,
+      afterBuildId: null,
+    });
+    return null;
+  },
+});
+
+function isValidUnstableList(patterns: string[]): boolean {
+  return (
+    patterns.length <= MAX_UNSTABLE_SNAPSHOTS &&
+    patterns.every((pattern) => pattern.length <= MAX_SNAPSHOT_NAME_LENGTH)
+  );
+}
 
 export const remove = mutation({
   args: { projectId: z.string(), confirmName: z.string() },

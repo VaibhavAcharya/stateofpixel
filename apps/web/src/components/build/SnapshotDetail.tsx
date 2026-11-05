@@ -43,6 +43,7 @@ export function SnapshotDetail({
   onCloseComments,
   onComment,
   onUndo,
+  onMarkUnstable,
   navigation,
   story,
   onPrevious,
@@ -62,6 +63,7 @@ export function SnapshotDetail({
   onCloseComments: () => void;
   onComment: (body: string) => void;
   onUndo: () => void;
+  onMarkUnstable: () => void;
   navigation: ReactNode;
   story?: SnapshotRow[];
   onPrevious: () => void;
@@ -169,6 +171,33 @@ export function SnapshotDetail({
           </Link>
         </p>
       )}
+      {snapshot.diffStatus === "changed" &&
+        (snapshot.unstable || reviewable) && (
+          <p className="flex shrink-0 flex-wrap items-center gap-x-1.5 border-t border-border px-4 py-2 text-xs text-muted">
+            {snapshot.unstable ? (
+              <>
+                <span>
+                  Marked unstable, changes are approved automatically.
+                </span>
+                <Link
+                  to="/$owner/$repo/settings"
+                  params={{ owner, repo }}
+                  className="text-link"
+                >
+                  Settings
+                </Link>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="text-link"
+                onClick={onMarkUnstable}
+              >
+                Mark unstable
+              </button>
+            )}
+          </p>
+        )}
       {snapshot.history.length > 0 && (
         <p className="flex shrink-0 flex-wrap items-center gap-x-2 border-t border-border px-4 py-2 text-xs text-muted">
           <Link
@@ -380,9 +409,11 @@ function ReviewStatus({ snapshot }: { snapshot: Snapshot }) {
       ? `in build #${carriedFrom.buildNumber}${carriedFrom.login === null ? "" : ` by @${carriedFrom.login}`} (carried over)`
       : review.source === "orphan"
         ? "as the first baseline"
-        : review.login === null
-          ? "automatically"
-          : `by @${review.login}`;
+        : review.source === "unstable"
+          ? "automatically, marked unstable"
+          : review.login === null
+            ? "automatically"
+            : `by @${review.login}`;
   return (
     <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted">
       <Icon

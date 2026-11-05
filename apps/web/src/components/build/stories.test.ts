@@ -19,6 +19,7 @@ function row(name: string, fields: Partial<SnapshotRow> = {}): SnapshotRow {
     reviewState: "pending",
     diffRatio: 0.01,
     browser: "chromium",
+    unstable: false,
     ...fields,
   };
 }

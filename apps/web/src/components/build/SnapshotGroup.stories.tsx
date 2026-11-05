@@ -19,6 +19,7 @@ function row(
     reviewState: "pending",
     diffRatio: 540 / AREA,
     browser: "chromium",
+    unstable: false,
     ...fields,
   };
 }
@@ -27,6 +28,7 @@ const rows = [
   row("1", "Button/All [chromium 1280]", {
     reviewState: "approved",
     diffRatio: 1829 / AREA,
+    unstable: true,
   }),
   row("2", "Header/Default [chromium 1280]"),
   row("3", "Pricing/Plans [chromium 1280]", {
