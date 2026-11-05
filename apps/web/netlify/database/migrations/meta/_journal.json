@@ -57,6 +57,13 @@
       "when": 1793802587480,
       "tag": "20261104142947_pending_uploads",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793861665149,
+      "tag": "20261105065425_unstable_snapshots",
+      "breakpoints": true
     }
   ]
 }

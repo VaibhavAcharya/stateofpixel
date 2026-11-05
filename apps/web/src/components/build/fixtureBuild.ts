@@ -173,6 +173,7 @@ export function useFixtureBuild(fixture: BuildFixture): {
             reviewState: snapshot.reviewState,
             diffRatio: diffRatio(snapshot),
             browser: snapshot.browser ?? null,
+            unstable: false,
           })),
         status: "Exhausted" as const,
         loadMore: () => {},
@@ -220,6 +221,7 @@ export function useFixtureBuild(fixture: BuildFixture): {
         notReviewedOnPr: false,
         history: [],
         flaky: null,
+        unstable: false,
       };
     },
     useAddComment:
@@ -227,6 +229,7 @@ export function useFixtureBuild(fixture: BuildFixture): {
       async ({ snapshotId, body }) => {
         addComment(snapshotId, body.trim());
       },
+    useMarkUnstable: () => async () => {},
     useApplyReview:
       () =>
       async ({ snapshotIds, action, comment }) => {

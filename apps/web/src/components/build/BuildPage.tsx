@@ -44,6 +44,7 @@ import {
   representative,
   type SnapshotItem,
   someBrowsersFirst,
+  storyName,
 } from "./stories";
 import type { Build, SnapshotRow } from "./types";
 
@@ -57,6 +58,7 @@ const GROUPS: { status: DiffStatus; label: string }[] = [
 
 const PREFETCH_PENDING = 3;
 const SNAPSHOTS_PER_CALL = 100;
+const SEARCH_DELAY_MS = 200;
 
 const ACTION_VERBS: Record<ReviewAction, string> = {
   approve: "approve",
@@ -139,19 +141,26 @@ export function BuildPage({
   const { snapshotId, select: selectId } = data.useSelection(linkParams);
   const applyReview = data.useApplyReview();
   const addComment = data.useAddComment();
-  const groups = data.useSnapshotGroups(
-    build.buildId,
-    build.counts,
-    !collapsed.has("unchanged"),
-  );
-  const canReview =
-    canWrite && build.status === "finalized" && !build.superseded;
-
+  const markUnstable = data.useMarkUnstable();
   const needle = filter.trim().toLowerCase();
   const activeBrowser =
     browser !== undefined && build.browsers.includes(browser)
       ? browser
       : undefined;
+  const [search, setSearch] = useState(needle);
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(needle), SEARCH_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [needle]);
+  const groups = data.useSnapshotGroups(
+    build.buildId,
+    build.counts,
+    !collapsed.has("unchanged"),
+    { search, browser: activeBrowser },
+  );
+  const canReview =
+    canWrite && build.status === "finalized" && !build.superseded;
+
   const visible = (rows: SnapshotRow[]) =>
     rows.filter(
       (row) =>
@@ -281,6 +290,29 @@ export function BuildPage({
           : " Your change was undone.";
       show("error", `Could not ${ACTION_VERBS[action]} ${name}.${reason}`);
     });
+  };
+
+  const markCurrentUnstable = () => {
+    if (!canReview || current === undefined) {
+      return;
+    }
+    const name =
+      current.kind === "row" ? storyName(current.row.name) : current.name;
+    const pending = itemRows(current).filter(
+      (row) => row.diffStatus === "changed" && row.reviewState === "pending",
+    );
+    track("Mark unstable");
+    markUnstable({ buildId: build.buildId, name })
+      .then(() =>
+        pending.length === 0
+          ? null
+          : applyReview({
+              buildId: build.buildId,
+              snapshotIds: pending.map((row) => row.id),
+              action: "approve",
+            }),
+      )
+      .catch(() => show("error", `Could not mark ${name} unstable.`));
   };
 
   const reviewAndAdvance = (action: "approve" | "reject") => {
@@ -621,6 +653,7 @@ export function BuildPage({
                 }).catch(() => show("error", "Could not add the comment."));
               }}
               onUndo={() => review("undo", current)}
+              onMarkUnstable={markCurrentUnstable}
               story={current?.kind === "story" ? current.rows : undefined}
               onPrevious={selectPrevious}
               onNext={selectNext}

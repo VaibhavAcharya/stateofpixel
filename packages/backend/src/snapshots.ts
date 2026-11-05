@@ -1,10 +1,11 @@
-import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Doc, Id } from "./dataModel.ts";
 import { first } from "./db/index.ts";
 import { findChanges, findFlaky } from "./lib/history.ts";
 import { toImageInfo } from "./lib/images.ts";
 import { findAllowedProject, findReadableBuild } from "./lib/permissions.ts";
+import { isUnstable } from "./lib/unstable.ts";
 import {
   approvedImages,
   builds,
@@ -56,17 +57,26 @@ async function findReadableBuildById(ctx: QueryCtx, buildId: Id<"builds">) {
 
 const MAX_COMMENTS = 50;
 
+function escapeLike(text: string): string {
+  return text.replace(/[\\%_]/g, "\\$&");
+}
+
 export const list = query({
   args: {
     buildId: z.string(),
     diffStatus,
+    search: z.string().optional(),
+    browser: z.string().optional(),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     const build = await findReadableBuildById(ctx, args.buildId);
-    if (build === null) {
+    const project =
+      build === null ? null : await getProject(ctx, build.projectId);
+    if (build === null || project === null) {
       return { page: [], isDone: true, continueCursor: "" };
     }
+    const search = args.search?.trim() ?? "";
     const page = await paginate(args.paginationOpts, (limit, offset) =>
       ctx.db
         .select()
@@ -75,6 +85,12 @@ export const list = query({
           and(
             eq(snapshots.buildId, args.buildId),
             eq(snapshots.diffStatus, args.diffStatus),
+            search === ""
+              ? undefined
+              : ilike(snapshots.name, `%${escapeLike(search)}%`),
+            args.browser === undefined
+              ? undefined
+              : sql`${snapshots.metadata}->>'browser' = ${args.browser}`,
           ),
         )
         .orderBy(
@@ -97,6 +113,7 @@ export const list = query({
           typeof snapshot.metadata.browser === "string"
             ? snapshot.metadata.browser
             : null,
+        unstable: isUnstable(project.unstableSnapshots, snapshot.name),
       })),
     };
   },
@@ -153,6 +170,7 @@ export const get = query({
       notReviewedOnPr: await isNotReviewedOnPr(ctx, build, snapshot),
       history: await findHistory(ctx, build, snapshot),
       flaky: await findFlaky(ctx, project, build, snapshot),
+      unstable: isUnstable(project.unstableSnapshots, snapshot.name),
     };
   },
 });

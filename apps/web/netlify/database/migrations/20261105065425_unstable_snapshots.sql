@@ -1,0 +1,1 @@
+ALTER TABLE "projects" ADD COLUMN "unstable_snapshots" text[] DEFAULT '{}' NOT NULL;

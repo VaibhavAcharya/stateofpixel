@@ -33,6 +33,8 @@ export type ReviewArgs = {
   comment?: string;
 };
 
+export type SnapshotFilter = { search: string; browser: string | undefined };
+
 export type BuildLinkParams = { owner: string; repo: string; number: string };
 
 export type Selection = {
@@ -45,12 +47,17 @@ export type BuildData = {
     buildId: Id<"builds">,
     counts: Build["counts"],
     unchangedOpen: boolean,
+    filter: SnapshotFilter,
   ) => Record<DiffStatus, SnapshotList>;
   useSnapshot: (args: SnapshotArgs) => Snapshot | null | undefined;
   useApplyReview: () => (args: ReviewArgs) => Promise<unknown>;
   useAddComment: () => (args: {
     snapshotId: Id<"snapshots">;
     body: string;
+  }) => Promise<unknown>;
+  useMarkUnstable: () => (args: {
+    buildId: Id<"builds">;
+    name: string;
   }) => Promise<unknown>;
   useSelection: (params: BuildLinkParams) => Selection;
 };
@@ -65,10 +72,11 @@ function useSnapshotGroups(
   buildId: Id<"builds">,
   counts: Build["counts"],
   unchangedOpen: boolean,
+  { search, browser }: SnapshotFilter,
 ): Record<DiffStatus, SnapshotList> {
-  const options = { initialNumItems: 200 };
+  const options = { initialNumItems: 200, keepPrevious: true };
   const args = (diffStatus: DiffStatus, enabled: boolean) =>
-    enabled ? { buildId, diffStatus } : ("skip" as const);
+    enabled ? { buildId, diffStatus, search, browser } : ("skip" as const);
   return {
     changed: usePaginatedQuery(
       api.snapshots.list,
@@ -212,6 +220,10 @@ function useAddComment() {
   return useMutation(api.comments.add);
 }
 
+function useMarkUnstable() {
+  return useMutation(api.projects.markUnstable);
+}
+
 function useSelection(params: BuildLinkParams): Selection {
   const { snapshotId } = useParams({ strict: false });
   const navigate = useNavigate();
@@ -231,6 +243,7 @@ export const BUILD_DATA: BuildData = {
   useSnapshot,
   useApplyReview,
   useAddComment,
+  useMarkUnstable,
   useSelection,
 };
 
