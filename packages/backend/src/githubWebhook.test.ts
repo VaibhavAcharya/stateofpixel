@@ -274,6 +274,8 @@ it("links a signed-in user to their installations", async () => {
         storageBytes: 0,
         storageLimitBytes: 10 * 1024 ** 3,
       },
+      projects: 2,
+      lastBuildAt: null,
     },
   ]);
   const projects = await user.query(api.accounts.projects, {

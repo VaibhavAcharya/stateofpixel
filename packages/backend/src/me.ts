@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, max } from "drizzle-orm";
 import { z } from "zod";
 import { toStorageUsage } from "./accounts.ts";
 import { internal } from "./api.ts";
@@ -7,7 +7,11 @@ import type { Id } from "./dataModel.ts";
 import { env } from "./env.ts";
 import { syncInstallation } from "./installations.ts";
 import { GithubError, listUserInstallations } from "./lib/github.ts";
-import { accountMembers, accounts as accountsTable } from "./schema.ts";
+import {
+  accountMembers,
+  accounts as accountsTable,
+  projects,
+} from "./schema.ts";
 import { AppError, action, internalMutation, query } from "./server.ts";
 
 const MAX_ACCOUNTS = 100;
@@ -26,15 +30,41 @@ export const accounts = query({
       .where(eq(accountMembers.userId, userId))
       .orderBy(asc(accountMembers._creationTime), asc(accountMembers._id))
       .limit(MAX_ACCOUNTS);
+    const projectStats =
+      memberAccounts.length === 0
+        ? []
+        : await ctx.db
+            .select({
+              accountId: projects.accountId,
+              projects: count(),
+              lastBuildAt: max(projects.lastBuildAt),
+            })
+            .from(projects)
+            .where(
+              and(
+                inArray(
+                  projects.accountId,
+                  memberAccounts.map(({ account }) => account._id),
+                ),
+                isNull(projects.archivedAt),
+              ),
+            )
+            .groupBy(projects.accountId);
+    const statsByAccount = new Map(
+      projectStats.map((stats) => [stats.accountId, stats]),
+    );
 
     const result = [];
     for (const { account } of memberAccounts) {
+      const stats = statsByAccount.get(account._id);
       result.push({
         login: account.login,
         type: account.type,
         installed: account.installationId !== null,
         plan: account.plan,
         storage: toStorageUsage(account),
+        projects: stats?.projects ?? 0,
+        lastBuildAt: stats?.lastBuildAt ?? null,
       });
     }
     return result.sort((a, b) => a.login.localeCompare(b.login));

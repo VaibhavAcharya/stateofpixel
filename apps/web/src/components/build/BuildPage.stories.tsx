@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
-import { fn, userEvent, within } from "storybook/test";
+import { useEffect, useState } from "react";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { preloadDemoImages } from "../../lib/storyFixtures";
 import { BuildPage } from "./BuildPage";
-import { BuildDataContext } from "./buildData";
+import { type BuildData, BuildDataContext } from "./buildData";
 import {
   type BuildFixture,
   changed,
@@ -36,10 +36,23 @@ const UNSTABLE = {
   unstable: true,
 };
 
+const ADDED: FixtureSnapshot = {
+  id: "signin",
+  name: "Auth/Sign in",
+  diffStatus: "added",
+  reviewState: "pending",
+  image: "/demo/signin-new.png",
+  baselineImage: null,
+  diffImage: null,
+};
+
+const CHANGED_DELAY_MS = 300;
+
 function fixture(
   browsers: string[],
   unstable: boolean,
   changes: boolean,
+  added: boolean,
 ): BuildFixture {
   return {
     build: {
@@ -64,6 +77,7 @@ function fixture(
     snapshots: browsers.flatMap((browser) =>
       [
         ...(unstable ? [UNSTABLE] : []),
+        ...(added ? [ADDED] : []),
         ...SNAPSHOTS.filter(
           (snapshot) => changes || snapshot.diffStatus === "unchanged",
         ),
@@ -77,18 +91,43 @@ function StoryBuild({
   browsers,
   unstable = false,
   changes = true,
+  added = false,
+  changedLoadsLast = false,
 }: {
   browsers: string[];
   unstable?: boolean;
   changes?: boolean;
+  added?: boolean;
+  changedLoadsLast?: boolean;
 }) {
-  const [buildFixture] = useState(() => fixture(browsers, unstable, changes));
+  const [buildFixture] = useState(() =>
+    fixture(browsers, unstable, changes, added),
+  );
   const { build, data } = useFixtureBuild(buildFixture);
+  const [changedLoaded, setChangedLoaded] = useState(!changedLoadsLast);
+  useEffect(() => {
+    const timer = setTimeout(() => setChangedLoaded(true), CHANGED_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, []);
   const [snapshotId, setSnapshotId] = useState<string>();
+  const useSnapshotGroups: BuildData["useSnapshotGroups"] = (...args) => {
+    const groups = data.useSnapshotGroups(...args);
+    return changedLoaded
+      ? groups
+      : {
+          ...groups,
+          changed: {
+            ...groups.changed,
+            results: [],
+            status: "LoadingFirstPage",
+          },
+        };
+  };
   return (
     <BuildDataContext.Provider
       value={{
         ...data,
+        useSnapshotGroups,
         useSelection: () => ({ snapshotId, select: setSnapshotId }),
       }}
     >
@@ -160,4 +199,17 @@ export const UnstableOpen: Story = {
 
 export const OnlyUnstableChanges: Story = {
   args: { unstable: true, changes: false },
+};
+
+export const ChangedLoadsLast: Story = {
+  args: { added: true, changedLoadsLast: true },
+  play: async ({ canvasElement }) => {
+    await waitFor(() =>
+      expect(
+        canvasElement
+          .querySelector('[aria-current="true"]')
+          ?.getAttribute("aria-label"),
+      ).toMatch(/^Header\/Default/),
+    );
+  },
 };

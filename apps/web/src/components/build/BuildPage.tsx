@@ -61,6 +61,8 @@ const GROUPS: Group[] = [
   { key: "unchanged", status: "unchanged", label: "Unchanged" },
 ];
 
+const REVIEW_STATUSES = ["changed", "added", "removed", "failed"] as const;
+
 function isUnstableChange(row: SnapshotRow): boolean {
   return row.unstable && row.diffStatus === "changed";
 }
@@ -267,8 +269,17 @@ export function BuildPage({
   );
   const firstId =
     firstItem === undefined ? undefined : representative(firstItem).id;
+  const reviewGroupsLoaded = REVIEW_STATUSES.every(
+    (status) =>
+      build.counts[status] === 0 ||
+      groups[status].status !== "LoadingFirstPage",
+  );
   useEffect(() => {
-    if (snapshotId === undefined && firstId !== undefined) {
+    if (
+      snapshotId === undefined &&
+      firstId !== undefined &&
+      reviewGroupsLoaded
+    ) {
       selectId(firstId, { replace: true });
     }
   });

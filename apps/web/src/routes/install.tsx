@@ -1,20 +1,11 @@
-import {
-  ArrowRightIcon,
-  GithubLogoIcon,
-  PlusIcon,
-} from "@phosphor-icons/react/ssr";
-import { formatGigabytes } from "@stateofpixel/backend/storage";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { GithubLogoIcon, PlusIcon } from "@phosphor-icons/react/ssr";
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { AccountTable } from "../components/AccountTable";
 import { AppHeader } from "../components/AppHeader";
-import { ListToolbar, SearchField } from "../components/ListControls";
 import { Page, PageHeader } from "../components/Page";
-import { PLAN_NAMES } from "../components/PlanBox";
-import { ProjectTable } from "../components/ProjectTable";
 import { RequireAuth } from "../components/RequireAuth";
 import {
-  Avatar,
-  accountAvatar,
   buttonClass,
   EmptyState,
   SkeletonRows,
@@ -22,12 +13,10 @@ import {
 } from "../components/ui";
 import { api, useAction, useQuery } from "../lib/backend";
 import { errorCode } from "../lib/errorCode";
-import { validateProjectSearch } from "../lib/projectSearch";
 import { useDisconnectExpiredGithub } from "../lib/useDisconnectExpiredGithub";
 import { useListKeys } from "../lib/useListKeys";
 
 export const Route = createFileRoute("/install")({
-  validateSearch: validateProjectSearch,
   component: Install,
 });
 
@@ -44,8 +33,6 @@ function Accounts() {
   const accounts = useQuery(api.me.accounts);
   const installUrl = useQuery(api.me.installUrl);
   const refreshAccounts = useAction(api.me.refreshAccounts);
-  const search = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
   const disconnectGithub = useDisconnectExpiredGithub();
   const [refreshing, setRefreshing] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +70,7 @@ function Accounts() {
   return (
     <Page>
       <PageHeader
-        title="All projects"
+        title="Accounts"
         meta={
           refreshing ? (
             <span className="flex items-center gap-1.5">
@@ -91,7 +78,7 @@ function Accounts() {
               Checking your GitHub installations
             </span>
           ) : (
-            "Every repository the GitHub App can see"
+            "Every GitHub account with the app installed that you can see"
           )
         }
         actions={
@@ -124,7 +111,7 @@ function Accounts() {
       {accounts === undefined && <SkeletonRows rows={3} />}
       {accounts?.length === 0 && !refreshing && (
         <EmptyState
-          title="No projects yet."
+          title="No accounts yet."
           action={
             <div className="flex flex-wrap items-center gap-3">
               {installButton}
@@ -143,86 +130,8 @@ function Accounts() {
         </EmptyState>
       )}
       {accounts !== undefined && accounts.length > 0 && (
-        <ListToolbar>
-          <SearchField
-            value={search.q ?? ""}
-            onChange={(q) =>
-              void navigate({
-                search: (prev) => ({ ...prev, q: q || undefined }),
-                replace: true,
-              })
-            }
-            placeholder="Search projects"
-          />
-        </ListToolbar>
+        <AccountTable accounts={accounts} />
       )}
-      <div className="flex flex-col gap-10">
-        {accounts?.map((account) => (
-          <section key={account.login}>
-            <div className="mb-2 flex min-h-8 flex-wrap items-center gap-x-2.5 gap-y-1">
-              <Link
-                to="/$owner"
-                params={{ owner: account.login }}
-                className="flex min-w-0 items-center gap-2.5 rounded-sm hover:underline"
-              >
-                <Avatar src={accountAvatar(account.login)} size={20} square />
-                <h2 className="truncate text-sm font-medium">
-                  {account.login}
-                </h2>
-              </Link>
-              {!account.installed && (
-                <span className="text-xs text-muted">App not installed</span>
-              )}
-              <span className="text-xs text-muted tabular-nums">
-                {PLAN_NAMES[account.plan]} plan ·{" "}
-                {formatGigabytes(account.storage.storageBytes)}
-                {account.plan === "unlimited"
-                  ? " used"
-                  : ` of ${formatGigabytes(account.storage.storageLimitBytes)} used`}
-              </span>
-              <nav className="ml-auto flex items-center gap-4 text-xs text-muted">
-                <Link
-                  to="/$owner/settings/members"
-                  params={{ owner: account.login }}
-                  className="hover:text-text"
-                >
-                  Members
-                </Link>
-                <Link
-                  to="/$owner/settings/usage"
-                  params={{ owner: account.login }}
-                  className="hover:text-text"
-                >
-                  Usage
-                </Link>
-                <Link
-                  to="/$owner/settings/billing"
-                  params={{ owner: account.login }}
-                  className="hover:text-text"
-                >
-                  Billing
-                </Link>
-                <Link
-                  to="/$owner"
-                  params={{ owner: account.login }}
-                  className="flex items-center gap-1 hover:text-text"
-                >
-                  Overview
-                  <ArrowRightIcon size={12} />
-                </Link>
-              </nav>
-            </div>
-            <ProjectTable
-              login={account.login}
-              search={search}
-              onSearchChange={(next) =>
-                void navigate({ search: next, replace: true })
-              }
-              empty="No repositories selected for this account."
-            />
-          </section>
-        ))}
-      </div>
     </Page>
   );
 }
