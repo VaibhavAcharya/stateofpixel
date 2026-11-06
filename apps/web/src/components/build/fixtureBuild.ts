@@ -15,6 +15,7 @@ export type FixtureSnapshot = {
   reviewState: ReviewState;
   diffPixels?: number;
   browser?: string;
+  unstable?: boolean;
   size?: { width: number; height: number };
   image: string | null;
   baselineImage: string | null;
@@ -173,7 +174,7 @@ export function useFixtureBuild(fixture: BuildFixture): {
             reviewState: snapshot.reviewState,
             diffRatio: diffRatio(snapshot),
             browser: snapshot.browser ?? null,
-            unstable: false,
+            unstable: snapshot.unstable ?? false,
           })),
         status: "Exhausted" as const,
         loadMore: () => {},
@@ -221,7 +222,7 @@ export function useFixtureBuild(fixture: BuildFixture): {
         notReviewedOnPr: false,
         history: [],
         flaky: null,
-        unstable: false,
+        unstable: snapshot.unstable ?? false,
       };
     },
     useAddComment:

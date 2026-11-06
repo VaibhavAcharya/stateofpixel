@@ -31,7 +31,12 @@ const SNAPSHOTS = [
   unchanged("footer", "Footer/Default", "/demo/header-base.png"),
 ];
 
-function fixture(browsers: string[]): BuildFixture {
+const UNSTABLE = {
+  ...changed("buttons", "Buttons/All", 1829, "approved"),
+  unstable: true,
+};
+
+function fixture(browsers: string[], unstable: boolean): BuildFixture {
   return {
     build: {
       number: 412,
@@ -53,14 +58,22 @@ function fixture(browsers: string[]): BuildFixture {
       mergedPr: null,
     },
     snapshots: browsers.flatMap((browser) =>
-      SNAPSHOTS.map((snapshot) => inBrowser(snapshot, browser, 1280)),
+      [...(unstable ? [UNSTABLE] : []), ...SNAPSHOTS].map((snapshot) =>
+        inBrowser(snapshot, browser, 1280),
+      ),
     ),
     reviewer: "octocat",
   };
 }
 
-function StoryBuild({ browsers }: { browsers: string[] }) {
-  const [buildFixture] = useState(() => fixture(browsers));
+function StoryBuild({
+  browsers,
+  unstable = false,
+}: {
+  browsers: string[];
+  unstable?: boolean;
+}) {
+  const [buildFixture] = useState(() => fixture(browsers, unstable));
   const { build, data } = useFixtureBuild(buildFixture);
   const [snapshotId, setSnapshotId] = useState<string>();
   return (
@@ -119,6 +132,19 @@ export const BrowserFiltered: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Browser" }));
     await userEvent.click(
       canvas.getByRole("menuitemradio", { name: "firefox" }),
+    );
+  },
+};
+
+export const Unstable: Story = {
+  args: { unstable: true },
+};
+
+export const UnstableOpen: Story = {
+  args: { unstable: true },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(
+      within(canvasElement).getByRole("button", { name: /Unstable/ }),
     );
   },
 };
