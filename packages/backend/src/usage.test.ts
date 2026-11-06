@@ -7,6 +7,7 @@ import {
   accountMembers,
   builds,
   images,
+  projects,
   snapshots,
   usageDaily,
 } from "./schema.ts";
@@ -239,4 +240,49 @@ it("shows usage to account owners only", async () => {
   expect(
     await owner.query(api.usage.get, { login: "acme", since: "2026-01-01" }),
   ).toBeNull();
+});
+
+it("lets account owners delete an archived project", async () => {
+  const { t, userId, membershipId, projectId, insertBuild } = await setup();
+  await insertBuild(1, "main");
+  const owner = t.withUser(userId);
+  const removeArchived = (confirmName: string) =>
+    owner.mutation(api.projects.removeArchived, {
+      login: "acme",
+      projectId,
+      confirmName,
+    });
+
+  await expect(removeArchived("web-app")).rejects.toThrow(/not_found/);
+
+  await t.run((ctx) =>
+    ctx.db
+      .update(projects)
+      .set({ archivedAt: Date.now() })
+      .where(eq(projects._id, projectId)),
+  );
+  await t.run((ctx) =>
+    ctx.db
+      .update(accountMembers)
+      .set({ role: "member" })
+      .where(eq(accountMembers._id, membershipId)),
+  );
+  await expect(removeArchived("web-app")).rejects.toThrow(/not_found/);
+
+  await t.run((ctx) =>
+    ctx.db
+      .update(accountMembers)
+      .set({ role: "owner" })
+      .where(eq(accountMembers._id, membershipId)),
+  );
+  await expect(removeArchived("web")).rejects.toThrow(/confirm_name_mismatch/);
+
+  await removeArchived("web-app");
+  await t.runAllJobs();
+
+  const left = await t.run(async (ctx) => ({
+    projects: await ctx.db.select().from(projects),
+    builds: await ctx.db.select().from(builds),
+  }));
+  expect(left).toEqual({ projects: [], builds: [] });
 });

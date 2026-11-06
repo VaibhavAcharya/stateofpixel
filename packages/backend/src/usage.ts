@@ -315,6 +315,7 @@ export const get = query({
       );
       if (project !== null) {
         projects.push({
+          id: project._id,
           name: project.name,
           private: project.private,
           archived: project.archivedAt !== null,

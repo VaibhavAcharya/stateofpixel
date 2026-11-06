@@ -1,4 +1,6 @@
+import type { Id } from "@stateofpixel/backend/dataModel";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { userEvent, within } from "storybook/test";
 import { DAY_MS, STORY_NOW, storage } from "../lib/storyFixtures";
 import { USAGE_DAYS, UsageView } from "./Usage";
 
@@ -23,6 +25,7 @@ const meta = {
       daily,
       projects: [
         {
+          id: "project-1" as Id<"projects">,
           name: "web-app",
           private: true,
           archived: false,
@@ -32,6 +35,7 @@ const meta = {
           diffBytes: 120 * MEGABYTE,
         },
         {
+          id: "project-2" as Id<"projects">,
           name: "design-system",
           private: false,
           archived: false,
@@ -41,6 +45,7 @@ const meta = {
           diffBytes: 40 * MEGABYTE,
         },
         {
+          id: "project-3" as Id<"projects">,
           name: "old-site",
           private: true,
           archived: true,
@@ -68,5 +73,16 @@ export const NotCountedYet: Story = {
       daily: [],
       projects: [],
     },
+  },
+};
+
+export const DeleteArchived: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Delete" }));
+    await userEvent.type(
+      canvas.getByLabelText("Type old-site to confirm"),
+      "old-site",
+    );
   },
 };
