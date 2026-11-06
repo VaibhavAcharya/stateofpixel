@@ -14,7 +14,7 @@ const pages = (await readdir(pagesDir))
   .filter((file) => file.endsWith(".html"))
   .sort();
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
+const page = await browser.newPage({ viewport, deviceScaleFactor: 2 });
 
 for (const file of pages) {
   await page.goto(pathToFileURL(path.join(pagesDir, file)).href);
