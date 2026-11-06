@@ -11,7 +11,10 @@ import { buttonClass, listRowLinkClass } from "./ui";
 
 export type UsageData = NonNullable<FunctionReturnType<typeof api.usage.get>>;
 
-type UsageProject = UsageData["projects"][number] & { owner: string };
+type UsageProject = UsageData["projects"][number] & {
+  owner: string;
+  canDelete: boolean;
+};
 
 export const USAGE_DAYS = 90;
 
@@ -44,7 +47,9 @@ const columns = helper.columns([
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-muted">
           <span className="truncate">{row.original.name}</span>
           <span className="text-xs">Archived</span>
-          <DeleteArchivedProject project={row.original} />
+          {row.original.canDelete && (
+            <DeleteArchivedProject project={row.original} />
+          )}
         </span>
       ) : (
         <Link
@@ -104,12 +109,13 @@ export function UsageView({
   const { storage } = usage;
   const counted = usage.projects.reduce(
     (sum, project) => sum + totalBytes(project),
-    0,
+    totalBytes(usage.hidden),
   );
   const projects = usage.projects
     .map((project) => ({
       ...project,
       owner,
+      canDelete: usage.canDeleteArchived,
       share: counted === 0 ? 0 : totalBytes(project) / counted,
     }))
     .sort((a, b) => totalBytes(b) - totalBytes(a));
@@ -135,7 +141,7 @@ export function UsageView({
           {PARTS.map((part) => {
             const bytes = projects.reduce(
               (sum, project) => sum + project[part.key],
-              0,
+              usage.hidden[part.key],
             );
             return (
               <span
@@ -155,7 +161,10 @@ export function UsageView({
               {part.label}
               <span className="text-text tabular-nums">
                 {formatBytes(
-                  projects.reduce((sum, project) => sum + project[part.key], 0),
+                  projects.reduce(
+                    (sum, project) => sum + project[part.key],
+                    usage.hidden[part.key],
+                  ),
                 )}
               </span>
             </li>
@@ -175,6 +184,13 @@ export function UsageView({
           getRowId={(project) => project.name}
           sorting={[]}
         />
+      )}
+      {usage.hidden.projects > 0 && (
+        <p className="text-xs text-muted">
+          {usage.hidden.projects === 1
+            ? `1 project you cannot open on GitHub is not listed. It stores ${formatBytes(totalBytes(usage.hidden))}.`
+            : `${usage.hidden.projects} projects you cannot open on GitHub are not listed. They store ${formatBytes(totalBytes(usage.hidden))}.`}
+        </p>
       )}
     </div>
   );

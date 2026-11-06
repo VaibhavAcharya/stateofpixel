@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AccountLayout } from "../../components/AccountLayout";
+import { AccountSummary } from "../../components/AccountSummary";
 import { AppHeader } from "../../components/AppHeader";
 import { ListToolbar, SearchField } from "../../components/ListControls";
 import { ProjectTable } from "../../components/ProjectTable";
@@ -39,6 +40,7 @@ function AccountProjects({ owner }: { owner: string }) {
 
   return (
     <>
+      <AccountSummary owner={owner} />
       <ListToolbar>
         <SearchField
           value={search.q ?? ""}

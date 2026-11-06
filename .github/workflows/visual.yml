@@ -45,7 +45,7 @@ jobs:
       - run: pnpm --filter @stateofpixel/playground capture
       - run: node packages/cli/dist/index.mjs upload examples/playground/screenshots --build-name playground
       - run: pnpm --filter @stateofpixel/playground build-storybook
-      - run: node packages/cli/dist/index.mjs storybook examples/playground/storybook-static --build-name storybook
+      - run: node packages/cli/dist/index.mjs storybook examples/playground/storybook-static --build-name storybook --device-scale-factor 2
 
   web:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
@@ -120,4 +120,4 @@ jobs:
         run: pnpm --filter @stateofpixel/web exec playwright install-deps chromium
       - run: find /var/cache/apt/archives -maxdepth 1 -name "*.deb" -exec cp -t ~/apt-cache {} +
       - run: pnpm --filter @stateofpixel/web build-storybook
-      - run: node packages/cli/dist/index.mjs storybook apps/web/storybook-static --build-name web-storybook --viewports 375,1280 --delay 300 --shard ${{ matrix.shard }}/3
+      - run: node packages/cli/dist/index.mjs storybook apps/web/storybook-static --build-name web-storybook --viewports 375,1280 --delay 300 --device-scale-factor 2 --shard ${{ matrix.shard }}/3

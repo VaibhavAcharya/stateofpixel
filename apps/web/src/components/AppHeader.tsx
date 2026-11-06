@@ -50,8 +50,21 @@ export function AppHeader({
       >
         <Logo />
       </Link>
-      <Slash />
-      <AccountSwitcher owner={owner} />
+      <Link
+        to="/install"
+        activeOptions={{ exact: true }}
+        className={`shrink-0 rounded-sm px-2 py-1 text-sm font-medium text-muted hover:bg-hover hover:text-text aria-[current=page]:text-text ${
+          owner === undefined ? "" : "max-sm:hidden"
+        }`}
+      >
+        All projects
+      </Link>
+      {owner !== undefined && (
+        <>
+          <Slash />
+          <AccountSwitcher owner={owner} />
+        </>
+      )}
       {owner !== undefined && repo !== undefined && (
         <>
           <Slash />
@@ -72,7 +85,7 @@ export function AppHeader({
   );
 }
 
-function AccountSwitcher({ owner }: { owner?: string }) {
+function AccountSwitcher({ owner }: { owner: string }) {
   const accounts = useQuery(api.me.accounts);
   const installUrl = useQuery(api.me.installUrl);
 
@@ -82,17 +95,8 @@ function AccountSwitcher({ owner }: { owner?: string }) {
       triggerClassName="flex h-8 max-w-56 items-center gap-2 rounded-sm px-2 text-sm font-medium hover:bg-hover"
       trigger={
         <>
-          {owner === undefined ? (
-            <>
-              <SquaresFourIcon size={18} className="shrink-0 text-muted" />
-              <span>All projects</span>
-            </>
-          ) : (
-            <>
-              <Avatar src={accountAvatar(owner)} size={18} square />
-              <span className="truncate">{owner}</span>
-            </>
-          )}
+          <Avatar src={accountAvatar(owner)} size={18} square />
+          <span className="truncate">{owner}</span>
           <CaretUpDownIcon size={14} className="shrink-0 text-muted" />
         </>
       }
@@ -100,9 +104,6 @@ function AccountSwitcher({ owner }: { owner?: string }) {
       <Link to="/install" className={menuItemClass}>
         <SquaresFourIcon size={18} className="shrink-0 text-muted" />
         <span className="min-w-0 flex-1 truncate">All projects</span>
-        {owner === undefined && (
-          <CheckIcon size={14} className="shrink-0 text-muted" />
-        )}
       </Link>
       <MenuSeparator />
       <MenuLabel>Accounts</MenuLabel>
