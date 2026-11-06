@@ -57,7 +57,7 @@ export function AppHeader({
           owner === undefined ? "" : "max-sm:hidden"
         }`}
       >
-        All projects
+        Accounts
       </Link>
       {owner !== undefined && (
         <>
@@ -103,7 +103,7 @@ function AccountSwitcher({ owner }: { owner: string }) {
     >
       <Link to="/install" className={menuItemClass}>
         <SquaresFourIcon size={18} className="shrink-0 text-muted" />
-        <span className="min-w-0 flex-1 truncate">All projects</span>
+        <span className="min-w-0 flex-1 truncate">All accounts</span>
       </Link>
       <MenuSeparator />
       <MenuLabel>Accounts</MenuLabel>
@@ -147,7 +147,7 @@ function UserMenu() {
   const viewer = useQuery(api.users.viewer);
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
-  const onAllProjects = useLocation({
+  const onAccounts = useLocation({
     select: (location) => location.pathname === "/install",
   });
   const [theme, setTheme] = useTheme();
@@ -168,18 +168,18 @@ function UserMenu() {
         )}
       </div>
       <MenuSeparator />
-      {onAllProjects ? (
+      {onAccounts ? (
         <span
           aria-disabled
           className={`${menuItemClass} pointer-events-none opacity-45`}
         >
           <SquaresFourIcon size={16} className="shrink-0 text-muted" />
-          All projects
+          Accounts
         </span>
       ) : (
         <Link to="/install" className={menuItemClass}>
           <SquaresFourIcon size={16} className="shrink-0 text-muted" />
-          All projects
+          Accounts
         </Link>
       )}
       <MenuSeparator />

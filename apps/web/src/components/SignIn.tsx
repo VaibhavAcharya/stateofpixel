@@ -28,7 +28,7 @@ function usePending() {
 
 export function SignInButton({
   provider = "github",
-  redirectTo = "/install",
+  redirectTo = "/dashboard",
   label = "Sign in with GitHub",
   variant = "primary",
   className = "",
@@ -88,7 +88,7 @@ export function AuthButton({
   if (isAuthenticated) {
     return (
       <Link
-        to="/install"
+        to="/dashboard"
         className={`${buttonClass("primary")} ${className}`}
         data-umami-event="Open dashboard"
       >

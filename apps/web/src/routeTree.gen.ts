@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BrandRouteImport } from './routes/brand'
 import { Route as ChangelogRouteImport } from './routes/changelog'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ImageDiffRouteImport } from './routes/image-diff'
 import { Route as InstallRouteImport } from './routes/install'
@@ -56,6 +57,11 @@ const BrandRoute = BrandRouteImport.update({
 const ChangelogRoute = ChangelogRouteImport.update({
   id: '/changelog',
   path: '/changelog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsRoute = DocsRouteImport.update({
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/brand': typeof BrandRoute
   '/changelog': typeof ChangelogRoute
+  '/dashboard': typeof DashboardRoute
   '/docs': typeof DocsRouteWithChildren
   '/image-diff': typeof ImageDiffRoute
   '/install': typeof InstallRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/brand': typeof BrandRoute
   '/changelog': typeof ChangelogRoute
+  '/dashboard': typeof DashboardRoute
   '/image-diff': typeof ImageDiffRoute
   '/install': typeof InstallRoute
   '/pricing': typeof PricingRoute
@@ -285,6 +293,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/brand': typeof BrandRoute
   '/changelog': typeof ChangelogRoute
+  '/dashboard': typeof DashboardRoute
   '/docs': typeof DocsRouteWithChildren
   '/image-diff': typeof ImageDiffRoute
   '/install': typeof InstallRoute
@@ -322,6 +331,7 @@ export interface FileRouteTypes {
     | '/'
     | '/brand'
     | '/changelog'
+    | '/dashboard'
     | '/docs'
     | '/image-diff'
     | '/install'
@@ -357,6 +367,7 @@ export interface FileRouteTypes {
     | '/'
     | '/brand'
     | '/changelog'
+    | '/dashboard'
     | '/image-diff'
     | '/install'
     | '/pricing'
@@ -390,6 +401,7 @@ export interface FileRouteTypes {
     | '/'
     | '/brand'
     | '/changelog'
+    | '/dashboard'
     | '/docs'
     | '/image-diff'
     | '/install'
@@ -426,6 +438,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BrandRoute: typeof BrandRoute
   ChangelogRoute: typeof ChangelogRoute
+  DashboardRoute: typeof DashboardRoute
   DocsRoute: typeof DocsRouteWithChildren
   ImageDiffRoute: typeof ImageDiffRoute
   InstallRoute: typeof InstallRoute
@@ -475,6 +488,13 @@ declare module '@tanstack/react-router' {
       path: '/changelog'
       fullPath: '/changelog'
       preLoaderRoute: typeof ChangelogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs': {
@@ -722,6 +742,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BrandRoute: BrandRoute,
   ChangelogRoute: ChangelogRoute,
+  DashboardRoute: DashboardRoute,
   DocsRoute: DocsRouteWithChildren,
   ImageDiffRoute: ImageDiffRoute,
   InstallRoute: InstallRoute,

@@ -32,7 +32,7 @@ function callbackUrl() {
 function safeRedirect(redirectTo: string) {
   return redirectTo.startsWith("/") && !redirectTo.startsWith("//")
     ? redirectTo
-    : "/install";
+    : "/dashboard";
 }
 
 export const githubAuthorizeUrl = query({
