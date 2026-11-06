@@ -1,6 +1,11 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { memberRole, toStorageUsage, toSubscription } from "./accounts.ts";
+import {
+  findMembership,
+  memberRole,
+  toStorageUsage,
+  toSubscription,
+} from "./accounts.ts";
 import { internal } from "./api.ts";
 import { first } from "./db/index.ts";
 import {
@@ -268,6 +273,33 @@ export const remove = mutation({
   args: { projectId: z.string(), confirmName: z.string() },
   handler: async (ctx, { projectId, confirmName }) => {
     const { project } = await requirePermission(ctx, projectId, "admin");
+    if (confirmName !== project.name) {
+      throw new AppError({ code: "confirm_name_mismatch" });
+    }
+    await ctx.db.delete(projects).where(eq(projects._id, projectId));
+    await ctx.scheduler.runAfter(0, internal.projects.deleteData, {
+      projectId,
+    });
+    return null;
+  },
+});
+
+export const removeArchived = mutation({
+  args: { login: z.string(), projectId: z.string(), confirmName: z.string() },
+  handler: async (ctx, { login, projectId, confirmName }) => {
+    const found = await findMembership(ctx, login);
+    const project = first(
+      await ctx.db.select().from(projects).where(eq(projects._id, projectId)),
+    );
+    if (
+      found === null ||
+      memberRole(found.account, found.user, found.membership) !== "owner" ||
+      project === null ||
+      project.accountId !== found.account._id ||
+      project.archivedAt === null
+    ) {
+      throw new AppError({ code: "not_found" });
+    }
     if (confirmName !== project.name) {
       throw new AppError({ code: "confirm_name_mismatch" });
     }

@@ -1,10 +1,13 @@
-import { LockSimpleIcon } from "@phosphor-icons/react/ssr";
+import { LockSimpleIcon, XIcon } from "@phosphor-icons/react/ssr";
 import { formatGigabytes } from "@stateofpixel/backend/storage";
 import { Link } from "@tanstack/react-router";
-import type { api, FunctionReturnType } from "../lib/backend";
+import { useEffect, useRef, useState } from "react";
+import { api, type FunctionReturnType, useMutation } from "../lib/backend";
+import { errorCode } from "../lib/errorCode";
 import { formatBytes } from "../lib/format";
 import { columnHelper, DataTable } from "./DataTable";
-import { listRowLinkClass } from "./ui";
+import { Field } from "./Settings";
+import { buttonClass, listRowLinkClass } from "./ui";
 
 export type UsageData = NonNullable<FunctionReturnType<typeof api.usage.get>>;
 
@@ -38,9 +41,10 @@ const columns = helper.columns([
     header: "Project",
     cell: ({ row }) =>
       row.original.archived ? (
-        <span className="flex min-w-0 items-center gap-2 text-muted">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-muted">
           <span className="truncate">{row.original.name}</span>
           <span className="text-xs">Archived</span>
+          <DeleteArchivedProject project={row.original} />
         </span>
       ) : (
         <Link
@@ -214,5 +218,124 @@ function DailyChart({
         <span>{formatDay(days[days.length - 1] ?? "")}</span>
       </div>
     </section>
+  );
+}
+
+const INPUT_CLASS =
+  "h-8 w-full rounded-md bg-surface px-2.5 text-sm shadow-[inset_0_0_0_1px_var(--color-field-border)] transition-shadow duration-250 ease-standard outline-none placeholder:text-subtle focus:shadow-field-focus aria-invalid:shadow-[inset_0_0_0_1px_var(--color-rejected)]";
+
+const DELETE_ERRORS: Record<string, string> = {
+  confirm_name_mismatch: "The name does not match.",
+  not_found: "This project is no longer archived or was already deleted.",
+};
+
+function DeleteArchivedProject({ project }: { project: UsageProject }) {
+  const removeArchived = useMutation(api.projects.removeArchived);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [open, setOpen] = useState(false);
+  const [confirmName, setConfirmName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open && !dialog.current?.open) {
+      dialog.current?.showModal();
+    } else if (!open && dialog.current?.open) {
+      dialog.current.close();
+    }
+  }, [open]);
+
+  const close = () => {
+    setOpen(false);
+    setConfirmName("");
+    setError(null);
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        className={buttonClass("danger", "sm")}
+        onClick={() => setOpen(true)}
+      >
+        Delete
+      </button>
+      <dialog
+        ref={dialog}
+        onClose={close}
+        onPointerDown={(event) => {
+          if (event.target === dialog.current) {
+            close();
+          }
+        }}
+        aria-labelledby={`delete-${project.id}-title`}
+        className="m-auto w-[480px] max-w-[calc(100vw-32px)] rounded-lg bg-surface p-0 text-text shadow-menu ring-1 ring-border outline-none backdrop:bg-black/25 open:animate-enter"
+      >
+        <div className="flex h-14 items-center justify-between border-b border-border pr-3 pl-6">
+          <h2
+            id={`delete-${project.id}-title`}
+            className="text-lg font-semibold tracking-[-0.01em]"
+          >
+            Delete {project.name}
+          </h2>
+          <button
+            type="button"
+            aria-label="Close"
+            className={buttonClass("ghost", "icon")}
+            onClick={close}
+          >
+            <XIcon size={16} />
+          </button>
+        </div>
+        <form
+          className="flex flex-col gap-3 px-6 pt-4 pb-6"
+          onSubmit={(event) => {
+            event.preventDefault();
+            removeArchived({
+              login: project.owner,
+              projectId: project.id,
+              confirmName,
+            })
+              .then(close)
+              .catch((reason: unknown) => {
+                const code = errorCode(reason);
+                setError(
+                  (code !== null && DELETE_ERRORS[code]) ||
+                    "Could not delete. Try again.",
+                );
+              });
+          }}
+        >
+          <p className="text-sm text-muted">
+            Deletes every build, review and token of this archived project right
+            away. This cannot be undone.
+          </p>
+          <Field label={`Type ${project.name} to confirm`}>
+            {(id) => (
+              <input
+                id={id}
+                value={confirmName}
+                aria-invalid={error !== null}
+                onChange={(event) => setConfirmName(event.target.value)}
+                className={`${INPUT_CLASS} mono`}
+              />
+            )}
+          </Field>
+          {error && (
+            <p role="alert" className="text-xs text-rejected">
+              {error}
+            </p>
+          )}
+          <div>
+            <button
+              type="submit"
+              className={buttonClass("danger")}
+              disabled={confirmName !== project.name}
+            >
+              Delete project
+            </button>
+          </div>
+        </form>
+      </dialog>
+    </>
   );
 }
