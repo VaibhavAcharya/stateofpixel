@@ -10,7 +10,7 @@ export function track(event: string, data?: EventData) {
   window.umami?.track(event, data);
 }
 
-export const IS_PUBLIC_PATH_SCRIPT = `const publicPaths = ["/", "/brand", "/privacy", "/terms", "/refunds", "/install", "/dashboard"];
+export const IS_PUBLIC_PATH_SCRIPT = `const publicPaths = ["/", "/brand", "/privacy", "/terms", "/refunds", "/install"];
   const publicSections = ["/compare", "/docs"];
   const isPublic = (path) =>
     publicPaths.includes(path) ||
