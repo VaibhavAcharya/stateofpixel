@@ -45,7 +45,7 @@ jobs:
       - run: pnpm --filter @stateofpixel/playground capture
       - run: node packages/cli/dist/index.mjs upload examples/playground/screenshots --build-name playground
       - run: pnpm --filter @stateofpixel/playground build-storybook
-      - run: node packages/cli/dist/index.mjs storybook examples/playground/storybook-static --build-name storybook
+      - run: node packages/cli/dist/index.mjs storybook examples/playground/storybook-static --build-name storybook --device-scale-factor 2
 
   web:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
