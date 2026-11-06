@@ -175,18 +175,6 @@ function OnlyLabel({ browsers }: { browsers: string[] }) {
   );
 }
 
-function UnstableLabel() {
-  return (
-    <span className="shrink-0 rounded-xs bg-surface-2 px-1.5 text-2xs leading-5 font-medium text-muted">
-      unstable
-    </span>
-  );
-}
-
-function isUnstableChange(row: SnapshotRow): boolean {
-  return row.unstable && row.diffStatus === "changed";
-}
-
 function RowLink({
   row,
   selected,
@@ -233,8 +221,7 @@ function rowLabel(row: SnapshotRow, name = row.name) {
     row.diffRatio === null ? "" : `, ${formatPercent(row.diffRatio)}`;
   const review =
     row.reviewState === "none" ? "" : `, ${row.reviewState} review`;
-  const unstable = isUnstableChange(row) ? ", unstable" : "";
-  return `${name}, ${row.diffStatus}${ratio}${review}${unstable}`;
+  return `${name}, ${row.diffStatus}${ratio}${review}`;
 }
 
 function SnapshotRowLink({
@@ -280,7 +267,6 @@ function SnapshotRowLink({
         ) : (
           <SnapshotName name={row.name} className="flex-1" />
         )}
-        {!variant && isUnstableChange(row) && <UnstableLabel />}
         {only !== null && <OnlyLabel browsers={only} />}
         {row.diffRatio !== null && (
           <span className="shrink-0 text-xs text-muted tabular-nums">
@@ -341,7 +327,6 @@ function StoryRows({
             className={`shrink-0 ${tone}`}
           />
           <SnapshotName name={story.name} className="min-w-0 flex-1" />
-          {story.rows.some(isUnstableChange) && <UnstableLabel />}
           {only !== null && <OnlyLabel browsers={only} />}
           {largest !== null && (
             <span className="shrink-0 text-xs text-muted tabular-nums">
