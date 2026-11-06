@@ -51,7 +51,7 @@ npx stateofpixel compare screenshots baseline --threshold 0.2
 
 ## Mark snapshots unstable
 
-When you cannot fix a snapshot yet, mark it unstable so its changes stop blocking the check. Changes to an unstable snapshot are approved automatically. In the build page sidebar they carry an "unstable" tag, and the snapshot says "Approved automatically, marked unstable". New snapshots with a matching name still wait for review.
+When you cannot fix a snapshot yet, mark it unstable so its changes stop blocking the check. Changes to an unstable snapshot are approved automatically. In the build page sidebar they move to a collapsed Unstable group, so the Changed group only lists changes that need a look, and the snapshot says "Approved automatically, marked unstable". New snapshots with a matching name still wait for review.
 
 - On the build page, open a changed snapshot and click **Mark unstable**. It adds the story name, without the browser and width in brackets, so every variant of the story is covered.
 - Under Settings, Diff, **Unstable snapshots** lists one name per line. A line matches a story name or a full snapshot name, and `*` matches any text without `/`, so `Charts/*` covers every story under Charts. Delete a line to make the snapshot need review again in later builds.

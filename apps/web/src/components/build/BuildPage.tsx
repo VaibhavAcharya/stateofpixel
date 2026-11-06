@@ -48,13 +48,22 @@ import {
 } from "./stories";
 import type { Build, SnapshotRow } from "./types";
 
-const GROUPS: { status: DiffStatus; label: string }[] = [
-  { status: "changed", label: "Changed" },
-  { status: "added", label: "Added" },
-  { status: "removed", label: "Removed" },
-  { status: "failed", label: "Failed" },
-  { status: "unchanged", label: "Unchanged" },
+type GroupKey = DiffStatus | "unstable";
+
+type Group = { key: GroupKey; status: DiffStatus; label: string };
+
+const GROUPS: Group[] = [
+  { key: "changed", status: "changed", label: "Changed" },
+  { key: "added", status: "added", label: "Added" },
+  { key: "removed", status: "removed", label: "Removed" },
+  { key: "failed", status: "failed", label: "Failed" },
+  { key: "unstable", status: "changed", label: "Unstable" },
+  { key: "unchanged", status: "unchanged", label: "Unchanged" },
 ];
+
+function isUnstableChange(row: SnapshotRow): boolean {
+  return row.unstable && row.diffStatus === "changed";
+}
 
 const PREFETCH_PENDING = 3;
 const SNAPSHOTS_PER_CALL = 100;
@@ -122,8 +131,8 @@ export function BuildPage({
 }) {
   const [filter, setFilter] = useState("");
   const [browser, setBrowser] = useState<string>();
-  const [collapsed, setCollapsed] = useState<Set<DiffStatus>>(
-    () => new Set(["unchanged"]),
+  const [collapsed, setCollapsed] = useState<Set<GroupKey>>(
+    () => new Set(["unchanged", "unstable"]),
   );
   const [closedStories, setClosedStories] = useState<Set<string>>(
     () => new Set(),
@@ -167,17 +176,28 @@ export function BuildPage({
         (needle === "" || row.name.toLowerCase().includes(needle)) &&
         (activeBrowser === undefined || row.browser === activeBrowser),
     );
-  const groupEntries = (status: DiffStatus) =>
+  const groupRows = (group: Group) =>
+    visible(groups[group.status].results).filter(
+      (row) => isUnstableChange(row) === (group.key === "unstable"),
+    );
+  const unstableCount = groups.changed.results.filter(isUnstableChange).length;
+  const groupCount = (group: Group) =>
+    group.key === "unstable"
+      ? unstableCount
+      : group.key === "changed"
+        ? build.counts.changed - unstableCount
+        : build.counts[group.status];
+  const groupEntries = (group: Group) =>
     someBrowsersFirst(
-      groupStories(visible(groups[status].results)),
+      groupStories(groupRows(group)),
       activeBrowser === undefined ? build.browsers : [],
     );
-  const groupItems = (status: DiffStatus) =>
-    groupEntries(status).map((entry) => entry.item);
+  const groupItems = (group: Group) =>
+    groupEntries(group).map((entry) => entry.item);
   const ordered = GROUPS.flatMap((group) =>
-    collapsed.has(group.status)
+    collapsed.has(group.key)
       ? []
-      : groupItems(group.status).flatMap((item): SnapshotItem[] =>
+      : groupItems(group).flatMap((item): SnapshotItem[] =>
           item.kind === "story" &&
           !closedStories.has(item.key) &&
           !(
@@ -212,20 +232,20 @@ export function BuildPage({
     if (row === undefined) {
       return undefined;
     }
-    return groupItems(row.diffStatus).find(
+    return GROUPS.flatMap(groupItems).find(
       (item) =>
         item.kind === "story" &&
         item.rows.some((storyRow) => storyRow.id === snapshotId),
     );
   };
 
-  const toggleGroup = (status: DiffStatus) =>
+  const toggleGroup = (key: GroupKey) =>
     setCollapsed((value) => {
       const next = new Set(value);
-      if (next.has(status)) {
-        next.delete(status);
+      if (next.has(key)) {
+        next.delete(key);
       } else {
-        next.add(status);
+        next.add(key);
       }
       return next;
     });
@@ -562,38 +582,38 @@ export function BuildPage({
             aria-label="Snapshots"
             className="min-h-0 flex-1 overflow-y-auto px-2 pb-3"
           >
-            {GROUPS.filter((group) => build.counts[group.status] > 0).map(
-              (group) => {
-                const query = groups[group.status];
-                return (
-                  <SnapshotGroup
-                    key={group.status}
-                    status={group.status}
-                    label={group.label}
-                    count={build.counts[group.status]}
-                    open={!collapsed.has(group.status)}
-                    onToggle={() => toggleGroup(group.status)}
-                    entries={groupEntries(group.status)}
-                    closedStories={closedStories}
-                    onToggleStory={toggleStory}
-                    browsers={build.browsers}
-                    loading={query.status === "LoadingFirstPage"}
-                    canLoadMore={query.status === "CanLoadMore"}
-                    onLoadMore={() => query.loadMore(200)}
-                    selectedId={snapshotId}
-                    selectedStory={selectedStory}
-                    linkParams={links ? linkParams : null}
-                    onSelect={(row, story) => {
-                      setListOpen(false);
-                      setSelectedStory(story);
-                      if (!links) {
-                        selectId(row.id);
-                      }
-                    }}
-                  />
-                );
-              },
-            )}
+            {GROUPS.filter((group) => groupCount(group) > 0).map((group) => {
+              const query = groups[group.status];
+              return (
+                <SnapshotGroup
+                  key={group.key}
+                  status={group.status}
+                  label={group.label}
+                  count={groupCount(group)}
+                  open={!collapsed.has(group.key)}
+                  onToggle={() => toggleGroup(group.key)}
+                  entries={groupEntries(group)}
+                  closedStories={closedStories}
+                  onToggleStory={toggleStory}
+                  browsers={build.browsers}
+                  loading={query.status === "LoadingFirstPage"}
+                  canLoadMore={
+                    group.key !== "unstable" && query.status === "CanLoadMore"
+                  }
+                  onLoadMore={() => query.loadMore(200)}
+                  selectedId={snapshotId}
+                  selectedStory={selectedStory}
+                  linkParams={links ? linkParams : null}
+                  onSelect={(row, story) => {
+                    setListOpen(false);
+                    setSelectedStory(story);
+                    if (!links) {
+                      selectId(row.id);
+                    }
+                  }}
+                />
+              );
+            })}
             {!hasSnapshots && (
               <p className="px-2 py-3 text-sm text-muted">
                 {build.status === "pending"
