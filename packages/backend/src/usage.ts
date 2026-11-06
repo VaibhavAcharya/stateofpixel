@@ -5,6 +5,7 @@ import { internal } from "./api.ts";
 import type { Doc, Id } from "./dataModel.ts";
 import { first } from "./db/index.ts";
 import { isKeptBranch } from "./lib/matchesBranch.ts";
+import { allows, readAccess } from "./lib/permissions.ts";
 import {
   accounts,
   builds as buildsTable,
@@ -275,13 +276,12 @@ export const get = query({
   args: { login: z.string(), since: z.string() },
   handler: async (ctx, { login, since }) => {
     const found = await findMembership(ctx, login);
-    if (
-      found === null ||
-      memberRole(found.account, found.user, found.membership) !== "owner"
-    ) {
+    if (found === null) {
       return null;
     }
     const { account } = found;
+    const isOwner =
+      memberRole(account, found.user, found.membership) === "owner";
     const rows = await ctx.db
       .select()
       .from(usageDaily)
@@ -306,6 +306,7 @@ export const get = query({
     }
     const countedOn = rows[rows.length - 1]?.day ?? null;
     const projects = [];
+    const hidden = { projects: 0, baselineBytes: 0, prBytes: 0, diffBytes: 0 };
     for (const row of rows.filter((row) => row.day === countedOn)) {
       const project = first(
         await ctx.db
@@ -313,7 +314,16 @@ export const get = query({
           .from(projectsTable)
           .where(eq(projectsTable._id, row.projectId)),
       );
-      if (project !== null) {
+      if (
+        project !== null &&
+        !isOwner &&
+        !allows(project, await readAccess(ctx, project._id), "read")
+      ) {
+        hidden.projects += 1;
+        hidden.baselineBytes += row.baselineBytes;
+        hidden.prBytes += row.prBytes;
+        hidden.diffBytes += row.diffBytes;
+      } else if (project !== null) {
         projects.push({
           id: project._id,
           name: project.name,
@@ -330,6 +340,8 @@ export const get = query({
       storage: toStorageUsage(account),
       countedOn,
       projects,
+      hidden,
+      canDeleteArchived: isOwner,
       daily: [...daily].map(([day, bytes]) => ({ day, bytes })),
     };
   },

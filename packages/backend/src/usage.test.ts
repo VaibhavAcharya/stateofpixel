@@ -8,6 +8,7 @@ import {
   builds,
   images,
   projects,
+  repoPermissions,
   snapshots,
   usageDaily,
 } from "./schema.ts";
@@ -192,7 +193,7 @@ it("counts storage per project and splits it into baselines, PR-only images and 
   ).toEqual({ a: true, b: false, d: false, e: true, unused: null });
 });
 
-it("shows usage to account owners only", async () => {
+it("shows members the usage of the projects they can read", async () => {
   const { t, userId, membershipId, accountId, projectId } = await setup();
   await t.run(async (ctx) => {
     for (const [day, prBytes] of [
@@ -228,6 +229,8 @@ it("shows usage to account owners only", async () => {
         diffBytes: 1,
       },
     ],
+    hidden: { projects: 0 },
+    canDeleteArchived: true,
     daily: [{ day: "2026-01-01", bytes: 121 }],
   });
 
@@ -239,7 +242,30 @@ it("shows usage to account owners only", async () => {
   );
   expect(
     await owner.query(api.usage.get, { login: "acme", since: "2026-01-01" }),
-  ).toBeNull();
+  ).toMatchObject({
+    storage: { storageBytes: 1111 },
+    projects: [],
+    hidden: { projects: 1, baselineBytes: 100, prBytes: 20, diffBytes: 1 },
+    canDeleteArchived: false,
+    daily: [{ day: "2026-01-01", bytes: 121 }],
+  });
+
+  await t.run((ctx) =>
+    ctx.db.insert(repoPermissions).values({
+      userId,
+      projectId,
+      permission: "read",
+      orgOwner: false,
+      checkedAt: Date.now(),
+      freshness: "fresh",
+    }),
+  );
+  expect(
+    await owner.query(api.usage.get, { login: "acme", since: "2026-01-01" }),
+  ).toMatchObject({
+    projects: [{ name: "web-app" }],
+    hidden: { projects: 0 },
+  });
 });
 
 it("lets account owners delete an archived project", async () => {

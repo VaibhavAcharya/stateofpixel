@@ -22,6 +22,8 @@ const meta = {
     usage: {
       storage: storage("free", 3.2),
       countedOn: daily[daily.length - 1]?.day ?? null,
+      hidden: { projects: 0, baselineBytes: 0, prBytes: 0, diffBytes: 0 },
+      canDeleteArchived: true,
       daily,
       projects: [
         {
@@ -72,6 +74,24 @@ export const NotCountedYet: Story = {
       countedOn: null,
       daily: [],
       projects: [],
+      hidden: { projects: 0, baselineBytes: 0, prBytes: 0, diffBytes: 0 },
+      canDeleteArchived: true,
+    },
+  },
+};
+
+export const Member: Story = {
+  args: {
+    usage: {
+      ...meta.args.usage,
+      projects: meta.args.usage.projects.slice(1),
+      hidden: {
+        projects: 1,
+        baselineBytes: 1400 * MEGABYTE,
+        prBytes: 900 * MEGABYTE,
+        diffBytes: 120 * MEGABYTE,
+      },
+      canDeleteArchived: false,
     },
   },
 };

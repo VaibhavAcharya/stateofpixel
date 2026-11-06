@@ -92,7 +92,7 @@ export function AccountLayout({
           to="/$owner"
           params={{ owner }}
           icon={SquaresFourIcon}
-          label="Projects"
+          label="Overview"
           active={tab === "projects"}
         />
         <Tab
@@ -108,11 +108,6 @@ export function AccountLayout({
           icon={ChartBarIcon}
           label="Usage"
           active={tab === "usage"}
-          disabledReason={
-            home?.role === "member"
-              ? `Only owners of ${owner} on GitHub can see usage.`
-              : undefined
-          }
         />
         <Tab
           to="/$owner/settings/billing"

@@ -3,11 +3,13 @@ import {
   GithubLogoIcon,
   PlusIcon,
 } from "@phosphor-icons/react/ssr";
+import { formatGigabytes } from "@stateofpixel/backend/storage";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { AppHeader } from "../components/AppHeader";
 import { ListToolbar, SearchField } from "../components/ListControls";
 import { Page, PageHeader } from "../components/Page";
+import { PLAN_NAMES } from "../components/PlanBox";
 import { ProjectTable } from "../components/ProjectTable";
 import { RequireAuth } from "../components/RequireAuth";
 import {
@@ -157,20 +159,58 @@ function Accounts() {
       <div className="flex flex-col gap-10">
         {accounts?.map((account) => (
           <section key={account.login}>
-            <div className="mb-2 flex h-8 items-center gap-2.5">
-              <Avatar src={accountAvatar(account.login)} size={20} square />
-              <h2 className="text-sm font-medium">{account.login}</h2>
-              {!account.installed && (
-                <span className="text-xs text-muted">App not installed</span>
-              )}
+            <div className="mb-2 flex min-h-8 flex-wrap items-center gap-x-2.5 gap-y-1">
               <Link
                 to="/$owner"
                 params={{ owner: account.login }}
-                className="ml-auto flex items-center gap-1 text-xs text-muted hover:text-text"
+                className="flex min-w-0 items-center gap-2.5 rounded-sm hover:underline"
               >
-                Overview
-                <ArrowRightIcon size={12} />
+                <Avatar src={accountAvatar(account.login)} size={20} square />
+                <h2 className="truncate text-sm font-medium">
+                  {account.login}
+                </h2>
               </Link>
+              {!account.installed && (
+                <span className="text-xs text-muted">App not installed</span>
+              )}
+              <span className="text-xs text-muted tabular-nums">
+                {PLAN_NAMES[account.plan]} plan ·{" "}
+                {formatGigabytes(account.storage.storageBytes)}
+                {account.plan === "unlimited"
+                  ? " used"
+                  : ` of ${formatGigabytes(account.storage.storageLimitBytes)} used`}
+              </span>
+              <nav className="ml-auto flex items-center gap-4 text-xs text-muted">
+                <Link
+                  to="/$owner/settings/members"
+                  params={{ owner: account.login }}
+                  className="hover:text-text"
+                >
+                  Members
+                </Link>
+                <Link
+                  to="/$owner/settings/usage"
+                  params={{ owner: account.login }}
+                  className="hover:text-text"
+                >
+                  Usage
+                </Link>
+                <Link
+                  to="/$owner/settings/billing"
+                  params={{ owner: account.login }}
+                  className="hover:text-text"
+                >
+                  Billing
+                </Link>
+                <Link
+                  to="/$owner"
+                  params={{ owner: account.login }}
+                  className="flex items-center gap-1 hover:text-text"
+                >
+                  Overview
+                  <ArrowRightIcon size={12} />
+                </Link>
+              </nav>
             </div>
             <ProjectTable
               login={account.login}

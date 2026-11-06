@@ -1,8 +1,10 @@
+import { eq } from "drizzle-orm";
 import { afterEach, expect, it, vi } from "vitest";
-import { api } from "./api.ts";
-import { accountMembers } from "./schema.ts";
+import { api, internal } from "./api.ts";
+import { one } from "./db/index.ts";
+import { accountMembers, accounts } from "./schema.ts";
 import { testBackend } from "./test/backend.ts";
-import { insertAccount, insertUser } from "./test/fixtures.ts";
+import { insertAccount, insertProject, insertUser } from "./test/fixtures.ts";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -119,4 +121,45 @@ it("hides the members of an account from people outside it", async () => {
   await expect(
     stranger.action(api.members.refreshRole, { login: "acme" }),
   ).rejects.toThrow("not_found");
+});
+
+it("lists people who opened a project of the account", async () => {
+  const { t, octocat } = await setup("org");
+  const { reviewerId, projectId } = await t.run(async (ctx) => {
+    const accountId = one(
+      await ctx.db
+        .select({ _id: accounts._id })
+        .from(accounts)
+        .where(eq(accounts.login, "acme")),
+    )._id;
+    return {
+      reviewerId: await insertUser(ctx, {
+        githubUserId: 3,
+        login: "reviewer",
+        lastSeenAt: 2,
+      }),
+      projectId: await insertProject(ctx, accountId),
+    };
+  });
+  const save = (userId: string, permission: "none" | "read") =>
+    t.mutation(internal.permissions.save, {
+      userId,
+      projectId,
+      permission,
+      orgOwner: false,
+    });
+
+  await save(reviewerId, "none");
+  expect(
+    (await octocat.query(api.members.list, { login: "acme" }))?.map(
+      (member) => member.login,
+    ),
+  ).toEqual(["hubot", "octocat"]);
+
+  await save(reviewerId, "read");
+  expect(
+    (await octocat.query(api.members.list, { login: "acme" }))?.find(
+      (member) => member.login === "reviewer",
+    ),
+  ).toMatchObject({ role: "member" });
 });

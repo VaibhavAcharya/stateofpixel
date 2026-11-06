@@ -269,6 +269,11 @@ it("links a signed-in user to their installations", async () => {
       type: "org",
       installed: true,
       plan: "free",
+      storage: {
+        plan: "free",
+        storageBytes: 0,
+        storageLimitBytes: 10 * 1024 ** 3,
+      },
     },
   ]);
   const projects = await user.query(api.accounts.projects, {

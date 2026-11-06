@@ -1,5 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
+import { toStorageUsage } from "./accounts.ts";
 import { internal } from "./api.ts";
 import { githubUserToken } from "./connections.ts";
 import type { Id } from "./dataModel.ts";
@@ -33,6 +34,7 @@ export const accounts = query({
         type: account.type,
         installed: account.installationId !== null,
         plan: account.plan,
+        storage: toStorageUsage(account),
       });
     }
     return result.sort((a, b) => a.login.localeCompare(b.login));

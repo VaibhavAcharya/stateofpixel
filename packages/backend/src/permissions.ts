@@ -15,6 +15,7 @@ import {
   type RepoPermission,
 } from "./lib/permissions.ts";
 import {
+  accountMembers,
   accounts,
   connections,
   projects,
@@ -22,7 +23,13 @@ import {
   repoPermissions,
   users,
 } from "./schema.ts";
-import { AppError, action, internalMutation, internalQuery } from "./server.ts";
+import {
+  AppError,
+  action,
+  internalMutation,
+  internalQuery,
+  type MutationCtx,
+} from "./server.ts";
 
 export const refresh = action({
   args: { projectId: z.string() },
@@ -182,9 +189,51 @@ export const save = internalMutation({
       .update(repoPermissions)
       .set({ freshnessJobId })
       .where(eq(repoPermissions._id, permissionId));
+    if (permission !== "none") {
+      await saveMembership(ctx, userId, projectId, orgOwner);
+    }
     return null;
   },
 });
+
+async function saveMembership(
+  ctx: MutationCtx,
+  userId: string,
+  projectId: string,
+  orgOwner: boolean,
+) {
+  const project = first(
+    await ctx.db
+      .select({ accountId: projects.accountId })
+      .from(projects)
+      .where(eq(projects._id, projectId)),
+  );
+  if (project === null) {
+    return;
+  }
+  const role = orgOwner ? "owner" : "member";
+  const membership = first(
+    await ctx.db
+      .select()
+      .from(accountMembers)
+      .where(
+        and(
+          eq(accountMembers.accountId, project.accountId),
+          eq(accountMembers.userId, userId),
+        ),
+      ),
+  );
+  if (membership === null) {
+    await ctx.db
+      .insert(accountMembers)
+      .values({ accountId: project.accountId, userId, role });
+  } else if (membership.role !== role) {
+    await ctx.db
+      .update(accountMembers)
+      .set({ role })
+      .where(eq(accountMembers._id, membership._id));
+  }
+}
 
 export const age = internalMutation({
   args: {
