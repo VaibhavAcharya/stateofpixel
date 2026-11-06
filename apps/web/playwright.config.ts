@@ -12,13 +12,17 @@ export default defineConfig({
     launchOptions: { args: ["--disable-partial-raster"] },
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "desktop",
+      use: { ...devices["Desktop Chrome"], deviceScaleFactor: 2 },
+    },
     {
       name: "mobile",
       testIgnore: "og.visual.ts",
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 375, height: 800 },
+        deviceScaleFactor: 2,
       },
     },
   ],
