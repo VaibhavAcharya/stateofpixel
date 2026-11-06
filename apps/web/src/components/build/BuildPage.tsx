@@ -649,6 +649,7 @@ export function BuildPage({
             <NoSelection
               build={build}
               waiting={firstId === undefined && build.status !== "pending"}
+              unstableCount={unstableCount}
               onOpenList={() => setListOpen(true)}
             />
           ) : (
@@ -705,10 +706,12 @@ export function BuildPage({
 function NoSelection({
   build,
   waiting,
+  unstableCount,
   onOpenList,
 }: {
   build: Build;
   waiting: boolean;
+  unstableCount: number;
   onOpenList: () => void;
 }) {
   if (build.status === "pending") {
@@ -721,10 +724,19 @@ function NoSelection({
       </div>
     );
   }
-  if (waiting && build.counts.changed + build.counts.added === 0) {
+  if (
+    waiting &&
+    build.counts.changed - unstableCount + build.counts.added === 0
+  ) {
     return (
       <div className="flex flex-1 flex-col items-start gap-6 overflow-y-auto p-8 max-sm:p-4">
-        {build.counts.unchanged === 0 ? (
+        {unstableCount > 0 ? (
+          <LeadCopy title="Nothing to review.">
+            {unstableCount === 1
+              ? "The only change is in a snapshot marked unstable, so it is approved automatically."
+              : `All ${formatCount(unstableCount)} changes are in snapshots marked unstable, so they are approved automatically.`}
+          </LeadCopy>
+        ) : build.counts.unchanged === 0 ? (
           <LeadCopy title="No snapshots.">
             {build.status === "expired"
               ? "The upload never finished, so there is nothing to compare."

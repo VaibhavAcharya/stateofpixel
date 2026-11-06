@@ -36,7 +36,11 @@ const UNSTABLE = {
   unstable: true,
 };
 
-function fixture(browsers: string[], unstable: boolean): BuildFixture {
+function fixture(
+  browsers: string[],
+  unstable: boolean,
+  changes: boolean,
+): BuildFixture {
   return {
     build: {
       number: 412,
@@ -58,9 +62,12 @@ function fixture(browsers: string[], unstable: boolean): BuildFixture {
       mergedPr: null,
     },
     snapshots: browsers.flatMap((browser) =>
-      [...(unstable ? [UNSTABLE] : []), ...SNAPSHOTS].map((snapshot) =>
-        inBrowser(snapshot, browser, 1280),
-      ),
+      [
+        ...(unstable ? [UNSTABLE] : []),
+        ...SNAPSHOTS.filter(
+          (snapshot) => changes || snapshot.diffStatus === "unchanged",
+        ),
+      ].map((snapshot) => inBrowser(snapshot, browser, 1280)),
     ),
     reviewer: "octocat",
   };
@@ -69,11 +76,13 @@ function fixture(browsers: string[], unstable: boolean): BuildFixture {
 function StoryBuild({
   browsers,
   unstable = false,
+  changes = true,
 }: {
   browsers: string[];
   unstable?: boolean;
+  changes?: boolean;
 }) {
-  const [buildFixture] = useState(() => fixture(browsers, unstable));
+  const [buildFixture] = useState(() => fixture(browsers, unstable, changes));
   const { build, data } = useFixtureBuild(buildFixture);
   const [snapshotId, setSnapshotId] = useState<string>();
   return (
@@ -147,4 +156,8 @@ export const UnstableOpen: Story = {
       within(canvasElement).getByRole("button", { name: /Unstable/ }),
     );
   },
+};
+
+export const OnlyUnstableChanges: Story = {
+  args: { unstable: true, changes: false },
 };
