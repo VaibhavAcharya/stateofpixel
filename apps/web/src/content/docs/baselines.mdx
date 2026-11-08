@@ -24,9 +24,9 @@ Builds on your default branch are approved on their own, reviewed or not, and be
 
 Squash, rebase and merge commits all work. After a squash or rebase merge the new commit on the default branch is not a descendant of the pull request, so stateofpixel asks GitHub which pull request it came from. The build page shows "From PR #123" with a link to the pull request's last build, and marks changes that were never approved on that pull request as "not reviewed on PR".
 
-## The Baselines tab
+## The Baselines page
 
-The project's Baselines tab shows the newest approved image of every snapshot on the default branch, per suite. Type in the search box to show the snapshots whose name starts with that text. It matches upper and lower case exactly. With more than one suite, the Suite menu picks one.
+The project's Baselines page, under the project in the sidebar, shows the newest approved image of every snapshot on the default branch, per suite. Type in the search box to show the snapshots whose name starts with that text. It matches upper and lower case exactly. With more than one suite, the Suite menu picks one.
 
 Open a snapshot to see its history: up to 50 builds on the default branch where its image changed, from the last 100 builds of that branch, and who approved each one when that is known. Pick two builds to compare them in the viewer, the older one as the baseline. The two newest are picked when the page opens.
 

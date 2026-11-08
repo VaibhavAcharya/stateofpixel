@@ -1,17 +1,17 @@
-import {
-  ArrowUpRightIcon,
-  GearIcon,
-  ImagesIcon,
-  StackIcon,
-} from "@phosphor-icons/react/ssr";
-import { Link } from "@tanstack/react-router";
-import { Button, Tabs, TabsList, TabsTab } from "uiofcraft";
+import { ArrowUpRightIcon } from "@phosphor-icons/react/ssr";
+import { Button } from "uiofcraft";
 import { api, useQuery } from "../lib/backend";
 import { AccountBanner } from "./AccountBanner";
 import { PageHeader } from "./Page";
-import { ProjectMark, Tooltip } from "./ui";
+import { ProjectMark } from "./ui";
 
 type ProjectTab = "builds" | "baselines" | "settings";
+
+const PROJECT_PAGES: Record<ProjectTab, string> = {
+  builds: "Builds",
+  baselines: "Baselines",
+  settings: "Settings",
+};
 
 export function ProjectHeader({
   owner,
@@ -23,17 +23,13 @@ export function ProjectHeader({
   tab: ProjectTab;
 }) {
   const access = useQuery(api.projects.access, { owner, name: repo });
-  const settingsLocked =
-    access !== undefined &&
-    access !== null &&
-    access.permission !== null &&
-    !access.canWrite;
 
   return (
     <>
       <PageHeader
         leading={<ProjectMark name={`${owner}/${repo}`} size={40} />}
-        title={repo}
+        above={repo}
+        title={PROJECT_PAGES[tab]}
         actions={
           <Button
             variant="outline"
@@ -51,51 +47,6 @@ export function ProjectHeader({
           repo={{ name: repo, canAdmin: access.canAdmin }}
         />
       )}
-      <Tabs value={tab} className="mb-6">
-        <TabsList
-          variant="underline"
-          aria-label="Project"
-          className="w-full justify-start border-b"
-        >
-          <TabsTab
-            value="builds"
-            nativeButton={false}
-            render={<Link to="/$owner/$repo" params={{ owner, repo }} />}
-          >
-            <StackIcon />
-            Builds
-          </TabsTab>
-          <TabsTab
-            value="baselines"
-            nativeButton={false}
-            render={
-              <Link to="/$owner/$repo/baselines" params={{ owner, repo }} />
-            }
-          >
-            <ImagesIcon />
-            Baselines
-          </TabsTab>
-          {settingsLocked ? (
-            <Tooltip label="Only people with write access to this repository on GitHub can change its settings.">
-              <TabsTab value="settings" disabled>
-                <GearIcon />
-                Settings
-              </TabsTab>
-            </Tooltip>
-          ) : (
-            <TabsTab
-              value="settings"
-              nativeButton={false}
-              render={
-                <Link to="/$owner/$repo/settings" params={{ owner, repo }} />
-              }
-            >
-              <GearIcon />
-              Settings
-            </TabsTab>
-          )}
-        </TabsList>
-      </Tabs>
     </>
   );
 }

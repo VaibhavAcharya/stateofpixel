@@ -4,11 +4,14 @@ import {
   ChartBarIcon,
   CheckIcon,
   CreditCardIcon,
+  GearIcon,
+  ImagesIcon,
   MonitorIcon,
   MoonIcon,
   PlusIcon,
   SignOutIcon,
   SquaresFourIcon,
+  StackIcon,
   SunIcon,
   UsersIcon,
 } from "@phosphor-icons/react/ssr";
@@ -37,6 +40,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSkeleton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
@@ -54,7 +60,7 @@ import {
   MenuSeparator,
 } from "./Menu";
 import { PLAN_NAMES } from "./PlanBox";
-import { Avatar, accountAvatar, Logo, ProjectMark } from "./ui";
+import { Avatar, accountAvatar, Logo, ProjectMark, Tooltip } from "./ui";
 
 const SIDEBAR_PROJECTS = 12;
 
@@ -342,7 +348,61 @@ function ProjectItem({
           {formatCount(toReview)}
         </SidebarMenuBadge>
       )}
+      {active && <ProjectPages owner={owner} repo={name} />}
     </SidebarMenuItem>
+  );
+}
+
+const PROJECT_PAGES = [
+  { label: "Builds", icon: StackIcon, to: "/$owner/$repo" },
+  { label: "Baselines", icon: ImagesIcon, to: "/$owner/$repo/baselines" },
+  { label: "Settings", icon: GearIcon, to: "/$owner/$repo/settings" },
+] as const;
+
+function ProjectPages({ owner, repo }: { owner: string; repo: string }) {
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const access = useQuery(api.projects.access, { owner, name: repo });
+  const settingsLocked =
+    access !== undefined &&
+    access !== null &&
+    access.permission !== null &&
+    !access.canWrite;
+  const base = `/${owner}/${repo}`;
+  const current = pathname.startsWith(`${base}/baselines`)
+    ? "Baselines"
+    : pathname === `${base}/settings`
+      ? "Settings"
+      : "Builds";
+  return (
+    <SidebarMenuSub>
+      {PROJECT_PAGES.map(({ label, icon: Icon, to }) => (
+        <SidebarMenuSubItem key={label}>
+          {label === "Settings" && settingsLocked ? (
+            <Tooltip
+              side="right"
+              label="Only people with write access to this repository on GitHub can change its settings."
+            >
+              <SidebarMenuSubButton
+                aria-disabled
+                className="cursor-not-allowed opacity-64"
+                render={<span />}
+              >
+                <Icon />
+                <span>{label}</span>
+              </SidebarMenuSubButton>
+            </Tooltip>
+          ) : (
+            <SidebarMenuSubButton
+              isActive={current === label}
+              render={<Link to={to} params={{ owner, repo }} />}
+            >
+              <Icon />
+              <span>{label}</span>
+            </SidebarMenuSubButton>
+          )}
+        </SidebarMenuSubItem>
+      ))}
+    </SidebarMenuSub>
   );
 }
 

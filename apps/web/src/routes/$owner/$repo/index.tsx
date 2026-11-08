@@ -112,7 +112,7 @@ function ProjectPage() {
   const { owner, repo } = Route.useParams();
   return (
     <RequireAuth redirectTo={`/${owner}/${repo}`}>
-      <AppShell owner={owner} repo={repo}>
+      <AppShell owner={owner} repo={repo} crumb="Builds">
         <Page>
           <ProjectHeader owner={owner} repo={repo} tab="builds" />
           <ProjectBuilds owner={owner} repo={repo} />
