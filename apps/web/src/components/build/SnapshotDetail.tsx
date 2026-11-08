@@ -11,9 +11,14 @@ import {
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
+import {
+  Button,
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "uiofcraft";
 import { formatCount } from "../../lib/format";
 import {
-  buttonClass,
   REVIEW_ICONS,
   RelativeTime,
   type ReviewState,
@@ -188,13 +193,13 @@ export function SnapshotDetail({
                 </Link>
               </>
             ) : (
-              <button
-                type="button"
-                className="text-link"
+              <Button
+                variant="link"
+                className="h-auto border-0 p-0 text-xs font-normal text-link sm:h-auto sm:text-xs"
                 onClick={onMarkUnstable}
               >
                 Mark unstable
-              </button>
+              </Button>
             )}
           </p>
         )}
@@ -354,16 +359,17 @@ function DockButton({
 }) {
   return (
     <Tooltip label={`${tooltip}, press ${keyName}`} align="center">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon"
         aria-label={label}
         aria-pressed={pressed}
         disabled={disabled}
-        className={`${buttonClass("ghost", "icon")} rounded-sm! aria-pressed:bg-accent ${className}`}
+        className={`rounded-sm! aria-pressed:bg-accent ${className}`}
         onClick={onClick}
       >
         {children}
-      </button>
+      </Button>
     </Tooltip>
   );
 }
@@ -439,13 +445,13 @@ function Details({ metadata }: { metadata: Record<string, unknown> }) {
   }
   const Caret = open ? CaretDownIcon : CaretRightIcon;
   return (
-    <footer className="shrink-0 border-t border-border text-xs">
-      <button
-        type="button"
-        aria-expanded={open}
-        className="flex h-8 w-full items-center gap-1.5 px-4 text-muted-foreground hover:text-foreground"
-        onClick={() => setOpen((value) => !value)}
-      >
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      render={<footer />}
+      className="shrink-0 border-t border-border text-xs"
+    >
+      <CollapsibleTrigger className="flex h-8 w-full items-center gap-1.5 px-4 text-muted-foreground hover:text-foreground">
         <Caret size={12} />
         Details
         {!open && (
@@ -455,8 +461,8 @@ function Details({ metadata }: { metadata: Record<string, unknown> }) {
               .join(", ")}
           </span>
         )}
-      </button>
-      {open && (
+      </CollapsibleTrigger>
+      <CollapsiblePanel>
         <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 px-4 pb-3 pl-[34px]">
           {entries.map(([key, value]) => (
             <div key={key} className="contents">
@@ -465,7 +471,7 @@ function Details({ metadata }: { metadata: Record<string, unknown> }) {
             </div>
           ))}
         </dl>
-      )}
-    </footer>
+      </CollapsiblePanel>
+    </Collapsible>
   );
 }

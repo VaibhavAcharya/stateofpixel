@@ -18,6 +18,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { Button, Switch, ToggleGroup, ToggleGroupItem } from "uiofcraft";
 import {
   type CanvasView,
   clampView,
@@ -30,7 +31,6 @@ import {
 } from "../lib/canvasView";
 import { formatCount, formatPercent } from "../lib/format";
 import {
-  buttonClass,
   type DiffStatus,
   DiffStatusPill,
   type Icon,
@@ -258,49 +258,53 @@ function ZoomControls({
   settings: ViewerSettings;
   scale: number;
 }) {
-  const button = `${buttonClass("ghost", "sm")} h-5 w-full rounded-[5px] px-0`;
+  const button = "h-5 w-full rounded-[5px] px-0";
   return (
     <div className="absolute right-2 bottom-2 z-10 flex w-9 flex-col rounded-lg border bg-popover p-0.5 opacity-0 shadow-lg/5 transition-opacity duration-150 group-hover/stage:opacity-100 focus-within:opacity-100 motion-reduce:transition-none pointer-coarse:opacity-100">
       <Tooltip label="Zoom in, press +" side="left" align="center">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           aria-label="Zoom in"
           className={button}
           onClick={() => settings.zoom({ by: ZOOM_STEP })}
         >
           <PlusIcon size={10} weight="bold" />
-        </button>
+        </Button>
       </Tooltip>
       <Tooltip label="Real pixels, press 0" side="left" align="center">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           aria-label={`Zoom ${Math.round(scale * 100)}%, show at 100%`}
           className={`${button} text-[9px] tabular-nums`}
           onClick={() => settings.zoom({ to: 1 })}
         >
           {Math.round(scale * 100)}%
-        </button>
+        </Button>
       </Tooltip>
       <Tooltip label="Zoom out, press -" side="left" align="center">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           aria-label="Zoom out"
           className={button}
           onClick={() => settings.zoom({ by: 1 / ZOOM_STEP })}
         >
           <MinusIcon size={10} weight="bold" />
-        </button>
+        </Button>
       </Tooltip>
       <span aria-hidden className="mx-1 my-0.5 h-px bg-border" />
       <Tooltip label="Fit, press f" side="left" align="center">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           className={`${button} text-[9px]`}
           disabled={settings.view === null}
           onClick={() => settings.setView(null)}
         >
           Fit
-        </button>
+        </Button>
       </Tooltip>
     </div>
   );
@@ -370,6 +374,7 @@ function ModeSwitch({
   settings: ViewerSettings;
   snapshot: ViewerSnapshot;
 }) {
+  const id = useId();
   const option = modeSwitch(settings, snapshot);
   if (option === null) {
     return null;
@@ -378,26 +383,24 @@ function ModeSwitch({
     <>
       <span className="mx-1.5 h-4 w-px bg-border max-sm:hidden" />
       <KeyTooltip label={option.label} keyName={option.key}>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={option.on}
-          onClick={option.toggle}
-          className={`flex h-7 items-center gap-2 rounded-sm px-2 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
+        <label
+          htmlFor={id}
+          className={`flex h-7 cursor-pointer items-center gap-2 rounded-sm px-2 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
             option.on
               ? "text-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <span
-            className={`relative h-4 w-7 shrink-0 rounded-full transition-colors duration-100 ${option.on ? "bg-primary" : "bg-input/60"}`}
-          >
-            <span
-              className={`absolute top-0.5 size-3 rounded-full bg-card transition-[left] duration-100 ${option.on ? "left-3.5" : "left-0.5"}`}
-            />
-          </span>
+          <Switch
+            id={id}
+            nativeButton
+            render={<button type="button" />}
+            checked={option.on}
+            onCheckedChange={option.toggle}
+            className="[--thumb-size:--spacing(3.5)] sm:[--thumb-size:--spacing(3.5)]"
+          />
           {option.label}
-        </button>
+        </label>
       </KeyTooltip>
     </>
   );
@@ -1036,9 +1039,18 @@ function Segmented<Value extends string>({
   onChange: (value: Value) => void;
 }) {
   return (
-    <fieldset aria-label={label} className="flex min-w-0 flex-wrap gap-0.5">
+    <ToggleGroup
+      aria-label={label}
+      value={[value]}
+      onValueChange={(next) => {
+        const picked = options.find((option) => option.value === next[0]);
+        if (picked !== undefined) {
+          onChange(picked.value);
+        }
+      }}
+      className="min-w-0 flex-wrap"
+    >
       {options.map((option) => {
-        const active = option.value === value;
         const OptionIcon = option.icon;
         return (
           <KeyTooltip
@@ -1046,15 +1058,9 @@ function Segmented<Value extends string>({
             label={option.label}
             keyName={option.key}
           >
-            <button
-              type="button"
-              aria-pressed={active}
-              className={`flex h-7 items-center gap-1.5 rounded-sm px-2 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
-                active
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => onChange(option.value)}
+            <ToggleGroupItem
+              value={option.value}
+              className="h-7 gap-1.5 rounded-sm px-2 text-sm text-muted-foreground transition-colors duration-100 hover:bg-transparent hover:text-foreground data-pressed:bg-accent data-pressed:text-foreground"
             >
               {OptionIcon && <OptionIcon size={16} />}
               {option.shortLabel !== undefined ? (
@@ -1065,10 +1071,10 @@ function Segmented<Value extends string>({
               ) : (
                 option.label
               )}
-            </button>
+            </ToggleGroupItem>
           </KeyTooltip>
         );
       })}
-    </fieldset>
+    </ToggleGroup>
   );
 }
