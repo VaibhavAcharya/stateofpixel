@@ -374,7 +374,7 @@ function ProjectPages({ owner, repo }: { owner: string; repo: string }) {
       ? "Settings"
       : "Builds";
   return (
-    <SidebarMenuSub>
+    <SidebarMenuSub className="mr-0 pr-0">
       {PROJECT_PAGES.map(({ label, icon: Icon, to }) => (
         <SidebarMenuSubItem key={label}>
           {label === "Settings" && settingsLocked ? (
