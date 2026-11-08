@@ -32,6 +32,9 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 - The command menu lists only the first 50 projects of an account, so a later project shows "Nothing matches." Search on the server as the user types.
 - The "Jump to" button shows the cmd key on Windows and Linux, where the shortcut is ctrl k.
 - The uiofcraft sidebar saves its state with the Cookie Store API, which logs a rejected promise on every toggle in browsers without it. Fix it in uiofcraft.
+- In the landing demo, "Mark unstable" only approves the snapshot, because the demo fixture's `useMarkUnstable` in `apps/web/src/components/build/fixtureBuild.ts` does nothing.
+- The landing page can fail to hydrate when the demo build's `createdAt` in `fixtureBuild.ts` rounds to a different minute on the server and in the browser.
+- On the review page, shift left and shift right move the Slider divider only when the divider has focus, though the shortcuts dialog lists them with the page shortcuts.
 
 ## Directories
 
