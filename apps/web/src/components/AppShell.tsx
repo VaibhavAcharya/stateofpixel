@@ -16,7 +16,13 @@ import {
   UsersIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { type ReactElement, type ReactNode, useEffect, useRef } from "react";
+import {
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -84,12 +90,14 @@ export function AppShell({
   fullHeight?: boolean;
   children: ReactNode;
 }) {
+  const [open, setOpen] = useState(fullHeight ? false : (sidebarOpen ?? true));
   return (
     <SidebarProvider
-      defaultOpen={fullHeight ? false : (sidebarOpen ?? true)}
-      onOpenChange={(open) => {
+      open={open}
+      onOpenChange={(value) => {
+        setOpen(value);
         if (!fullHeight) {
-          sidebarOpen = open;
+          sidebarOpen = value;
         }
       }}
       className={fullHeight ? "h-dvh overflow-hidden" : undefined}
