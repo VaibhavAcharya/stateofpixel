@@ -48,7 +48,11 @@ export function CommentDialog({
         }
       }}
     >
-      <DialogPopup className="max-w-[480px]" initialFocus={input}>
+      <DialogPopup
+        className="max-w-[480px]"
+        initialFocus={input}
+        finalFocus={false}
+      >
         <DialogHeader>
           <DialogTitle className="min-w-0 truncate pr-8 text-base font-semibold tracking-[-0.01em]">
             Comments on {name}

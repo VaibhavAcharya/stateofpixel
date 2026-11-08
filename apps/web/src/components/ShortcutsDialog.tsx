@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import {
   Dialog,
   DialogHeader,
@@ -52,6 +53,7 @@ export function ShortcutsDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const popup = useRef<HTMLDivElement>(null);
   return (
     <Dialog
       open={open}
@@ -61,7 +63,7 @@ export function ShortcutsDialog({
         }
       }}
     >
-      <DialogPopup className="max-w-[560px]">
+      <DialogPopup ref={popup} className="max-w-[560px]" initialFocus={popup}>
         <DialogHeader>
           <DialogTitle className="text-base font-semibold tracking-[-0.01em]">
             Keyboard shortcuts

@@ -17,9 +17,11 @@ import {
   type ComponentProps,
   type ComponentType,
   type CSSProperties,
+  cloneElement,
   type ReactElement,
   type ReactNode,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -295,17 +297,25 @@ export function Tooltip({
   side = "bottom",
   align = "start",
   className,
+  wrapperClassName = "inline-flex",
   children,
 }: {
   label: string;
   side?: "top" | "bottom" | "left" | "right";
   align?: "start" | "center" | "end";
   className?: string;
-  children: ReactElement;
+  wrapperClassName?: string;
+  children: ReactElement<{ "aria-describedby"?: string }>;
 }) {
+  const id = useId();
   return (
     <TooltipRoot>
-      <TooltipTrigger render={children} />
+      <TooltipTrigger render={<span className={wrapperClassName} />}>
+        {cloneElement(children, { "aria-describedby": id })}
+      </TooltipTrigger>
+      <span id={id} hidden>
+        {label}
+      </span>
       <TooltipPopup side={side} align={align} className={className}>
         {label}
       </TooltipPopup>

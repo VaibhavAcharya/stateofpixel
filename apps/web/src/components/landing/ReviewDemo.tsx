@@ -100,6 +100,7 @@ function DemoRun({
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [active, setActive] = useState(false);
   const root = useRef<HTMLDivElement>(null);
+  const demo = useRef<HTMLElement>(null);
 
   useEffect(() => setSnapshotId(firstSnapshotId()), []);
 
@@ -128,8 +129,10 @@ function DemoRun({
           value={{ open: shortcutsOpen, setOpen: setShortcutsOpen }}
         >
           <section
+            ref={demo}
+            tabIndex={-1}
             aria-label="Interactive review demo"
-            className="relative flex h-[720px] flex-col overflow-hidden rounded-xl border bg-card text-left shadow-xs/5"
+            className="relative flex h-[720px] flex-col overflow-hidden rounded-xl border bg-card text-left shadow-xs/5 outline-none"
           >
             <div inert={!started} className="flex min-h-0 flex-1 flex-col">
               <BuildPage
@@ -143,7 +146,14 @@ function DemoRun({
                 track={demoTrack}
               />
             </div>
-            {!started && <StartOverlay onStart={onStart} />}
+            {!started && (
+              <StartOverlay
+                onStart={() => {
+                  onStart();
+                  demo.current?.focus();
+                }}
+              />
+            )}
           </section>
         </ShortcutsContext.Provider>
       </BuildDataContext.Provider>

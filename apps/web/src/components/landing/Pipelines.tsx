@@ -697,6 +697,24 @@ export function PipelinesSection() {
             variant="underline"
             aria-label="Cases"
             activateOnFocus
+            onKeyDown={(event) => {
+              const step =
+                event.key === "ArrowRight"
+                  ? 1
+                  : event.key === "ArrowLeft"
+                    ? -1
+                    : 0;
+              if (step === 0) {
+                return;
+              }
+              event.preventDefault();
+              const next =
+                (selected + step + SCENARIOS.length) % SCENARIOS.length;
+              setSelected(next);
+              event.currentTarget
+                .querySelectorAll<HTMLElement>('[role="tab"]')
+                [next]?.focus();
+            }}
             className="w-full items-stretch justify-start self-start max-lg:flex-row max-lg:overflow-x-auto max-lg:pb-1"
           >
             {SCENARIOS.map((item, index) => {
@@ -731,7 +749,12 @@ export function PipelinesSection() {
             })}
           </TabsList>
           {SCENARIOS.map((item, index) => (
-            <TabsPanel key={item.title} value={index} className="min-w-0">
+            <TabsPanel
+              key={item.title}
+              value={index}
+              keepMounted
+              className="min-w-0"
+            >
               <ScenarioDetail scenario={item} />
             </TabsPanel>
           ))}

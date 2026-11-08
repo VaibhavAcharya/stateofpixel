@@ -922,7 +922,11 @@ function Faq({ competitor }: { competitor: Competitor }) {
               className="last:border-b"
             >
               <AccordionTrigger>{question}</AccordionTrigger>
-              <AccordionPanel className="max-w-[65ch] pb-5">
+              <AccordionPanel
+                keepMounted
+                hiddenUntilFound
+                className="max-w-[65ch] pb-5"
+              >
                 {answer}
               </AccordionPanel>
             </AccordionItem>

@@ -16,7 +16,7 @@ import {
   UsersIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import type { ReactElement, ReactNode } from "react";
+import { type ReactElement, type ReactNode, useEffect, useRef } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -39,17 +39,19 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSkeleton,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
+  Skeleton,
+  useSidebar,
 } from "uiofcraft";
 import { useAuthActions } from "../lib/auth";
 import { api, usePaginatedQuery, useQuery } from "../lib/backend";
 import { formatCount } from "../lib/format";
+import { isLab } from "../lib/lab";
 import { type Theme, useTheme } from "../lib/theme";
 import {
   Menu,
@@ -63,6 +65,8 @@ import { PLAN_NAMES } from "./PlanBox";
 import { Avatar, accountAvatar, Logo, ProjectMark, Tooltip } from "./ui";
 
 const SIDEBAR_PROJECTS = 12;
+
+let sidebarOpen: boolean | null = null;
 
 export function AppShell({
   owner,
@@ -81,10 +85,16 @@ export function AppShell({
 }) {
   return (
     <SidebarProvider
-      defaultOpen={!fullHeight}
+      defaultOpen={fullHeight ? false : (sidebarOpen ?? true)}
+      onOpenChange={(open) => {
+        if (!fullHeight) {
+          sidebarOpen = open;
+        }
+      }}
       className={fullHeight ? "h-dvh overflow-hidden" : undefined}
     >
       <AppSidebar owner={owner} repo={repo} />
+      <CloseMobileSidebarOnNavigate />
       <SidebarInset
         className={cn(
           "min-w-0",
@@ -109,6 +119,19 @@ export function AppShell({
       </SidebarInset>
     </SidebarProvider>
   );
+}
+
+function CloseMobileSidebarOnNavigate() {
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const { setOpenMobile } = useSidebar();
+  const previous = useRef(pathname);
+  useEffect(() => {
+    if (previous.current !== pathname) {
+      previous.current = pathname;
+      setOpenMobile(false);
+    }
+  }, [pathname, setOpenMobile]);
+  return null;
 }
 
 function AppBreadcrumb({
@@ -168,6 +191,15 @@ function AppBreadcrumb({
         })}
       </BreadcrumbList>
     </Breadcrumb>
+  );
+}
+
+function MenuSkeleton() {
+  return (
+    <div aria-hidden className="flex h-8 items-center gap-2 px-2">
+      <Skeleton className="size-4 rounded-md" />
+      <Skeleton className="h-4 w-2/3" />
+    </div>
   );
 }
 
@@ -272,7 +304,7 @@ function ProjectsGroup({ owner, repo }: { owner: string; repo?: string }) {
           {status === "LoadingFirstPage" &&
             ["a", "b", "c"].map((key) => (
               <SidebarMenuItem key={key}>
-                <SidebarMenuSkeleton showIcon />
+                <MenuSkeleton />
               </SidebarMenuItem>
             ))}
           {projects.map((project) => (
@@ -361,7 +393,10 @@ const PROJECT_PAGES = [
 
 function ProjectPages({ owner, repo }: { owner: string; repo: string }) {
   const pathname = useLocation({ select: (location) => location.pathname });
-  const access = useQuery(api.projects.access, { owner, name: repo });
+  const access = useQuery(
+    api.projects.access,
+    isLab(owner) ? "skip" : { owner, name: repo },
+  );
   const settingsLocked =
     access !== undefined &&
     access !== null &&
@@ -384,8 +419,8 @@ function ProjectPages({ owner, repo }: { owner: string; repo: string }) {
             >
               <SidebarMenuSubButton
                 aria-disabled
-                className="cursor-not-allowed opacity-64"
-                render={<span />}
+                className="aria-disabled:pointer-events-auto cursor-not-allowed opacity-64"
+                render={<button type="button" />}
               >
                 <Icon />
                 <span>{label}</span>
@@ -417,7 +452,7 @@ function AccountsGroup() {
           {accounts === undefined &&
             ["a", "b"].map((key) => (
               <SidebarMenuItem key={key}>
-                <SidebarMenuSkeleton showIcon />
+                <MenuSkeleton />
               </SidebarMenuItem>
             ))}
           {accounts?.map((account) => (

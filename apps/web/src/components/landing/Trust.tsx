@@ -112,7 +112,11 @@ function FaqAccordion({
                 className="last:border-b"
               >
                 <AccordionTrigger>{question}</AccordionTrigger>
-                <AccordionPanel className="max-w-[65ch] pb-5">
+                <AccordionPanel
+                  keepMounted
+                  hiddenUntilFound
+                  className="max-w-[65ch] pb-5"
+                >
                   {ANSWERS.get(question)}
                 </AccordionPanel>
               </AccordionItem>
@@ -305,7 +309,11 @@ function Manifest() {
                 </span>
               </span>
             </AccordionTrigger>
-            <AccordionPanel className="pt-1 pr-3 pb-3 pl-10 text-xs">
+            <AccordionPanel
+              keepMounted
+              hiddenUntilFound
+              className="pt-1 pr-3 pb-3 pl-10 text-xs"
+            >
               {detail}
             </AccordionPanel>
           </AccordionItem>
