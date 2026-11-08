@@ -2,11 +2,14 @@ import {
   ArrowDownIcon,
   ArrowRightIcon,
   CaretDownIcon,
-  EqualsIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { type CSSProperties, Fragment, type ReactNode, useState } from "react";
 import {
+  Accordion,
+  AccordionItem,
+  AccordionPanel,
+  AccordionTrigger,
   Badge,
   Breadcrumb,
   BreadcrumbItem,
@@ -15,6 +18,11 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
   Button,
+  Card,
+  CardFrame,
+  CardFrameAction,
+  CardFrameHeader,
+  CardFrameTitle,
   cn,
   RadioGroupPrimitive,
   RadioPrimitive,
@@ -357,52 +365,6 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: "month", label: "One month" },
 ];
 
-function RailNode({ children }: { children: ReactNode }) {
-  return (
-    <span className="relative flex justify-center max-md:row-span-2 max-md:row-start-1 md:col-start-2 md:row-start-1">
-      <span
-        aria-hidden
-        className="absolute -inset-y-1.5 left-1/2 w-px -translate-x-1/2 bg-border"
-      />
-      <span className="mono relative mt-4 flex size-7 items-center justify-center rounded-full bg-card text-xs text-muted-foreground tabular-nums ring-1 ring-border">
-        {children}
-      </span>
-    </span>
-  );
-}
-
-function StepCell({
-  ours,
-  competitor,
-  children,
-}: {
-  ours: boolean;
-  competitor: Competitor;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      className={`flex min-h-16 flex-wrap items-start gap-x-3 gap-y-1 rounded-xl p-4 text-sm max-md:col-start-2 ${
-        ours
-          ? "border bg-card shadow-xs/5 md:col-start-3 md:row-start-1"
-          : "bg-muted/72 md:col-start-1 md:row-start-1"
-      }`}
-    >
-      <span className="mt-0.5 shrink-0 md:hidden">
-        {ours ? (
-          <Logo size={16} />
-        ) : (
-          <CompetitorLogo competitor={competitor} size={16} />
-        )}
-      </span>
-      {children}
-    </div>
-  );
-}
-
-const RAIL_ROW =
-  "grid grid-cols-[minmax(0,1fr)_56px_minmax(0,1fr)] py-1.5 max-md:grid-cols-[28px_minmax(0,1fr)] max-md:gap-x-3 max-md:gap-y-2";
-
 function FlowSection({ competitor }: { competitor: Competitor }) {
   const [period, setPeriod] = useState<Period>("build");
   const builds = period === "build" ? 1 : DEFAULT_SUITE.builds;
@@ -418,123 +380,151 @@ function FlowSection({ competitor }: { competitor: Competitor }) {
   ];
   return (
     <section className={SECTION}>
-      <div className="flex flex-wrap items-end justify-between gap-6">
-        <LeadCopy title="One build, step by step." className="max-w-[720px]">
-          {DEFAULT_SUITE.screens} stories at {DEFAULT_SUITE.viewports}{" "}
-          viewports, run through {competitor.name} and through stateofpixel.
-        </LeadCopy>
-        <Segmented
-          label="Count for"
-          event="Compare period"
-          options={PERIODS}
-          value={period}
-          onChange={setPeriod}
-        />
-      </div>
-      <div className="mt-12">
-        <div className={`${RAIL_ROW} pb-3 text-sm font-semibold max-md:hidden`}>
-          <span className="flex items-center gap-2">
-            <CompetitorLogo competitor={competitor} size={20} />
-            {competitor.name}
-          </span>
-          <span className="col-start-3 flex items-center gap-2">
-            <Logo size={20} />
-            stateofpixel
-          </span>
-        </div>
-        <ol>
-          {competitor.theirFlow.map((step, index) => (
-            <li key={step} className={RAIL_ROW}>
-              <RailNode>{index + 1}</RailNode>
-              <StepCell ours={false} competitor={competitor}>
-                <span>{step}</span>
-              </StepCell>
-              <StepCell ours competitor={competitor}>
-                <span className="min-w-0 flex-1">{OUR_FLOW[index]}</span>
-                {metrics[index] !== undefined && (
-                  <span
-                    key={period}
-                    className="mono ml-auto animate-fade pt-px text-xs max-md:ml-0 max-md:basis-full max-md:pl-7 whitespace-nowrap text-muted-foreground tabular-nums"
-                  >
-                    {metrics[index]}
-                  </span>
-                )}
-              </StepCell>
-            </li>
-          ))}
-        </ol>
-        <div className={RAIL_ROW}>
-          <RailNode>
-            <EqualsIcon size={12} weight="bold" />
-          </RailNode>
-          <Total
-            ours={false}
-            label={competitor.theirBill}
-            value={count.format(screenshots * builds)}
-            unit="counted"
-            note={
-              period === "month" && theirs?.cost != null
-                ? `${formatPrice(theirs.cost)} a month on ${theirs.plan}`
-                : `Each screenshot in each build`
-            }
+      <LeadCopy title="One build, step by step." className="max-w-[720px]">
+        {DEFAULT_SUITE.screens} stories at {DEFAULT_SUITE.viewports} viewports,
+        run through {competitor.name} and through stateofpixel.
+      </LeadCopy>
+      <CardFrame className="mt-12">
+        <CardFrameHeader className="py-3">
+          <CardFrameTitle>
+            {period === "build"
+              ? "One build"
+              : `One month, ${count.format(builds)} builds`}
+          </CardFrameTitle>
+          <CardFrameAction>
+            <Segmented
+              label="Count for"
+              event="Compare period"
+              options={PERIODS}
+              value={period}
+              onChange={setPeriod}
+            />
+          </CardFrameAction>
+        </CardFrameHeader>
+        <Card className="divide-y overflow-hidden">
+          <Lane
+            name={competitor.name}
+            logo={<CompetitorLogo competitor={competitor} size={28} />}
+            steps={competitor.theirFlow.map((step) => ({ text: step }))}
+            total={{
+              ours: false,
+              label: competitor.theirBill,
+              value: count.format(screenshots * builds),
+              note:
+                period === "month" && theirs?.cost != null
+                  ? `${formatPrice(theirs.cost)} a month on ${theirs.plan}`
+                  : "Each screenshot in each build",
+            }}
           />
-          <Total
-            ours
-            label="Billed per GB stored"
-            value="0"
-            unit="counted"
-            note={
-              period === "month" && ours?.cost != null
-                ? `${formatPrice(ours.cost)} a month on ${ours.plan}`
-                : `${count.format(changed)} changed screenshots and their diffs stored`
-            }
+          <Lane
+            name="stateofpixel"
+            logo={<Logo size={28} />}
+            steps={OUR_FLOW.map((step, index) => ({
+              text: step,
+              metric: metrics[index],
+            }))}
+            total={{
+              ours: true,
+              label: "Billed per GB stored",
+              value: "0",
+              note:
+                period === "month" && ours?.cost != null
+                  ? `${formatPrice(ours.cost)} a month on ${ours.plan}`
+                  : `${count.format(changed)} changed screenshots and their diffs stored`,
+            }}
           />
-        </div>
-      </div>
+        </Card>
+      </CardFrame>
     </section>
   );
 }
 
-function Total({
-  ours,
-  label,
-  value,
-  unit,
-  note,
+function Lane({
+  name,
+  logo,
+  steps,
+  total,
 }: {
-  ours: boolean;
-  label: string;
-  value: string;
-  unit: string;
-  note: string;
+  name: string;
+  logo: ReactNode;
+  steps: { text: string; metric?: string }[];
+  total: { ours: boolean; label: string; value: string; note: string };
 }) {
   return (
     <div
-      className={`flex flex-col gap-1 rounded-xl p-5 max-md:col-start-2 ${
-        ours
-          ? "border bg-card shadow-xs/5 md:col-start-3 md:row-start-1"
-          : "bg-muted/72 md:col-start-1 md:row-start-1"
-      }`}
+      className={cn(
+        "grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-8",
+        !total.ours && "bg-muted/40",
+      )}
     >
-      <Badge
-        variant="secondary"
+      <div className="min-w-0">
+        <p className="flex items-center gap-2.5 font-medium text-sm">
+          <span className="text-foreground">{logo}</span>
+          {name}
+        </p>
+        <ol className="mt-5 grid gap-4 md:grid-cols-4 md:gap-3">
+          {steps.map((step, index) => (
+            <li
+              key={step.text}
+              className="relative flex gap-3 md:flex-col md:gap-3"
+            >
+              <span className="flex items-center md:w-full">
+                <span className="mono relative z-1 flex size-7 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground text-xs tabular-nums">
+                  {index + 1}
+                </span>
+                {index < steps.length - 1 && (
+                  <span
+                    aria-hidden
+                    className="ml-2 h-px flex-1 bg-border max-md:hidden"
+                  />
+                )}
+              </span>
+              <span className="flex min-w-0 flex-col gap-1.5">
+                <span className="text-sm">{step.text}</span>
+                {step.metric !== undefined && (
+                  <span
+                    key={step.metric}
+                    className="mono w-fit animate-fade rounded-xs bg-muted px-1.5 py-0.5 text-muted-foreground text-xs tabular-nums"
+                  >
+                    {step.metric}
+                  </span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div
         className={cn(
-          "w-fit",
-          ours ? "bg-approved-bg text-approved" : "bg-changed-bg text-changed",
+          "flex flex-col gap-1 rounded-xl border p-4 lg:self-stretch",
+          total.ours ? "bg-approved-bg/60" : "bg-card",
         )}
       >
-        {label}
-      </Badge>
-      <span className="mt-3 flex items-baseline gap-2">
-        <span
-          key={value}
-          className={`animate-fade font-heading text-[32px] leading-none font-semibold tracking-[-0.02em] tabular-nums ${ours ? "text-approved" : ""}`}
+        <Badge
+          variant="secondary"
+          className={cn(
+            "w-fit",
+            total.ours
+              ? "bg-approved-bg text-approved"
+              : "bg-changed-bg text-changed",
+          )}
         >
-          {value}
+          {total.label}
+        </Badge>
+        <span className="mt-auto flex items-baseline gap-2 pt-3">
+          <span
+            key={total.value}
+            className={cn(
+              "animate-fade font-heading font-semibold text-4xl leading-none tracking-[-0.02em] tabular-nums",
+              total.ours && "text-approved",
+            )}
+          >
+            {total.value}
+          </span>
+          <span className="text-muted-foreground text-sm">counted</span>
         </span>
-        <span className="text-sm text-muted-foreground">{unit}</span>
-      </span>
-      <span className="text-sm text-muted-foreground">{note}</span>
+        <span className="text-muted-foreground text-sm">{total.note}</span>
+      </div>
     </div>
   );
 }
@@ -924,22 +914,20 @@ function Faq({ competitor }: { competitor: Competitor }) {
         <LeadCopy title="Questions." className="max-w-[360px]">
           What to know before you move from {competitor.name}.
         </LeadCopy>
-        <div className={`border-t ${DOTTED}`}>
+        <Accordion multiple className={`border-t ${DOTTED}`}>
           {competitor.faq.map(([question, answer]) => (
-            <details key={question} className={`group border-b ${DOTTED}`}>
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-sm font-medium [&::-webkit-details-marker]:hidden">
-                {question}
-                <CaretDownIcon
-                  size={14}
-                  className="shrink-0 text-muted-foreground transition-transform duration-180 group-open:rotate-180"
-                />
-              </summary>
-              <p className="max-w-[65ch] pb-5 text-sm text-muted-foreground">
+            <AccordionItem
+              key={question}
+              value={question}
+              className="last:border-b"
+            >
+              <AccordionTrigger>{question}</AccordionTrigger>
+              <AccordionPanel className="max-w-[65ch] pb-5">
                 {answer}
-              </p>
-            </details>
+              </AccordionPanel>
+            </AccordionItem>
           ))}
-        </div>
+        </Accordion>
       </div>
     </section>
   );
