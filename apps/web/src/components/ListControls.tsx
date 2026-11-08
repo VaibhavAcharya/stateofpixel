@@ -1,12 +1,19 @@
 import {
   CaretDownIcon,
-  CheckIcon,
   MagnifyingGlassIcon,
   XIcon,
 } from "@phosphor-icons/react/ssr";
 import { type ReactNode, useEffect, useState } from "react";
-import { Menu, MenuSeparator, menuItemClass, useCloseMenu } from "./Menu";
-import { buttonClass } from "./ui";
+import {
+  Button,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  MenuCheckboxItem,
+  MenuRadioGroup,
+  MenuRadioItem,
+} from "uiofcraft";
+import { Menu, MenuSeparator } from "./Menu";
 
 const SEARCH_DELAY_MS = 200;
 
@@ -36,12 +43,11 @@ export function SearchField({
   }, [draft, value, onChange]);
 
   return (
-    <label className="relative flex w-64 items-center max-sm:w-full">
-      <MagnifyingGlassIcon
-        size={14}
-        className="pointer-events-none absolute left-2.5 text-subtle"
-      />
-      <input
+    <InputGroup className="w-64 max-sm:w-full">
+      <InputGroupAddon>
+        <MagnifyingGlassIcon size={14} />
+      </InputGroupAddon>
+      <InputGroupInput
         type="search"
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
@@ -53,22 +59,23 @@ export function SearchField({
         }}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="h-8 w-full rounded-md bg-surface pr-8 pl-8 text-sm shadow-[inset_0_0_0_1px_var(--color-border)] transition-shadow duration-250 ease-standard outline-none placeholder:text-subtle hover:shadow-[inset_0_0_0_1px_var(--color-field-border)] focus:shadow-field-focus [&::-webkit-search-cancel-button]:hidden"
       />
       {draft !== "" && (
-        <button
-          type="button"
-          aria-label="Clear search"
-          className={`absolute right-1 ${buttonClass("ghost", "icon-sm")}`}
-          onClick={() => {
-            setDraft("");
-            onChange("");
-          }}
-        >
-          <XIcon size={12} />
-        </button>
+        <InputGroupAddon align="inline-end">
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Clear search"
+            onClick={() => {
+              setDraft("");
+              onChange("");
+            }}
+          >
+            <XIcon size={12} />
+          </Button>
+        </InputGroupAddon>
       )}
-    </label>
+    </InputGroup>
   );
 }
 
@@ -86,20 +93,20 @@ export function FilterChip({
   onClear: () => void;
 }) {
   return (
-    <span className="inline-flex h-8 items-center gap-1.5 rounded-md bg-surface pr-1 pl-2.5 text-xs shadow-[inset_0_0_0_1px_var(--color-border)]">
-      <span className="text-muted">{icon}</span>
-      <span className="text-muted">{label}</span>
+    <span className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-input bg-background pr-1 pl-2.5 text-xs shadow-xs/5 sm:h-8 dark:bg-input/32">
+      <span className="text-muted-foreground">{icon}</span>
+      <span className="text-muted-foreground">{label}</span>
       <span className={`max-w-60 truncate ${mono ? "mono" : "font-medium"}`}>
         {value}
       </span>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon-xs"
         aria-label={`Clear ${label.toLowerCase()} filter`}
-        className={buttonClass("ghost", "icon-sm")}
         onClick={onClear}
       >
         <XIcon size={12} />
-      </button>
+      </Button>
     </span>
   );
 }
@@ -120,52 +127,29 @@ export function SelectMenu<Value extends string>({
     <Menu
       label={label}
       width="w-48"
-      triggerClassName={`${buttonClass()} ${value === undefined ? "" : "text-text"}`}
+      triggerRender={<Button variant="outline" />}
+      triggerClassName={value === undefined ? undefined : "text-foreground"}
       trigger={
         <>
-          <span className="text-muted">{label}</span>
+          <span className="text-muted-foreground">{label}</span>
           {current?.label}
-          <CaretDownIcon size={12} className="text-muted" />
+          <CaretDownIcon size={12} className="text-muted-foreground" />
         </>
       }
     >
-      {options.map((option) => (
-        <SelectMenuItem
-          key={option.label}
-          selected={option.value === value}
-          onSelect={() => onChange(option.value)}
-        >
-          {option.label}
-        </SelectMenuItem>
-      ))}
+      <MenuRadioGroup
+        value={current?.label}
+        onValueChange={(selected: string) =>
+          onChange(options.find((option) => option.label === selected)?.value)
+        }
+      >
+        {options.map((option) => (
+          <MenuRadioItem key={option.label} value={option.label} closeOnClick>
+            {option.label}
+          </MenuRadioItem>
+        ))}
+      </MenuRadioGroup>
     </Menu>
-  );
-}
-
-function SelectMenuItem({
-  selected,
-  onSelect,
-  children,
-}: {
-  selected: boolean;
-  onSelect: () => void;
-  children: ReactNode;
-}) {
-  const close = useCloseMenu();
-  return (
-    <button
-      type="button"
-      role="menuitemradio"
-      aria-checked={selected}
-      className={menuItemClass}
-      onClick={() => {
-        onSelect();
-        close();
-      }}
-    >
-      <span className="flex-1">{children}</span>
-      {selected && <CheckIcon size={14} className="text-muted" />}
-    </button>
   );
 }
 
@@ -203,48 +187,44 @@ export function MultiSelectMenu<Value extends string>({
     <Menu
       label={label}
       width="w-64"
-      triggerClassName={`${buttonClass()} max-w-80 text-text`}
+      triggerRender={<Button variant="outline" />}
+      triggerClassName="max-w-80 text-foreground"
       trigger={
         <>
-          <span className="text-muted">{label}</span>
+          <span className="text-muted-foreground">{label}</span>
           <span className="min-w-0 truncate">{summary}</span>
-          <CaretDownIcon size={12} className="shrink-0 text-muted" />
+          <CaretDownIcon size={12} className="shrink-0 text-muted-foreground" />
         </>
       }
     >
-      <button
-        type="button"
-        role="menuitemradio"
-        aria-checked={isDefault}
-        title={defaultLabel}
-        className={menuItemClass}
-        onClick={() => onChange(defaultValues)}
+      <MenuRadioGroup
+        value={isDefault ? "default" : isAll ? "all" : null}
+        onValueChange={(selected: "default" | "all") =>
+          onChange(
+            selected === "default"
+              ? defaultValues
+              : options.map((option) => option.value),
+          )
+        }
       >
-        <span className="min-w-0 flex-1 truncate">{defaultLabel}</span>
-        {isDefault && <CheckIcon size={14} className="shrink-0 text-muted" />}
-      </button>
-      <button
-        type="button"
-        role="menuitemradio"
-        aria-checked={isAll}
-        className={menuItemClass}
-        onClick={() => onChange(options.map((option) => option.value))}
-      >
-        <span className="flex-1">All</span>
-        {isAll && <CheckIcon size={14} className="text-muted" />}
-      </button>
+        <MenuRadioItem
+          value="default"
+          title={defaultLabel}
+          className="grid-cols-[.75rem_minmax(0,1fr)]"
+        >
+          <span className="block truncate">{defaultLabel}</span>
+        </MenuRadioItem>
+        <MenuRadioItem value="all">All</MenuRadioItem>
+      </MenuRadioGroup>
       <MenuSeparator />
       {options.map((option) => {
         const checked = values.includes(option.value);
         return (
-          <button
+          <MenuCheckboxItem
             key={option.value}
-            type="button"
-            role="menuitemcheckbox"
-            aria-checked={checked}
+            checked={checked}
             disabled={checked && values.length === 1}
-            className={`${menuItemClass} disabled:opacity-45`}
-            onClick={() =>
+            onCheckedChange={() =>
               onChange(
                 checked
                   ? values.filter((value) => value !== option.value)
@@ -257,9 +237,8 @@ export function MultiSelectMenu<Value extends string>({
               )
             }
           >
-            <span className="flex-1">{option.label}</span>
-            {checked && <CheckIcon size={14} className="text-muted" />}
-          </button>
+            {option.label}
+          </MenuCheckboxItem>
         );
       })}
     </Menu>

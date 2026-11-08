@@ -1,13 +1,16 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { cn } from "uiofcraft";
 import { type Icon, Tooltip } from "./ui";
 
 const TAB_CLASS =
-  "-mb-px flex h-10 items-center gap-1.5 border-b-2 text-sm transition-colors duration-100";
+  "relative flex h-8.5 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-[calc(--spacing(2.5)-1px)] font-medium text-base outline-none transition-[color,background-color,box-shadow] focus-visible:ring-2 focus-visible:ring-ring sm:h-7.5 sm:text-sm [&_svg]:-mx-0.5 [&_svg]:shrink-0 [&_svg]:opacity-80";
 
 export function Tabs({ children }: { children: ReactNode }) {
   return (
-    <nav className="mb-6 flex gap-5 border-b border-border">{children}</nav>
+    <nav className="mb-6 flex gap-x-0.5 border-b py-1 text-muted-foreground">
+      {children}
+    </nav>
   );
 }
 
@@ -32,7 +35,7 @@ export function Tab({
         <button
           type="button"
           aria-disabled
-          className={`${TAB_CLASS} cursor-not-allowed border-transparent text-muted opacity-45`}
+          className={cn(TAB_CLASS, "cursor-not-allowed opacity-64")}
         >
           <TabIcon size={16} />
           {label}
@@ -45,11 +48,12 @@ export function Tab({
       to={to}
       params={params}
       aria-current={active ? "page" : undefined}
-      className={`${TAB_CLASS} ${
-        active
-          ? "border-accent text-text"
-          : "border-transparent text-muted hover:text-text"
-      }`}
+      className={cn(
+        TAB_CLASS,
+        "hover:bg-accent hover:text-foreground",
+        active &&
+          "text-foreground after:absolute after:inset-x-0 after:-bottom-[calc(--spacing(1)+1px)] after:h-0.5 after:bg-primary",
+      )}
     >
       <TabIcon size={16} />
       {label}

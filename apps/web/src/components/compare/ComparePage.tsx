@@ -6,6 +6,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { type CSSProperties, Fragment, type ReactNode, useState } from "react";
+import { Button } from "uiofcraft";
 import {
   CHECKED,
   COMPETITORS,
@@ -34,7 +35,7 @@ import { CodeBlock, type Snippet } from "../CodeBlock";
 import { DEFAULT_WORKLOAD, formatPrice } from "../landing/Pricing";
 import { DISPLAY, LEAD, PublicPage, SECTION, WIDE } from "../landing/sections";
 import { AuthButton } from "../SignIn";
-import { buttonClass, LeadCopy, Logo } from "../ui";
+import { LeadCopy, Logo } from "../ui";
 import {
   BillLogo,
   CostCalculator,
@@ -42,7 +43,7 @@ import {
   quote,
 } from "./CostCalculator";
 
-const DOTTED = "border-dotted border-field-border/50";
+const DOTTED = "border-border";
 const count = new Intl.NumberFormat("en-US");
 const WORKFLOW = ".github/workflows/visual.yml";
 const CARD_SHADOW = "shadow-[0_8px_32px_#11151a18,0_1px_4px_#11151a0a]";
@@ -155,14 +156,14 @@ export function CompetitorLogo({
 
 function Lockup({ competitor }: { competitor: Competitor }) {
   return (
-    <p className="flex items-center gap-3 text-sm text-muted">
-      <span className="text-text">
+    <p className="flex items-center gap-3 text-sm text-muted-foreground">
+      <span className="text-foreground">
         <Logo size={32} />
       </span>
       <span className="mono text-xs">vs</span>
       <CompetitorLogo competitor={competitor} size={32} />
       <span className="ml-1">
-        <Link to="/compare" className="hover:text-text">
+        <Link to="/compare" className="hover:text-foreground">
           Compare
         </Link>{" "}
         / {competitor.name}
@@ -178,11 +179,11 @@ function BillCard({ competitor }: { competitor: Competitor }) {
   const { snapshots, bills } = quote(DEFAULT_SUITE, [competitor.priced]);
   return (
     <div
-      className={`w-[480px] overflow-hidden rounded-lg bg-surface ring-1 ring-border max-lg:w-full ${CARD_SHADOW}`}
+      className={`w-[480px] overflow-hidden rounded-xl bg-card border shadow-xs/5 max-lg:w-full ${CARD_SHADOW}`}
     >
       <div className="border-b border-border px-5 py-4">
         <p className="text-sm font-semibold">A month of visual tests</p>
-        <p className="text-xs text-muted">
+        <p className="text-xs text-muted-foreground">
           {DEFAULT_SUITE.screens} stories, {DEFAULT_SUITE.viewports} viewports,{" "}
           {DEFAULT_SUITE.builds} builds, {snapshots.toLocaleString("en-US")}{" "}
           screenshots
@@ -194,10 +195,12 @@ function BillCard({ competitor }: { competitor: Competitor }) {
             <BillLogo bill={bill} size={28} />
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-medium">{bill.name}</span>
-              <span className="block text-xs text-muted">{bill.plan}</span>
+              <span className="block text-xs text-muted-foreground">
+                {bill.plan}
+              </span>
             </span>
             <span
-              className={`tabular-nums ${index === 0 ? "text-[36px] leading-none font-semibold tracking-[-0.04em] text-approved" : "text-2xl font-medium text-muted"}`}
+              className={`tabular-nums ${index === 0 ? "text-[36px] leading-none font-semibold tracking-[-0.04em] text-approved" : "text-2xl font-medium text-muted-foreground"}`}
             >
               ${Math.round(bill.cost ?? 0).toLocaleString("en-US")}
             </span>
@@ -206,7 +209,7 @@ function BillCard({ competitor }: { competitor: Competitor }) {
       </ul>
       <a
         href="#cost"
-        className="flex items-center gap-2 border-t border-border bg-bg px-5 py-3 text-xs text-muted hover:text-text"
+        className="flex items-center gap-2 border-t border-border bg-background px-5 py-3 text-xs text-muted-foreground hover:text-foreground"
       >
         Price it for your suite
         <ArrowDownIcon size={12} />
@@ -227,7 +230,7 @@ function StatusCard({
   }
   return (
     <div
-      className={`w-[480px] overflow-hidden rounded-lg bg-surface ring-1 ring-border max-lg:w-full ${CARD_SHADOW}`}
+      className={`w-[480px] overflow-hidden rounded-xl bg-card border shadow-xs/5 max-lg:w-full ${CARD_SHADOW}`}
     >
       <div className="flex items-center gap-3 border-b border-border px-5 py-4">
         <CompetitorLogo competitor={competitor} size={28} />
@@ -239,7 +242,9 @@ function StatusCard({
       <dl className="divide-y divide-border">
         {competitor.status.map((item) => (
           <div key={item.label} className="flex gap-4 px-5 py-4 text-sm">
-            <dt className="w-28 shrink-0 text-muted">{item.label}</dt>
+            <dt className="w-28 shrink-0 text-muted-foreground">
+              {item.label}
+            </dt>
             <dd className="font-medium">
               {item.value}
               <SourceMarks items={[item.source]} sources={sources} />
@@ -268,7 +273,7 @@ function HeroTitle({ competitor }: { competitor: Competitor }) {
         </span>
         a year less than {competitor.name}.
       </h1>
-      <p className="mt-4 text-sm text-muted">
+      <p className="mt-4 text-sm text-muted-foreground">
         For {DEFAULT_SUITE.screens} stories at {DEFAULT_SUITE.viewports}{" "}
         viewports and {DEFAULT_SUITE.builds} builds a month,{" "}
         {snapshots.toLocaleString("en-US")} screenshots.
@@ -294,12 +299,12 @@ function CompareHero({
         <p className={`${LEAD} mt-6 max-w-[640px]`}>{competitor.lead}</p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <AuthButton label="Start free with GitHub" />
-          <a href="#switch" className={buttonClass("secondary")}>
+          <Button variant="outline" render={<a href="#switch" />}>
             See the switch
-            <ArrowDownIcon size={14} className="text-muted" />
-          </a>
+            <ArrowDownIcon size={14} className="text-muted-foreground" />
+          </Button>
         </div>
-        <p className="mt-4 text-xs text-muted">
+        <p className="mt-4 text-xs text-muted-foreground">
           Facts about {competitor.name} checked on {CHECKED}, with{" "}
           <a href="#sources" className="text-link">
             {sources.length} sources
@@ -327,7 +332,7 @@ function RailNode({ children }: { children: ReactNode }) {
         aria-hidden
         className="absolute -inset-y-1.5 left-1/2 w-px -translate-x-1/2 bg-border"
       />
-      <span className="mono relative mt-4 flex size-7 items-center justify-center rounded-full bg-surface text-xs text-muted tabular-nums ring-1 ring-border">
+      <span className="mono relative mt-4 flex size-7 items-center justify-center rounded-full bg-card text-xs text-muted-foreground tabular-nums ring-1 ring-border">
         {children}
       </span>
     </span>
@@ -347,8 +352,8 @@ function StepCell({
     <div
       className={`flex min-h-16 flex-wrap items-start gap-x-3 gap-y-1 rounded-lg p-4 text-sm max-md:col-start-2 ${
         ours
-          ? "bg-surface ring-1 ring-border md:col-start-3 md:row-start-1"
-          : "bg-surface-2 md:col-start-1 md:row-start-1"
+          ? "bg-card ring-1 ring-border md:col-start-3 md:row-start-1"
+          : "bg-muted md:col-start-1 md:row-start-1"
       }`}
     >
       <span className="mt-0.5 shrink-0 md:hidden">
@@ -417,7 +422,7 @@ function FlowSection({ competitor }: { competitor: Competitor }) {
                 {metrics[index] !== undefined && (
                   <span
                     key={period}
-                    className="mono ml-auto animate-fade pt-px text-xs max-md:ml-0 max-md:basis-full max-md:pl-7 whitespace-nowrap text-muted tabular-nums"
+                    className="mono ml-auto animate-fade pt-px text-xs max-md:ml-0 max-md:basis-full max-md:pl-7 whitespace-nowrap text-muted-foreground tabular-nums"
                   >
                     {metrics[index]}
                   </span>
@@ -475,8 +480,8 @@ function Total({
     <div
       className={`flex flex-col gap-1 rounded-lg p-5 max-md:col-start-2 ${
         ours
-          ? "bg-surface ring-1 ring-border md:col-start-3 md:row-start-1"
-          : "bg-surface-2 md:col-start-1 md:row-start-1"
+          ? "bg-card ring-1 ring-border md:col-start-3 md:row-start-1"
+          : "bg-muted md:col-start-1 md:row-start-1"
       }`}
     >
       <span
@@ -491,9 +496,9 @@ function Total({
         >
           {value}
         </span>
-        <span className="text-sm text-muted">{unit}</span>
+        <span className="text-sm text-muted-foreground">{unit}</span>
       </span>
-      <span className="text-sm text-muted">{note}</span>
+      <span className="text-sm text-muted-foreground">{note}</span>
     </div>
   );
 }
@@ -514,7 +519,7 @@ function Segmented<Value extends string>({
   return (
     <fieldset
       aria-label={label}
-      className="flex w-fit max-w-full flex-wrap gap-1 rounded-control bg-surface-2 p-0.5"
+      className="flex w-fit max-w-full flex-wrap gap-1 rounded-control bg-muted p-0.5"
     >
       {options.map((option) => (
         <button
@@ -526,13 +531,13 @@ function Segmented<Value extends string>({
           data-umami-event-value={option.value}
           className={`flex h-7 items-center gap-1.5 rounded-sm px-3 text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
             value === option.value
-              ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
-              : "text-muted hover:text-text"
+              ? "bg-card text-foreground shadow-[inset_0_0_0_1px_var(--color-border)]"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           {option.label}
           {option.count !== undefined && (
-            <span className="mono text-subtle tabular-nums">
+            <span className="mono text-muted-foreground tabular-nums">
               {option.count}
             </span>
           )}
@@ -561,15 +566,15 @@ function Differences({ competitor }: { competitor: Competitor }) {
         {competitor.differences.map(([title, text], index) => (
           <div
             key={title}
-            className="flex flex-col rounded-lg bg-surface p-6 ring-1 ring-border"
+            className="flex flex-col rounded-xl bg-card p-6 border shadow-xs/5"
           >
-            <span className="mono text-xs text-muted tabular-nums">
+            <span className="mono text-xs text-muted-foreground tabular-nums">
               0{index + 1}
             </span>
             <span className="mt-8 text-xl font-semibold tracking-[-0.025em] text-balance">
               {title}
             </span>
-            <span className="mt-3 text-sm text-muted">{text}</span>
+            <span className="mt-3 text-sm text-muted-foreground">{text}</span>
           </div>
         ))}
       </div>
@@ -596,16 +601,20 @@ function ProductShot() {
             {REVIEW_POINTS.map(([title, text]) => (
               <li key={title} className={`border-b ${DOTTED} py-3`}>
                 <span className="font-medium">{title}.</span>
-                <span className="text-muted"> {text}</span>
+                <span className="text-muted-foreground"> {text}</span>
               </li>
             ))}
           </ul>
-          <a href="/#demo" className={`${buttonClass("secondary")} mt-8`}>
+          <Button
+            variant="outline"
+            className="mt-8"
+            render={<a href="/#demo" />}
+          >
             Try the review page
-            <ArrowRightIcon size={14} className="text-muted" />
-          </a>
+            <ArrowRightIcon size={14} className="text-muted-foreground" />
+          </Button>
         </div>
-        <div className="checker rounded-xl p-8 ring-1 ring-border max-md:p-3">
+        <div className="checker rounded-2xl border p-8 max-md:p-3">
           <img
             src="/readme/review-page.png"
             alt="The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in green"
@@ -681,11 +690,11 @@ function GlanceTable({
       >
         <div
           aria-hidden
-          className="col-start-2 row-span-full row-start-1 rounded-lg bg-surface ring-1 ring-border max-md:hidden"
+          className="col-start-2 row-span-full row-start-1 rounded-xl bg-card border shadow-xs/5 max-md:hidden"
         />
         <div
           aria-hidden
-          className="col-start-3 row-span-full row-start-1 rounded-lg bg-surface-2 max-md:hidden"
+          className="col-start-3 row-span-full row-start-1 rounded-lg bg-muted max-md:hidden"
         />
         <ColumnHead column="md:col-start-2">
           <Logo size={24} />
@@ -704,13 +713,13 @@ function GlanceTable({
               <Fragment key={`${view}-${key}`}>
                 <span
                   style={row}
-                  className={`${hidden} relative animate-fade py-5 pr-4 md:col-start-1 md:row-start-(--row) font-medium max-md:pt-8 max-md:pb-3 max-md:text-xs max-md:text-muted md:border-t ${DOTTED}`}
+                  className={`${hidden} relative animate-fade py-5 pr-4 md:col-start-1 md:row-start-(--row) font-medium max-md:pt-8 max-md:pb-3 max-md:text-xs max-md:text-muted-foreground md:border-t ${DOTTED}`}
                 >
                   {LABELS[key]}
                 </span>
                 <span
                   style={row}
-                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 font-medium md:col-start-2 md:row-start-(--row) max-md:rounded-t-lg max-md:bg-surface max-md:px-4 max-md:py-3 max-md:ring-1 max-md:ring-border md:border-t ${DOTTED} md:mx-px`}
+                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 font-medium md:col-start-2 md:row-start-(--row) max-md:rounded-t-lg max-md:bg-card max-md:px-4 max-md:py-3 max-md:ring-1 max-md:ring-border md:border-t ${DOTTED} md:mx-px`}
                 >
                   <span className="mt-0.5 shrink-0 md:hidden">
                     <Logo size={16} />
@@ -719,14 +728,14 @@ function GlanceTable({
                 </span>
                 <span
                   style={row}
-                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 md:col-start-3 md:row-start-(--row) max-md:rounded-b-lg max-md:bg-surface-2 max-md:px-4 max-md:py-3 md:border-t ${DOTTED}`}
+                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 md:col-start-3 md:row-start-(--row) max-md:rounded-b-lg max-md:bg-muted max-md:px-4 max-md:py-3 md:border-t ${DOTTED}`}
                 >
                   <span className="mt-0.5 shrink-0 md:hidden">
                     <CompetitorLogo competitor={competitor} size={16} />
                   </span>
                   <span>
                     {cell === undefined ? (
-                      <span className="text-muted">
+                      <span className="text-muted-foreground">
                         Not found in their docs.
                       </span>
                     ) : (
@@ -743,15 +752,15 @@ function GlanceTable({
         )}
       </div>
       {view !== "all" && (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          className="mt-6 -ml-3"
           onClick={() => setView("all")}
           data-umami-event="Compare show all"
-          className={`${buttonClass("ghost")} mt-6 -ml-3`}
         >
           Show all {ROW_KEYS.length} rows
           <CaretDownIcon size={14} />
-        </button>
+        </Button>
       )}
     </section>
   );
@@ -766,7 +775,7 @@ function ColumnHead({
 }) {
   return (
     <span
-      className={`relative row-start-1 flex items-center gap-3 px-5 pt-5 pb-4 text-base font-semibold max-md:hidden ${column}`}
+      className={`relative row-start-1 flex items-center gap-3 px-5 pt-5 pb-4 text-sm font-semibold max-md:hidden ${column}`}
     >
       {children}
     </span>
@@ -785,11 +794,13 @@ function Ahead({ competitor }: { competitor: Competitor }) {
       </LeadCopy>
       <div className="mt-12 grid grid-cols-2 gap-3 max-md:grid-cols-1">
         {competitor.ahead.map(([title, text]) => (
-          <div key={title} className="flex gap-4 rounded-lg bg-surface-2 p-6">
+          <div key={title} className="flex gap-4 rounded-xl bg-muted/72 p-6">
             <CompetitorLogo competitor={competitor} size={24} />
             <span>
-              <span className="block text-base font-semibold">{title}</span>
-              <span className="mt-1 block text-sm text-muted">{text}</span>
+              <span className="block text-sm font-semibold">{title}</span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                {text}
+              </span>
             </span>
           </div>
         ))}
@@ -817,25 +828,29 @@ function Switch({ competitor }: { competitor: Competitor }) {
       <ol className="mt-12 grid grid-cols-3 gap-8 max-md:grid-cols-1 max-md:gap-4">
         {competitor.switchSteps.map(([title, text], index) => (
           <li key={title} className={`flex gap-4 border-t ${DOTTED} pt-5`}>
-            <span className="mono text-muted tabular-nums">{index + 1}</span>
+            <span className="mono text-muted-foreground tabular-nums">
+              {index + 1}
+            </span>
             <span>
-              <span className="block text-base font-medium">{title}</span>
-              <span className="mt-1 block text-sm text-muted">{text}</span>
+              <span className="block text-sm font-medium">{title}</span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                {text}
+              </span>
             </span>
           </li>
         ))}
       </ol>
       <div className="mt-10 grid grid-cols-2 gap-4 max-lg:grid-cols-1">
         <div className="flex min-w-0 flex-col gap-3">
-          <p className="flex items-center gap-2 text-xs font-medium text-muted">
+          <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <CompetitorLogo competitor={competitor} size={16} />
             Before
           </p>
           <CodeBlock fileName={WORKFLOW} {...snippets.before} />
         </div>
         <div className="flex min-w-0 flex-col gap-3">
-          <p className="flex items-center gap-2 text-xs font-medium text-muted">
-            <span className="text-text">
+          <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <span className="text-foreground">
               <Logo size={16} />
             </span>
             After
@@ -864,14 +879,16 @@ function Faq({ competitor }: { competitor: Competitor }) {
       <div className={`border-t ${DOTTED}`}>
         {competitor.faq.map(([question, answer]) => (
           <details key={question} className={`group border-b ${DOTTED}`}>
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-base font-medium [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-sm font-medium [&::-webkit-details-marker]:hidden">
               {question}
               <CaretDownIcon
                 size={14}
-                className="shrink-0 text-muted transition-transform duration-180 group-open:rotate-180"
+                className="shrink-0 text-muted-foreground transition-transform duration-180 group-open:rotate-180"
               />
             </summary>
-            <p className="max-w-[65ch] pb-5 text-sm text-muted">{answer}</p>
+            <p className="max-w-[65ch] pb-5 text-sm text-muted-foreground">
+              {answer}
+            </p>
           </details>
         ))}
       </div>
@@ -883,7 +900,7 @@ function SourceList({ sources }: { sources: Source[] }) {
   return (
     <section id="sources" className={`${WIDE} scroll-mt-16 pb-24 max-sm:pb-12`}>
       <p className="text-sm font-semibold">Sources</p>
-      <p className="mt-1 text-xs text-muted">
+      <p className="mt-1 text-xs text-muted-foreground">
         Read on {CHECKED}. Prices are list prices before tax. The stateofpixel
         column comes from{" "}
         <Link to="/docs" className="text-link">
@@ -898,7 +915,7 @@ function SourceList({ sources }: { sources: Source[] }) {
             id={`source-${index + 1}`}
             className={`flex scroll-mt-20 gap-3 border-b ${DOTTED} py-2`}
           >
-            <span className="mono w-5 shrink-0 text-muted tabular-nums">
+            <span className="mono w-5 shrink-0 text-muted-foreground tabular-nums">
               {index + 1}
             </span>
             <a href={source.url} className="min-w-0 truncate text-link">
@@ -916,7 +933,7 @@ export function FinalBand({ current }: { current?: Competitor }) {
     (competitor) => competitor.slug !== current?.slug,
   );
   return (
-    <section className="border-t border-border bg-bg">
+    <section className="border-t border-border bg-background">
       <div
         className={`${SECTION} grid grid-cols-2 items-end gap-12 max-lg:grid-cols-1`}
       >
@@ -924,18 +941,22 @@ export function FinalBand({ current }: { current?: Competitor }) {
           <h2 className={DISPLAY}>
             Every pixel, reviewed.
             <br />
-            <span className="text-muted">Nothing ships by surprise.</span>
+            <span className="text-muted-foreground">
+              Nothing ships by surprise.
+            </span>
           </h2>
           <div className="mt-10 flex flex-wrap items-center gap-3">
             <AuthButton label="Start free with GitHub" />
-            <Link to="/docs" className={buttonClass("ghost")}>
+            <Button variant="ghost" render={<Link to="/docs" />}>
               Read the quickstart
-            </Link>
+            </Button>
           </div>
         </div>
         {current !== undefined && (
           <nav aria-label="Other comparisons">
-            <p className="text-xs font-medium text-muted">Other comparisons</p>
+            <p className="text-xs font-medium text-muted-foreground">
+              Other comparisons
+            </p>
             <ul className={`mt-3 border-t ${DOTTED}`}>
               {others.map((competitor) => (
                 <li key={competitor.slug}>
@@ -945,12 +966,12 @@ export function FinalBand({ current }: { current?: Competitor }) {
                     className={`group flex items-center gap-3 border-b ${DOTTED} py-3`}
                   >
                     <CompetitorLogo competitor={competitor} size={24} />
-                    <span className="flex-1 text-base font-medium">
+                    <span className="flex-1 text-sm font-medium">
                       vs {competitor.name}
                     </span>
                     <ArrowRightIcon
                       size={14}
-                      className="text-muted transition-transform duration-100 group-hover:translate-x-0.5"
+                      className="text-muted-foreground transition-transform duration-100 group-hover:translate-x-0.5"
                     />
                   </Link>
                 </li>

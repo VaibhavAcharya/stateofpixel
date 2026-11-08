@@ -101,7 +101,9 @@ export const DeleteArchived: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Delete" }));
     await userEvent.type(
-      canvas.getByLabelText("Type old-site to confirm"),
+      await within(canvasElement.ownerDocument.body).findByLabelText(
+        "Type old-site to confirm",
+      ),
       "old-site",
     );
   },

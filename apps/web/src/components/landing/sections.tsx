@@ -9,6 +9,18 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
+import {
+  Button,
+  Card,
+  CardFrame,
+  CardFrameAction,
+  CardFrameHeader,
+  CardFrameTitle,
+  Tabs,
+  TabsList,
+  TabsPanel,
+  TabsTab,
+} from "uiofcraft";
 import { COMPETITORS } from "../../content/compare";
 import { useAuth } from "../../lib/auth";
 import { SUPPORT_EMAIL } from "../../lib/supportEmail";
@@ -26,13 +38,14 @@ import { buttonClass, type Icon, Kbd, LeadCopy, Wordmark } from "../ui";
 import { CompanyOfCraftMark } from "./CompanyOfCraftMark";
 import { ReviewDemo } from "./ReviewDemo";
 
-export const WIDE = "mx-auto max-w-[1448px] px-6 max-sm:px-4";
-export const SECTION = `${WIDE} py-24 max-sm:py-12`;
-export const LEAD =
-  "text-2xl font-[450] tracking-[-0.035em] text-balance text-muted max-sm:text-xl";
+export const WIDE = "mx-auto w-full max-w-[1416px] px-4 sm:px-6";
+export const SECTION = `${WIDE} py-16 sm:py-24`;
+export const LEAD = "text-pretty text-lg text-muted-foreground";
 
 export const DISPLAY =
-  "text-[clamp(40px,4.6vw,66px)] leading-[1.1] font-semibold tracking-[-0.045em] text-balance";
+  "text-balance font-heading font-semibold text-[clamp(2.25rem,5vw,3.75rem)] leading-[1.02] tracking-[-0.015em]";
+
+export const MUTED_BAND = "bg-muted/80";
 
 /* Header */
 
@@ -51,16 +64,16 @@ const NAV = [
 
 export function HeaderNav() {
   return (
-    <header className="sticky top-0 z-10 bg-surface/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-[1448px] items-center gap-6 px-6 max-sm:px-4">
-        <Link to="/" aria-label="stateofpixel home">
+    <header className="sticky top-0 z-40 w-full bg-sidebar/80 backdrop-blur-sm before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-border/64">
+      <div className={`${WIDE} relative flex h-16 items-center gap-2`}>
+        <Link to="/" aria-label="stateofpixel home" className="pe-4 lg:pe-5">
           <Wordmark />
         </Link>
-        <nav className="flex items-center gap-1 text-sm max-md:hidden">
+        <nav className="flex items-center gap-1 max-lg:hidden">
           {NAV.map(([label, href]) => (
-            <a key={href} href={href} className={buttonClass("ghost")}>
+            <Button key={href} variant="ghost" render={<a href={href} />}>
               {label}
-            </a>
+            </Button>
           ))}
         </nav>
         <HeaderActions />
@@ -81,7 +94,7 @@ function HeaderActions() {
         />
       )}
       <AuthButton label="Start free" />
-      <div className="md:hidden">
+      <div className="lg:hidden">
         <Menu
           label="Menu"
           align="end"
@@ -113,32 +126,33 @@ function MobileNavLink({ href, children }: { href: string; children: string }) {
 
 export function HeroCentered() {
   return (
-    <section className="pixel-texture pb-16">
-      <div className={`${WIDE} pt-24 pb-16 text-center max-sm:pt-12`}>
-        <h1 className="mx-auto max-w-[20ch] text-[clamp(36px,3.6vw,52px)] leading-[1.1] font-semibold tracking-[-0.045em] text-balance">
-          Catch UI regressions{" "}
-          <span className="text-muted">before they merge.</span>
+    <section className="overflow-x-clip pt-10 sm:pt-14">
+      <div
+        className={`${WIDE} flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:items-end lg:gap-10`}
+      >
+        <h1 className="text-balance font-heading font-semibold text-[clamp(2.5rem,5.5vw,4.5rem)] leading-none tracking-[-0.02em] lg:col-span-8">
+          Catch UI regressions before they merge.
         </h1>
-        <p className={`${LEAD} mx-auto mt-6 max-w-[640px]`}>
-          Every pull request gets a visual check. Your CI takes the screenshots,
-          a person approves each change.
-        </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <AuthButton label="Start free with GitHub" />
-          <a
-            href="#pricing"
-            className={buttonClass("secondary")}
-            data-umami-event="Hero see pricing"
-          >
-            See pricing
-            <ArrowRightIcon size={14} className="text-muted" />
-          </a>
+        <div className="flex flex-col items-start gap-5 lg:col-span-4 lg:pb-1.5">
+          <p className={LEAD}>
+            Every pull request gets a visual check. Your CI takes the
+            screenshots, a person approves each change.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <AuthButton label="Start free with GitHub" />
+            <Button
+              variant="outline"
+              render={<a href="#pricing" data-umami-event="Hero see pricing" />}
+            >
+              See pricing
+              <ArrowRightIcon />
+            </Button>
+          </div>
+          <p className="text-muted-foreground text-xs">
+            Free up to {facts.freeStorage}. No card. Playwright, Storybook or
+            any folder of PNGs.
+          </p>
         </div>
-        <p className="mt-4 text-xs text-muted">
-          Free up to {facts.freeStorage}. No card. Playwright, Storybook or any
-          folder of PNGs.
-        </p>
-        <CompanyOfCraftLink className="mx-auto mt-8 w-fit text-xs text-muted" />
       </div>
       <DemoSection />
     </section>
@@ -147,31 +161,27 @@ export function HeroCentered() {
 
 /* Product */
 
-function Checker({ children }: { children: ReactNode }) {
-  return (
-    <div className="checker rounded-xl p-6 ring-1 ring-border max-md:p-3">
-      {children}
-    </div>
-  );
-}
-
 export function DemoSection() {
   return (
-    <section id="demo" className={`${WIDE} scroll-mt-20`}>
-      <Checker>
-        <ReviewDemo />
-      </Checker>
-      <DemoKeys />
-    </section>
+    <div id="demo" className={`${WIDE} mt-10 scroll-mt-20 sm:mt-12`}>
+      <CardFrame className="w-full min-w-0 shadow-[0_32px_64px_-32px] shadow-black/24 dark:shadow-black/64">
+        <CardFrameHeader className="py-3 max-lg:hidden">
+          <CardFrameTitle>Same review page as the app</CardFrameTitle>
+          <CardFrameAction>
+            <DemoKeys />
+          </CardFrameAction>
+        </CardFrameHeader>
+        <Card className="checker min-w-0 overflow-hidden p-6 max-md:p-3">
+          <ReviewDemo />
+        </Card>
+      </CardFrame>
+    </div>
   );
 }
 
 function DemoKeys() {
   return (
-    <p className="mx-auto mt-4 flex w-fit flex-wrap items-center justify-center gap-x-4 gap-y-2 rounded-lg bg-surface px-4 py-2 text-xs text-muted ring-1 ring-border max-lg:hidden">
-      <span className="font-medium text-text">
-        Same review page as the app. Try the keys:
-      </span>
+    <p className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-muted-foreground text-xs">
       <span>
         <Kbd>j</Kbd> <Kbd>k</Kbd> move
       </span>
@@ -243,14 +253,14 @@ const SETUP_TABS = {
   },
   other: {
     label: "Other CI",
-    icon: <GearSixIcon size={14} className="text-muted" />,
+    icon: <GearSixIcon size={14} className="text-muted-foreground" />,
     note: "Create a project token in the project settings and set it as STATEOFPIXEL_TOKEN.",
     slug: "other-ci",
     blocks: [{ file: "ci.sh", snippet: otherCi }],
   },
   local: {
     label: "Local",
-    icon: <TerminalWindowIcon size={14} className="text-muted" />,
+    icon: <TerminalWindowIcon size={14} className="text-muted-foreground" />,
     note: "Compare two folders on your machine and open an HTML report. No account needed.",
     slug: "cli",
     blocks: [{ file: "terminal", snippet: local }],
@@ -290,21 +300,20 @@ export function HowSteps() {
           </LeadCopy>
           <ol className="mt-10 flex flex-col">
             {HOW_STEPS.map(([title, text], index) => (
-              <li
-                key={title}
-                className="flex gap-4 border-t border-dotted border-field-border/50 py-5"
-              >
-                <span className="mono text-muted tabular-nums">
+              <li key={title} className="flex gap-4 border-t py-5">
+                <span className="mono text-muted-foreground tabular-nums">
                   {index + 1}
                 </span>
                 <span>
-                  <span className="text-base font-medium">{title}</span>
-                  <span className="mt-1 block text-sm text-muted">{text}</span>
+                  <span className="text-sm font-medium">{title}</span>
+                  <span className="mt-1 block text-sm text-muted-foreground">
+                    {text}
+                  </span>
                 </span>
               </li>
             ))}
           </ol>
-          <p className="border-t border-dotted border-field-border/50 pt-5 text-sm text-muted">
+          <p className="border-t pt-5 text-sm text-muted-foreground">
             Using a coding agent? The{" "}
             <Link to="/docs" className="text-link">
               quickstart
@@ -312,52 +321,46 @@ export function HowSteps() {
             has a prompt that sets it up for you.
           </p>
         </div>
-        <div className="flex min-w-0 flex-col gap-3 lg:pt-2">
-          <div
-            role="tablist"
-            aria-label="Where it runs"
-            className="flex flex-wrap gap-1 self-start rounded-control bg-surface-2 p-0.5"
-          >
+        <Tabs
+          value={tab}
+          onValueChange={(value) => setTab(value as SetupTabKey)}
+          className="min-w-0 gap-3 lg:pt-2"
+        >
+          <TabsList aria-label="Where it runs" className="flex-wrap">
             {(Object.keys(SETUP_TABS) as SetupTabKey[]).map((value) => (
-              <button
+              <TabsTab
                 key={value}
-                type="button"
-                role="tab"
-                aria-selected={tab === value}
+                value={value}
                 data-umami-event="Setup tab"
                 data-umami-event-tab={value}
-                onClick={() => setTab(value)}
-                className={`flex h-7 items-center gap-1.5 rounded-sm px-2.5 text-xs font-medium transition-colors duration-100 ${
-                  tab === value
-                    ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
-                    : "text-muted hover:text-text"
-                }`}
               >
                 {SETUP_TABS[value].icon}
                 {SETUP_TABS[value].label}
-              </button>
+              </TabsTab>
             ))}
-          </div>
-          {current.blocks.map((block) => (
-            <CodeBlock
-              key={block.file}
-              fileName={block.file}
-              {...block.snippet}
-            />
-          ))}
-          <p className="text-xs text-muted">
-            {current.note}{" "}
-            <Link
-              to="/docs/$slug"
-              params={{ slug: current.slug }}
-              className="text-link"
-              data-umami-event="Setup guide"
-              data-umami-event-tab={tab}
-            >
-              Read the {current.label} guide
-            </Link>
-          </p>
-        </div>
+          </TabsList>
+          <TabsPanel value={tab} className="flex min-w-0 flex-col gap-3">
+            {current.blocks.map((block) => (
+              <CodeBlock
+                key={block.file}
+                fileName={block.file}
+                {...block.snippet}
+              />
+            ))}
+            <p className="text-xs text-muted-foreground">
+              {current.note}{" "}
+              <Link
+                to="/docs/$slug"
+                params={{ slug: current.slug }}
+                className="text-link"
+                data-umami-event="Setup guide"
+                data-umami-event-tab={tab}
+              >
+                Read the {current.label} guide
+              </Link>
+            </p>
+          </TabsPanel>
+        </Tabs>
       </div>
     </section>
   );
@@ -397,98 +400,97 @@ const TEAM_FACTS: [Icon, string][] = [
 
 export function TeamSection() {
   return (
-    <section
-      className={`${SECTION} grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-16 max-lg:grid-cols-1 max-lg:gap-10`}
-    >
-      <div>
-        <LeadCopy title="Access follows GitHub." className="max-w-[520px]">
-          There are no invites and no seats. People can do what their role on
-          the repository allows.
-        </LeadCopy>
-        <ul className="mt-10 flex flex-col">
-          {TEAM_FACTS.map(([FactIcon, text]) => (
-            <li
-              key={text}
-              className="flex gap-3 border-t border-dotted border-field-border/50 py-4 text-sm text-muted"
-            >
-              <FactIcon size={16} className="mt-0.5 shrink-0 text-text" />
-              {text}
+    <section className={`${MUTED_BAND} scroll-mt-16`}>
+      <div
+        className={`${SECTION} grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-16 max-lg:grid-cols-1 max-lg:gap-10`}
+      >
+        <div>
+          <LeadCopy title="Access follows GitHub." className="max-w-[520px]">
+            There are no invites and no seats. People can do what their role on
+            the repository allows.
+          </LeadCopy>
+          <ul className="mt-10 flex flex-col">
+            {TEAM_FACTS.map(([FactIcon, text]) => (
+              <li
+                key={text}
+                className="flex gap-3 border-t py-4 text-sm text-muted-foreground"
+              >
+                <FactIcon
+                  size={16}
+                  className="mt-0.5 shrink-0 text-foreground"
+                />
+                {text}
+              </li>
+            ))}
+          </ul>
+          <Link
+            to="/docs/$slug"
+            params={{ slug: "security" }}
+            hash="who-can-see-and-do-what"
+            className="mt-2 inline-flex items-center gap-1 text-sm text-link"
+          >
+            Who can see and do what
+            <ArrowRightIcon size={12} />
+          </Link>
+        </div>
+        <table className="w-full table-fixed text-sm max-sm:hidden">
+          <thead>
+            <tr className="text-left text-xs text-muted-foreground">
+              <th className="w-28 pb-3 font-medium">Role on GitHub</th>
+              {CAPABILITIES.map((capability) => (
+                <th key={capability} className="pb-3 font-medium">
+                  {capability}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ROLES.map(([role, allowed]) => (
+              <tr key={role} className="border-t">
+                <th scope="row" className="py-4 text-left font-medium">
+                  {role}
+                </th>
+                {CAPABILITIES.map((capability, index) => (
+                  <td key={capability} className="py-4">
+                    {index < allowed ? (
+                      <>
+                        <CheckIcon
+                          size={16}
+                          weight="bold"
+                          aria-hidden
+                          className="text-approved"
+                        />
+                        <span className="sr-only">Yes</span>
+                      </>
+                    ) : (
+                      <>
+                        <span aria-hidden className="text-muted-foreground">
+                          -
+                        </span>
+                        <span className="sr-only">No</span>
+                      </>
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <ul className="flex flex-col sm:hidden">
+          {ROLES.map(([role, allowed]) => (
+            <li key={role} className="border-t py-4">
+              <span className="block text-sm font-medium">{role}</span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                {CAPABILITIES.slice(0, allowed)
+                  .map((capability, index) =>
+                    index === 0 ? capability : capability.toLowerCase(),
+                  )
+                  .join(", ")}
+              </span>
             </li>
           ))}
         </ul>
-        <Link
-          to="/docs/$slug"
-          params={{ slug: "security" }}
-          hash="who-can-see-and-do-what"
-          className="mt-2 inline-flex items-center gap-1 text-sm text-link"
-        >
-          Who can see and do what
-          <ArrowRightIcon size={12} />
-        </Link>
       </div>
-      <table className="w-full table-fixed text-sm max-sm:hidden">
-        <thead>
-          <tr className="text-left text-xs text-muted">
-            <th className="w-28 pb-3 font-medium">Role on GitHub</th>
-            {CAPABILITIES.map((capability) => (
-              <th key={capability} className="pb-3 font-medium">
-                {capability}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {ROLES.map(([role, allowed]) => (
-            <tr
-              key={role}
-              className="border-t border-dotted border-field-border/50"
-            >
-              <th scope="row" className="py-4 text-left font-medium">
-                {role}
-              </th>
-              {CAPABILITIES.map((capability, index) => (
-                <td key={capability} className="py-4">
-                  {index < allowed ? (
-                    <>
-                      <CheckIcon
-                        size={16}
-                        weight="bold"
-                        aria-hidden
-                        className="text-approved"
-                      />
-                      <span className="sr-only">Yes</span>
-                    </>
-                  ) : (
-                    <>
-                      <span aria-hidden className="text-subtle">
-                        -
-                      </span>
-                      <span className="sr-only">No</span>
-                    </>
-                  )}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <ul className="flex flex-col sm:hidden">
-        {ROLES.map(([role, allowed]) => (
-          <li
-            key={role}
-            className="border-t border-dotted border-field-border/50 py-4"
-          >
-            <span className="block text-sm font-medium">{role}</span>
-            <span className="mt-1 block text-sm text-muted">
-              {CAPABILITIES.slice(0, allowed)
-                .map((capability, index) =>
-                  index === 0 ? capability : capability.toLowerCase(),
-                )
-                .join(", ")}
-            </span>
-          </li>
-        ))}
-      </ul>
     </section>
   );
 }
@@ -558,7 +560,7 @@ export const PROMISES: [string, string][] = [
 export function SwitchStrip() {
   return (
     <section className={SECTION}>
-      <div className="flex flex-wrap items-center justify-between gap-8 rounded-xl bg-surface-2 p-8 max-sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-8 rounded-2xl border bg-card p-8 shadow-xs/5 max-sm:p-5">
         <LeadCopy title="Coming from another tool?" className="max-w-[520px]">
           Switch in one pull request. Your first build on the default branch
           becomes the baseline. The{" "}
@@ -574,13 +576,17 @@ export function SwitchStrip() {
         <ul className="flex flex-wrap gap-2">
           {COMPETITORS.map((competitor) => (
             <li key={competitor.slug}>
-              <Link
-                to="/compare/$slug"
-                params={{ slug: competitor.slug }}
-                hash="switch"
-                className={buttonClass("secondary")}
-                data-umami-event="Switch strip"
-                data-umami-event-competitor={competitor.slug}
+              <Button
+                variant="outline"
+                render={
+                  <Link
+                    to="/compare/$slug"
+                    params={{ slug: competitor.slug }}
+                    hash="switch"
+                    data-umami-event="Switch strip"
+                    data-umami-event-competitor={competitor.slug}
+                  />
+                }
               >
                 <img
                   src={competitor.logo}
@@ -591,7 +597,7 @@ export function SwitchStrip() {
                   className="rounded-[22%] ring-1 ring-border"
                 />
                 From {competitor.name}
-              </Link>
+              </Button>
             </li>
           ))}
         </ul>
@@ -651,7 +657,7 @@ export const FAQ: [string, string][] = [
 
 export function FinalStartFree() {
   return (
-    <section className="border-t border-border bg-bg">
+    <section className={MUTED_BAND}>
       <div
         className={`${SECTION} grid grid-cols-2 items-end gap-12 max-lg:grid-cols-1`}
       >
@@ -659,12 +665,12 @@ export function FinalStartFree() {
           <h2 className={DISPLAY}>
             Start free.
             <br />
-            <span className="text-muted">
+            <span className="text-muted-foreground">
               Pay when you pass{" "}
               <span className="whitespace-nowrap">{facts.freeStorage}.</span>
             </span>
           </h2>
-          <ul className="mt-8 flex flex-col gap-2 text-base">
+          <ul className="mt-8 flex flex-col gap-2 text-sm">
             {[
               "No card to start",
               "No charge for screenshots, builds or reviewers",
@@ -678,15 +684,15 @@ export function FinalStartFree() {
           </ul>
           <div className="mt-10 flex flex-wrap items-center gap-3">
             <AuthButton label="Start free with GitHub" />
-            <Link to="/docs" className={buttonClass("ghost")}>
+            <Button variant="ghost" render={<Link to="/docs" />}>
               Read the quickstart
-            </Link>
+            </Button>
           </div>
-          <p className="mt-4 text-xs text-muted">
+          <p className="mt-4 text-xs text-muted-foreground">
             <a
               href={REPO_URL}
               data-umami-event="GitHub"
-              className="hover:text-text"
+              className="hover:text-foreground"
             >
               Open source, MIT.
             </a>
@@ -742,8 +748,6 @@ const FOOTER_GROUPS: [string, FooterLink[]][] = [
   ["Small free tools", [{ label: "Image diff", to: "/image-diff" }]],
 ];
 
-const DOTTED_LINE = "border-dotted border-field-border/50";
-
 function CompanyOfCraftLink({ className }: { className: string }) {
   return (
     <a
@@ -751,20 +755,20 @@ function CompanyOfCraftLink({ className }: { className: string }) {
       target="_blank"
       rel="noopener"
       data-umami-event="Company of Craft"
-      className={`flex items-center gap-2 text-left hover:text-text ${className}`}
+      className={`flex items-center gap-2 text-left hover:text-foreground ${className}`}
     >
       <CompanyOfCraftMark size={36} />
       <span className="leading-tight">
         A product by
         <br />
-        <span className="text-text">Company of Craft</span>
+        <span className="text-foreground">Company of Craft</span>
       </span>
     </a>
   );
 }
 
 function FooterLinkItem({ link }: { link: FooterLink }) {
-  const className = "text-muted hover:text-text";
+  const className = "hover:text-foreground";
   if ("to" in link) {
     return (
       <Link to={link.to} hash={link.hash} className={className}>
@@ -787,24 +791,24 @@ function FooterLinkItem({ link }: { link: FooterLink }) {
 
 export function Footer() {
   return (
-    <footer className={`border-t ${DOTTED_LINE}`}>
-      <div className="mx-auto max-w-[1448px] px-6 max-sm:px-4">
-        <div className="flex flex-wrap justify-between gap-x-12 gap-y-10 py-12 max-sm:py-10">
+    <footer className="relative border-border/64 border-t bg-muted/32 py-12 text-muted-foreground sm:py-16">
+      <div className={WIDE}>
+        <div className="flex flex-wrap justify-between gap-x-12 gap-y-10 pb-12">
           <div className="flex flex-col gap-3">
-            <Wordmark />
-            <p className="text-sm text-muted">
-              Catch UI regressions before they merge.
-            </p>
-            <CompanyOfCraftLink className="mt-3 text-xs text-muted" />
+            <span className="text-foreground">
+              <Wordmark />
+            </span>
+            <p className="text-sm">Catch UI regressions before they merge.</p>
+            <CompanyOfCraftLink className="mt-3 text-xs" />
           </div>
           <nav
             aria-label="Footer"
-            className="grid grid-cols-4 gap-x-16 gap-y-8 max-md:grid-cols-2 max-md:gap-x-12"
+            className="grid grid-cols-4 gap-x-16 gap-y-10 max-md:grid-cols-2 max-md:gap-x-12"
           >
             {FOOTER_GROUPS.map(([label, links]) => (
-              <div key={label}>
-                <h2 className="text-xs font-medium">{label}</h2>
-                <ul className="mt-3 flex flex-col gap-2 text-sm">
+              <div key={label} className="flex flex-col gap-3">
+                <h2 className="font-medium text-foreground text-sm">{label}</h2>
+                <ul className="flex flex-col gap-2 text-sm">
                   {links.map((link) => (
                     <li key={link.label}>
                       <FooterLinkItem link={link} />
@@ -815,14 +819,12 @@ export function Footer() {
             ))}
           </nav>
         </div>
-        <div
-          className={`flex flex-wrap items-center justify-between gap-3 border-t ${DOTTED_LINE} py-4 text-xs text-muted`}
-        >
+        <div className="flex flex-wrap items-center justify-between gap-3 border-border/64 border-t pt-6 text-xs">
           <span>&copy; 2026 Company of Craft</span>
           <a
             href={`mailto:${SUPPORT_EMAIL}`}
             data-umami-event="Email"
-            className="hover:text-text"
+            className="hover:text-foreground"
           >
             {SUPPORT_EMAIL}
           </a>
@@ -834,9 +836,13 @@ export function Footer() {
 
 export function PublicPage({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-dvh bg-surface">
+    <div className="relative isolate flex min-h-svh flex-col overflow-clip bg-sidebar">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-1/2 z-45 w-full max-w-[1440px] -translate-x-1/2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-border/64 after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border/64 max-[1440px]:hidden"
+      />
       <HeaderNav />
-      <main>{children}</main>
+      <main className="flex-1 bg-background">{children}</main>
       <Footer />
     </div>
   );

@@ -68,7 +68,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M109.00 78.27 L100.00 100.00 L96.74 98.65 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -80,7 +80,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M121.73 91.00 L100.00 100.00 L98.65 96.74 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -92,7 +92,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M121.73 109.00 L100.00 100.00 L101.35 96.74 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -104,7 +104,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M109.00 121.73 L100.00 100.00 L103.26 98.65 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -116,7 +116,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M91.00 121.73 L100.00 100.00 L103.26 101.35 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -128,7 +128,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M78.27 109.00 L100.00 100.00 L101.35 103.26 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -140,7 +140,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M78.27 91.00 L100.00 100.00 L98.65 103.26 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -152,7 +152,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M91.00 78.27 L100.00 100.00 L96.74 101.35 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -164,7 +164,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M123.56 76.44 L100.00 100.00 L95.84 95.84 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -176,7 +176,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M123.56 123.56 L100.00 100.00 L104.16 95.84 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -188,7 +188,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M76.44 123.56 L100.00 100.00 L104.16 104.16 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -200,7 +200,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M76.44 76.44 L100.00 100.00 L95.84 104.16 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -212,7 +212,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M100.00 45.12 L100.00 100.00 L91.18 100.00 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -224,7 +224,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M154.88 100.00 L100.00 100.00 L100.00 91.18 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -236,7 +236,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M100.00 154.88 L100.00 100.00 L108.82 100.00 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -248,7 +248,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
       />
       <path
         d="M45.12 100.00 L100.00 100.00 L100.00 108.82 Z"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
         strokeLinejoin="round"
@@ -257,7 +257,7 @@ export function CompanyOfCraftMark({ size = 16 }: { size?: number }) {
         cx="100"
         cy="100"
         r="2.94"
-        className="fill-bg"
+        className="fill-background"
         stroke="currentColor"
         strokeWidth="1.18"
       />

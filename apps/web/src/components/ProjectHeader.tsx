@@ -5,11 +5,11 @@ import {
   StackIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
+import { Button } from "uiofcraft";
 import { api, useQuery } from "../lib/backend";
 import { AccountBanner } from "./AccountBanner";
 import { PageHeader } from "./Page";
 import { Tab, Tabs } from "./Tabs";
-import { buttonClass } from "./ui";
 
 type ProjectTab = "builds" | "baselines" | "settings";
 
@@ -34,18 +34,22 @@ export function ProjectHeader({
       <PageHeader
         title={repo}
         above={
-          <Link to="/$owner" params={{ owner }} className="hover:text-text">
+          <Link
+            to="/$owner"
+            params={{ owner }}
+            className="hover:text-foreground"
+          >
             {owner}
           </Link>
         }
         actions={
-          <a
-            href={`https://github.com/${owner}/${repo}`}
-            className={buttonClass()}
+          <Button
+            variant="outline"
+            render={<a href={`https://github.com/${owner}/${repo}`} />}
           >
             Repository
-            <ArrowUpRightIcon size={14} className="text-muted" />
-          </a>
+            <ArrowUpRightIcon />
+          </Button>
         }
       />
       {access?.account && (

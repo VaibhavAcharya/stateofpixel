@@ -171,7 +171,7 @@ export function CliOptions({
           <span className="flex flex-col items-start gap-1">
             <Code>{flags}</Code>
             {env !== undefined && (
-              <span className="mono text-xs text-muted">{env}</span>
+              <span className="mono text-xs text-muted-foreground">{env}</span>
             )}
           </span>
         );

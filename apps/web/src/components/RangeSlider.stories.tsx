@@ -7,7 +7,7 @@ function Demo() {
   return (
     <label className="flex w-80 flex-col gap-3 text-sm">
       <span className="flex items-baseline justify-between">
-        <span className="text-muted">Stories or pages</span>
+        <span className="text-muted-foreground">Stories or pages</span>
         <span className="font-medium tabular-nums">{value}</span>
       </span>
       <RangeSlider

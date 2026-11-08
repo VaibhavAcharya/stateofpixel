@@ -12,7 +12,7 @@ import { Logo } from "../ui";
 import { CompetitorLogo, FinalBand } from "./ComparePage";
 import { CostCalculator, DEFAULT_SUITE, quote } from "./CostCalculator";
 
-const DOTTED = "border-dotted border-field-border/50";
+const DOTTED = "border-border";
 
 const PRICED = COMPETITORS.flatMap((competitor) =>
   competitor.priced === null ? [] : [competitor.priced],
@@ -31,7 +31,7 @@ function Facts({ competitor }: { competitor: Competitor }) {
           key={label}
           className={`grid grid-cols-[140px_1fr] gap-4 border-b ${DOTTED} py-3 max-sm:grid-cols-1 max-sm:gap-1`}
         >
-          <dt className="text-muted">{label}</dt>
+          <dt className="text-muted-foreground">{label}</dt>
           <dd>{value}</dd>
         </div>
       ))}
@@ -43,7 +43,7 @@ function CardBill({ priced }: { priced: Priced }) {
   const { snapshots, bills } = quote(DEFAULT_SUITE, [priced]);
   const [ours, theirs] = bills;
   return (
-    <p className="text-sm text-muted">
+    <p className="text-sm text-muted-foreground">
       <span className="font-semibold text-approved tabular-nums">
         {formatPrice(ours?.cost ?? 0)}
       </span>{" "}
@@ -61,7 +61,7 @@ function CompetitorCard({ competitor }: { competitor: Competitor }) {
     <Link
       to="/compare/$slug"
       params={{ slug: competitor.slug }}
-      className="group flex flex-col rounded-xl bg-surface p-8 ring-1 ring-border transition-shadow duration-150 hover:shadow-[0_8px_32px_#11151a14] max-sm:p-5"
+      className="group flex flex-col rounded-2xl bg-card p-8 border shadow-xs/5 transition-shadow duration-150 hover:shadow-[0_8px_32px_#11151a14] max-sm:p-5"
     >
       <span className="flex items-center gap-3">
         <CompetitorLogo competitor={competitor} size={40} />
@@ -74,13 +74,13 @@ function CompetitorCard({ competitor }: { competitor: Competitor }) {
       <span className="mt-8 text-[28px] leading-tight font-semibold tracking-[-0.035em]">
         {competitor.name}
       </span>
-      <span className="mt-2 text-base text-muted text-balance">
+      <span className="mt-2 text-sm text-muted-foreground text-balance">
         {competitor.hook}
       </span>
       <Facts competitor={competitor} />
       <span className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-6">
         {competitor.priced === null ? (
-          <span className="text-sm text-muted">
+          <span className="text-sm text-muted-foreground">
             Move your Storybook in one step.
           </span>
         ) : (
@@ -102,9 +102,9 @@ export function CompareIndex() {
   return (
     <PublicPage>
       <section className={`${WIDE} pt-24 pb-16 max-sm:pt-12`}>
-        <p className="flex items-center gap-2 text-text">
+        <p className="flex items-center gap-2 text-foreground">
           <Logo size={32} />
-          <span className="mono px-1 text-xs text-muted">vs</span>
+          <span className="mono px-1 text-xs text-muted-foreground">vs</span>
           {COMPETITORS.map((competitor) => (
             <CompetitorLogo
               key={competitor.slug}
@@ -122,7 +122,7 @@ export function CompareIndex() {
           wherever you run it. The paid plans bill per screenshot. We bill for
           storage.
         </p>
-        <p className="mt-4 text-xs text-muted">
+        <p className="mt-4 text-xs text-muted-foreground">
           Every fact about them links to its source, checked on {CHECKED}.
         </p>
       </section>

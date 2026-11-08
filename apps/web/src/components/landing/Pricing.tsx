@@ -6,6 +6,12 @@ import {
 } from "@stateofpixel/backend/limits";
 import { PLAN_STORAGE_LIMIT_BYTES } from "@stateofpixel/backend/storage";
 import { useState } from "react";
+import {
+  RadioGroupPrimitive,
+  RadioPrimitive,
+  SegmentedControl,
+  SegmentedControlItem,
+} from "uiofcraft";
 import { api, useQuery } from "../../lib/backend";
 import { ARGOS, CHROMATIC, cheapestPlan } from "../../lib/competitorPricing";
 import { SUPPORT_EMAIL } from "../../lib/supportEmail";
@@ -13,7 +19,7 @@ import type { PaidPlan } from "../../lib/useBilling";
 import { AuthButton } from "../SignIn";
 import { LeadCopy } from "../ui";
 
-const SECTION = "mx-auto max-w-[1448px] px-6 py-24 max-sm:px-4 max-sm:py-12";
+const SECTION = "mx-auto w-full max-w-[1416px] px-4 py-16 sm:px-6 sm:py-24";
 
 const RETENTION_DAYS = DEFAULT_RETENTION_DAYS;
 const YEARLY_DISCOUNT = 0.1;
@@ -118,9 +124,15 @@ function BillingSwitch({
   onChange: (billing: Billing) => void;
 }) {
   return (
-    <fieldset
+    <SegmentedControl
       aria-label="Billing period"
-      className="flex gap-1 self-start rounded-control bg-surface-2 p-0.5"
+      className="self-start"
+      render={
+        <RadioGroupPrimitive
+          value={billing}
+          onValueChange={(value) => onChange(value as Billing)}
+        />
+      }
     >
       {(
         [
@@ -128,23 +140,20 @@ function BillingSwitch({
           ["yearly", `Yearly, save ${YEARLY_DISCOUNT * 100}%`],
         ] as const
       ).map(([value, label]) => (
-        <button
+        <SegmentedControlItem
           key={value}
-          type="button"
-          aria-pressed={billing === value}
-          data-umami-event="Billing period"
-          data-umami-event-period={value}
-          onClick={() => onChange(value)}
-          className={`h-7 rounded-sm px-3 text-xs font-medium transition-colors duration-100 ${
-            billing === value
-              ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
-              : "text-muted hover:text-text"
-          }`}
+          render={
+            <RadioPrimitive.Root
+              value={value}
+              data-umami-event="Billing period"
+              data-umami-event-period={value}
+            />
+          }
         >
           {label}
-        </button>
+        </SegmentedControlItem>
       ))}
-    </fieldset>
+    </SegmentedControl>
   );
 }
 
@@ -161,9 +170,9 @@ function TierCard({
   const price = monthlyPrice(tier, billing);
   return (
     <div
-      className={`flex flex-col rounded-lg bg-surface p-6 ${free ? "pixel-texture col-span-2 max-lg:col-span-3 max-sm:col-span-1" : ""} ring-1 ring-border`}
+      className={`flex flex-col rounded-2xl border bg-card p-6 shadow-xs/5 ${free ? "pixel-texture col-span-2 max-lg:col-span-3 max-sm:col-span-1" : ""}`}
     >
-      <p className="text-base font-semibold">
+      <p className="text-sm font-semibold">
         {free ? "Free" : `${tier.gigabytes} GB`}
         {!free && !available && (
           <span className="ml-2 text-xs font-medium opacity-70">
@@ -171,7 +180,7 @@ function TierCard({
           </span>
         )}
       </p>
-      <p className="mt-4 text-[40px] leading-none font-semibold tracking-[-0.04em] tabular-nums">
+      <p className="mt-4 text-[40px] leading-none font-heading font-semibold tracking-[-0.02em] tabular-nums">
         {formatPrice(price)}
         <span className="text-sm font-normal tracking-normal opacity-70">
           {" "}
@@ -234,7 +243,7 @@ export function PricingPlans() {
             />
           ))}
         </div>
-        <p className="text-sm text-muted">
+        <p className="text-sm text-muted-foreground">
           Need more than {LARGEST_GIGABYTES} GB?{" "}
           <a
             href={`mailto:${SUPPORT_EMAIL}`}

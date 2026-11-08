@@ -35,7 +35,7 @@ function MetaItem({
 }) {
   return (
     <span className="flex min-w-0 items-center gap-1.5" title={label}>
-      <IconComponent size={14} className="shrink-0 text-subtle" />
+      <IconComponent size={14} className="shrink-0 text-muted-foreground" />
       {children}
     </span>
   );
@@ -73,11 +73,11 @@ export function BuildHeader({
     pending + approved + rejected > 0;
 
   return (
-    <header className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-3 border-b border-border bg-surface px-4 py-3">
+    <header className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-3 border-b border-border bg-card px-4 py-3">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex min-w-0 items-center gap-2.5">
-          <Title className="flex min-w-0 items-baseline gap-2 text-lg font-semibold tracking-[-0.01em]">
-            <span className="shrink-0 text-muted tabular-nums">
+          <Title className="flex min-w-0 items-baseline gap-2 text-base font-semibold tracking-[-0.01em]">
+            <span className="shrink-0 text-muted-foreground tabular-nums">
               #{build.number}
             </span>
             <span className="truncate">
@@ -96,14 +96,14 @@ export function BuildHeader({
           {build.superseded && <SupersededPill />}
           <PrStatePill state={build.prState} />
         </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <MetaItem icon={GitBranchIcon} label="Branch">
             <Link
               to="/$owner/$repo"
               params={{ owner, repo }}
               search={{ branch: build.branch }}
               disabled={!links}
-              className="mono truncate text-text [&[href]]:hover:text-link"
+              className="mono truncate text-foreground [&[href]]:hover:text-link"
             >
               {build.branch}
             </Link>
@@ -140,7 +140,7 @@ export function BuildHeader({
                     number: String(build.baseline.number),
                   }}
                   disabled={!links}
-                  className="text-text tabular-nums [&[href]]:hover:text-link"
+                  className="text-foreground tabular-nums [&[href]]:hover:text-link"
                 >
                   #{build.baseline.number}
                 </Link>{" "}
@@ -167,7 +167,7 @@ export function BuildHeader({
         ) : (
           build.status === "finalized" &&
           !canWrite && (
-            <span className="text-xs text-muted">
+            <span className="text-xs text-muted-foreground">
               You need write access on GitHub to review
             </span>
           )
@@ -296,7 +296,7 @@ export function Banners({
     return null;
   }
   return (
-    <div className="flex shrink-0 flex-col gap-2 border-b border-border bg-surface px-4 py-2">
+    <div className="flex shrink-0 flex-col gap-2 border-b border-border bg-card px-4 py-2">
       {banners.map((banner) => (
         <p
           key={banner.key}
@@ -358,18 +358,18 @@ function VerdictSwitch({
       ? value === "approve"
         ? "text-approved"
         : "text-rejected"
-      : `text-muted disabled:text-subtle ${value === "approve" ? "not-disabled:hover:text-approved" : "not-disabled:hover:text-rejected"}`;
+      : `text-muted-foreground disabled:text-muted-foreground ${value === "approve" ? "not-disabled:hover:text-approved" : "not-disabled:hover:text-rejected"}`;
   const canSwitch = (value: "approve" | "reject") =>
     canReview && verdict !== value && (pending > 0 || buildAction !== null);
 
   return (
     <fieldset
       aria-label="Review the whole build"
-      className="relative m-0 grid w-[440px] grid-cols-3 rounded-control border-0 bg-surface-2 p-0.5 max-sm:w-full"
+      className="relative m-0 grid w-[440px] grid-cols-3 rounded-control border-0 bg-muted p-0.5 max-sm:w-full"
     >
       <span
         aria-hidden
-        className="absolute top-0.5 left-0.5 h-7 w-[calc((100%-4px)/3)] rounded-[9px] bg-surface shadow-[inset_0_0_0_1px_var(--color-border)] transition-[translate] duration-200 ease-out-strong motion-reduce:transition-none"
+        className="absolute top-0.5 left-0.5 h-7 w-[calc((100%-4px)/3)] rounded-[9px] bg-card shadow-[inset_0_0_0_1px_var(--color-border)] transition-[translate] duration-200 ease-out-strong motion-reduce:transition-none"
         style={{ translate: `${VERDICT_POSITION[verdict] * 100}% 0` }}
       />
       <Tooltip label="Reject every snapshot left to review, press shift r">
@@ -390,13 +390,14 @@ function VerdictSwitch({
             ? "Return every snapshot to review, press shift u"
             : "Undo the build review, press shift u"
         }
-        className={verdict === "none" ? "hidden" : "left-1/2! -translate-x-1/2"}
+        align="center"
+        className={verdict === "none" ? "hidden" : undefined}
       >
         <button
           type="button"
           disabled={!canReview || verdict === "none"}
           onClick={onUndo}
-          className={`${segment} pb-1 max-sm:text-xs ${verdict === "none" ? "text-text" : "text-muted not-disabled:hover:text-text"}`}
+          className={`${segment} pb-1 max-sm:text-xs ${verdict === "none" ? "text-foreground" : "text-muted-foreground not-disabled:hover:text-foreground"}`}
         >
           {verdict === "none" ? (
             <span className="tabular-nums">
@@ -412,7 +413,7 @@ function VerdictSwitch({
           )}
           <span
             aria-hidden
-            className="absolute inset-x-4 bottom-[3px] flex h-0.5 overflow-hidden rounded-full bg-field-border/30"
+            className="absolute inset-x-4 bottom-[3px] flex h-0.5 overflow-hidden rounded-full bg-input/30"
           >
             <span
               className="bg-rejected transition-[width] duration-250 ease-out-strong"

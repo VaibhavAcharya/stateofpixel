@@ -67,7 +67,7 @@ function StoryDetail({
   };
   return (
     <BuildDataContext.Provider value={data}>
-      <div className="flex h-[720px] flex-col bg-surface">
+      <div className="flex h-[720px] flex-col bg-card">
         <SnapshotDetail
           owner="acme"
           repo="web"

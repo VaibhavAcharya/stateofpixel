@@ -1,9 +1,16 @@
 import { GithubLogoIcon, GoogleLogoIcon } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Alert, AlertDescription, Button, cn } from "uiofcraft";
 import { useAuth, useAuthActions, useGoogleSignIn } from "../lib/auth";
 import { api, callBackend } from "../lib/backend";
-import { buttonClass, Logo, Spinner } from "./ui";
+import { Logo, Spinner } from "./ui";
+
+const BUTTON_VARIANTS = {
+  primary: "default",
+  secondary: "outline",
+  ghost: "ghost",
+} as const;
 
 const PROVIDERS = {
   github: { name: "GitHub", icon: GithubLogoIcon },
@@ -44,11 +51,11 @@ export function SignInButton({
   const { name, icon: Icon } = PROVIDERS[provider];
 
   return (
-    <button
-      type="button"
+    <Button
+      variant={BUTTON_VARIANTS[variant]}
       aria-busy={pending}
       disabled={pending}
-      className={`${buttonClass(variant)} disabled:opacity-100 ${className}`}
+      className={cn("disabled:opacity-100", className)}
       data-umami-event="Sign in"
       data-umami-event-label={label}
       onClick={() => {
@@ -62,7 +69,7 @@ export function SignInButton({
         variant !== "ghost" && <Icon size={16} weight="fill" />
       )}
       {pending ? `Opening ${name}` : label}
-    </button>
+    </Button>
   );
 }
 
@@ -76,24 +83,25 @@ export function AuthButton({
   const { isLoading, isAuthenticated } = useAuth();
   if (isLoading) {
     return (
-      <span
+      <Button
+        render={<span />}
         aria-busy
-        className={`${buttonClass("primary")} pointer-events-none ${className}`}
+        className={cn("pointer-events-none", className)}
       >
         <GithubLogoIcon size={16} weight="fill" />
         {label}
-      </span>
+      </Button>
     );
   }
   if (isAuthenticated) {
     return (
-      <Link
-        to="/install"
-        className={`${buttonClass("primary")} ${className}`}
+      <Button
+        render={<Link to="/install" />}
+        className={className}
         data-umami-event="Open dashboard"
       >
         Open dashboard
-      </Link>
+      </Button>
     );
   }
   return <SignInButton label={label} className={className} />;
@@ -110,7 +118,7 @@ export function SignInScreen({ redirectTo }: { redirectTo: string }) {
         <h1 className="mt-6 text-xl font-semibold tracking-[-0.025em]">
           Sign in to stateofpixel
         </h1>
-        <p className="mt-2 text-sm text-muted">
+        <p className="mt-2 text-sm text-muted-foreground">
           Access follows your GitHub permissions on each repository.
         </p>
         <div className="mt-8 flex w-full flex-col">
@@ -132,7 +140,7 @@ export function SignInScreen({ redirectTo }: { redirectTo: string }) {
 
 export function SigningIn() {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 pb-24 text-sm text-muted">
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 pb-24 text-sm text-muted-foreground">
       <Logo size={32} />
       <span className="flex items-center gap-2">
         <Spinner size={14} />
@@ -174,15 +182,14 @@ export function ConnectGithubScreen({ redirectTo }: { redirectTo: string }) {
         <h1 className="mt-6 text-xl font-semibold tracking-[-0.025em]">
           Connect GitHub
         </h1>
-        <p className="mt-2 text-sm text-muted">
+        <p className="mt-2 text-sm text-muted-foreground">
           stateofpixel reads your repositories and permissions through GitHub.
         </p>
         <div className="mt-8 flex w-full flex-col">
-          <button
-            type="button"
+          <Button
             aria-busy={pending}
             disabled={pending}
-            className={`${buttonClass("primary")} disabled:opacity-100`}
+            className="disabled:opacity-100"
             data-umami-event="Connect GitHub"
             onClick={() => {
               setPending(true);
@@ -203,12 +210,14 @@ export function ConnectGithubScreen({ redirectTo }: { redirectTo: string }) {
               <GithubLogoIcon size={16} weight="fill" />
             )}
             {pending ? "Opening GitHub" : "Connect GitHub"}
-          </button>
+          </Button>
         </div>
         {error !== null && (
-          <p className="mt-4 w-full rounded-md bg-failed-bg px-3 py-2 text-sm">
-            {error}
-          </p>
+          <Alert variant="error" className="mt-4 text-left">
+            <AlertDescription className="text-foreground">
+              {error}
+            </AlertDescription>
+          </Alert>
         )}
       </div>
     </main>

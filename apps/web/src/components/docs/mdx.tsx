@@ -76,7 +76,7 @@ export const docsComponents: MDXComponents = {
     </div>
   ),
   th: ({ children }) => (
-    <th className="border-b border-border py-2 pr-4 text-left text-2xs font-medium text-muted">
+    <th className="border-b border-border py-2 pr-4 text-left text-2xs font-medium text-muted-foreground">
       {children}
     </th>
   ),

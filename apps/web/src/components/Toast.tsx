@@ -1,5 +1,10 @@
-import { CheckCircleIcon, WarningIcon, XIcon } from "@phosphor-icons/react/ssr";
+import {
+  CheckCircleIcon,
+  WarningCircleIcon,
+  XIcon,
+} from "@phosphor-icons/react/ssr";
 import { useCallback, useEffect, useState } from "react";
+import { Button } from "uiofcraft";
 
 export type ToastMessage = {
   id: number;
@@ -52,27 +57,26 @@ function Toast({
     const timer = setTimeout(() => dismiss(toast.id), 5000);
     return () => clearTimeout(timer);
   }, [toast.id, dismiss]);
-  const Icon = toast.tone === "success" ? CheckCircleIcon : WarningIcon;
+  const Icon = toast.tone === "success" ? CheckCircleIcon : WarningCircleIcon;
 
   return (
     <div
       role={toast.tone === "error" ? "alert" : "status"}
-      className="pointer-events-auto flex w-full max-w-[420px] animate-enter items-start gap-2.5 rounded-md bg-surface py-2.5 pr-2 pl-3 text-sm shadow-menu ring-1 ring-border"
+      className="pointer-events-auto relative flex w-full max-w-[420px] animate-enter items-start gap-2 rounded-lg border bg-popover not-dark:bg-clip-padding py-3 pr-2 pl-3.5 text-sm text-popover-foreground shadow-lg/5 before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-[0_1px_--theme(--color-black/4%)] dark:before:shadow-[0_-1px_--theme(--color-white/6%)]"
     >
       <Icon
-        size={16}
-        weight="fill"
-        className={`mt-0.5 shrink-0 ${toast.tone === "success" ? "text-approved" : "text-failed"}`}
+        className={`h-lh w-4 shrink-0 ${toast.tone === "success" ? "text-success" : "text-destructive"}`}
       />
       <span className="min-w-0 flex-1">{toast.text}</span>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon-xs"
         aria-label="Dismiss"
-        className="-my-0.5 flex size-6 shrink-0 items-center justify-center rounded-sm text-muted hover:bg-hover hover:text-text"
+        className="-my-0.5 text-muted-foreground"
         onClick={() => dismiss(toast.id)}
       >
         <XIcon size={12} />
-      </button>
+      </Button>
     </div>
   );
 }

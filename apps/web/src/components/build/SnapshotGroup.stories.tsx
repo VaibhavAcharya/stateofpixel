@@ -75,7 +75,7 @@ const meta = {
   component: SnapshotGroup,
   decorators: [
     (Story) => (
-      <div className="w-72 bg-surface p-2">
+      <div className="w-72 bg-card p-2">
         <Story />
       </div>
     ),

@@ -21,7 +21,7 @@ const columns = helper.columns([
       >
         <Avatar src={accountAvatar(row.original.login)} size={24} square />
         <span className="truncate font-medium">{row.original.login}</span>
-        <span className="shrink-0 text-xs text-muted max-sm:hidden">
+        <span className="shrink-0 text-xs text-muted-foreground max-sm:hidden">
           {row.original.installed
             ? row.original.type === "org"
               ? "Organization"
@@ -33,7 +33,9 @@ const columns = helper.columns([
   }),
   helper.accessor("storage", {
     header: "Storage",
-    meta: { className: "w-48 text-muted tabular-nums max-md:hidden" },
+    meta: {
+      className: "w-48 text-muted-foreground tabular-nums max-md:hidden",
+    },
     cell: ({ row }) => {
       const { plan, storage } = row.original;
       return plan === "unlimited"
@@ -47,7 +49,7 @@ const columns = helper.columns([
   }),
   helper.accessor("lastBuildAt", {
     header: "Last build",
-    meta: { className: "w-32 text-right text-muted max-sm:hidden" },
+    meta: { className: "w-32 text-right text-muted-foreground max-sm:hidden" },
     cell: ({ getValue }) => {
       const lastBuildAt = getValue();
       return lastBuildAt === null ? (

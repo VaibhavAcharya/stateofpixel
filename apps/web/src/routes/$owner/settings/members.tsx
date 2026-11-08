@@ -1,15 +1,11 @@
 import { ArrowUpRightIcon } from "@phosphor-icons/react/ssr";
 import { createFileRoute } from "@tanstack/react-router";
+import { Button } from "uiofcraft";
 import { AccountLayout } from "../../../components/AccountLayout";
 import { AppHeader } from "../../../components/AppHeader";
 import { columnHelper, DataTable } from "../../../components/DataTable";
 import { RequireAuth } from "../../../components/RequireAuth";
-import {
-  Avatar,
-  buttonClass,
-  RelativeTime,
-  SkeletonRows,
-} from "../../../components/ui";
+import { Avatar, RelativeTime, SkeletonRows } from "../../../components/ui";
 import { api, type FunctionReturnType, useQuery } from "../../../lib/backend";
 import { prefetchAccount } from "../../../lib/prefetch";
 
@@ -39,7 +35,7 @@ function memberColumns(accountType: "user" | "org") {
             {row.original.name ?? row.original.login}
           </span>
           {row.original.name !== null && (
-            <span className="truncate text-muted max-sm:hidden">
+            <span className="truncate text-muted-foreground max-sm:hidden">
               @{row.original.login}
             </span>
           )}
@@ -55,7 +51,9 @@ function memberColumns(accountType: "user" | "org") {
     }),
     helper.accessor("lastSeenAt", {
       header: "Last active",
-      meta: { className: "w-40 text-right text-muted max-sm:hidden" },
+      meta: {
+        className: "w-40 text-right text-muted-foreground max-sm:hidden",
+      },
       cell: ({ row }) => <RelativeTime timestamp={row.original.lastSeenAt} />,
     }),
   ]);
@@ -80,20 +78,20 @@ function Members({ owner }: { owner: string }) {
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 pb-4">
-        <p className="max-w-[65ch] text-sm text-muted">
+        <p className="max-w-[65ch] text-sm text-muted-foreground">
           Everyone here has signed in to stateofpixel and has access to {owner}{" "}
           on GitHub. Access comes from GitHub, so add or remove people there.
           Owners change the plan and billing, and repository permissions decide
           who can review builds and change project settings.
         </p>
         {home?.type === "org" && (
-          <a
-            href={`https://github.com/orgs/${owner}/people`}
-            className={buttonClass()}
+          <Button
+            variant="outline"
+            render={<a href={`https://github.com/orgs/${owner}/people`} />}
           >
             Manage people on GitHub
-            <ArrowUpRightIcon size={14} className="text-muted" />
-          </a>
+            <ArrowUpRightIcon size={14} className="text-muted-foreground" />
+          </Button>
         )}
       </div>
       {home === undefined || members === undefined || members === null ? (

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
+import { Button } from "uiofcraft";
 import { formatDate } from "../../lib/format";
-import { buttonClass, EmptyState } from "../ui";
+import { EmptyState } from "../ui";
 
 export function BuildNotFound({ title }: { title: string }) {
   return (
@@ -36,13 +37,12 @@ export function BuildDeleted({
       <EmptyState
         title="This build was deleted."
         action={
-          <Link
-            to="/$owner/$repo"
-            params={{ owner, repo }}
-            className={buttonClass()}
+          <Button
+            variant="outline"
+            render={<Link to="/$owner/$repo" params={{ owner, repo }} />}
           >
             See builds
-          </Link>
+          </Button>
         }
       >
         {deletion === null ? (

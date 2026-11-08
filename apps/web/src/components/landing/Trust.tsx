@@ -20,14 +20,15 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useId, useState } from "react";
+import { Button } from "uiofcraft";
 import { findDoc } from "../../content/docs";
 import { track } from "../../lib/analytics";
 import { BOOKING_URL } from "../../lib/booking";
 import { facts } from "../docs/facts";
-import { buttonClass, type Icon, LeadCopy } from "../ui";
-import { FAQ, SECTION } from "./sections";
+import { type Icon, LeadCopy } from "../ui";
+import { FAQ, MUTED_BAND, SECTION } from "./sections";
 
-const DOTTED = "border-dotted border-field-border/50";
+const DOTTED = "border-border";
 
 const ANSWERS = new Map(FAQ);
 
@@ -69,7 +70,7 @@ function Disclosure({
         </span>
         <CaretDownIcon
           size={14}
-          className={`shrink-0 text-muted transition-transform duration-180 ease-out-strong ${
+          className={`shrink-0 text-muted-foreground transition-transform duration-180 ease-out-strong ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -89,7 +90,7 @@ function Disclosure({
 
 function ListTitle({ children }: { children: ReactNode }) {
   return (
-    <h3 className="text-lg font-semibold tracking-[-0.01em]">{children}</h3>
+    <h3 className="text-base font-semibold tracking-[-0.01em]">{children}</h3>
   );
 }
 
@@ -123,14 +124,14 @@ function FaqAccordion({
     <div>
       <div className="flex h-8 items-center justify-between gap-4">
         <ListTitle>{title}</ListTitle>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setOpen(allOpen ? [] : questions)}
           data-umami-event={allOpen ? undefined : "FAQ open all"}
-          className={buttonClass("ghost", "sm")}
         >
           {allOpen ? "Close all" : "Open all"}
-        </button>
+        </Button>
       </div>
       <div
         className={`mt-4 grid gap-x-12 ${columns === 2 ? "grid-cols-2 max-lg:grid-cols-1" : ""}`}
@@ -145,10 +146,10 @@ function FaqAccordion({
                 <Disclosure
                   open={open.includes(question)}
                   onToggle={() => toggle(question)}
-                  buttonClassName="py-4 text-base font-medium"
+                  buttonClassName="py-4 text-sm font-medium"
                   summary={question}
                 >
-                  <p className="max-w-[65ch] pb-5 text-sm text-muted">
+                  <p className="max-w-[65ch] pb-5 text-sm text-muted-foreground">
                     {ANSWERS.get(question)}
                   </p>
                 </Disclosure>
@@ -267,20 +268,25 @@ function FlowBox({
   items: [Icon, string, string][];
 }) {
   return (
-    <div className="rounded-lg bg-surface ring-1 ring-border">
+    <div className="rounded-xl bg-card border shadow-xs/5">
       <div
         className={`flex h-10 items-center justify-between border-b ${DOTTED} px-4`}
       >
         <span className="text-sm font-medium">{title}</span>
-        <span className="text-xs text-muted">{caption}</span>
+        <span className="text-xs text-muted-foreground">{caption}</span>
       </div>
       <ul className="flex flex-col gap-4 p-4">
         {items.map(([ItemIcon, label, text]) => (
           <li key={label} className="flex gap-3">
-            <ItemIcon size={16} className="mt-0.5 shrink-0 text-muted" />
+            <ItemIcon
+              size={16}
+              className="mt-0.5 shrink-0 text-muted-foreground"
+            />
             <span>
               <span className="block text-sm font-medium">{label}</span>
-              <span className="block text-xs text-muted">{text}</span>
+              <span className="block text-xs text-muted-foreground">
+                {text}
+              </span>
             </span>
           </li>
         ))}
@@ -293,7 +299,7 @@ function Connector() {
   return (
     <div
       aria-hidden
-      className="flex items-center text-field-border lg:mt-3.5 max-lg:mx-auto max-lg:h-10 max-lg:flex-col"
+      className="flex items-center text-muted-foreground/64 lg:mt-3.5 max-lg:mx-auto max-lg:h-10 max-lg:flex-col"
     >
       <span className="h-px flex-1 border-t border-dashed border-current max-lg:h-auto max-lg:w-0 max-lg:border-t-0 max-lg:border-l" />
       <CaretRightIcon size={12} weight="bold" className="-ml-1 max-lg:hidden" />
@@ -305,12 +311,12 @@ function Connector() {
 function Manifest() {
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <div className="self-start rounded-lg bg-surface-2 ring-1 ring-border">
+    <div className="self-start rounded-xl border bg-muted/72">
       <div
         className={`flex h-10 items-center justify-between gap-3 border-b ${DOTTED} px-4`}
       >
         <span className="mono text-sm">npx stateofpixel upload</span>
-        <span className="text-xs text-muted">Sends</span>
+        <span className="text-xs text-muted-foreground">Sends</span>
       </div>
       <ul className="p-1">
         {SENT.map(([ItemIcon, label, example, detail], index) => (
@@ -323,18 +329,21 @@ function Manifest() {
                 }
                 setOpen(open === index ? null : index);
               }}
-              buttonClassName="h-10 rounded-sm px-3 text-sm transition-colors duration-100 hover:bg-hover"
+              buttonClassName="h-10 rounded-sm px-3 text-sm transition-colors duration-100 hover:bg-accent"
               summary={
                 <>
-                  <ItemIcon size={16} className="shrink-0 text-muted" />
+                  <ItemIcon
+                    size={16}
+                    className="shrink-0 text-muted-foreground"
+                  />
                   <span className="font-medium">{label}</span>
-                  <span className="mono ml-auto truncate text-muted max-sm:hidden">
+                  <span className="mono ml-auto truncate text-muted-foreground max-sm:hidden">
                     {example}
                   </span>
                 </>
               }
             >
-              <p className="pt-1 pr-3 pb-3 pl-10 text-xs text-muted">
+              <p className="pt-1 pr-3 pb-3 pl-10 text-xs text-muted-foreground">
                 {detail}
               </p>
             </Disclosure>
@@ -356,10 +365,12 @@ function FlowFact({
 }) {
   return (
     <div className={`flex gap-3 border-t ${DOTTED} py-5`}>
-      <FactIcon size={16} className="mt-0.5 shrink-0 text-muted" />
+      <FactIcon size={16} className="mt-0.5 shrink-0 text-muted-foreground" />
       <span>
-        <span className="block text-base font-medium">{title}</span>
-        <span className="mt-1 block text-sm text-muted">{children}</span>
+        <span className="block text-sm font-medium">{title}</span>
+        <span className="mt-1 block text-sm text-muted-foreground">
+          {children}
+        </span>
       </span>
     </div>
   );
@@ -368,60 +379,68 @@ function FlowFact({
 export function TrustSection() {
   const security = findDoc("security")?.meta;
   return (
-    <section id="faq" className={`${SECTION} scroll-mt-16`}>
-      <LeadCopy title="What leaves your CI." className="max-w-[760px]">
-        {security?.lead}
-      </LeadCopy>
-      <div className="mt-12 grid grid-cols-[minmax(0,1fr)_40px_minmax(0,1.2fr)_40px_minmax(0,1fr)] items-start max-lg:grid-cols-1">
-        <FlowBox title="Your CI" caption="Stays here" items={STAYS} />
-        <Connector />
-        <Manifest />
-        <Connector />
-        <FlowBox title="stateofpixel" caption="Does with it" items={STORES} />
-      </div>
-      <div className="mt-16 grid grid-cols-[1fr_2fr] gap-12 max-lg:grid-cols-1">
-        <div>
-          <div className="flex h-8 items-center">
-            <ListTitle>Outages and billing</ListTitle>
-          </div>
-          <div className="mt-4">
-            <FlowFact icon={CloudSlashIcon} title="Outages">
-              {ANSWERS.get("What happens when stateofpixel is down?")}
-            </FlowFact>
-            <FlowFact icon={ReceiptIcon} title="Billing">
-              Plans are fixed, with no overage. {facts.graceDays} days after the
-              storage limit, new images are not stored and the check passes with
-              a note.
-            </FlowFact>
-          </div>
-          <div
-            className={`flex flex-wrap gap-x-6 gap-y-2 border-t ${DOTTED} pt-5`}
-          >
-            <DocLink slug="security">Security docs</DocLink>
-            <DocLink slug="billing">Billing docs</DocLink>
-          </div>
-          <div className="mt-8 flex flex-col items-start gap-3 rounded-md bg-surface p-4 ring-1 ring-border">
-            <p>
-              <span className="block text-sm font-medium">Talk to Vaibhav</span>
-              <span className="mt-1 block text-sm text-muted">
-                A 30 minute call, for anything this page does not answer.
-              </span>
-            </p>
-            <a
-              href={BOOKING_URL}
-              target="_blank"
-              rel="noopener"
-              data-umami-event="Book a call"
-              className={buttonClass("secondary")}
-            >
-              Book a call
-            </a>
-          </div>
+    <section id="faq" className={`${MUTED_BAND} scroll-mt-16`}>
+      <div className={SECTION}>
+        <LeadCopy title="What leaves your CI." className="max-w-[760px]">
+          {security?.lead}
+        </LeadCopy>
+        <div className="mt-12 grid grid-cols-[minmax(0,1fr)_40px_minmax(0,1.2fr)_40px_minmax(0,1fr)] items-start max-lg:grid-cols-1">
+          <FlowBox title="Your CI" caption="Stays here" items={STAYS} />
+          <Connector />
+          <Manifest />
+          <Connector />
+          <FlowBox title="stateofpixel" caption="Does with it" items={STORES} />
         </div>
-        <FaqAccordion
-          title="Other questions"
-          questions={QUESTIONS.map(([question]) => question)}
-        />
+        <div className="mt-16 grid grid-cols-[1fr_2fr] gap-12 max-lg:grid-cols-1">
+          <div>
+            <div className="flex h-8 items-center">
+              <ListTitle>Outages and billing</ListTitle>
+            </div>
+            <div className="mt-4">
+              <FlowFact icon={CloudSlashIcon} title="Outages">
+                {ANSWERS.get("What happens when stateofpixel is down?")}
+              </FlowFact>
+              <FlowFact icon={ReceiptIcon} title="Billing">
+                Plans are fixed, with no overage. {facts.graceDays} days after
+                the storage limit, new images are not stored and the check
+                passes with a note.
+              </FlowFact>
+            </div>
+            <div
+              className={`flex flex-wrap gap-x-6 gap-y-2 border-t ${DOTTED} pt-5`}
+            >
+              <DocLink slug="security">Security docs</DocLink>
+              <DocLink slug="billing">Billing docs</DocLink>
+            </div>
+            <div className="mt-8 flex flex-col items-start gap-3 rounded-lg bg-card p-4 border shadow-xs/5">
+              <p>
+                <span className="block text-sm font-medium">
+                  Talk to Vaibhav
+                </span>
+                <span className="mt-1 block text-sm text-muted-foreground">
+                  A 30 minute call, for anything this page does not answer.
+                </span>
+              </p>
+              <Button
+                variant="outline"
+                render={
+                  <a
+                    href={BOOKING_URL}
+                    target="_blank"
+                    rel="noopener"
+                    data-umami-event="Book a call"
+                  />
+                }
+              >
+                Book a call
+              </Button>
+            </div>
+          </div>
+          <FaqAccordion
+            title="Other questions"
+            questions={QUESTIONS.map(([question]) => question)}
+          />
+        </div>
       </div>
     </section>
   );

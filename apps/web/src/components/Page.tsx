@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export function Page({ children }: { children: ReactNode }) {
   return (
-    <main className="mx-auto w-full max-w-[1200px] px-6 pt-8 pb-16 max-sm:px-4 max-sm:pt-6">
+    <main className="mx-auto w-full max-w-[1200px] px-4 pt-6 pb-16 sm:px-6 sm:pt-10">
       {children}
     </main>
   );
@@ -26,12 +26,14 @@ export function PageHeader({
       <div className="flex min-w-0 items-center gap-3">
         {leading}
         <div className="flex min-w-0 flex-col">
-          {above && <div className="text-xs text-muted">{above}</div>}
-          <h1 className="truncate text-xl font-semibold tracking-[-0.025em]">
+          {above && (
+            <div className="text-xs text-muted-foreground">{above}</div>
+          )}
+          <h1 className="truncate font-heading font-semibold text-2xl tracking-[-0.01em]">
             {title}
           </h1>
           {meta && (
-            <div className="flex items-center gap-2 text-xs text-muted">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {meta}
             </div>
           )}

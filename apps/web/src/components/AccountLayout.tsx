@@ -7,13 +7,14 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
+import { Button } from "uiofcraft";
 import { api, useAction, useQuery } from "../lib/backend";
 import { errorCode } from "../lib/errorCode";
 import { useDisconnectExpiredGithub } from "../lib/useDisconnectExpiredGithub";
 import { AccountBanner } from "./AccountBanner";
 import { Page, PageHeader } from "./Page";
 import { Tab, Tabs } from "./Tabs";
-import { Avatar, accountAvatar, buttonClass, EmptyState } from "./ui";
+import { Avatar, accountAvatar, EmptyState } from "./ui";
 
 type AccountTab = "projects" | "members" | "usage" | "billing";
 
@@ -54,9 +55,9 @@ export function AccountLayout({
         <EmptyState
           title="Account not found."
           action={
-            <Link to="/install" className={buttonClass()}>
+            <Button variant="outline" render={<Link to="/install" />}>
               See your accounts
-            </Link>
+            </Button>
           }
         >
           It may not have the GitHub App installed, or you are not a member.
@@ -79,10 +80,13 @@ export function AccountLayout({
         }
         actions={
           home?.installationSettingsUrl && (
-            <a href={home.installationSettingsUrl} className={buttonClass()}>
+            <Button
+              variant="outline"
+              render={<a href={home.installationSettingsUrl} />}
+            >
               Configure on GitHub
-              <ArrowUpRightIcon size={14} className="text-muted" />
-            </a>
+              <ArrowUpRightIcon />
+            </Button>
           )
         }
       />

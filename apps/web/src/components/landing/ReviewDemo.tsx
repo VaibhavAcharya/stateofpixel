@@ -6,6 +6,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { toStatus } from "@stateofpixel/backend/checkStatus";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "uiofcraft";
 import { track } from "../../lib/analytics";
 import { BuildPage, ShortcutsContext } from "../build/BuildPage";
 import { BuildDataContext } from "../build/buildData";
@@ -17,7 +18,7 @@ import {
 } from "../build/fixtureBuild";
 import type { Build } from "../build/types";
 import { ShortcutsDialog } from "../ShortcutsDialog";
-import { buttonClass, TONE_TEXT } from "../ui";
+import { TONE_TEXT } from "../ui";
 
 const DEMO_FIXTURE: BuildFixture = {
   build: {
@@ -108,7 +109,7 @@ function DemoRun({ onReset }: { onReset: () => void }) {
         >
           <section
             aria-label="Interactive review demo"
-            className="relative flex h-[720px] flex-col overflow-hidden rounded-lg bg-surface text-left shadow-[0_8px_32px_#11151a18,0_1px_4px_#11151a0a] ring-1 ring-border"
+            className="relative flex h-[720px] flex-col overflow-hidden rounded-xl bg-card text-left shadow-[0_8px_32px_#11151a18,0_1px_4px_#11151a0a] border shadow-xs/5"
           >
             <BuildPage
               build={build}
@@ -155,7 +156,7 @@ function CheckRun({ build, onReset }: { build: Build; onReset: () => void }) {
         ? XCircleIcon
         : CircleIcon;
   return (
-    <div className="flex items-center gap-3 rounded-md bg-surface px-4 py-3 text-sm ring-1 ring-border">
+    <div className="flex items-center gap-3 rounded-lg bg-card px-4 py-3 text-sm border shadow-xs/5">
       <Icon
         size={18}
         weight={tone === "pending" ? "bold" : "fill"}
@@ -163,19 +164,15 @@ function CheckRun({ build, onReset }: { build: Build; onReset: () => void }) {
       />
       <span className="min-w-0 flex-1">
         <span className="font-medium">stateofpixel/playwright</span>
-        <span className="text-muted"> {description}</span>
+        <span className="text-muted-foreground"> {description}</span>
       </span>
       {build.counts.pending === 0 && (
-        <button
-          type="button"
-          className={buttonClass("ghost", "sm")}
-          onClick={onReset}
-        >
+        <Button variant="ghost" size="sm" onClick={onReset}>
           <ArrowCounterClockwiseIcon size={12} />
           Start over
-        </button>
+        </Button>
       )}
-      <span className="text-xs text-muted max-sm:hidden">
+      <span className="text-xs text-muted-foreground max-sm:hidden">
         {state === "success"
           ? "Success"
           : state === "failure"

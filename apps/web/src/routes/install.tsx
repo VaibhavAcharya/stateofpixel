@@ -1,16 +1,12 @@
 import { GithubLogoIcon, PlusIcon } from "@phosphor-icons/react/ssr";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { Alert, AlertAction, AlertDescription, Button } from "uiofcraft";
 import { AccountTable } from "../components/AccountTable";
 import { AppHeader } from "../components/AppHeader";
 import { Page, PageHeader } from "../components/Page";
 import { RequireAuth } from "../components/RequireAuth";
-import {
-  buttonClass,
-  EmptyState,
-  SkeletonRows,
-  Spinner,
-} from "../components/ui";
+import { EmptyState, SkeletonRows, Spinner } from "../components/ui";
 import { api, useAction, useQuery } from "../lib/backend";
 import { errorCode } from "../lib/errorCode";
 import { useDisconnectExpiredGithub } from "../lib/useDisconnectExpiredGithub";
@@ -57,14 +53,13 @@ function Accounts() {
   }, [refresh]);
 
   const installButton = installUrl !== undefined && (
-    <a
-      href={installUrl}
-      className={buttonClass("primary")}
+    <Button
+      render={<a href={installUrl} />}
       data-umami-event="Install GitHub App"
     >
       <GithubLogoIcon size={16} weight="fill" />
       Install on GitHub
-    </a>
+    </Button>
   );
 
   return (
@@ -85,28 +80,28 @@ function Accounts() {
           accounts !== undefined &&
           accounts.length > 0 &&
           installUrl !== undefined && (
-            <a
-              href={installUrl}
-              className={buttonClass()}
+            <Button
+              variant="outline"
+              render={<a href={installUrl} />}
               data-umami-event="Install GitHub App"
             >
               <PlusIcon size={14} />
               Add account
-            </a>
+            </Button>
           )
         }
       />
       {error !== null && (
-        <p className="mb-6 flex items-center gap-3 rounded-md bg-failed-bg px-3 py-2 text-sm">
-          {error}
-          <button
-            type="button"
-            className="font-medium text-link"
-            onClick={refresh}
-          >
-            Try again
-          </button>
-        </p>
+        <Alert variant="error" className="mb-6">
+          <AlertDescription className="text-foreground">
+            {error}
+          </AlertDescription>
+          <AlertAction>
+            <Button variant="outline" size="sm" onClick={refresh}>
+              Try again
+            </Button>
+          </AlertAction>
+        </Alert>
       )}
       {accounts === undefined && <SkeletonRows rows={3} />}
       {accounts?.length === 0 && !refreshing && (
@@ -115,13 +110,9 @@ function Accounts() {
           action={
             <div className="flex flex-wrap items-center gap-3">
               {installButton}
-              <button
-                type="button"
-                className={buttonClass("ghost")}
-                onClick={refresh}
-              >
+              <Button variant="ghost" onClick={refresh}>
                 Already installed? Refresh
-              </button>
+              </Button>
             </div>
           }
         >

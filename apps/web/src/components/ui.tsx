@@ -2,7 +2,6 @@ import {
   CheckIcon,
   CircleHalfIcon,
   CircleIcon,
-  CircleNotchIcon,
   ClockIcon,
   EqualsIcon,
   GitMergeIcon,
@@ -16,14 +15,22 @@ import type { Doc } from "@stateofpixel/backend/dataModel";
 import {
   type ComponentProps,
   type ComponentType,
-  cloneElement,
   type ReactElement,
   type ReactNode,
   useEffect,
-  useId,
   useRef,
   useState,
 } from "react";
+import {
+  Badge,
+  buttonVariants,
+  cn,
+  Skeleton,
+  TooltipPopup,
+  Tooltip as TooltipRoot,
+  TooltipTrigger,
+  Spinner as UiSpinner,
+} from "uiofcraft";
 import { formatAbsolute, formatCount, formatRelative } from "../lib/format";
 import { renewImageGrant, useImageUrl } from "../lib/useImageUrl";
 
@@ -86,12 +93,13 @@ export function Pill({
   children: ReactNode;
 }) {
   return (
-    <span
-      className={`inline-flex h-5 shrink-0 items-center gap-1 rounded-xs pr-1.5 pl-1 text-2xs font-medium whitespace-nowrap tabular-nums ${TONE_CLASSES[tone]}`}
+    <Badge
+      variant="secondary"
+      className={cn("gap-1 tabular-nums", TONE_CLASSES[tone])}
     >
       <IconComponent size={12} weight="bold" />
       {children}
-    </span>
+    </Badge>
   );
 }
 
@@ -192,9 +200,9 @@ export function BuildStatePill({
 
 export function SupersededPill() {
   return (
-    <span className="inline-flex h-5 shrink-0 items-center rounded-xs px-1.5 text-2xs font-medium text-muted shadow-[inset_0_0_0_1px_var(--color-border)]">
+    <Badge variant="outline" className="text-muted-foreground">
       Superseded
-    </span>
+    </Badge>
   );
 }
 
@@ -208,10 +216,10 @@ export function PrStatePill({
   }
   const Icon = state === "merged" ? GitMergeIcon : GitPullRequestIcon;
   return (
-    <span className="inline-flex h-5 shrink-0 items-center gap-1 rounded-xs px-1.5 text-2xs font-medium text-muted shadow-[inset_0_0_0_1px_var(--color-border)]">
+    <Badge variant="outline" className="text-muted-foreground">
       <Icon size={12} />
       {state === "merged" ? "PR merged" : "PR closed"}
-    </span>
+    </Badge>
   );
 }
 
@@ -222,22 +230,10 @@ export function Spinner({
   size?: number;
   className?: string;
 }) {
-  return (
-    <CircleNotchIcon
-      size={size}
-      weight="bold"
-      className={`animate-spin ${className}`}
-    />
-  );
+  return <UiSpinner size={size} weight="bold" className={className} />;
 }
 
-export function Kbd({ children }: { children: ReactNode }) {
-  return (
-    <kbd className="inline-flex h-4 min-w-4 align-middle items-center justify-center rounded-[4px] bg-surface px-1 font-mono text-[10px] leading-none font-normal text-muted shadow-[inset_0_0_0_1px_var(--color-border)]">
-      {children}
-    </kbd>
-  );
-}
+export { Kbd } from "uiofcraft";
 
 export function RelativeTime({ timestamp }: { timestamp: number }) {
   return (
@@ -252,76 +248,101 @@ export function RelativeTime({ timestamp }: { timestamp: number }) {
 }
 
 const BUTTON_VARIANTS = {
-  primary: "bg-accent text-accent-fg not-aria-disabled:hover:bg-accent-hover",
-  secondary:
-    "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)] not-aria-disabled:hover:bg-hover",
-  ghost:
-    "text-muted not-aria-disabled:hover:bg-hover not-aria-disabled:hover:text-text",
-  danger:
-    "bg-surface text-rejected shadow-[inset_0_0_0_1px_var(--color-border)] not-aria-disabled:hover:bg-rejected-bg",
-};
+  primary: "default",
+  secondary: "outline",
+  ghost: "ghost",
+  danger: "destructive-outline",
+} as const;
 
 const BUTTON_SIZES = {
-  md: "h-8 gap-1.5 px-3 text-sm",
-  sm: "h-6 gap-1 rounded-sm px-2 text-xs",
-  icon: "size-8",
-  "icon-sm": "size-6 rounded-sm",
-};
+  md: "default",
+  sm: "sm",
+  icon: "icon",
+  "icon-sm": "icon-sm",
+} as const;
 
 export function buttonClass(
   variant: keyof typeof BUTTON_VARIANTS = "secondary",
   size: keyof typeof BUTTON_SIZES = "md",
 ) {
-  return `inline-flex shrink-0 items-center justify-center rounded-control font-medium whitespace-nowrap transition-colors duration-100 select-none disabled:pointer-events-none disabled:opacity-45 aria-disabled:cursor-not-allowed aria-disabled:opacity-45 ${BUTTON_SIZES[size]} ${BUTTON_VARIANTS[variant]}`;
+  return cn(
+    buttonVariants({
+      variant: BUTTON_VARIANTS[variant],
+      size: BUTTON_SIZES[size],
+    }),
+    "aria-disabled:cursor-not-allowed aria-disabled:opacity-64",
+  );
 }
 
 export function Tooltip({
   label,
+  side = "bottom",
   align = "start",
-  className = "",
-  wrapperClassName = "inline-flex",
+  className,
   children,
 }: {
   label: string;
-  align?: "start" | "end";
+  side?: "top" | "bottom" | "left" | "right";
+  align?: "start" | "center" | "end";
   className?: string;
-  wrapperClassName?: string;
-  children: ReactElement<{ "aria-describedby"?: string }>;
+  children: ReactElement;
 }) {
-  const id = useId();
   return (
-    <span className={`group/tooltip relative ${wrapperClassName}`}>
-      {cloneElement(children, { "aria-describedby": id })}
-      <span
-        role="tooltip"
-        id={id}
-        className={`pointer-events-none invisible absolute top-full z-40 mt-1.5 w-max max-w-64 rounded-md bg-surface px-2.5 py-1.5 text-xs font-normal text-text opacity-0 shadow-tooltip ring-1 ring-border transition-opacity duration-100 group-has-focus-visible/tooltip:visible group-has-focus-visible/tooltip:opacity-100 group-hover/tooltip:visible group-hover/tooltip:opacity-100 ${
-          align === "end" ? "right-0" : "left-0"
-        } ${className}`}
-      >
+    <TooltipRoot>
+      <TooltipTrigger render={children} />
+      <TooltipPopup side={side} align={align} className={className}>
         {label}
-      </span>
-    </span>
+      </TooltipPopup>
+    </TooltipRoot>
   );
 }
+
+const LEAD_SIZES = {
+  hero: {
+    title: "text-[clamp(2.5rem,5.5vw,4.5rem)] leading-none tracking-[-0.02em]",
+    body: "mt-5 text-lg",
+  },
+  section: {
+    title: "text-3xl tracking-[-0.01em] sm:text-[2.5rem] sm:leading-[1.1]",
+    body: "mt-4 text-lg",
+  },
+  app: {
+    title: "text-xl tracking-[-0.01em]",
+    body: "mt-1.5 text-sm",
+  },
+};
 
 export function LeadCopy({
   title,
   children,
   className = "max-w-[65ch]",
   as: Heading = "h2",
+  size = Heading === "h1" ? "hero" : "section",
 }: {
   title: string;
   children: ReactNode;
   className?: string;
   as?: "h1" | "h2";
+  size?: keyof typeof LEAD_SIZES;
 }) {
   return (
-    <div
-      className={`text-2xl font-[450] tracking-[-0.035em] text-balance text-muted max-sm:text-xl ${className}`}
-    >
-      <Heading className="inline font-semibold text-text">{title}</Heading>{" "}
-      {children}
+    <div className={className}>
+      <Heading
+        className={cn(
+          "text-balance font-heading font-semibold",
+          LEAD_SIZES[size].title,
+        )}
+      >
+        {title}
+      </Heading>
+      <div
+        className={cn(
+          "text-pretty text-muted-foreground",
+          LEAD_SIZES[size].body,
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -336,8 +357,10 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-start gap-6 py-12">
-      <LeadCopy title={title}>{children}</LeadCopy>
+    <div className="flex flex-col items-start gap-5 py-12">
+      <LeadCopy title={title} size="app">
+        {children}
+      </LeadCopy>
       {action}
     </div>
   );
@@ -352,9 +375,7 @@ export function ProjectNotFound() {
   );
 }
 
-export function Skeleton({ className }: { className: string }) {
-  return <div aria-hidden className={`skeleton rounded-md ${className}`} />;
-}
+export { Skeleton };
 
 export function SkeletonRows({
   rows = 6,
@@ -371,9 +392,9 @@ export function SkeletonRows({
             key={key}
             className={`${height} flex items-center gap-6 border-b border-border px-3`}
           >
-            <div className="skeleton h-3 w-12 rounded-xs" />
-            <div className="skeleton h-3 w-40 rounded-xs" />
-            <div className="skeleton ml-auto h-3 w-16 rounded-xs" />
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-3 w-40" />
+            <Skeleton className="ml-auto h-3 w-16" />
           </div>
         ),
       )}
@@ -391,8 +412,8 @@ export function Logo({ size = 20 }: { size?: number }) {
       className="shrink-0"
     >
       <rect width="20" height="20" rx="5" fill="currentColor" />
-      <rect x="5" y="5" width="4" height="4" className="fill-bg" />
-      <rect x="11" y="11" width="4" height="4" className="fill-bg" />
+      <rect x="5" y="5" width="4" height="4" className="fill-background" />
+      <rect x="11" y="11" width="4" height="4" className="fill-background" />
     </svg>
   );
 }
@@ -424,7 +445,7 @@ export function Avatar({
     return (
       <span
         aria-hidden
-        className={`inline-block shrink-0 bg-surface-2 ${shape}`}
+        className={`inline-block shrink-0 bg-muted ${shape}`}
         style={{ width: size, height: size }}
       />
     );
@@ -435,7 +456,7 @@ export function Avatar({
       alt=""
       width={size}
       height={size}
-      className={`shrink-0 bg-surface-2 ${shape} shadow-[0_0_0_1px_var(--color-border)]`}
+      className={`shrink-0 bg-muted ${shape} shadow-[0_0_0_1px_var(--color-border)]`}
     />
   );
 }
@@ -464,21 +485,23 @@ export function SnapshotName({
   return (
     <span className={`flex min-w-0 items-center gap-1.5 ${className}`}>
       <span className="min-w-0 truncate">
-        <span className="text-muted">{parent}</span>
+        <span className="text-muted-foreground">{parent}</span>
         {leaf}
       </span>
       {variant !== null && (
-        <span className="mono shrink-0 text-muted tabular-nums">{variant}</span>
+        <span className="mono shrink-0 text-muted-foreground tabular-nums">
+          {variant}
+        </span>
       )}
     </span>
   );
 }
 
 export const listRowClass =
-  "relative border-b border-border transition-colors duration-100 hover:bg-hover has-[[data-list-row]:focus-visible]:bg-hover";
+  "relative border-b border-border transition-colors duration-100 hover:bg-accent has-[[data-list-row]:focus-visible]:bg-accent";
 
 export const listRowLinkClass =
-  "after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:shadow-[inset_0_0_0_2px_var(--color-focus)]";
+  "after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:shadow-[inset_0_0_0_2px_var(--color-ring)]";
 
 const BLANK_IMAGE =
   "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
@@ -538,10 +561,10 @@ function LoadingImage({
   if (state === "failed" && placeholder !== false && retryable) {
     return (
       <span
-        className={`${className} relative z-10 bg-surface-2`}
+        className={`${className} relative z-10 bg-muted`}
         style={frameStyle}
       >
-        <span className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted">
+        <span className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
           <WarningIcon size={20} />
           Could not load this image.
           <button type="button" className={buttonClass()} onClick={onRetry}>
@@ -554,7 +577,7 @@ function LoadingImage({
   const stateClass = {
     loading: placeholder === false ? "invisible" : placeholder,
     loaded: "",
-    failed: placeholder === false ? "invisible" : "bg-surface-2",
+    failed: placeholder === false ? "invisible" : "bg-muted",
   }[state];
   return (
     <img

@@ -40,7 +40,7 @@ function StoryViewer({
   const [diffOnly, setDiffOnly] = useState(initial.diffOnly ?? false);
   const [diffColor, setDiffColor] = useState(initial.diffColor ?? "magenta");
   return (
-    <div className="flex h-[720px] flex-col bg-surface">
+    <div className="flex h-[720px] flex-col bg-card">
       <Viewer
         snapshot={snapshot}
         settings={{

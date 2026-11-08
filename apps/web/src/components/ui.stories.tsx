@@ -32,7 +32,9 @@ type Story = StoryObj<typeof meta>;
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="w-28 shrink-0 text-xs text-muted">{label}</span>
+      <span className="w-28 shrink-0 text-xs text-muted-foreground">
+        {label}
+      </span>
       {children}
     </div>
   );

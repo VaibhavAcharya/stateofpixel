@@ -1,6 +1,7 @@
 import { GitBranchIcon, GitPullRequestIcon } from "@phosphor-icons/react/ssr";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useCallback, useMemo } from "react";
+import { Button } from "uiofcraft";
 import { AppHeader } from "../../../components/AppHeader";
 import { CodeBlock } from "../../../components/CodeBlock";
 import { columnHelper, DataTable } from "../../../components/DataTable";
@@ -14,7 +15,6 @@ import { ProjectHeader } from "../../../components/ProjectHeader";
 import { RequireAuth } from "../../../components/RequireAuth";
 import {
   BuildStatePill,
-  buttonClass,
   LeadCopy,
   listRowLinkClass,
   ProjectNotFound,
@@ -173,7 +173,7 @@ function useBuildColumns({
               data-list-row
               className={listRowLinkClass}
             >
-              <span className="text-muted">#</span>
+              <span className="text-muted-foreground">#</span>
               {row.original.number}
             </Link>
           ),
@@ -220,7 +220,7 @@ function useBuildColumns({
               <span className="truncate">
                 {row.original.commitMessage || "No commit message"}
               </span>
-              <span className="mono shrink-0 text-muted">
+              <span className="mono shrink-0 text-muted-foreground">
                 {shortSha(row.original.commitSha)}
               </span>
             </span>
@@ -231,7 +231,10 @@ function useBuildColumns({
               helper.display({
                 id: "suite",
                 header: "Suite",
-                meta: { className: "w-32 truncate text-muted max-lg:hidden" },
+                meta: {
+                  className:
+                    "w-32 truncate text-muted-foreground max-lg:hidden",
+                },
                 cell: ({ row }) => row.original.buildName,
               }),
             ]
@@ -257,7 +260,7 @@ function useBuildColumns({
         helper.display({
           id: "created",
           header: "Created",
-          meta: { className: "w-32 text-right text-muted" },
+          meta: { className: "w-32 text-right text-muted-foreground" },
           cell: ({ row }) => (
             <RelativeTime timestamp={row.original.createdAt} />
           ),
@@ -327,13 +330,12 @@ function BuildsTable({
           />
         )}
         {filtered && (
-          <button
-            type="button"
-            className={buttonClass("ghost")}
+          <Button
+            variant="ghost"
             onClick={() => void navigate({ search: { order: search.order } })}
           >
             Clear filters
-          </button>
+          </Button>
         )}
       </ListToolbar>
       <div className="max-sm:hidden">
@@ -358,23 +360,19 @@ function BuildsTable({
         ))}
       </ul>
       {results.length === 0 && (
-        <p className="py-6 text-sm text-muted">
+        <p className="py-6 text-sm text-muted-foreground">
           No builds match these filters.
         </p>
       )}
       {status === "CanLoadMore" && (
         <div className="mt-6 flex justify-center">
-          <button
-            type="button"
-            className={buttonClass()}
-            onClick={() => loadMore(PAGE_SIZE)}
-          >
+          <Button variant="outline" onClick={() => loadMore(PAGE_SIZE)}>
             Load more
-          </button>
+          </Button>
         </div>
       )}
       {status === "LoadingMore" && (
-        <div className="mt-6 flex justify-center text-muted">
+        <div className="mt-6 flex justify-center text-muted-foreground">
           <Spinner size={16} />
         </div>
       )}
@@ -418,7 +416,7 @@ function MobileBuildRow({
         to="/$owner/$repo/builds/$number"
         params={{ owner, repo, number: String(build.number) }}
         data-list-row
-        className="flex flex-col gap-1.5 py-3 active:bg-hover"
+        className="flex flex-col gap-1.5 py-3 active:bg-accent"
       >
         <span className="flex items-center gap-2">
           <span className="font-medium tabular-nums">#{build.number}</span>
@@ -431,12 +429,12 @@ function MobileBuildRow({
           />
           {build.superseded && <SupersededPill />}
           <PrStatePill state={build.prState} />
-          <span className="ml-auto text-xs text-muted">
+          <span className="ml-auto text-xs text-muted-foreground">
             <RelativeTime timestamp={build.createdAt} />
           </span>
         </span>
-        <span className="flex min-w-0 items-baseline gap-2 text-muted">
-          <span className="mono shrink-0 text-text">{build.branch}</span>
+        <span className="flex min-w-0 items-baseline gap-2 text-muted-foreground">
+          <span className="mono shrink-0 text-foreground">{build.branch}</span>
           <span className="truncate">{build.commitMessage}</span>
         </span>
       </Link>
@@ -446,7 +444,7 @@ function MobileBuildRow({
 
 function SetupCard({ owner, repo }: { owner: string; repo: string }) {
   return (
-    <section className="flex max-w-[720px] flex-col gap-6 rounded-md border border-dotted border-field-border/60 bg-surface p-6 max-sm:p-4">
+    <section className="flex max-w-[720px] flex-col gap-6 rounded-md border border-dotted border-input/60 bg-card p-6 max-sm:p-4">
       <LeadCopy title="No builds yet.">
         Add the upload step to your GitHub Actions workflow and push a commit.
         On other CI, create a project token in{" "}
@@ -464,7 +462,7 @@ function SetupCard({ owner, repo }: { owner: string; repo: string }) {
         has the full setup.
       </LeadCopy>
       <CodeBlock fileName=".github/workflows/visual.yml" {...workflow} />
-      <p className="flex items-center gap-2 text-sm text-muted">
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
         <Spinner size={14} />
         Waiting for the first build. This page updates by itself.
       </p>

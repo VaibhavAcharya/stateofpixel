@@ -137,7 +137,7 @@ function Checks({ rows }: { rows: [string, StatusBuild][] }) {
             />
             <span className="min-w-0 flex-1">
               <span className="font-medium">{name}</span>{" "}
-              <span className="text-muted">{description}</span>
+              <span className="text-muted-foreground">{description}</span>
             </span>
             <span className="text-xs text-link">Details</span>
           </li>
@@ -175,7 +175,9 @@ function Snapshots({
               <SnapshotName name={row.name} className="flex-1" />
               <DiffStatusPill status={row.diff} />
             </span>
-            <span className="pl-6 text-xs text-muted">{row.note}</span>
+            <span className="pl-6 text-xs text-muted-foreground">
+              {row.note}
+            </span>
           </li>
         );
       })}
@@ -217,11 +219,13 @@ function CiStep({ passed, children }: { passed: boolean; children: string }) {
         <span className="mono min-w-0 flex-1 truncate">
           npx stateofpixel upload
         </span>
-        <span className="mono text-xs text-muted tabular-nums">
+        <span className="mono text-xs text-muted-foreground tabular-nums">
           exit {passed ? 0 : 1}
         </span>
       </span>
-      <span className="pl-[30px] text-xs text-muted">{children}</span>
+      <span className="pl-[30px] text-xs text-muted-foreground">
+        {children}
+      </span>
     </div>
   );
 }
@@ -231,17 +235,17 @@ function StorageMeter({ children }: { children: string }) {
     <div className="flex flex-col gap-3 px-4 py-4">
       <span className="flex items-baseline justify-between text-sm">
         <span className="font-medium">Storage</span>
-        <span className="text-xs text-muted tabular-nums">
+        <span className="text-xs text-muted-foreground tabular-nums">
           {facts.storageWarning} of {facts.freeStorage}
         </span>
       </span>
-      <span className="h-2 overflow-hidden rounded-full bg-surface-2">
+      <span className="h-2 overflow-hidden rounded-full bg-muted">
         <span
           className="block h-full bg-changed"
           style={{ width: `${STORAGE_WARNING_SHARE * 100}%` }}
         />
       </span>
-      <span className="flex items-start gap-2 text-xs text-muted">
+      <span className="flex items-start gap-2 text-xs text-muted-foreground">
         <WarningIcon size={14} className="mt-px shrink-0 text-pending" />
         {children}
       </span>
@@ -572,8 +576,8 @@ function DocsLink({ docs }: { docs: Scenario["docs"] }) {
 
 function Frame({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <figure className="flex min-w-0 flex-col overflow-hidden rounded-md bg-surface shadow-[inset_0_0_0_1px_var(--color-border)]">
-      <figcaption className="flex h-10 shrink-0 items-center border-b border-border px-4 text-xs text-muted">
+    <figure className="flex min-w-0 flex-col overflow-hidden rounded-md bg-card shadow-[inset_0_0_0_1px_var(--color-border)]">
+      <figcaption className="flex h-10 shrink-0 items-center border-b border-border px-4 text-xs text-muted-foreground">
         {label}
       </figcaption>
       <div className="flex-1">{children}</div>
@@ -593,7 +597,7 @@ function CaseSwitch({
   return (
     <fieldset
       aria-label="Case"
-      className="flex w-fit max-w-full flex-wrap gap-1 rounded-control bg-surface-2 p-0.5"
+      className="flex w-fit max-w-full flex-wrap gap-1 rounded-control bg-muted p-0.5"
     >
       {cases.map((option, index) => (
         <button
@@ -605,8 +609,8 @@ function CaseSwitch({
           data-umami-event-case={option.label}
           className={`h-7 rounded-sm px-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
             value === index
-              ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
-              : "text-muted hover:text-text"
+              ? "bg-card text-foreground shadow-[inset_0_0_0_1px_var(--color-border)]"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           {option.label}
@@ -621,7 +625,7 @@ function WithFlags({ text }: { text: string }) {
     index % 2 === 1 ? (
       <code
         key={part}
-        className="mono rounded-xs bg-surface-2 px-1 whitespace-nowrap text-text"
+        className="mono rounded-xs bg-muted px-1 whitespace-nowrap text-foreground"
       >
         {part}
       </code>
@@ -640,11 +644,13 @@ function ScenarioDetail({ scenario }: { scenario: Scenario }) {
   return (
     <div className="flex animate-fade flex-col gap-5">
       <div>
-        <p className="text-xs text-muted">{GROUPS[scenario.group]}</p>
+        <p className="text-xs text-muted-foreground">
+          {GROUPS[scenario.group]}
+        </p>
         <h3 className="mt-1 text-xl font-semibold tracking-[-0.025em]">
           {scenario.title}
         </h3>
-        <p className="mt-2 max-w-[64ch] text-sm text-muted">
+        <p className="mt-2 max-w-[64ch] text-sm text-muted-foreground">
           <WithFlags text={pipelineText(scenario.title)} />
         </p>
       </div>
@@ -732,7 +738,7 @@ export function PipelinesSection() {
                 {groupStart && (
                   <span
                     aria-hidden
-                    className={`px-3 pb-2 text-xs text-muted max-lg:hidden ${index === 0 ? "" : "pt-5"}`}
+                    className={`px-3 pb-2 text-xs text-muted-foreground max-lg:hidden ${index === 0 ? "" : "pt-5"}`}
                   >
                     {GROUPS[item.group]}
                   </span>
@@ -752,14 +758,14 @@ export function PipelinesSection() {
                   data-umami-event-scenario={item.title}
                   className={`flex h-9 shrink-0 items-center gap-2.5 rounded-sm px-3 text-left text-sm whitespace-nowrap transition-colors duration-100 lg:rounded-l-none ${
                     active
-                      ? "bg-hover font-medium text-text"
-                      : "text-muted hover:bg-hover hover:text-text"
+                      ? "bg-accent font-medium text-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   }`}
                 >
                   <ItemIcon size={16} className="shrink-0" />
                   <span className="flex-1">{item.title}</span>
                   {item.flag !== undefined && (
-                    <span className="mono text-xs text-subtle max-lg:hidden">
+                    <span className="mono text-xs text-muted-foreground max-lg:hidden">
                       {item.flag}
                     </span>
                   )}

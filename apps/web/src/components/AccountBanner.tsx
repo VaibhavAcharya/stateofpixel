@@ -7,6 +7,7 @@ import {
 } from "@stateofpixel/backend/storage";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { Alert, AlertDescription } from "uiofcraft";
 import {
   type AccountAlert,
   accountAlert,
@@ -19,10 +20,10 @@ import { PLAN_NAMES } from "./PlanBox";
 
 const LINK_CLASS = "font-medium text-link";
 
-const TONES = {
-  warning: { box: "bg-changed-bg", icon: "text-changed", Icon: WarningIcon },
-  error: { box: "bg-failed-bg", icon: "text-failed", Icon: WarningIcon },
-  info: { box: "bg-pending-bg", icon: "text-pending", Icon: InfoIcon },
+const TONE_ICONS = {
+  warning: WarningIcon,
+  error: WarningIcon,
+  info: InfoIcon,
 } as const;
 
 export type BannerAccount = {
@@ -46,13 +47,12 @@ export function AccountBanner({
   if (alert === null) {
     return null;
   }
-  const { box, icon, Icon } = TONES[tone(alert)];
+  const variant = tone(alert);
+  const Icon = TONE_ICONS[variant];
   return (
-    <p
-      className={`mb-6 flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-sm ${box}`}
-    >
-      <Icon size={16} className={`shrink-0 ${icon}`} />
-      <span>
+    <Alert role="note" variant={variant} className="mb-6">
+      <Icon size={16} />
+      <AlertDescription className="block text-foreground">
         {alert.kind === "storage" ? (
           <>
             {storageMessage(account.storage, alert.state)}{" "}
@@ -113,12 +113,12 @@ export function AccountBanner({
             )}
           </>
         )}
-      </span>
-    </p>
+      </AlertDescription>
+    </Alert>
   );
 }
 
-function tone(alert: AccountAlert): keyof typeof TONES {
+function tone(alert: AccountAlert): keyof typeof TONE_ICONS {
   if (alert.kind === "plan_ends") {
     return alert.overFreeLimit ? "warning" : "info";
   }

@@ -61,7 +61,10 @@ const withBackend: Decorator = (Story, { parameters }) => {
 };
 
 const withTheme: Decorator = (Story, { globals, parameters }) => {
-  document.documentElement.dataset.theme = parameters.theme ?? globals.theme;
+  document.documentElement.classList.toggle(
+    "dark",
+    (parameters.theme ?? globals.theme) === "dark",
+  );
   return <Story />;
 };
 

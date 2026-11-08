@@ -26,13 +26,13 @@ const PATHS: { title: string; text: string; icon: ReactNode; slug: string }[] =
     {
       title: "Any screenshots",
       text: "Point the CLI at a folder of PNG files.",
-      icon: <FolderSimpleIcon size={20} className="text-muted" />,
+      icon: <FolderSimpleIcon size={20} className="text-muted-foreground" />,
       slug: "any-screenshots",
     },
     {
       title: "Try it locally",
       text: "Compare two folders. No account needed.",
-      icon: <TerminalWindowIcon size={20} className="text-muted" />,
+      icon: <TerminalWindowIcon size={20} className="text-muted-foreground" />,
       slug: "cli",
     },
   ];
@@ -44,14 +44,16 @@ export function SetupPaths() {
         <DocsPageLink
           key={path.slug}
           slug={path.slug}
-          className="flex flex-col gap-3 rounded-lg bg-surface p-5 text-text! ring-1 ring-border hover:bg-hover hover:no-underline!"
+          className="flex flex-col gap-3 rounded-xl bg-card p-5 text-foreground! border shadow-xs/5 hover:bg-accent hover:no-underline!"
         >
-          <span className="flex size-9 items-center justify-center rounded-md bg-surface-2">
+          <span className="flex size-9 items-center justify-center rounded-md bg-muted">
             {path.icon}
           </span>
           <span>
-            <span className="block text-base font-medium">{path.title}</span>
-            <span className="block text-sm text-muted">{path.text}</span>
+            <span className="block text-sm font-medium">{path.title}</span>
+            <span className="block text-sm text-muted-foreground">
+              {path.text}
+            </span>
           </span>
         </DocsPageLink>
       ))}
@@ -69,7 +71,7 @@ Do not add a secret. Tell me which command takes the screenshots.`;
 export function AgentPrompt() {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="mt-4 overflow-hidden rounded-md bg-surface-2 ring-1 ring-border">
+    <div className="mt-4 overflow-hidden rounded-xl border bg-muted/72">
       <div className="flex h-10 items-center gap-2 border-b border-border px-3 text-xs">
         <span className="font-medium">Set it up with your coding agent</span>
         <button

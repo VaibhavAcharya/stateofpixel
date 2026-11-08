@@ -1,5 +1,6 @@
 import { LockSimpleIcon } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
+import { Button } from "uiofcraft";
 import {
   api,
   type FunctionReturnType,
@@ -13,7 +14,6 @@ import {
 import { columnHelper, DataTable, type SortingState } from "./DataTable";
 import {
   BuildStatePill,
-  buttonClass,
   listRowLinkClass,
   RelativeTime,
   SkeletonRows,
@@ -42,7 +42,7 @@ const columns = helper.columns([
           <LockSimpleIcon
             size={12}
             aria-label="Private"
-            className="shrink-0 text-muted"
+            className="shrink-0 text-muted-foreground"
           />
         )}
       </Link>
@@ -55,11 +55,13 @@ const columns = helper.columns([
     cell: ({ row }) => {
       const build = row.original.latestBuild;
       if (build === null) {
-        return <span className="text-muted">No builds yet</span>;
+        return <span className="text-muted-foreground">No builds yet</span>;
       }
       return (
         <span className="flex items-center gap-2">
-          <span className="text-muted tabular-nums">#{build.number}</span>
+          <span className="text-muted-foreground tabular-nums">
+            #{build.number}
+          </span>
           <BuildStatePill
             status={build.status}
             conclusion={build.conclusion}
@@ -84,7 +86,7 @@ const columns = helper.columns([
     id: "updated",
     header: "Updated",
     sortDescFirst: true,
-    meta: { className: "w-32 text-right text-muted max-sm:hidden" },
+    meta: { className: "w-32 text-right text-muted-foreground max-sm:hidden" },
     cell: ({ row }) =>
       row.original.latestBuild && (
         <RelativeTime timestamp={row.original.latestBuild.createdAt} />
@@ -118,7 +120,7 @@ export function ProjectTable({
   }
   if (results.length === 0) {
     return (
-      <p className="border-t border-border py-4 text-sm text-muted">
+      <p className="border-t border-border py-4 text-sm text-muted-foreground">
         {search.q === undefined ? empty : `No projects match "${search.q}".`}
       </p>
     );
@@ -150,17 +152,13 @@ export function ProjectTable({
       />
       {status === "CanLoadMore" && (
         <div className="mt-4 flex justify-center">
-          <button
-            type="button"
-            className={buttonClass()}
-            onClick={() => loadMore(PAGE_SIZE)}
-          >
+          <Button variant="outline" onClick={() => loadMore(PAGE_SIZE)}>
             Load more
-          </button>
+          </Button>
         </div>
       )}
       {status === "LoadingMore" && (
-        <div className="mt-4 flex justify-center text-muted">
+        <div className="mt-4 flex justify-center text-muted-foreground">
           <Spinner size={16} />
         </div>
       )}
