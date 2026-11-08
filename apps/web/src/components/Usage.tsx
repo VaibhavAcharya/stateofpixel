@@ -4,6 +4,12 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   Button,
+  Card,
+  CardFrame,
+  CardFrameAction,
+  CardFrameFooter,
+  CardFrameHeader,
+  CardFrameTitle,
   Dialog,
   DialogHeader,
   DialogPopup,
@@ -80,8 +86,29 @@ const columns = helper.columns([
   helper.display({
     id: "storage",
     header: "Storage",
-    meta: { className: "w-28 text-right tabular-nums" },
-    cell: ({ row }) => formatBytes(totalBytes(row.original)),
+    meta: { className: "w-36 text-right tabular-nums" },
+    cell: ({ row }) => {
+      const total = totalBytes(row.original);
+      return (
+        <span className="flex flex-col items-end gap-1.5">
+          {formatBytes(total)}
+          <span
+            aria-hidden
+            className="flex h-1 w-24 overflow-hidden rounded-full bg-muted"
+          >
+            {PARTS.map((part) => (
+              <span
+                key={part.key}
+                className={part.color}
+                style={{
+                  width: `${total === 0 ? 0 : (row.original[part.key] / total) * 100 * row.original.share}%`,
+                }}
+              />
+            ))}
+          </span>
+        </span>
+      );
+    },
   }),
   helper.accessor("share", {
     header: "Share",
@@ -133,60 +160,81 @@ export function UsageView({
   const unlimited = storage.plan === "unlimited";
   const barBytes = unlimited ? Math.max(1, counted) : storage.storageLimitBytes;
 
+  const partBytes = PARTS.map((part) => ({
+    ...part,
+    bytes: projects.reduce(
+      (sum, project) => sum + project[part.key],
+      usage.hidden[part.key],
+    ),
+  }));
+  const used = unlimited
+    ? null
+    : storage.storageBytes / storage.storageLimitBytes;
+
   return (
-    <div className="flex flex-col gap-8">
-      <section className="rounded-xl border bg-card p-5 shadow-xs/5">
-        <p className="text-sm text-muted-foreground">
-          <span className="text-2xl font-semibold text-foreground tabular-nums">
-            {formatGigabytes(storage.storageBytes)}
-          </span>{" "}
-          {unlimited
-            ? "stored"
-            : `of ${formatGigabytes(storage.storageLimitBytes)} stored`}
-        </p>
-        <div
-          role="img"
-          aria-label="Storage by kind"
-          className="mt-4 flex h-2 overflow-hidden rounded-full bg-muted"
-        >
-          {PARTS.map((part) => {
-            const bytes = projects.reduce(
-              (sum, project) => sum + project[part.key],
-              usage.hidden[part.key],
-            );
-            return (
-              <span
-                key={part.key}
-                className={part.color}
-                style={{
-                  width: `${Math.min(100, (bytes / barBytes) * 100)}%`,
-                }}
-              />
-            );
-          })}
-        </div>
-        <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
-          {PARTS.map((part) => (
-            <li key={part.key} className="flex items-center gap-2">
-              <span className={`size-2 rounded-full ${part.color}`} />
-              {part.label}
-              <span className="text-foreground tabular-nums">
-                {formatBytes(
-                  projects.reduce(
-                    (sum, project) => sum + project[part.key],
-                    usage.hidden[part.key],
-                  ),
-                )}
+    <div className="flex flex-col gap-6">
+      <CardFrame>
+        <CardFrameHeader className="py-3">
+          <CardFrameTitle>Storage</CardFrameTitle>
+          {used !== null && (
+            <CardFrameAction>
+              <span className="text-muted-foreground text-xs tabular-nums">
+                {Math.round(used * 100)}% of the plan
               </span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 text-xs text-muted-foreground">
+            </CardFrameAction>
+          )}
+        </CardFrameHeader>
+        <Card className="overflow-hidden">
+          <div className="grid divide-y lg:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))] lg:divide-x lg:divide-y-0">
+            <div className="flex flex-col gap-4 p-5">
+              <p className="text-muted-foreground text-sm">
+                <span className="font-heading font-semibold text-4xl text-foreground tracking-[-0.02em] tabular-nums">
+                  {formatGigabytes(storage.storageBytes)}
+                </span>{" "}
+                {unlimited
+                  ? "stored"
+                  : `of ${formatGigabytes(storage.storageLimitBytes)} stored`}
+              </p>
+              <div
+                role="img"
+                aria-label="Storage by kind"
+                className="flex h-2 overflow-hidden rounded-full bg-muted"
+              >
+                {partBytes.map((part) => (
+                  <span
+                    key={part.key}
+                    className={part.color}
+                    style={{
+                      width: `${Math.min(100, (part.bytes / barBytes) * 100)}%`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            {partBytes.map((part) => (
+              <div key={part.key} className="flex flex-col gap-1 p-5">
+                <span className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <span className={`size-2 rounded-full ${part.color}`} />
+                  {part.label}
+                </span>
+                <span className="font-heading font-semibold text-2xl tabular-nums">
+                  {formatBytes(part.bytes)}
+                </span>
+                <span className="text-muted-foreground text-xs tabular-nums">
+                  {counted === 0
+                    ? "Nothing counted yet"
+                    : `${Math.round((part.bytes / counted) * 100)}% of counted`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <CardFrameFooter className="py-3 text-muted-foreground text-xs">
           {usage.countedOn === null
             ? "The split by kind and project is counted once a day and shows here after the first count."
             : `The split by kind and project is counted once a day, last on ${formatDay(usage.countedOn)}. Each image counts once, for the project that used it first.`}
-        </p>
-      </section>
+        </CardFrameFooter>
+      </CardFrame>
       <DailyChart daily={usage.daily} today={today} />
       {projects.length > 0 && (
         <DataTable
@@ -222,29 +270,43 @@ function DailyChart({
   );
   const max = Math.max(1, ...daily.map((entry) => entry.bytes));
   return (
-    <section>
-      <h2 className="text-sm font-medium">Storage, last {USAGE_DAYS} days</h2>
-      <div className="mt-3 flex h-32 items-end gap-px border-b border-border">
-        {days.map((day) => {
-          const bytes = bytesByDay.get(day);
-          return (
-            <span
-              key={day}
-              title={`${formatDay(day)}: ${
-                bytes === undefined ? "not counted" : formatBytes(bytes)
-              }`}
-              className="flex-1 rounded-t-xs bg-link"
-              style={{ height: `${((bytes ?? 0) / max) * 100}%` }}
-            />
-          );
-        })}
-      </div>
-      <div className="mt-1 flex justify-between text-xs text-muted-foreground tabular-nums">
-        <span>{formatDay(days[0] ?? "")}</span>
-        {daily.length > 0 && <span>Peak {formatBytes(max)}</span>}
-        <span>{formatDay(days[days.length - 1] ?? "")}</span>
-      </div>
-    </section>
+    <CardFrame>
+      <CardFrameHeader className="py-3">
+        <CardFrameTitle>Storage, last {USAGE_DAYS} days</CardFrameTitle>
+        {daily.length > 0 && (
+          <CardFrameAction>
+            <span className="text-muted-foreground text-xs tabular-nums">
+              Peak {formatBytes(max)}
+            </span>
+          </CardFrameAction>
+        )}
+      </CardFrameHeader>
+      <Card className="p-5">
+        <div className="flex h-36 items-end gap-px border-b">
+          {days.map((day, index) => {
+            const bytes = bytesByDay.get(day);
+            return (
+              <span
+                key={day}
+                title={`${formatDay(day)}: ${
+                  bytes === undefined ? "not counted" : formatBytes(bytes)
+                }`}
+                className={`flex-1 rounded-t-xs transition-colors ${
+                  index === days.length - 1
+                    ? "bg-link"
+                    : "bg-link/40 hover:bg-link"
+                }`}
+                style={{ height: `${((bytes ?? 0) / max) * 100}%` }}
+              />
+            );
+          })}
+        </div>
+        <div className="mt-2 flex justify-between text-muted-foreground text-xs tabular-nums">
+          <span>{formatDay(days[0] ?? "")}</span>
+          <span>{formatDay(days[days.length - 1] ?? "")}</span>
+        </div>
+      </Card>
+    </CardFrame>
   );
 }
 
