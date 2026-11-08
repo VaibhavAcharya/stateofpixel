@@ -372,7 +372,7 @@ function AccountsGroup() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
-          {installUrl !== undefined && (
+          {installUrl && (
             <SidebarMenuItem>
               <SidebarMenuButton
                 tooltip="Add GitHub account"
@@ -444,7 +444,7 @@ function AccountSwitcher({ owner }: { owner: string }) {
               </MenuLinkItem>
             ))}
           </MenuGroup>
-          {installUrl !== undefined && (
+          {installUrl && (
             <>
               <MenuSeparator />
               <MenuLinkItem href={installUrl} className="text-muted-foreground">

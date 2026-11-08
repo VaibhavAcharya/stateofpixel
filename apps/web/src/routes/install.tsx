@@ -53,7 +53,7 @@ function Accounts() {
     refresh();
   }, [refresh]);
 
-  const installButton = installUrl !== undefined && (
+  const installButton = installUrl && (
     <Button
       render={<a href={installUrl} />}
       data-umami-event="Install GitHub App"
@@ -80,7 +80,7 @@ function Accounts() {
         actions={
           accounts !== undefined &&
           accounts.length > 0 &&
-          installUrl !== undefined && (
+          installUrl && (
             <Button
               variant="outline"
               render={<a href={installUrl} />}

@@ -4,7 +4,6 @@ import { toStorageUsage } from "./accounts.ts";
 import { internal } from "./api.ts";
 import { githubUserToken } from "./connections.ts";
 import type { Id } from "./dataModel.ts";
-import { env } from "./env.ts";
 import { syncInstallation } from "./installations.ts";
 import { GithubError, listUserInstallations } from "./lib/github.ts";
 import {
@@ -73,8 +72,10 @@ export const accounts = query({
 
 export const installUrl = query({
   args: {},
-  handler: async () =>
-    `https://github.com/apps/${env.GITHUB_APP_SLUG}/installations/new`,
+  handler: async () => {
+    const slug = process.env.GITHUB_APP_SLUG;
+    return slug ? `https://github.com/apps/${slug}/installations/new` : null;
+  },
 });
 
 export const refreshAccounts = action({
