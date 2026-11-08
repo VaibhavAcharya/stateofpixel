@@ -9,6 +9,10 @@ Read these before changing code. Link to them instead of copying their content.
 - [packages/cli/README.md](packages/cli/README.md): the npm page, which links to the docs
 - [packages/backend/AGENTS.md](packages/backend/AGENTS.md): backend guidelines, read before touching `packages/backend/src`
 
+## UI
+
+UI comes from the `uiofcraft` package. Before you add or change UI, read `node_modules/uiofcraft/docs/usage.md`, then the pages in `node_modules/uiofcraft/docs/components` for the components you use. Use those components and the theme tokens instead of writing new ones.
+
 ## Checks
 
 Run what `ci.yml` runs before handing work back:
