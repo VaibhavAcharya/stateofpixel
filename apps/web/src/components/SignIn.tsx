@@ -1,4 +1,8 @@
-import { GithubLogoIcon, GoogleLogoIcon } from "@phosphor-icons/react/ssr";
+import {
+  GithubLogoIcon,
+  GoogleLogoIcon,
+  SquaresFourIcon,
+} from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription, Button, cn } from "uiofcraft";
@@ -100,6 +104,7 @@ export function AuthButton({
         className={className}
         data-umami-event="Open dashboard"
       >
+        <SquaresFourIcon />
         Open dashboard
       </Button>
     );
