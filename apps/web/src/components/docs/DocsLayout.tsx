@@ -4,7 +4,7 @@ import {
   CaretDownIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { PublicPage, WIDE } from "../landing/sections";
 
 export const DOCS_NAV = [
@@ -128,9 +128,12 @@ export function DocsLayout() {
   return (
     <PublicPage>
       <div
-        className={`${WIDE} grid grid-cols-[208px_minmax(0,1fr)] gap-16 max-lg:grid-cols-1 max-lg:gap-0`}
+        className={`${WIDE} grid grid-cols-[224px_minmax(0,1fr)] gap-12 max-lg:grid-cols-1 max-lg:gap-0 xl:gap-16`}
       >
-        <nav aria-label="Docs" className="py-12 max-lg:hidden">
+        <nav
+          aria-label="Docs"
+          className="sticky top-16 -ml-2 max-h-[calc(100svh-4rem)] self-start overflow-y-auto py-10 pr-2 pl-2 max-lg:hidden"
+        >
           <NavGroups />
         </nav>
         <details
@@ -169,7 +172,7 @@ function NavGroups() {
               <li key={page.slug}>
                 <DocsPageLink
                   slug={page.slug}
-                  className="flex h-8 items-center rounded-sm px-2 text-sm text-muted-foreground transition-colors duration-100 hover:bg-accent hover:text-foreground data-[status=active]:bg-accent data-[status=active]:font-medium data-[status=active]:text-foreground"
+                  className="flex h-8 items-center rounded-md px-2 text-sm text-muted-foreground transition-colors duration-100 hover:bg-accent hover:text-foreground data-[status=active]:bg-accent data-[status=active]:font-medium data-[status=active]:text-foreground"
                 >
                   {page.label}
                 </DocsPageLink>
@@ -200,7 +203,7 @@ function NavGroups() {
 }
 
 const PROSE =
-  "text-sm leading-6 [&_a]:text-link [&_a]:hover:underline [&_h2]:mt-12 [&_h2]:scroll-mt-24 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-balance [&_h3]:mt-8 [&_h3]:text-sm [&_h3]:font-semibold [&_li]:mt-1.5 [&_ol]:mt-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mt-3 [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:pl-5 [&_figure]:mt-4 [&_li>figure]:mt-3";
+  "text-[15px] leading-7 [&_a]:text-link [&_a]:hover:underline [&_h2]:mt-12 [&_h2]:scroll-mt-24 [&_h2]:font-heading [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:tracking-[-0.01em] [&_h2]:text-balance [&_h3]:mt-8 [&_h3]:font-heading [&_h3]:text-base [&_h3]:font-semibold [&_li]:mt-1.5 [&_ol]:mt-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mt-3 [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:pl-5 [&_figure]:mt-4 [&_li>figure]:mt-3";
 
 export function DocsPage({
   title,
@@ -216,32 +219,86 @@ export function DocsPage({
   const previous = index > 0 ? PAGES[index - 1] : undefined;
   const next = index >= 0 ? PAGES[index + 1] : undefined;
   return (
-    <article className="max-w-[680px] min-w-0 pt-12 pb-24 max-sm:pt-8">
-      <h1 className="text-[clamp(28px,3vw,36px)] leading-[1.15] font-semibold tracking-[-0.035em] text-balance">
-        {title}
-      </h1>
-      <p className="mt-3 text-base font-normal tracking-[-0.01em] text-muted-foreground">
-        {lead}
-      </p>
-      <div className={`mt-8 ${PROSE}`}>{children}</div>
-      <nav
-        aria-label="Previous and next page"
-        className="mt-16 grid grid-cols-2 gap-4 border-t border-border pt-6 max-sm:grid-cols-1"
-      >
-        {previous === undefined ? (
-          <span />
-        ) : (
-          <PageLink
-            slug={previous.slug}
-            label={previous.label}
-            direction="Previous"
-          />
-        )}
-        {next !== undefined && (
-          <PageLink slug={next.slug} label={next.label} direction="Next" />
-        )}
-      </nav>
-    </article>
+    <div className="grid min-w-0 gap-12 xl:grid-cols-[minmax(0,720px)_200px] xl:justify-between">
+      <article className="min-w-0 max-w-[720px] pt-10 pb-24 max-sm:pt-8">
+        <h1 className="text-balance font-heading font-semibold text-[clamp(2rem,3.5vw,2.75rem)] leading-[1.1] tracking-[-0.015em]">
+          {title}
+        </h1>
+        <p className="mt-4 text-pretty text-lg text-muted-foreground">{lead}</p>
+        <div className={`mt-10 border-t pt-2 ${PROSE}`}>{children}</div>
+        <nav
+          aria-label="Previous and next page"
+          className="mt-16 grid grid-cols-2 gap-4 border-t border-border pt-6 max-sm:grid-cols-1"
+        >
+          {previous === undefined ? (
+            <span />
+          ) : (
+            <PageLink
+              slug={previous.slug}
+              label={previous.label}
+              direction="Previous"
+            />
+          )}
+          {next !== undefined && (
+            <PageLink slug={next.slug} label={next.label} direction="Next" />
+          )}
+        </nav>
+      </article>
+      <OnThisPage key={pathname} />
+    </div>
+  );
+}
+
+function OnThisPage() {
+  const [headings, setHeadings] = useState<{ id: string; text: string }[]>([]);
+  const [active, setActive] = useState<string | null>(null);
+  useEffect(() => {
+    const elements = [
+      ...document.querySelectorAll<HTMLHeadingElement>("article h2[id]"),
+    ];
+    setHeadings(
+      elements.map((element) => ({
+        id: element.id,
+        text: element.textContent?.replace(/#$/, "").trim() ?? "",
+      })),
+    );
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.find((entry) => entry.isIntersecting);
+        if (visible) {
+          setActive(visible.target.id);
+        }
+      },
+      { rootMargin: "-80px 0px -70% 0px" },
+    );
+    for (const element of elements) {
+      observer.observe(element);
+    }
+    return () => observer.disconnect();
+  }, []);
+  if (headings.length < 2) {
+    return null;
+  }
+  return (
+    <nav
+      aria-label="On this page"
+      className="sticky top-16 max-h-[calc(100svh-4rem)] self-start overflow-y-auto py-10 max-xl:hidden"
+    >
+      <p className="pb-2 font-medium text-xs">On this page</p>
+      <ul className="border-l">
+        {headings.map((heading) => (
+          <li key={heading.id}>
+            <a
+              href={`#${heading.id}`}
+              aria-current={active === heading.id ? "location" : undefined}
+              className="-ml-px block border-transparent border-l py-1 pl-3 text-muted-foreground text-sm transition-colors hover:text-foreground aria-[current]:border-foreground aria-[current]:text-foreground"
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 
@@ -258,7 +315,7 @@ function PageLink({
   return (
     <DocsPageLink
       slug={slug}
-      className={`flex flex-col gap-1 rounded-md p-3 ring-1 ring-border transition-colors duration-100 hover:bg-accent ${
+      className={`flex flex-col gap-1 rounded-xl border bg-card p-4 shadow-xs/5 transition-colors duration-100 hover:bg-accent/50 ${
         direction === "Next"
           ? "col-start-2 items-end text-right max-sm:col-start-1"
           : ""
