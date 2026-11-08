@@ -6,7 +6,21 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { type CSSProperties, Fragment, type ReactNode, useState } from "react";
-import { Button } from "uiofcraft";
+import {
+  Badge,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+  Button,
+  cn,
+  RadioGroupPrimitive,
+  RadioPrimitive,
+  SegmentedControl,
+  SegmentedControlItem,
+} from "uiofcraft";
 import {
   CHECKED,
   COMPETITORS,
@@ -33,7 +47,14 @@ import percyBefore from "../../snippets/compare/percy-before.yml?highlight";
 import playwrightConfig from "../../snippets/playwright.config.ts?highlight";
 import { CodeBlock, type Snippet } from "../CodeBlock";
 import { DEFAULT_WORKLOAD, formatPrice } from "../landing/Pricing";
-import { DISPLAY, LEAD, PublicPage, SECTION, WIDE } from "../landing/sections";
+import {
+  DISPLAY,
+  LEAD,
+  MUTED_BAND,
+  PublicPage,
+  SECTION,
+  WIDE,
+} from "../landing/sections";
 import { AuthButton } from "../SignIn";
 import { LeadCopy, Logo } from "../ui";
 import {
@@ -46,7 +67,8 @@ import {
 const DOTTED = "border-border";
 const count = new Intl.NumberFormat("en-US");
 const WORKFLOW = ".github/workflows/visual.yml";
-const CARD_SHADOW = "shadow-[0_8px_32px_#11151a18,0_1px_4px_#11151a0a]";
+const CARD_SHADOW =
+  "shadow-[0_32px_64px_-32px] shadow-black/24 dark:shadow-black/64";
 
 const SWITCH_SNIPPETS: Record<
   Competitor["slug"],
@@ -156,19 +178,29 @@ export function CompetitorLogo({
 
 function Lockup({ competitor }: { competitor: Competitor }) {
   return (
-    <p className="flex items-center gap-3 text-sm text-muted-foreground">
-      <span className="text-foreground">
-        <Logo size={32} />
+    <div className="flex items-center gap-3 text-muted-foreground text-sm">
+      <span className="flex items-center -space-x-1.5">
+        <span className="rounded-[9px] bg-background text-foreground ring-2 ring-background">
+          <Logo size={32} />
+        </span>
+        <span className="rounded-[9px] ring-2 ring-background">
+          <CompetitorLogo competitor={competitor} size={32} />
+        </span>
       </span>
-      <span className="mono text-xs">vs</span>
-      <CompetitorLogo competitor={competitor} size={32} />
-      <span className="ml-1">
-        <Link to="/compare" className="hover:text-foreground">
-          Compare
-        </Link>{" "}
-        / {competitor.name}
-      </span>
-    </p>
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink render={<Link to="/compare" />}>
+              Compare
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>vs {competitor.name}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    </div>
   );
 }
 
@@ -179,7 +211,7 @@ function BillCard({ competitor }: { competitor: Competitor }) {
   const { snapshots, bills } = quote(DEFAULT_SUITE, [competitor.priced]);
   return (
     <div
-      className={`w-[480px] overflow-hidden rounded-xl bg-card border shadow-xs/5 max-lg:w-full ${CARD_SHADOW}`}
+      className={`w-[480px] max-w-full overflow-hidden rounded-2xl border bg-card max-lg:w-full ${CARD_SHADOW}`}
     >
       <div className="border-b border-border px-5 py-4">
         <p className="text-sm font-semibold">A month of visual tests</p>
@@ -230,14 +262,12 @@ function StatusCard({
   }
   return (
     <div
-      className={`w-[480px] overflow-hidden rounded-xl bg-card border shadow-xs/5 max-lg:w-full ${CARD_SHADOW}`}
+      className={`w-[480px] max-w-full overflow-hidden rounded-2xl border bg-card max-lg:w-full ${CARD_SHADOW}`}
     >
       <div className="flex items-center gap-3 border-b border-border px-5 py-4">
         <CompetitorLogo competitor={competitor} size={28} />
         <span className="flex-1 text-sm font-semibold">{competitor.name}</span>
-        <span className="rounded-full bg-rejected-bg px-2 py-0.5 text-xs font-medium text-rejected">
-          Shutting down
-        </span>
+        <Badge variant="error">Shutting down</Badge>
       </div>
       <dl className="divide-y divide-border">
         {competitor.status.map((item) => (
@@ -291,9 +321,9 @@ function CompareHero({
 }) {
   return (
     <section
-      className={`${WIDE} grid grid-cols-[minmax(0,1fr)_auto] items-center gap-12 pt-24 pb-16 max-lg:grid-cols-1 max-sm:pt-12`}
+      className={`${WIDE} grid items-center gap-10 pt-10 pb-16 sm:pt-14 lg:grid-cols-12 lg:gap-10`}
     >
-      <div>
+      <div className="lg:col-span-7">
         <Lockup competitor={competitor} />
         <HeroTitle competitor={competitor} />
         <p className={`${LEAD} mt-6 max-w-[640px]`}>{competitor.lead}</p>
@@ -312,8 +342,10 @@ function CompareHero({
           .
         </p>
       </div>
-      <BillCard competitor={competitor} />
-      <StatusCard competitor={competitor} sources={sources} />
+      <div className="lg:col-span-5 lg:justify-self-end">
+        <BillCard competitor={competitor} />
+        <StatusCard competitor={competitor} sources={sources} />
+      </div>
     </section>
   );
 }
@@ -350,10 +382,10 @@ function StepCell({
 }) {
   return (
     <div
-      className={`flex min-h-16 flex-wrap items-start gap-x-3 gap-y-1 rounded-lg p-4 text-sm max-md:col-start-2 ${
+      className={`flex min-h-16 flex-wrap items-start gap-x-3 gap-y-1 rounded-xl p-4 text-sm max-md:col-start-2 ${
         ours
-          ? "bg-card ring-1 ring-border md:col-start-3 md:row-start-1"
-          : "bg-muted md:col-start-1 md:row-start-1"
+          ? "border bg-card shadow-xs/5 md:col-start-3 md:row-start-1"
+          : "bg-muted/72 md:col-start-1 md:row-start-1"
       }`}
     >
       <span className="mt-0.5 shrink-0 md:hidden">
@@ -478,21 +510,25 @@ function Total({
 }) {
   return (
     <div
-      className={`flex flex-col gap-1 rounded-lg p-5 max-md:col-start-2 ${
+      className={`flex flex-col gap-1 rounded-xl p-5 max-md:col-start-2 ${
         ours
-          ? "bg-card ring-1 ring-border md:col-start-3 md:row-start-1"
-          : "bg-muted md:col-start-1 md:row-start-1"
+          ? "border bg-card shadow-xs/5 md:col-start-3 md:row-start-1"
+          : "bg-muted/72 md:col-start-1 md:row-start-1"
       }`}
     >
-      <span
-        className={`w-fit rounded-full px-2.5 py-0.5 text-xs font-medium ${ours ? "bg-approved-bg text-approved" : "bg-changed-bg text-changed"}`}
+      <Badge
+        variant="secondary"
+        className={cn(
+          "w-fit",
+          ours ? "bg-approved-bg text-approved" : "bg-changed-bg text-changed",
+        )}
       >
         {label}
-      </span>
+      </Badge>
       <span className="mt-3 flex items-baseline gap-2">
         <span
           key={value}
-          className={`animate-fade text-[32px] leading-none font-semibold tracking-[-0.04em] tabular-nums ${ours ? "text-approved" : ""}`}
+          className={`animate-fade font-heading text-[32px] leading-none font-semibold tracking-[-0.02em] tabular-nums ${ours ? "text-approved" : ""}`}
         >
           {value}
         </span>
@@ -517,23 +553,26 @@ function Segmented<Value extends string>({
   onChange: (value: Value) => void;
 }) {
   return (
-    <fieldset
+    <SegmentedControl
       aria-label={label}
-      className="flex w-fit max-w-full flex-wrap gap-1 rounded-control bg-muted p-0.5"
+      className="max-w-full flex-wrap"
+      render={
+        <RadioGroupPrimitive
+          value={value}
+          onValueChange={(next) => onChange(next as Value)}
+        />
+      }
     >
       {options.map((option) => (
-        <button
+        <SegmentedControlItem
           key={option.value}
-          type="button"
-          aria-pressed={value === option.value}
-          onClick={() => onChange(option.value)}
-          data-umami-event={event}
-          data-umami-event-value={option.value}
-          className={`flex h-7 items-center gap-1.5 rounded-sm px-3 text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
-            value === option.value
-              ? "bg-card text-foreground shadow-[inset_0_0_0_1px_var(--color-border)]"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          render={
+            <RadioPrimitive.Root
+              value={option.value}
+              data-umami-event={event}
+              data-umami-event-value={option.value}
+            />
+          }
         >
           {option.label}
           {option.count !== undefined && (
@@ -541,9 +580,9 @@ function Segmented<Value extends string>({
               {option.count}
             </span>
           )}
-        </button>
+        </SegmentedControlItem>
       ))}
-    </fieldset>
+    </SegmentedControl>
   );
 }
 
@@ -558,25 +597,30 @@ function perBuild() {
 
 function Differences({ competitor }: { competitor: Competitor }) {
   return (
-    <section className={SECTION}>
-      <LeadCopy title="What changes when you switch." className="max-w-[720px]">
-        The same pull request, reviewed with less in the way.
-      </LeadCopy>
-      <div className="mt-12 grid grid-cols-3 gap-3 max-lg:grid-cols-1">
-        {competitor.differences.map(([title, text], index) => (
-          <div
-            key={title}
-            className="flex flex-col rounded-xl bg-card p-6 border shadow-xs/5"
-          >
-            <span className="mono text-xs text-muted-foreground tabular-nums">
-              0{index + 1}
-            </span>
-            <span className="mt-8 text-xl font-semibold tracking-[-0.025em] text-balance">
-              {title}
-            </span>
-            <span className="mt-3 text-sm text-muted-foreground">{text}</span>
-          </div>
-        ))}
+    <section className={MUTED_BAND}>
+      <div className={SECTION}>
+        <LeadCopy
+          title="What changes when you switch."
+          className="max-w-[720px]"
+        >
+          The same pull request, reviewed with less in the way.
+        </LeadCopy>
+        <div className="mt-12 grid grid-cols-3 gap-3 max-lg:grid-cols-1">
+          {competitor.differences.map(([title, text], index) => (
+            <div
+              key={title}
+              className="flex flex-col rounded-2xl border bg-card p-6 shadow-xs/5"
+            >
+              <span className="mono text-xs text-muted-foreground tabular-nums">
+                0{index + 1}
+              </span>
+              <span className="mt-8 text-balance font-heading font-semibold text-xl tracking-[-0.01em]">
+                {title}
+              </span>
+              <span className="mt-3 text-sm text-muted-foreground">{text}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -595,7 +639,7 @@ function ProductShot() {
         <div>
           <LeadCopy title="What your reviewers get." className="max-w-[420px]">
             Each changed screenshot next to its baseline, with the changed
-            pixels in green.
+            pixels in magenta.
           </LeadCopy>
           <ul className={`mt-8 border-t ${DOTTED} text-sm`}>
             {REVIEW_POINTS.map(([title, text]) => (
@@ -617,11 +661,11 @@ function ProductShot() {
         <div className="checker rounded-2xl border p-8 max-md:p-3">
           <img
             src="/readme/review-page.png"
-            alt="The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in green"
+            alt="The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in magenta"
             width={1440}
             height={760}
             loading="lazy"
-            className={`w-full rounded-lg ring-1 ring-border ${CARD_SHADOW}`}
+            className={`w-full rounded-lg border ${CARD_SHADOW}`}
           />
         </div>
       </div>
@@ -690,11 +734,11 @@ function GlanceTable({
       >
         <div
           aria-hidden
-          className="col-start-2 row-span-full row-start-1 rounded-xl bg-card border shadow-xs/5 max-md:hidden"
+          className="col-start-2 row-span-full row-start-1 rounded-2xl border bg-card shadow-xs/5 max-md:hidden"
         />
         <div
           aria-hidden
-          className="col-start-3 row-span-full row-start-1 rounded-lg bg-muted max-md:hidden"
+          className="col-start-3 row-span-full row-start-1 rounded-2xl bg-muted/72 max-md:hidden"
         />
         <ColumnHead column="md:col-start-2">
           <Logo size={24} />
@@ -719,7 +763,7 @@ function GlanceTable({
                 </span>
                 <span
                   style={row}
-                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 font-medium md:col-start-2 md:row-start-(--row) max-md:rounded-t-lg max-md:bg-card max-md:px-4 max-md:py-3 max-md:ring-1 max-md:ring-border md:border-t ${DOTTED} md:mx-px`}
+                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 font-medium md:col-start-2 md:row-start-(--row) max-md:rounded-t-xl max-md:border max-md:bg-card max-md:px-4 max-md:py-3 md:border-t ${DOTTED} md:mx-px`}
                 >
                   <span className="mt-0.5 shrink-0 md:hidden">
                     <Logo size={16} />
@@ -728,7 +772,7 @@ function GlanceTable({
                 </span>
                 <span
                   style={row}
-                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 md:col-start-3 md:row-start-(--row) max-md:rounded-b-lg max-md:bg-muted max-md:px-4 max-md:py-3 md:border-t ${DOTTED}`}
+                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 md:col-start-3 md:row-start-(--row) max-md:rounded-b-xl max-md:bg-muted/72 max-md:px-4 max-md:py-3 md:border-t ${DOTTED}`}
                 >
                   <span className="mt-0.5 shrink-0 md:hidden">
                     <CompetitorLogo competitor={competitor} size={16} />
@@ -794,7 +838,10 @@ function Ahead({ competitor }: { competitor: Competitor }) {
       </LeadCopy>
       <div className="mt-12 grid grid-cols-2 gap-3 max-md:grid-cols-1">
         {competitor.ahead.map(([title, text]) => (
-          <div key={title} className="flex gap-4 rounded-xl bg-muted/72 p-6">
+          <div
+            key={title}
+            className="flex gap-4 rounded-2xl border bg-card p-6 shadow-xs/5"
+          >
             <CompetitorLogo competitor={competitor} size={24} />
             <span>
               <span className="block text-sm font-semibold">{title}</span>
@@ -870,27 +917,29 @@ function Switch({ competitor }: { competitor: Competitor }) {
 
 function Faq({ competitor }: { competitor: Competitor }) {
   return (
-    <section
-      className={`${SECTION} grid grid-cols-[1fr_2fr] gap-12 max-lg:grid-cols-1`}
-    >
-      <LeadCopy title="Questions." className="max-w-[360px]">
-        What to know before you move from {competitor.name}.
-      </LeadCopy>
-      <div className={`border-t ${DOTTED}`}>
-        {competitor.faq.map(([question, answer]) => (
-          <details key={question} className={`group border-b ${DOTTED}`}>
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-sm font-medium [&::-webkit-details-marker]:hidden">
-              {question}
-              <CaretDownIcon
-                size={14}
-                className="shrink-0 text-muted-foreground transition-transform duration-180 group-open:rotate-180"
-              />
-            </summary>
-            <p className="max-w-[65ch] pb-5 text-sm text-muted-foreground">
-              {answer}
-            </p>
-          </details>
-        ))}
+    <section className={MUTED_BAND}>
+      <div
+        className={`${SECTION} grid grid-cols-[1fr_2fr] gap-12 max-lg:grid-cols-1`}
+      >
+        <LeadCopy title="Questions." className="max-w-[360px]">
+          What to know before you move from {competitor.name}.
+        </LeadCopy>
+        <div className={`border-t ${DOTTED}`}>
+          {competitor.faq.map(([question, answer]) => (
+            <details key={question} className={`group border-b ${DOTTED}`}>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-sm font-medium [&::-webkit-details-marker]:hidden">
+                {question}
+                <CaretDownIcon
+                  size={14}
+                  className="shrink-0 text-muted-foreground transition-transform duration-180 group-open:rotate-180"
+                />
+              </summary>
+              <p className="max-w-[65ch] pb-5 text-sm text-muted-foreground">
+                {answer}
+              </p>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -933,7 +982,7 @@ export function FinalBand({ current }: { current?: Competitor }) {
     (competitor) => competitor.slug !== current?.slug,
   );
   return (
-    <section className="border-t border-border bg-background">
+    <section className={MUTED_BAND}>
       <div
         className={`${SECTION} grid grid-cols-2 items-end gap-12 max-lg:grid-cols-1`}
       >
