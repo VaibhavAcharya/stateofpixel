@@ -24,6 +24,7 @@ import {
 } from "react";
 import {
   Badge,
+  Button,
   buttonVariants,
   cn,
   Skeleton,
@@ -699,9 +700,9 @@ function LoadingImage({
         <span className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
           <WarningIcon size={20} />
           Could not load this image.
-          <button type="button" className={buttonClass()} onClick={onRetry}>
+          <Button variant="outline" onClick={onRetry}>
             Try again
-          </button>
+          </Button>
         </span>
       </span>
     );

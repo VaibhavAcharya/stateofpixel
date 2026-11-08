@@ -5,8 +5,8 @@ import {
   TerminalWindowIcon,
 } from "@phosphor-icons/react/ssr";
 import { type ReactNode, useState } from "react";
+import { Button } from "uiofcraft";
 import { SITE_URL } from "../../lib/pageMeta";
-import { buttonClass } from "../ui";
 import { DocsPageLink } from "./DocsLayout";
 
 const PATHS: { title: string; text: string; icon: ReactNode; slug: string }[] =
@@ -74,8 +74,10 @@ export function AgentPrompt() {
     <div className="mt-4 overflow-hidden rounded-xl border bg-muted/72">
       <div className="flex h-10 items-center gap-2 border-b border-border px-3 text-xs">
         <span className="font-medium">Set it up with your coding agent</span>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
+          className="ml-auto"
           data-umami-event="Copy agent prompt"
           onClick={() => {
             navigator.clipboard.writeText(AGENT_PROMPT).then(() => {
@@ -83,11 +85,10 @@ export function AgentPrompt() {
               window.setTimeout(() => setCopied(false), 2000);
             });
           }}
-          className={`${buttonClass("ghost", "sm")} ml-auto`}
         >
-          {copied ? <CheckIcon size={12} /> : <CopyIcon size={12} />}
+          {copied ? <CheckIcon /> : <CopyIcon />}
           {copied ? "Copied" : "Copy prompt"}
-        </button>
+        </Button>
       </div>
       <pre className="overflow-x-auto p-4 font-mono text-[13px] leading-[1.8] whitespace-pre-wrap">
         {AGENT_PROMPT}
