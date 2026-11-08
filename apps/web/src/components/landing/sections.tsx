@@ -2,12 +2,13 @@ import {
   ArrowRightIcon,
   CheckIcon,
   GearSixIcon,
+  GithubLogoIcon,
   ListIcon,
   LockSimpleIcon,
   TerminalWindowIcon,
   UserMinusIcon,
 } from "@phosphor-icons/react/ssr";
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import {
   Button,
@@ -16,6 +17,14 @@ import {
   CardFrameAction,
   CardFrameHeader,
   CardFrameTitle,
+  cn,
+  Separator,
+  Sheet,
+  SheetHeader,
+  SheetPanel,
+  SheetPopup,
+  SheetTitle,
+  SheetTrigger,
   Tabs,
   TabsList,
   TabsPanel,
@@ -32,9 +41,8 @@ import storybook from "../../snippets/storybook.yml?highlight";
 import workflow from "../../snippets/workflow.yml?highlight";
 import { CodeBlock, type Snippet } from "../CodeBlock";
 import { facts } from "../docs/facts";
-import { Menu, menuItemClass, useCloseMenu } from "../Menu";
 import { AuthButton, SignInButton } from "../SignIn";
-import { buttonClass, type Icon, Kbd, LeadCopy, Wordmark } from "../ui";
+import { type Icon, Kbd, LeadCopy, Logo as Mark, Wordmark } from "../ui";
 import { CompanyOfCraftMark } from "./CompanyOfCraftMark";
 import { ReviewDemo } from "./ReviewDemo";
 
@@ -53,28 +61,49 @@ export const REPO_URL = "https://github.com/VaibhavAcharya/stateofpixel";
 export const CHANGELOG_URL = `${REPO_URL}/blob/main/packages/cli/CHANGELOG.md`;
 
 const NAV = [
-  ["Demo", "/#demo"],
-  ["How it works", "/#how"],
-  ["Pricing", "/#pricing"],
-  ["FAQ", "/#faq"],
-  ["Compare", "/compare"],
-  ["Docs", "/docs"],
-  ["Open source", REPO_URL],
+  { label: "How it works", href: "/#how", match: null },
+  { label: "Pricing", href: "/#pricing", match: null },
+  { label: "Compare", href: "/compare", match: "/compare" },
+  { label: "Docs", href: "/docs", match: "/docs" },
 ] as const;
 
 export function HeaderNav() {
+  const pathname = useLocation({ select: (location) => location.pathname });
   return (
     <header className="sticky top-0 z-40 w-full bg-sidebar/80 backdrop-blur-sm before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-border/64">
       <div className={`${WIDE} relative flex h-16 items-center gap-2`}>
-        <Link to="/" aria-label="stateofpixel home" className="pe-4 lg:pe-5">
-          <Wordmark />
+        <Link
+          to="/"
+          aria-label="stateofpixel home"
+          className="-ms-1 rounded-lg px-1 py-1 pe-4 lg:pe-6"
+        >
+          <span className="flex items-center gap-2 font-heading font-semibold text-lg tracking-[-0.01em]">
+            <Mark size={24} />
+            stateofpixel
+          </span>
         </Link>
-        <nav className="flex items-center gap-1 max-lg:hidden">
-          {NAV.map(([label, href]) => (
-            <Button key={href} variant="ghost" render={<a href={href} />}>
-              {label}
-            </Button>
-          ))}
+        <nav
+          aria-label="Main"
+          className="flex items-center gap-1 max-lg:hidden"
+        >
+          {NAV.map(({ label, href, match }) => {
+            const active = match !== null && pathname.startsWith(match);
+            return (
+              <Button
+                key={href}
+                variant="ghost"
+                className={cn(
+                  "text-muted-foreground hover:text-foreground",
+                  active && "bg-accent text-foreground",
+                )}
+                render={
+                  <a href={href} aria-current={active ? "page" : undefined} />
+                }
+              >
+                {label}
+              </Button>
+            );
+          })}
         </nav>
         <HeaderActions />
       </div>
@@ -86,6 +115,15 @@ function HeaderActions() {
   const { isLoading, isAuthenticated } = useAuth();
   return (
     <div className="ml-auto flex items-center gap-2">
+      <Button
+        variant="ghost"
+        className="text-muted-foreground hover:text-foreground max-md:hidden"
+        render={<a href={REPO_URL} data-umami-event="GitHub" />}
+      >
+        <GithubLogoIcon weight="fill" />
+        Open source
+      </Button>
+      <Separator orientation="vertical" className="mx-1 h-5 max-md:hidden" />
       {!isLoading && !isAuthenticated && (
         <SignInButton
           label="Sign in"
@@ -94,31 +132,64 @@ function HeaderActions() {
         />
       )}
       <AuthButton label="Start free" />
-      <div className="lg:hidden">
-        <Menu
-          label="Menu"
-          align="end"
-          width="w-48"
-          triggerClassName={buttonClass("ghost", "icon")}
-          trigger={<ListIcon size={16} />}
-        >
-          {NAV.map(([label, href]) => (
-            <MobileNavLink key={href} href={href}>
-              {label}
-            </MobileNavLink>
-          ))}
-        </Menu>
-      </div>
+      <MobileNav />
     </div>
   );
 }
 
-function MobileNavLink({ href, children }: { href: string; children: string }) {
-  const close = useCloseMenu();
+function MobileNav() {
+  const [open, setOpen] = useState(false);
+  const { isLoading, isAuthenticated } = useAuth();
   return (
-    <a href={href} className={menuItemClass} onClick={close}>
-      {children}
-    </a>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Menu"
+            className="lg:hidden"
+          />
+        }
+      >
+        <ListIcon />
+      </SheetTrigger>
+      <SheetPopup side="right" className="w-[min(320px,100vw)]">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2 font-heading">
+            <Mark size={20} />
+            stateofpixel
+          </SheetTitle>
+        </SheetHeader>
+        <SheetPanel>
+          <nav aria-label="Main" className="flex flex-col">
+            {[
+              ...NAV,
+              { label: "Open source", href: REPO_URL, match: null },
+            ].map(({ label, href }) => (
+              <a
+                key={href}
+                href={href}
+                onClick={() => setOpen(false)}
+                className="flex h-12 items-center border-b font-medium text-base"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+          <div className="mt-6 flex flex-col gap-2">
+            <AuthButton label="Start free with GitHub" className="w-full" />
+            {!isLoading && !isAuthenticated && (
+              <SignInButton
+                label="Sign in"
+                variant="secondary"
+                className="w-full"
+              />
+            )}
+          </div>
+        </SheetPanel>
+      </SheetPopup>
+    </Sheet>
   );
 }
 
