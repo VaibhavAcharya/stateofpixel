@@ -5,6 +5,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "uiofcraft";
 import { PublicPage, WIDE } from "../landing/sections";
 
 export const DOCS_NAV = [
@@ -136,23 +137,22 @@ export function DocsLayout() {
         >
           <NavGroups />
         </nav>
-        <details
-          key={pathname}
-          className="group border-b border-border lg:hidden"
-        >
-          <summary className="flex h-12 cursor-pointer list-none items-center gap-2 text-sm font-medium [&::-webkit-details-marker]:hidden">
+        <Collapsible key={pathname} className="border-b lg:hidden">
+          <CollapsibleTrigger className="group flex h-12 w-full cursor-pointer items-center gap-2 font-medium text-sm">
             <span className="text-muted-foreground">Docs</span>
             <span className="text-muted-foreground">/</span>
             {current?.label ?? "Menu"}
             <CaretDownIcon
               size={14}
-              className="ml-auto text-muted-foreground transition-transform group-open:rotate-180"
+              className="ml-auto text-muted-foreground transition-transform group-data-panel-open:rotate-180"
             />
-          </summary>
-          <div className="pb-6">
-            <NavGroups />
-          </div>
-        </details>
+          </CollapsibleTrigger>
+          <CollapsiblePanel>
+            <div className="pb-6">
+              <NavGroups />
+            </div>
+          </CollapsiblePanel>
+        </Collapsible>
         <Outlet />
       </div>
     </PublicPage>

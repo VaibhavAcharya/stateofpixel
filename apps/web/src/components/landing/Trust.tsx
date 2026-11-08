@@ -19,8 +19,14 @@ import {
   ShieldCheckIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
-import { type ReactNode, useId, useState } from "react";
-import { Button } from "uiofcraft";
+import { type ReactNode, useState } from "react";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionPanel,
+  AccordionTrigger,
+  Button,
+} from "uiofcraft";
 import { findDoc } from "../../content/docs";
 import { track } from "../../lib/analytics";
 import { BOOKING_URL } from "../../lib/booking";
@@ -42,52 +48,6 @@ export const QUESTIONS = FAQ.filter(
   ([question]) => !ANSWERED_ABOVE.includes(question),
 );
 
-function Disclosure({
-  summary,
-  open,
-  onToggle,
-  buttonClassName = "",
-  children,
-}: {
-  summary: ReactNode;
-  open: boolean;
-  onToggle: () => void;
-  buttonClassName?: string;
-  children: ReactNode;
-}) {
-  const id = useId();
-  return (
-    <div>
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={onToggle}
-        className={`flex w-full cursor-pointer items-center gap-3 text-left ${buttonClassName}`}
-      >
-        <span className="flex min-w-0 flex-1 items-center gap-3">
-          {summary}
-        </span>
-        <CaretDownIcon
-          size={14}
-          className={`shrink-0 text-muted-foreground transition-transform duration-180 ease-out-strong ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-      <div
-        id={id}
-        inert={!open}
-        className={`grid transition-[grid-template-rows,opacity] duration-250 ease-out-strong motion-reduce:transition-none ${
-          open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-        }`}
-      >
-        <div className="min-h-0 overflow-hidden">{children}</div>
-      </div>
-    </div>
-  );
-}
-
 function ListTitle({ children }: { children: ReactNode }) {
   return (
     <h3 className="text-base font-semibold tracking-[-0.01em]">{children}</h3>
@@ -105,15 +65,16 @@ function FaqAccordion({
 }) {
   const [open, setOpen] = useState<string[]>([]);
   const allOpen = open.length === questions.length;
-  const toggle = (question: string) => {
-    if (!open.includes(question)) {
-      track("FAQ open", { question });
+  const change = (stack: string[], next: string[]) => {
+    for (const question of next) {
+      if (!open.includes(question)) {
+        track("FAQ open", { question });
+      }
     }
-    setOpen((current) =>
-      current.includes(question)
-        ? current.filter((item) => item !== question)
-        : [...current, question],
-    );
+    setOpen((current) => [
+      ...current.filter((item) => !stack.includes(item)),
+      ...next,
+    ]);
   };
   const half = Math.ceil(questions.length / columns);
   const stacks =
@@ -137,25 +98,26 @@ function FaqAccordion({
         className={`mt-4 grid gap-x-12 ${columns === 2 ? "grid-cols-2 max-lg:grid-cols-1" : ""}`}
       >
         {stacks.map((stack) => (
-          <div
+          <Accordion
             key={stack[0]}
+            multiple
+            value={open.filter((question) => stack.includes(question))}
+            onValueChange={(next) => change(stack, next as string[])}
             className={`border-t ${DOTTED} max-lg:not-first:border-t-0`}
           >
             {stack.map((question) => (
-              <div key={question} className={`border-b ${DOTTED}`}>
-                <Disclosure
-                  open={open.includes(question)}
-                  onToggle={() => toggle(question)}
-                  buttonClassName="py-4 text-sm font-medium"
-                  summary={question}
-                >
-                  <p className="max-w-[65ch] pb-5 text-sm text-muted-foreground">
-                    {ANSWERS.get(question)}
-                  </p>
-                </Disclosure>
-              </div>
+              <AccordionItem
+                key={question}
+                value={question}
+                className="last:border-b"
+              >
+                <AccordionTrigger>{question}</AccordionTrigger>
+                <AccordionPanel className="max-w-[65ch] pb-5">
+                  {ANSWERS.get(question)}
+                </AccordionPanel>
+              </AccordionItem>
             ))}
-          </div>
+          </Accordion>
         ))}
       </div>
     </div>
@@ -309,7 +271,7 @@ function Connector() {
 }
 
 function Manifest() {
-  const [open, setOpen] = useState<number | null>(0);
+  const [open, setOpen] = useState<string | null>(SENT[0]?.[1] ?? null);
   return (
     <div className="self-start rounded-xl border bg-muted/72">
       <div
@@ -318,38 +280,37 @@ function Manifest() {
         <span className="mono text-sm">npx stateofpixel upload</span>
         <span className="text-xs text-muted-foreground">Sends</span>
       </div>
-      <ul className="p-1">
-        {SENT.map(([ItemIcon, label, example, detail], index) => (
-          <li key={label}>
-            <Disclosure
-              open={open === index}
-              onToggle={() => {
-                if (open !== index) {
-                  track("Upload manifest", { item: label });
-                }
-                setOpen(open === index ? null : index);
-              }}
-              buttonClassName="h-10 rounded-sm px-3 text-sm transition-colors duration-100 hover:bg-accent"
-              summary={
-                <>
-                  <ItemIcon
-                    size={16}
-                    className="shrink-0 text-muted-foreground"
-                  />
-                  <span className="font-medium">{label}</span>
-                  <span className="mono ml-auto truncate text-muted-foreground max-sm:hidden">
-                    {example}
-                  </span>
-                </>
-              }
-            >
-              <p className="pt-1 pr-3 pb-3 pl-10 text-xs text-muted-foreground">
-                {detail}
-              </p>
-            </Disclosure>
-          </li>
+      <Accordion
+        value={open === null ? [] : [open]}
+        onValueChange={(next) => {
+          const label = (next as string[])[0] ?? null;
+          if (label !== null) {
+            track("Upload manifest", { item: label });
+          }
+          setOpen(label);
+        }}
+        className="p-1"
+      >
+        {SENT.map(([ItemIcon, label, example, detail]) => (
+          <AccordionItem key={label} value={label} className="border-b-0">
+            <AccordionTrigger className="h-10 items-center rounded-md px-3 py-0 transition-colors duration-100 hover:bg-accent">
+              <span className="flex min-w-0 flex-1 items-center gap-3">
+                <ItemIcon
+                  size={16}
+                  className="shrink-0 text-muted-foreground"
+                />
+                <span>{label}</span>
+                <span className="mono ml-auto truncate font-normal text-muted-foreground max-sm:hidden">
+                  {example}
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionPanel className="pt-1 pr-3 pb-3 pl-10 text-xs">
+              {detail}
+            </AccordionPanel>
+          </AccordionItem>
         ))}
-      </ul>
+      </Accordion>
     </div>
   );
 }
