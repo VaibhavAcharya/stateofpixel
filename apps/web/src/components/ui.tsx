@@ -25,7 +25,6 @@ import {
 import {
   Badge,
   Button,
-  buttonVariants,
   cn,
   Skeleton,
   TooltipPopup,
@@ -246,33 +245,6 @@ export function RelativeTime({ timestamp }: { timestamp: number }) {
     >
       {formatRelative(timestamp)}
     </time>
-  );
-}
-
-const BUTTON_VARIANTS = {
-  primary: "default",
-  secondary: "outline",
-  ghost: "ghost",
-  danger: "destructive-outline",
-} as const;
-
-const BUTTON_SIZES = {
-  md: "default",
-  sm: "sm",
-  icon: "icon",
-  "icon-sm": "icon-sm",
-} as const;
-
-export function buttonClass(
-  variant: keyof typeof BUTTON_VARIANTS = "secondary",
-  size: keyof typeof BUTTON_SIZES = "md",
-) {
-  return cn(
-    buttonVariants({
-      variant: BUTTON_VARIANTS[variant],
-      size: BUTTON_SIZES[size],
-    }),
-    "aria-disabled:cursor-not-allowed aria-disabled:opacity-64",
   );
 }
 

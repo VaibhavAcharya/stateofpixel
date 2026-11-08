@@ -1,6 +1,7 @@
 import { GitBranchIcon, GitPullRequestIcon } from "@phosphor-icons/react/ssr";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn, userEvent, within } from "storybook/test";
+import { Button } from "uiofcraft";
 import { withMenuRoom } from "../lib/storyFixtures";
 import {
   FilterChip,
@@ -9,7 +10,6 @@ import {
   SearchField,
   SelectMenu,
 } from "./ListControls";
-import { buttonClass } from "./ui";
 
 const meta = {
   title: "App/List controls",
@@ -62,9 +62,7 @@ function BuildFilters({ states }: { states: string[] }) {
         value="#88"
         onClear={fn()}
       />
-      <button type="button" className={buttonClass("ghost")}>
-        Clear filters
-      </button>
+      <Button variant="ghost">Clear filters</Button>
     </ListToolbar>
   );
 }
