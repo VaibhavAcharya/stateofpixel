@@ -1,7 +1,17 @@
-import { GitBranchIcon, GitPullRequestIcon } from "@phosphor-icons/react/ssr";
+import {
+  CheckIcon,
+  GitBranchIcon,
+  GitPullRequestIcon,
+} from "@phosphor-icons/react/ssr";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useCallback, useMemo } from "react";
-import { Button } from "uiofcraft";
+import {
+  Button,
+  Card,
+  CardFrame,
+  CardFrameHeader,
+  CardFrameTitle,
+} from "uiofcraft";
 import { AppShell } from "../../../components/AppShell";
 import { CodeBlock } from "../../../components/CodeBlock";
 import { columnHelper, DataTable } from "../../../components/DataTable";
@@ -16,7 +26,6 @@ import { RequireAuth } from "../../../components/RequireAuth";
 import {
   AvatarStack,
   BuildStatePill,
-  LeadCopy,
   listRowLinkClass,
   ProjectNotFound,
   PrStateIcon,
@@ -478,28 +487,76 @@ function MobileBuildRow({
 
 function SetupCard({ owner, repo }: { owner: string; repo: string }) {
   return (
-    <section className="flex max-w-[720px] flex-col gap-6 rounded-md border border-dotted border-input/60 bg-card p-6 max-sm:p-4">
-      <LeadCopy title="No builds yet.">
-        Add the upload step to your GitHub Actions workflow and push a commit.
-        On other CI, create a project token in{" "}
-        <Link
-          to="/$owner/$repo/settings"
-          params={{ owner, repo }}
-          className="text-link"
-        >
-          settings
-        </Link>
-        . The{" "}
-        <Link to="/docs" className="text-link">
-          Quickstart
-        </Link>{" "}
-        has the full setup.
-      </LeadCopy>
-      <CodeBlock fileName=".github/workflows/visual.yml" {...workflow} />
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Spinner size={14} />
-        Waiting for the first build. This page updates by itself.
-      </p>
-    </section>
+    <CardFrame className="max-w-[880px]">
+      <CardFrameHeader className="py-3">
+        <CardFrameTitle>No builds yet.</CardFrameTitle>
+      </CardFrameHeader>
+      <Card className="overflow-hidden">
+        <ol className="divide-y">
+          <SetupStep done title="Install the GitHub App">
+            {repo} is a project, so the app is installed on it.
+          </SetupStep>
+          <SetupStep title="Add the upload step">
+            Add it to your GitHub Actions workflow. On other CI, create a
+            project token in{" "}
+            <Link
+              to="/$owner/$repo/settings"
+              params={{ owner, repo }}
+              className="text-link"
+            >
+              settings
+            </Link>
+            . The{" "}
+            <Link to="/docs" className="text-link">
+              Quickstart
+            </Link>{" "}
+            has the full setup.
+            <div className="mt-4">
+              <CodeBlock
+                fileName=".github/workflows/visual.yml"
+                {...workflow}
+              />
+            </div>
+          </SetupStep>
+          <SetupStep waiting title="Push a commit">
+            Waiting for the first build. This page updates by itself.
+          </SetupStep>
+        </ol>
+      </Card>
+    </CardFrame>
+  );
+}
+
+function SetupStep({
+  title,
+  done = false,
+  waiting = false,
+  children,
+}: {
+  title: string;
+  done?: boolean;
+  waiting?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <li className="flex gap-4 p-5 sm:p-6">
+      <span
+        className={`flex size-7 shrink-0 items-center justify-center rounded-full border ${
+          done ? "border-approved/40 bg-approved-bg text-approved" : "bg-card"
+        }`}
+      >
+        {done ? (
+          <CheckIcon size={14} weight="bold" aria-label="Done" />
+        ) : waiting ? (
+          <Spinner size={14} className="text-muted-foreground" />
+        ) : (
+          <span className="size-1.5 rounded-full bg-muted-foreground" />
+        )}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-sm">{title}</p>
+        <div className="mt-1 text-muted-foreground text-sm">{children}</div>
+      </div>
+    </li>
   );
 }
