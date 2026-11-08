@@ -9,6 +9,7 @@ import { api, useQuery } from "../lib/backend";
 import { AccountBanner } from "./AccountBanner";
 import { PageHeader } from "./Page";
 import { Tab, Tabs } from "./Tabs";
+import { ProjectMark } from "./ui";
 
 type ProjectTab = "builds" | "baselines" | "settings";
 
@@ -31,6 +32,7 @@ export function ProjectHeader({
   return (
     <>
       <PageHeader
+        leading={<ProjectMark name={`${owner}/${repo}`} size={40} />}
         title={repo}
         actions={
           <Button

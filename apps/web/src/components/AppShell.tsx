@@ -4,7 +4,6 @@ import {
   ChartBarIcon,
   CheckIcon,
   CreditCardIcon,
-  FolderSimpleIcon,
   MonitorIcon,
   MoonIcon,
   PlusIcon,
@@ -55,7 +54,7 @@ import {
   MenuSeparator,
 } from "./Menu";
 import { PLAN_NAMES } from "./PlanBox";
-import { Avatar, accountAvatar, Logo } from "./ui";
+import { Avatar, accountAvatar, Logo, ProjectMark } from "./ui";
 
 const SIDEBAR_PROJECTS = 12;
 
@@ -332,7 +331,7 @@ function ProjectItem({
         isActive={active}
         render={<Link to="/$owner/$repo" params={{ owner, repo: name }} />}
       >
-        <FolderSimpleIcon />
+        <ProjectMark name={`${owner}/${name}`} size={16} />
         <span>{name}</span>
       </SidebarMenuButton>
       {toReview > 0 && (

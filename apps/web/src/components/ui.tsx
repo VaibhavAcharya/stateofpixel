@@ -15,6 +15,7 @@ import type { Doc } from "@stateofpixel/backend/dataModel";
 import {
   type ComponentProps,
   type ComponentType,
+  type CSSProperties,
   type ReactElement,
   type ReactNode,
   useEffect,
@@ -458,6 +459,68 @@ export function Avatar({
       height={size}
       className={`shrink-0 bg-muted ${shape} shadow-[0_0_0_1px_var(--color-border)]`}
     />
+  );
+}
+
+function hashString(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index++) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+const MARK_GRID = 5;
+
+function markCells(seed: number) {
+  const cells: [number, number][] = [];
+  for (let row = 0; row < MARK_GRID; row++) {
+    for (let column = 0; column < Math.ceil(MARK_GRID / 2); column++) {
+      if ((seed >>> (row * 3 + column)) & 1) {
+        cells.push([column, row]);
+        const mirrored = MARK_GRID - 1 - column;
+        if (mirrored !== column) {
+          cells.push([mirrored, row]);
+        }
+      }
+    }
+  }
+  return cells.length > 0 ? cells : [[2, 2] as [number, number]];
+}
+
+export function ProjectMark({
+  name,
+  size = 32,
+}: {
+  name: string;
+  size?: number;
+}) {
+  const seed = hashString(name);
+  const hue = seed % 360;
+  const cell = 14 / MARK_GRID;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      aria-hidden
+      shapeRendering="crispEdges"
+      className="shrink-0 [--mark-bg:hsl(var(--mark-hue)_70%_94%)] [--mark-fg:hsl(var(--mark-hue)_55%_46%)] dark:[--mark-bg:hsl(var(--mark-hue)_30%_18%)] dark:[--mark-fg:hsl(var(--mark-hue)_60%_62%)]"
+      style={{ "--mark-hue": hue } as CSSProperties}
+    >
+      <rect width="20" height="20" rx="5" fill="var(--mark-bg)" />
+      {markCells(seed >>> 8).map(([column, row]) => (
+        <rect
+          key={`${column}-${row}`}
+          x={3 + column * cell}
+          y={3 + row * cell}
+          width={cell}
+          height={cell}
+          fill="var(--mark-fg)"
+        />
+      ))}
+    </svg>
   );
 }
 

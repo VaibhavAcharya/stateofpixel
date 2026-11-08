@@ -1,4 +1,4 @@
-import { FolderSimpleIcon, LockSimpleIcon } from "@phosphor-icons/react/ssr";
+import { LockSimpleIcon } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { Button } from "uiofcraft";
 import {
@@ -16,6 +16,7 @@ import {
   AvatarStack,
   BuildStatePill,
   listRowLinkClass,
+  ProjectMark,
   RelativeTime,
   ReviewBar,
   SkeletonRows,
@@ -41,9 +42,7 @@ const columns = helper.columns([
           data-list-row
           className={`flex min-w-0 items-center gap-3 ${listRowLinkClass}`}
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/72 text-muted-foreground">
-            <FolderSimpleIcon size={16} />
-          </span>
+          <ProjectMark name={`${row.original.owner}/${row.original.name}`} />
           <span className="flex min-w-0 flex-col">
             <span className="flex min-w-0 items-center gap-1.5 font-medium">
               <span className="truncate">{row.original.name}</span>

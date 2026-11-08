@@ -22,7 +22,7 @@ import { errorCode } from "../lib/errorCode";
 import { formatBytes } from "../lib/format";
 import { columnHelper, DataTable } from "./DataTable";
 import { Field } from "./Settings";
-import { listRowLinkClass } from "./ui";
+import { listRowLinkClass, ProjectMark } from "./ui";
 
 export type UsageData = NonNullable<FunctionReturnType<typeof api.usage.get>>;
 
@@ -70,8 +70,12 @@ const columns = helper.columns([
         <Link
           to="/$owner/$repo/settings"
           params={{ owner: row.original.owner, repo: row.original.name }}
-          className={`flex min-w-0 items-center gap-2 font-medium ${listRowLinkClass}`}
+          className={`flex min-w-0 items-center gap-2.5 font-medium ${listRowLinkClass}`}
         >
+          <ProjectMark
+            name={`${row.original.owner}/${row.original.name}`}
+            size={20}
+          />
           <span className="truncate">{row.original.name}</span>
           {row.original.private && (
             <LockSimpleIcon
