@@ -18,8 +18,6 @@ export const SHORTCUT_GROUPS: { title: string; items: [string, string[]][] }[] =
         ["Focus filter", ["/"]],
         ["Close the snapshot list", ["esc"]],
         ["Show shortcuts", ["?"]],
-        ["Jump to a project, account or page", ["cmd", "k"]],
-        ["Fold the app sidebar", ["cmd", "b"]],
       ],
     },
     {
@@ -48,13 +46,24 @@ export const SHORTCUT_GROUPS: { title: string; items: [string, string[]][] }[] =
     },
   ];
 
+export const APP_SHORTCUTS = {
+  title: "App",
+  items: [
+    ["Jump to a project, account or page", ["cmd", "k"]],
+    ["Fold the app sidebar", ["cmd", "b"]],
+  ],
+} satisfies (typeof SHORTCUT_GROUPS)[number];
+
 export function ShortcutsDialog({
   open,
   onClose,
+  app = false,
 }: {
   open: boolean;
   onClose: () => void;
+  app?: boolean;
 }) {
+  const groups = app ? [...SHORTCUT_GROUPS, APP_SHORTCUTS] : SHORTCUT_GROUPS;
   const popup = useRef<HTMLDivElement>(null);
   return (
     <Dialog
@@ -72,7 +81,7 @@ export function ShortcutsDialog({
           </DialogTitle>
         </DialogHeader>
         <DialogPanel className="flex flex-col gap-5">
-          {SHORTCUT_GROUPS.map((group) => (
+          {groups.map((group) => (
             <section key={group.title}>
               <h3 className="mb-1 text-2xs font-medium text-muted-foreground">
                 {group.title}

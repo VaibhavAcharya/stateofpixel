@@ -42,7 +42,7 @@ type Entry = {
   run: () => void;
 };
 
-type Group = { value: string; items: Entry[] };
+type Group = { id: string; value: string; items: Entry[] };
 
 const PROJECT_LIMIT = 50;
 
@@ -54,6 +54,13 @@ export function CommandMenu({
   repo?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [opened, setOpened] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setOpened(true);
+    }
+  }, [open]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -91,7 +98,7 @@ export function CommandMenu({
         <MagnifyingGlassIcon />
       </Button>
       <CommandDialogPopup>
-        {open && (
+        {(open || opened) && (
           <CommandMenuContent
             owner={owner}
             repo={repo}
@@ -137,6 +144,7 @@ function CommandMenuContent({
   const groups: Group[] = [];
   if (owner !== undefined && repo !== undefined) {
     groups.push({
+      id: "project",
       value: repo,
       items: [
         {
@@ -171,6 +179,7 @@ function CommandMenuContent({
   }
   if (owner !== undefined) {
     groups.push({
+      id: "account",
       value: owner,
       items: [
         {
@@ -210,6 +219,7 @@ function CommandMenuContent({
     });
     if (projects.results.length > 0) {
       groups.push({
+        id: "projects",
         value: "Projects",
         items: projects.results.map((project) => ({
           value: `project-${project.name}`,
@@ -228,6 +238,7 @@ function CommandMenuContent({
   }
   if (accounts !== undefined && accounts.length > 0) {
     groups.push({
+      id: "accounts",
       value: "Accounts",
       items: [
         {
@@ -247,6 +258,7 @@ function CommandMenuContent({
     });
   }
   groups.push({
+    id: "general",
     value: "General",
     items: [
       {
@@ -270,7 +282,7 @@ function CommandMenuContent({
       <CommandEmpty>Nothing matches.</CommandEmpty>
       <CommandList>
         {(group: Group) => (
-          <CommandGroup key={group.value} items={group.items}>
+          <CommandGroup key={group.id} items={group.items}>
             <CommandGroupLabel>{group.value}</CommandGroupLabel>
             <CommandCollection>
               {(item: Entry) => (

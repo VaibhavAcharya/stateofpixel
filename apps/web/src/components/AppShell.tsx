@@ -423,6 +423,7 @@ function ProjectPages({ owner, repo }: { owner: string; repo: string }) {
           {label === "Settings" && settingsLocked ? (
             <Tooltip
               side="right"
+              wrapperClassName="flex w-full"
               label="Only people with write access to this repository on GitHub can change its settings."
             >
               <SidebarMenuSubButton

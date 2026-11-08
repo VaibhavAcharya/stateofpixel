@@ -404,7 +404,7 @@ export function BuildPage({
         event.ctrlKey ||
         event.altKey ||
         target?.closest(
-          "input:not([type=range]), textarea, select, [contenteditable], dialog",
+          "input:not([type=range]), textarea, select, [contenteditable], dialog, [role=dialog]",
         ) ||
         shortcutsOpen ||
         commenting
@@ -837,7 +837,12 @@ function SelectionIndicator({ list }: { list: RefObject<HTMLElement | null> }) {
       attributes: true,
       attributeFilter: ["aria-current"],
     });
-    return () => observer.disconnect();
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(element);
+    return () => {
+      observer.disconnect();
+      resizeObserver.disconnect();
+    };
   }, [list]);
   if (bar === null) {
     return null;
@@ -866,7 +871,7 @@ function FilterInput({
 }) {
   return (
     <div className="min-w-0 flex-1 p-2">
-      <Tooltip label="Filter, press /">
+      <Tooltip label="Filter, press /" wrapperClassName="flex w-full">
         <InputGroup>
           <InputGroupInput
             ref={inputRef}

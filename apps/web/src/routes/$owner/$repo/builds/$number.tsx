@@ -70,6 +70,7 @@ function BuildRoute() {
         )}
       </AppShell>
       <ShortcutsDialog
+        app
         open={shortcutsOpen}
         onClose={() => setShortcutsOpen(false)}
       />
