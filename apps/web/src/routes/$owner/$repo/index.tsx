@@ -19,12 +19,12 @@ import {
   LeadCopy,
   listRowLinkClass,
   ProjectNotFound,
-  PrStatePill,
+  PrStateIcon,
   RelativeTime,
   ReviewBar,
   SkeletonRows,
   Spinner,
-  SupersededPill,
+  SupersededMark,
 } from "../../../components/ui";
 import {
   api,
@@ -174,10 +174,13 @@ function useBuildColumns({
               to="/$owner/$repo/builds/$number"
               params={{ owner, repo, number: String(row.original.number) }}
               data-list-row
-              className={listRowLinkClass}
+              className={`inline-flex items-center gap-1.5 ${listRowLinkClass}`}
             >
-              <span className="text-muted-foreground">#</span>
-              {row.original.number}
+              <span>
+                <span className="text-muted-foreground">#</span>
+                {row.original.number}
+              </span>
+              {row.original.superseded && <SupersededMark />}
             </Link>
           ),
         }),
@@ -195,8 +198,6 @@ function useBuildColumns({
                   shards={row.original.shards}
                   storageBlocked={row.original.storageBlocked}
                 />
-                {row.original.superseded && <SupersededPill />}
-                <PrStatePill state={row.original.prState} />
               </span>
               {row.original.status === "finalized" &&
                 !row.original.storageBlocked && (
@@ -251,7 +252,7 @@ function useBuildColumns({
         helper.display({
           id: "pr",
           header: "PR",
-          meta: { className: "w-20 max-md:hidden" },
+          meta: { className: "w-24 max-md:hidden" },
           cell: ({ row }) => {
             const pr = row.original.prNumber;
             return (
@@ -260,7 +261,9 @@ function useBuildColumns({
                   title={`Show builds for pull request #${pr}`}
                   onClick={() => onFilter({ pr })}
                 >
-                  <span className="tabular-nums">#{pr}</span>
+                  <span className="inline-flex items-center gap-1.5 tabular-nums">
+                    <PrStateIcon state={row.original.prState} />#{pr}
+                  </span>
                 </FilterButton>
               )
             );
@@ -367,6 +370,11 @@ function BuildsTable({
           onSortingChange={([next]) =>
             update({ order: next?.desc === false ? "asc" : undefined })
           }
+          getRowClassName={(build) =>
+            build.superseded
+              ? "text-muted-foreground *:data-[slot=table-cell]:opacity-72"
+              : undefined
+          }
         />
       </div>
       <ul className="border-t border-border sm:hidden">
@@ -439,7 +447,10 @@ function MobileBuildRow({
         className="flex flex-col gap-1.5 py-3 active:bg-accent"
       >
         <span className="flex items-center gap-2">
-          <span className="font-medium tabular-nums">#{build.number}</span>
+          <span className="inline-flex items-center gap-1.5 font-medium tabular-nums">
+            #{build.number}
+            {build.superseded && <SupersededMark />}
+          </span>
           <BuildStatePill
             status={build.status}
             conclusion={build.conclusion}
@@ -447,8 +458,11 @@ function MobileBuildRow({
             shards={build.shards}
             storageBlocked={build.storageBlocked}
           />
-          {build.superseded && <SupersededPill />}
-          <PrStatePill state={build.prState} />
+          {build.prNumber !== null && (
+            <span className="inline-flex items-center gap-1 text-muted-foreground text-xs tabular-nums">
+              <PrStateIcon state={build.prState} />#{build.prNumber}
+            </span>
+          )}
           <span className="ml-auto text-xs text-muted-foreground">
             <RelativeTime timestamp={build.createdAt} />
           </span>

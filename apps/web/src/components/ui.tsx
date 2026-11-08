@@ -1,4 +1,5 @@
 import {
+  ArrowBendDownRightIcon,
   CheckIcon,
   CircleHalfIcon,
   CircleIcon,
@@ -197,6 +198,47 @@ export function BuildStatePill({
         </Pill>
       );
   }
+}
+
+const PR_STATES = {
+  open: { label: "open", icon: GitPullRequestIcon, className: "text-approved" },
+  merged: { label: "merged", icon: GitMergeIcon, className: "text-removed" },
+  closed: {
+    label: "closed",
+    icon: GitPullRequestIcon,
+    className: "text-rejected",
+  },
+} as const;
+
+export function PrStateIcon({
+  state,
+}: {
+  state: "open" | "closed" | "merged" | null;
+}) {
+  if (state === null) {
+    return null;
+  }
+  const { label, icon: Icon, className } = PR_STATES[state];
+  return (
+    <span title={`Pull request ${label}`} className="inline-flex">
+      <Icon size={14} weight="bold" aria-hidden className={className} />
+      <span className="sr-only">Pull request {label}</span>
+    </span>
+  );
+}
+
+export function SupersededMark() {
+  return (
+    <span title="Superseded by a newer build" className="inline-flex">
+      <ArrowBendDownRightIcon
+        size={12}
+        weight="bold"
+        aria-hidden
+        className="text-muted-foreground"
+      />
+      <span className="sr-only">Superseded</span>
+    </span>
+  );
 }
 
 export function SupersededPill() {

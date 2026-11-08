@@ -38,6 +38,7 @@ export function DataTable<Row extends RowData>({
   sorting,
   onSortingChange,
   rowClassName = "h-11",
+  getRowClassName,
 }: {
   columns: ReadonlyArray<ColumnDef<Features, Row, unknown>>;
   data: Row[];
@@ -45,6 +46,7 @@ export function DataTable<Row extends RowData>({
   sorting: SortingState;
   onSortingChange?: (sorting: SortingState) => void;
   rowClassName?: string;
+  getRowClassName?: (row: Row) => string | undefined;
 }) {
   const table = useTable({
     features,
@@ -114,6 +116,7 @@ export function DataTable<Row extends RowData>({
             className={cn(
               "has-[[data-list-row]:focus-visible]:bg-accent",
               rowClassName,
+              getRowClassName?.(row.original),
             )}
           >
             {row.getAllCells().map((cell) => (
