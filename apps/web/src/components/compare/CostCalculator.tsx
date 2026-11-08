@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useId, useState } from "react";
+import { Slider } from "uiofcraft";
 import { CHECKED, type Priced } from "../../content/compare";
 import { track } from "../../lib/analytics";
 import {
@@ -18,7 +19,6 @@ import {
   monthlyPrice,
 } from "../landing/Pricing";
 import { SECTION, WIDE } from "../landing/sections";
-import { RangeSlider } from "../RangeSlider";
 import { LeadCopy, Logo } from "../ui";
 
 const count = new Intl.NumberFormat("en-US");
@@ -148,6 +148,7 @@ export function CostCalculator({
   flushTop?: boolean;
 }) {
   const [suite, setSuite] = useState(DEFAULT_SUITE);
+  const id = useId();
   const { snapshots, bills } = quote(suite, competitors);
   const max = Math.max(...bills.map((bill) => bill.cost ?? 0), 1);
   const [ours, ...theirs] = bills;
@@ -166,39 +167,35 @@ export function CostCalculator({
       <div className="mt-12 grid grid-cols-[minmax(0,380px)_1fr] gap-4 max-lg:grid-cols-1">
         <div className="flex flex-col gap-6 rounded-xl bg-muted/72 p-6">
           {SLIDERS.map((slider) => (
-            <label key={slider.key} className="flex flex-col gap-2 text-sm">
+            <div key={slider.key} className="flex flex-col gap-2 text-sm">
               <span className="flex items-baseline justify-between">
-                <span className="text-muted-foreground">{slider.label}</span>
+                <span
+                  id={`${id}-${slider.key}`}
+                  className="text-muted-foreground"
+                >
+                  {slider.label}
+                </span>
                 <span className="mono font-medium tabular-nums">
                   {count.format(suite[slider.key])}
                 </span>
               </span>
-              <RangeSlider
+              <Slider
                 min={slider.min}
                 max={slider.max}
                 step={slider.step}
                 value={suite[slider.key]}
-                onPointerUp={() =>
+                aria-labelledby={`${id}-${slider.key}`}
+                onValueCommitted={(value) =>
                   track("Suite slider", {
                     slider: slider.key,
-                    value: suite[slider.key],
+                    value: value as number,
                   })
                 }
-                onKeyUp={() =>
-                  track("Suite slider", {
-                    slider: slider.key,
-                    value: suite[slider.key],
-                  })
+                onValueChange={(value) =>
+                  setSuite({ ...suite, [slider.key]: value as number })
                 }
-                onChange={(event) =>
-                  setSuite({
-                    ...suite,
-                    [slider.key]: Number(event.target.value),
-                  })
-                }
-                className="w-full"
               />
-            </label>
+            </div>
           ))}
           <p className="mt-auto border-t border-border pt-4 text-sm">
             <span className="block text-xs text-muted-foreground">
