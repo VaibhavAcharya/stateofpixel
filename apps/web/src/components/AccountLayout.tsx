@@ -1,21 +1,22 @@
-import {
-  ArrowUpRightIcon,
-  ChartBarIcon,
-  CreditCardIcon,
-  SquaresFourIcon,
-  UsersIcon,
-} from "@phosphor-icons/react/ssr";
+import { ArrowUpRightIcon } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
+import { Button } from "uiofcraft";
 import { api, useAction, useQuery } from "../lib/backend";
 import { errorCode } from "../lib/errorCode";
 import { useDisconnectExpiredGithub } from "../lib/useDisconnectExpiredGithub";
 import { AccountBanner } from "./AccountBanner";
 import { Page, PageHeader } from "./Page";
-import { Tab, Tabs } from "./Tabs";
-import { Avatar, accountAvatar, buttonClass, EmptyState } from "./ui";
+import { Avatar, accountAvatar, EmptyState } from "./ui";
 
 type AccountTab = "projects" | "members" | "usage" | "billing";
+
+const TAB_TITLES: Record<AccountTab, string | null> = {
+  projects: null,
+  members: "Members",
+  usage: "Usage",
+  billing: "Billing",
+};
 
 const refreshedRoles = new Set<string>();
 
@@ -54,9 +55,9 @@ export function AccountLayout({
         <EmptyState
           title="Account not found."
           action={
-            <Link to="/install" className={buttonClass()}>
+            <Button variant="outline" render={<Link to="/install" />}>
               See your accounts
-            </Link>
+            </Button>
           }
         >
           It may not have the GitHub App installed, or you are not a member.
@@ -69,7 +70,8 @@ export function AccountLayout({
     <Page>
       <PageHeader
         leading={<Avatar src={accountAvatar(owner)} size={40} square />}
-        title={owner}
+        title={TAB_TITLES[tab] ?? owner}
+        above={TAB_TITLES[tab] === null ? undefined : owner}
         meta={
           home === undefined
             ? "Loading"
@@ -79,44 +81,17 @@ export function AccountLayout({
         }
         actions={
           home?.installationSettingsUrl && (
-            <a href={home.installationSettingsUrl} className={buttonClass()}>
+            <Button
+              variant="outline"
+              render={<a href={home.installationSettingsUrl} />}
+            >
               Configure on GitHub
-              <ArrowUpRightIcon size={14} className="text-muted" />
-            </a>
+              <ArrowUpRightIcon />
+            </Button>
           )
         }
       />
       {home !== undefined && <AccountBanner owner={owner} account={home} />}
-      <Tabs>
-        <Tab
-          to="/$owner"
-          params={{ owner }}
-          icon={SquaresFourIcon}
-          label="Overview"
-          active={tab === "projects"}
-        />
-        <Tab
-          to="/$owner/settings/members"
-          params={{ owner }}
-          icon={UsersIcon}
-          label="Members"
-          active={tab === "members"}
-        />
-        <Tab
-          to="/$owner/settings/usage"
-          params={{ owner }}
-          icon={ChartBarIcon}
-          label="Usage"
-          active={tab === "usage"}
-        />
-        <Tab
-          to="/$owner/settings/billing"
-          params={{ owner }}
-          icon={CreditCardIcon}
-          label="Billing"
-          active={tab === "billing"}
-        />
-      </Tabs>
       {children}
     </Page>
   );

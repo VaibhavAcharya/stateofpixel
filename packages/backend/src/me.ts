@@ -1,20 +1,72 @@
-import { and, asc, count, eq, inArray, isNull, max } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, max } from "drizzle-orm";
 import { z } from "zod";
 import { toStorageUsage } from "./accounts.ts";
 import { internal } from "./api.ts";
 import { githubUserToken } from "./connections.ts";
 import type { Id } from "./dataModel.ts";
-import { env } from "./env.ts";
 import { syncInstallation } from "./installations.ts";
 import { GithubError, listUserInstallations } from "./lib/github.ts";
 import {
   accountMembers,
   accounts as accountsTable,
+  connections,
   projects,
+  users,
 } from "./schema.ts";
-import { AppError, action, internalMutation, query } from "./server.ts";
+import {
+  AppError,
+  action,
+  internalMutation,
+  type QueryCtx,
+  query,
+} from "./server.ts";
 
 const MAX_ACCOUNTS = 100;
+
+const MAX_FACES = 4;
+
+async function accountMemberFaces(ctx: QueryCtx, accountIds: string[]) {
+  const result = new Map<
+    string,
+    { count: number; faces: { login: string; image: string | null }[] }
+  >();
+  if (accountIds.length === 0) {
+    return result;
+  }
+  const counts = await ctx.db
+    .select({ accountId: accountMembers.accountId, count: count() })
+    .from(accountMembers)
+    .where(inArray(accountMembers.accountId, accountIds))
+    .groupBy(accountMembers.accountId);
+  for (const row of counts) {
+    result.set(row.accountId, { count: row.count, faces: [] });
+  }
+  const rows = await ctx.db
+    .select({
+      accountId: accountMembers.accountId,
+      login: connections.login,
+      image: users.image,
+    })
+    .from(accountMembers)
+    .innerJoin(users, eq(users._id, accountMembers.userId))
+    .innerJoin(
+      connections,
+      and(
+        eq(connections.userId, users._id),
+        eq(connections.provider, "github"),
+      ),
+    )
+    .where(inArray(accountMembers.accountId, accountIds))
+    .orderBy(desc(users.lastSeenAt), asc(accountMembers._id))
+    .limit(MAX_ACCOUNTS * MAX_FACES * 10);
+  for (const { accountId, ...face } of rows) {
+    const entry = result.get(accountId);
+    if (entry !== undefined && entry.faces.length < MAX_FACES) {
+      entry.faces.push(face);
+    }
+  }
+  return result;
+}
 
 export const accounts = query({
   args: {},
@@ -53,6 +105,10 @@ export const accounts = query({
     const statsByAccount = new Map(
       projectStats.map((stats) => [stats.accountId, stats]),
     );
+    const membersByAccount = await accountMemberFaces(
+      ctx,
+      memberAccounts.map(({ account }) => account._id),
+    );
 
     const result = [];
     for (const { account } of memberAccounts) {
@@ -65,6 +121,7 @@ export const accounts = query({
         storage: toStorageUsage(account),
         projects: stats?.projects ?? 0,
         lastBuildAt: stats?.lastBuildAt ?? null,
+        members: membersByAccount.get(account._id) ?? { count: 0, faces: [] },
       });
     }
     return result.sort((a, b) => a.login.localeCompare(b.login));
@@ -73,8 +130,10 @@ export const accounts = query({
 
 export const installUrl = query({
   args: {},
-  handler: async () =>
-    `https://github.com/apps/${env.GITHUB_APP_SLUG}/installations/new`,
+  handler: async () => {
+    const slug = process.env.GITHUB_APP_SLUG;
+    return slug ? `https://github.com/apps/${slug}/installations/new` : null;
+  },
 });
 
 export const refreshAccounts = action({

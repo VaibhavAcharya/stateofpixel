@@ -11,9 +11,14 @@ import {
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
+import {
+  Button,
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "uiofcraft";
 import { formatCount } from "../../lib/format";
 import {
-  buttonClass,
   REVIEW_ICONS,
   RelativeTime,
   type ReviewState,
@@ -82,7 +87,7 @@ export function SnapshotDetail({
           <Skeleton className="h-3.5 w-56 rounded-xs" />
         </div>
         <div className="min-h-0 flex-1 bg-canvas p-4">
-          <Skeleton className="aspect-[16/10] max-h-full w-full bg-surface" />
+          <Skeleton className="aspect-[16/10] max-h-full w-full bg-card" />
         </div>
       </>
     );
@@ -114,7 +119,7 @@ export function SnapshotDetail({
             {story === undefined ? (
               <ReviewStatus snapshot={snapshot} />
             ) : (
-              <span className="text-xs text-muted tabular-nums">
+              <span className="text-xs text-muted-foreground tabular-nums">
                 {pending > 0
                   ? `${formatCount(pending)}/${formatCount(story.length)} to review`
                   : `${formatCount(story.length)} snapshots`}
@@ -154,7 +159,7 @@ export function SnapshotDetail({
         headings={headings}
       />
       {snapshot.flaky !== null && (
-        <p className="flex shrink-0 flex-wrap items-center gap-x-1.5 border-t border-border px-4 py-2 text-xs text-muted">
+        <p className="flex shrink-0 flex-wrap items-center gap-x-1.5 border-t border-border px-4 py-2 text-xs text-muted-foreground">
           <WarningIcon size={14} className="shrink-0 text-pending" />
           <span>
             Looks flaky:{" "}
@@ -173,7 +178,7 @@ export function SnapshotDetail({
       )}
       {snapshot.diffStatus === "changed" &&
         (snapshot.unstable || reviewable) && (
-          <p className="flex shrink-0 flex-wrap items-center gap-x-1.5 border-t border-border px-4 py-2 text-xs text-muted">
+          <p className="flex shrink-0 flex-wrap items-center gap-x-1.5 border-t border-border px-4 py-2 text-xs text-muted-foreground">
             {snapshot.unstable ? (
               <>
                 <span>
@@ -188,18 +193,18 @@ export function SnapshotDetail({
                 </Link>
               </>
             ) : (
-              <button
-                type="button"
-                className="text-link"
+              <Button
+                variant="link"
+                className="h-auto border-0 p-0 text-xs font-normal text-link sm:h-auto sm:text-xs"
                 onClick={onMarkUnstable}
               >
                 Mark unstable
-              </button>
+              </Button>
             )}
           </p>
         )}
       {snapshot.history.length > 0 && (
-        <p className="flex shrink-0 flex-wrap items-center gap-x-2 border-t border-border px-4 py-2 text-xs text-muted">
+        <p className="flex shrink-0 flex-wrap items-center gap-x-2 border-t border-border px-4 py-2 text-xs text-muted-foreground">
           <Link
             to="/$owner/$repo/baselines/$"
             params={{ owner, repo, _splat: snapshot.name }}
@@ -207,7 +212,7 @@ export function SnapshotDetail({
               suite:
                 build.buildName === "default" ? undefined : build.buildName,
             }}
-            className="hover:text-text"
+            className="hover:text-foreground"
           >
             History
           </Link>
@@ -261,7 +266,7 @@ function ReviewDock({
 }) {
   const suffix = count === undefined ? "" : ` ${formatCount(count)}`;
   const group =
-    "flex items-center gap-0.5 rounded-control bg-surface p-1 shadow-menu ring-1 ring-border";
+    "flex items-center gap-0.5 rounded-xl border bg-popover p-1 shadow-lg/5";
   return (
     <div className="absolute top-2 left-1/2 z-10 -translate-x-1/2">
       <div className={group}>
@@ -353,20 +358,18 @@ function DockButton({
   children: ReactNode;
 }) {
   return (
-    <Tooltip
-      label={`${tooltip}, press ${keyName}`}
-      className="left-1/2! mt-2! -translate-x-1/2"
-    >
-      <button
-        type="button"
+    <Tooltip label={`${tooltip}, press ${keyName}`} align="center">
+      <Button
+        variant="ghost"
+        size="icon"
         aria-label={label}
         aria-pressed={pressed}
         disabled={disabled}
-        className={`${buttonClass("ghost", "icon")} rounded-sm! aria-pressed:bg-hover ${className}`}
+        className={`rounded-sm! aria-pressed:bg-accent ${className}`}
         onClick={onClick}
       >
         {children}
-      </button>
+      </Button>
     </Tooltip>
   );
 }
@@ -375,7 +378,7 @@ function ReviewStatus({ snapshot }: { snapshot: Snapshot }) {
   const review = snapshot.lastReview;
   if (snapshot.reviewState === "none") {
     return (
-      <span className="text-xs text-muted">
+      <span className="text-xs text-muted-foreground">
         {snapshot.diffStatus === "removed"
           ? "Not in this build, no review needed"
           : snapshot.diffStatus === "failed"
@@ -388,7 +391,7 @@ function ReviewStatus({ snapshot }: { snapshot: Snapshot }) {
   }
   if (snapshot.reviewState === "pending" || review === null) {
     return (
-      <span className="flex items-center gap-1.5 text-xs text-muted">
+      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <REVIEW_ICONS.pending size={14} className="text-pending" />
         Waiting for review
         {snapshot.rejectedIn !== null &&
@@ -415,7 +418,7 @@ function ReviewStatus({ snapshot }: { snapshot: Snapshot }) {
             ? "automatically"
             : `by @${review.login}`;
   return (
-    <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted">
+    <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
       <Icon
         size={14}
         weight="bold"
@@ -424,7 +427,7 @@ function ReviewStatus({ snapshot }: { snapshot: Snapshot }) {
       <span className="truncate">
         {verb} {who} <RelativeTime timestamp={review.createdAt} />
         {review.comment && (
-          <span className="text-text">: {review.comment}</span>
+          <span className="text-foreground">: {review.comment}</span>
         )}
         {snapshot.notReviewedOnPr && (
           <span className="text-pending">, not reviewed on PR</span>
@@ -442,33 +445,33 @@ function Details({ metadata }: { metadata: Record<string, unknown> }) {
   }
   const Caret = open ? CaretDownIcon : CaretRightIcon;
   return (
-    <footer className="shrink-0 border-t border-border text-xs">
-      <button
-        type="button"
-        aria-expanded={open}
-        className="flex h-8 w-full items-center gap-1.5 px-4 text-muted hover:text-text"
-        onClick={() => setOpen((value) => !value)}
-      >
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      render={<footer />}
+      className="shrink-0 border-t border-border text-xs"
+    >
+      <CollapsibleTrigger className="flex h-8 w-full items-center gap-1.5 px-4 text-muted-foreground hover:text-foreground">
         <Caret size={12} />
         Details
         {!open && (
-          <span className="min-w-0 truncate text-subtle">
+          <span className="min-w-0 truncate text-muted-foreground">
             {entries
               .map(([key, value]) => `${key} ${String(value)}`)
               .join(", ")}
           </span>
         )}
-      </button>
-      {open && (
+      </CollapsibleTrigger>
+      <CollapsiblePanel>
         <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 px-4 pb-3 pl-[34px]">
           {entries.map(([key, value]) => (
             <div key={key} className="contents">
-              <dt className="text-muted">{key}</dt>
+              <dt className="text-muted-foreground">{key}</dt>
               <dd className="mono truncate">{String(value)}</dd>
             </div>
           ))}
         </dl>
-      )}
-    </footer>
+      </CollapsiblePanel>
+    </Collapsible>
   );
 }

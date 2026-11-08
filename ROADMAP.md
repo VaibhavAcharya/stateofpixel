@@ -27,6 +27,12 @@ Follow-ups from the move to Netlify Database, Functions and Identity.
 
 - Mention on the landing that GitHub tokens are stored encrypted and private image links expire within two hours.
 
+## App
+
+- The command menu lists only the first 50 projects of an account, so a later project shows "Nothing matches." Search on the server as the user types.
+- The "Jump to" button shows the cmd key on Windows and Linux, where the shortcut is ctrl k.
+- The uiofcraft sidebar saves its state with the Cookie Store API, which logs a rejected promise on every toggle in browsers without it. Fix it in uiofcraft.
+
 ## Directories
 
 - Listed in [awesome-regression-testing](https://github.com/mojoaxel/awesome-regression-testing), under Online services, merged in [#120](https://github.com/mojoaxel/awesome-regression-testing/pull/120).

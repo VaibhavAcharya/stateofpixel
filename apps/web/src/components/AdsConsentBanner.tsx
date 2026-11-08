@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Button } from "uiofcraft";
 import {
   type AdsConsent,
   readAdsConsent,
   setAdsConsent,
   subscribeAdsConsent,
 } from "../lib/ads";
-import { buttonClass } from "./ui";
 
 export function AdsConsentBanner() {
   const [open, setOpen] = useState(false);
@@ -42,7 +42,7 @@ export function AdsConsentPrompt({
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
       <section
         aria-label="Cookies"
-        className="pointer-events-auto flex w-full max-w-[420px] animate-enter flex-col gap-3 rounded-md bg-surface p-3 text-sm shadow-menu ring-1 ring-border"
+        className="pointer-events-auto relative flex w-full max-w-[420px] animate-enter flex-col gap-3 rounded-lg border bg-popover not-dark:bg-clip-padding p-3.5 text-sm text-popover-foreground shadow-lg/5"
       >
         <p>
           We use cookies to measure our marketing.{" "}
@@ -51,20 +51,12 @@ export function AdsConsentPrompt({
           </Link>
         </p>
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className={buttonClass("secondary")}
-            onClick={() => onChoose("denied")}
-          >
+          <Button variant="outline" onClick={() => onChoose("denied")}>
             Decline
-          </button>
-          <button
-            type="button"
-            className={buttonClass("secondary")}
-            onClick={() => onChoose("granted")}
-          >
+          </Button>
+          <Button variant="outline" onClick={() => onChoose("granted")}>
             Accept
-          </button>
+          </Button>
         </div>
       </section>
     </div>

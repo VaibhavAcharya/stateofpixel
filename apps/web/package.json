@@ -14,8 +14,6 @@
     "build-storybook": "storybook build --output-dir storybook-static"
   },
   "dependencies": {
-    "@fontsource-variable/ibm-plex-sans": "5.3.0",
-    "@fontsource-variable/lilex": "5.3.0",
     "@netlify/blobs": "^11.1.1",
     "@netlify/database": "^2.0.1",
     "@netlify/identity": "^2.0.0",
@@ -30,10 +28,11 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tailwindcss": "^4.3.3",
+    "uiofcraft": "1.0.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@fontsource/dm-sans": "5.3.0",
     "@fontsource/lilex": "5.3.0",
     "@mdx-js/rollup": "3.1.1",
     "@netlify/functions": "^6.0.0",

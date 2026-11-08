@@ -98,7 +98,7 @@ function card(
       justifyContent: "space-between",
       padding: 72,
       background: "#fafafa",
-      fontFamily: "IBM Plex Sans",
+      fontFamily: "DM Sans",
       color: "#171717",
     },
     [
@@ -166,8 +166,8 @@ let assets: Promise<[Buffer, Buffer, Buffer, string, string]> | undefined;
 
 function loadAssets() {
   assets ??= Promise.all([
-    font("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff"),
-    font("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff"),
+    font("@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff"),
+    font("@fontsource/dm-sans/files/dm-sans-latin-600-normal.woff"),
     font("@fontsource/lilex/files/lilex-latin-400-normal.woff"),
     dataUri("public/brand/stateofpixel-wordmark.svg", "image/svg+xml"),
     dataUri("public/pricing-pixels.png", "image/png"),
@@ -185,8 +185,8 @@ export async function renderOgImage(page: OgPage): Promise<Buffer> {
     width: WIDTH,
     height: HEIGHT,
     fonts: [
-      { name: "IBM Plex Sans", data: regular, weight: 400 },
-      { name: "IBM Plex Sans", data: semibold, weight: 600 },
+      { name: "DM Sans", data: regular, weight: 400 },
+      { name: "DM Sans", data: semibold, weight: 600 },
       { name: "Lilex", data: mono, weight: 400 },
     ],
   });

@@ -19,14 +19,17 @@ import { type StatusBuild, toStatus } from "@stateofpixel/backend/checkStatus";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { STORAGE_WARNING_SHARE } from "@stateofpixel/backend/limits";
 import { Link } from "@tanstack/react-router";
+import { Fragment, type ReactNode, useState } from "react";
 import {
-  Fragment,
-  type KeyboardEvent,
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+  RadioGroupPrimitive,
+  RadioPrimitive,
+  SegmentedControl,
+  SegmentedControlItem,
+  Tabs,
+  TabsList,
+  TabsPanel,
+  TabsTab,
+} from "uiofcraft";
 import merge from "../../snippets/pipelines-merge.yml?highlight";
 import rebase from "../../snippets/pipelines-rebase.sh?highlight";
 import shard from "../../snippets/pipelines-shard.yml?highlight";
@@ -137,7 +140,7 @@ function Checks({ rows }: { rows: [string, StatusBuild][] }) {
             />
             <span className="min-w-0 flex-1">
               <span className="font-medium">{name}</span>{" "}
-              <span className="text-muted">{description}</span>
+              <span className="text-muted-foreground">{description}</span>
             </span>
             <span className="text-xs text-link">Details</span>
           </li>
@@ -175,7 +178,9 @@ function Snapshots({
               <SnapshotName name={row.name} className="flex-1" />
               <DiffStatusPill status={row.diff} />
             </span>
-            <span className="pl-6 text-xs text-muted">{row.note}</span>
+            <span className="pl-6 text-xs text-muted-foreground">
+              {row.note}
+            </span>
           </li>
         );
       })}
@@ -217,11 +222,13 @@ function CiStep({ passed, children }: { passed: boolean; children: string }) {
         <span className="mono min-w-0 flex-1 truncate">
           npx stateofpixel upload
         </span>
-        <span className="mono text-xs text-muted tabular-nums">
+        <span className="mono text-xs text-muted-foreground tabular-nums">
           exit {passed ? 0 : 1}
         </span>
       </span>
-      <span className="pl-[30px] text-xs text-muted">{children}</span>
+      <span className="pl-[30px] text-xs text-muted-foreground">
+        {children}
+      </span>
     </div>
   );
 }
@@ -231,17 +238,17 @@ function StorageMeter({ children }: { children: string }) {
     <div className="flex flex-col gap-3 px-4 py-4">
       <span className="flex items-baseline justify-between text-sm">
         <span className="font-medium">Storage</span>
-        <span className="text-xs text-muted tabular-nums">
+        <span className="text-xs text-muted-foreground tabular-nums">
           {facts.storageWarning} of {facts.freeStorage}
         </span>
       </span>
-      <span className="h-2 overflow-hidden rounded-full bg-surface-2">
+      <span className="h-2 overflow-hidden rounded-full bg-muted">
         <span
           className="block h-full bg-changed"
           style={{ width: `${STORAGE_WARNING_SHARE * 100}%` }}
         />
       </span>
-      <span className="flex items-start gap-2 text-xs text-muted">
+      <span className="flex items-start gap-2 text-xs text-muted-foreground">
         <WarningIcon size={14} className="mt-px shrink-0 text-pending" />
         {children}
       </span>
@@ -572,8 +579,8 @@ function DocsLink({ docs }: { docs: Scenario["docs"] }) {
 
 function Frame({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <figure className="flex min-w-0 flex-col overflow-hidden rounded-md bg-surface shadow-[inset_0_0_0_1px_var(--color-border)]">
-      <figcaption className="flex h-10 shrink-0 items-center border-b border-border px-4 text-xs text-muted">
+    <figure className="flex min-w-0 flex-col overflow-hidden rounded-md bg-card shadow-[inset_0_0_0_1px_var(--color-border)]">
+      <figcaption className="flex h-10 shrink-0 items-center border-b border-border px-4 text-xs text-muted-foreground">
         {label}
       </figcaption>
       <div className="flex-1">{children}</div>
@@ -591,28 +598,31 @@ function CaseSwitch({
   onChange: (index: number) => void;
 }) {
   return (
-    <fieldset
+    <SegmentedControl
       aria-label="Case"
-      className="flex w-fit max-w-full flex-wrap gap-1 rounded-control bg-surface-2 p-0.5"
+      className="max-w-full flex-wrap"
+      render={
+        <RadioGroupPrimitive
+          value={String(value)}
+          onValueChange={(next) => onChange(Number(next))}
+        />
+      }
     >
       {cases.map((option, index) => (
-        <button
+        <SegmentedControlItem
           key={option.label}
-          type="button"
-          aria-pressed={value === index}
-          onClick={() => onChange(index)}
-          data-umami-event="Pipeline case"
-          data-umami-event-case={option.label}
-          className={`h-7 rounded-sm px-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
-            value === index
-              ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
-              : "text-muted hover:text-text"
-          }`}
+          render={
+            <RadioPrimitive.Root
+              value={String(index)}
+              data-umami-event="Pipeline case"
+              data-umami-event-case={option.label}
+            />
+          }
         >
           {option.label}
-        </button>
+        </SegmentedControlItem>
       ))}
-    </fieldset>
+    </SegmentedControl>
   );
 }
 
@@ -621,7 +631,7 @@ function WithFlags({ text }: { text: string }) {
     index % 2 === 1 ? (
       <code
         key={part}
-        className="mono rounded-xs bg-surface-2 px-1 whitespace-nowrap text-text"
+        className="mono rounded-xs bg-muted px-1 whitespace-nowrap text-foreground"
       >
         {part}
       </code>
@@ -640,11 +650,13 @@ function ScenarioDetail({ scenario }: { scenario: Scenario }) {
   return (
     <div className="flex animate-fade flex-col gap-5">
       <div>
-        <p className="text-xs text-muted">{GROUPS[scenario.group]}</p>
+        <p className="text-xs text-muted-foreground">
+          {GROUPS[scenario.group]}
+        </p>
         <h3 className="mt-1 text-xl font-semibold tracking-[-0.025em]">
           {scenario.title}
         </h3>
-        <p className="mt-2 max-w-[64ch] text-sm text-muted">
+        <p className="mt-2 max-w-[64ch] text-sm text-muted-foreground">
           <WithFlags text={pipelineText(scenario.title)} />
         </p>
       </div>
@@ -668,39 +680,6 @@ function ScenarioDetail({ scenario }: { scenario: Scenario }) {
 
 export function PipelinesSection() {
   const [selected, setSelected] = useState(0);
-  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [bar, setBar] = useState<{ top: number; height: number } | null>(null);
-
-  useEffect(() => {
-    const tab = tabs.current[selected];
-    if (tab) {
-      setBar({ top: tab.offsetTop, height: tab.offsetHeight });
-    }
-  }, [selected]);
-
-  function select(index: number) {
-    const next = (index + SCENARIOS.length) % SCENARIOS.length;
-    setSelected(next);
-    const tab = tabs.current[next];
-    tab?.focus();
-    tab?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }
-
-  function onKeyDown(event: KeyboardEvent) {
-    const keys: Record<string, number> = {
-      ArrowDown: selected + 1,
-      ArrowRight: selected + 1,
-      ArrowUp: selected - 1,
-      ArrowLeft: selected - 1,
-      Home: 0,
-      End: SCENARIOS.length - 1,
-    };
-    const next = keys[event.key];
-    if (next !== undefined) {
-      event.preventDefault();
-      select(next);
-    }
-  }
 
   return (
     <section className={SECTION}>
@@ -708,78 +687,78 @@ export function PipelinesSection() {
         Pick a case to see the CI step and what the check shows.
       </LeadCopy>
       <div className="mt-12 grid grid-cols-[280px_minmax(0,1fr)] gap-12 max-lg:grid-cols-1 max-lg:gap-6">
-        <div
-          role="tablist"
-          aria-label="Cases"
-          aria-orientation="vertical"
-          onKeyDown={onKeyDown}
-          className="relative flex flex-col max-lg:-mx-6 max-lg:flex-row max-lg:gap-1 max-lg:overflow-x-auto max-lg:px-6 max-lg:pb-1 max-sm:-mx-4 max-sm:px-4"
+        <Tabs
+          orientation="vertical"
+          value={selected}
+          onValueChange={(value) => setSelected(value as number)}
+          className="contents"
         >
-          <span
-            aria-hidden
-            className={`absolute top-0 left-0 w-0.5 rounded-full bg-link transition-transform duration-180 ease-out-strong max-lg:hidden ${bar === null ? "opacity-0" : ""}`}
-            style={{
-              height: bar?.height,
-              transform: `translateY(${bar?.top ?? 0}px)`,
+          <TabsList
+            variant="underline"
+            aria-label="Cases"
+            activateOnFocus
+            onKeyDown={(event) => {
+              const step =
+                event.key === "ArrowRight"
+                  ? 1
+                  : event.key === "ArrowLeft"
+                    ? -1
+                    : 0;
+              if (step === 0) {
+                return;
+              }
+              event.preventDefault();
+              const next =
+                (selected + step + SCENARIOS.length) % SCENARIOS.length;
+              setSelected(next);
+              event.currentTarget
+                .querySelectorAll<HTMLElement>('[role="tab"]')
+                [next]?.focus();
             }}
-          />
-          {SCENARIOS.map((item, index) => {
-            const ItemIcon = item.icon;
-            const active = index === selected;
-            const groupStart = SCENARIOS[index - 1]?.group !== item.group;
-            return (
-              <Fragment key={item.title}>
-                {groupStart && (
-                  <span
-                    aria-hidden
-                    className={`px-3 pb-2 text-xs text-muted max-lg:hidden ${index === 0 ? "" : "pt-5"}`}
-                  >
-                    {GROUPS[item.group]}
-                  </span>
-                )}
-                <button
-                  ref={(node) => {
-                    tabs.current[index] = node;
-                  }}
-                  type="button"
-                  role="tab"
-                  id={`pipelines-tab-${index}`}
-                  aria-selected={active}
-                  aria-controls={`pipelines-panel-${index}`}
-                  tabIndex={active ? 0 : -1}
-                  onClick={() => select(index)}
-                  data-umami-event="Pipeline scenario"
-                  data-umami-event-scenario={item.title}
-                  className={`flex h-9 shrink-0 items-center gap-2.5 rounded-sm px-3 text-left text-sm whitespace-nowrap transition-colors duration-100 lg:rounded-l-none ${
-                    active
-                      ? "bg-hover font-medium text-text"
-                      : "text-muted hover:bg-hover hover:text-text"
-                  }`}
-                >
-                  <ItemIcon size={16} className="shrink-0" />
-                  <span className="flex-1">{item.title}</span>
-                  {item.flag !== undefined && (
-                    <span className="mono text-xs text-subtle max-lg:hidden">
-                      {item.flag}
+            className="w-full items-stretch justify-start self-start max-lg:flex-row max-lg:overflow-x-auto max-lg:pb-1"
+          >
+            {SCENARIOS.map((item, index) => {
+              const ItemIcon = item.icon;
+              const groupStart = SCENARIOS[index - 1]?.group !== item.group;
+              return (
+                <Fragment key={item.title}>
+                  {groupStart && (
+                    <span
+                      aria-hidden
+                      className={`px-3 pb-2 text-muted-foreground text-xs max-lg:hidden ${index === 0 ? "" : "pt-5"}`}
+                    >
+                      {GROUPS[item.group]}
                     </span>
                   )}
-                </button>
-              </Fragment>
-            );
-          })}
-        </div>
-        {SCENARIOS.map((item, index) => (
-          <div
-            key={item.title}
-            role="tabpanel"
-            id={`pipelines-panel-${index}`}
-            aria-labelledby={`pipelines-tab-${index}`}
-            hidden={index !== selected}
-            className="min-w-0"
-          >
-            <ScenarioDetail scenario={item} />
-          </div>
-        ))}
+                  <TabsTab
+                    value={index}
+                    data-umami-event="Pipeline scenario"
+                    data-umami-event-scenario={item.title}
+                    className="h-9 grow-0 gap-2.5 px-3 font-normal data-active:font-medium"
+                  >
+                    <ItemIcon size={16} className="shrink-0" />
+                    <span className="flex-1 text-left">{item.title}</span>
+                    {item.flag !== undefined && (
+                      <span className="mono text-muted-foreground text-xs max-lg:hidden">
+                        {item.flag}
+                      </span>
+                    )}
+                  </TabsTab>
+                </Fragment>
+              );
+            })}
+          </TabsList>
+          {SCENARIOS.map((item, index) => (
+            <TabsPanel
+              key={item.title}
+              value={index}
+              keepMounted
+              className="min-w-0"
+            >
+              <ScenarioDetail scenario={item} />
+            </TabsPanel>
+          ))}
+        </Tabs>
       </div>
     </section>
   );

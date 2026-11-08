@@ -276,6 +276,7 @@ it("links a signed-in user to their installations", async () => {
       },
       projects: 2,
       lastBuildAt: null,
+      members: { count: 1, faces: [{ login: "octocat", image: null }] },
     },
   ]);
   const projects = await user.query(api.accounts.projects, {
@@ -349,4 +350,15 @@ it("starts the retention clock when a PR closes", async () => {
   );
   expect(build?.prClosedAt).toBe(Date.now());
   expect(build?.prMergedAt).toBe(Date.now());
+});
+
+it("returns no install URL without a GitHub App slug", async () => {
+  const t = testBackend();
+  expect(await t.query(api.me.installUrl, {})).toBe(
+    "https://github.com/apps/stateofpixel/installations/new",
+  );
+
+  vi.stubEnv("GITHUB_APP_SLUG", "");
+  expect(await t.query(api.me.installUrl, {})).toBeNull();
+  vi.stubEnv("GITHUB_APP_SLUG", "stateofpixel");
 });

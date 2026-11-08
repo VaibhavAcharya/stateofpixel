@@ -2,10 +2,33 @@ import {
   ArrowDownIcon,
   ArrowRightIcon,
   CaretDownIcon,
-  EqualsIcon,
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { type CSSProperties, Fragment, type ReactNode, useState } from "react";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionPanel,
+  AccordionTrigger,
+  Badge,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+  Button,
+  Card,
+  CardFrame,
+  CardFrameAction,
+  CardFrameHeader,
+  CardFrameTitle,
+  cn,
+  RadioGroupPrimitive,
+  RadioPrimitive,
+  SegmentedControl,
+  SegmentedControlItem,
+} from "uiofcraft";
 import {
   CHECKED,
   COMPETITORS,
@@ -32,9 +55,16 @@ import percyBefore from "../../snippets/compare/percy-before.yml?highlight";
 import playwrightConfig from "../../snippets/playwright.config.ts?highlight";
 import { CodeBlock, type Snippet } from "../CodeBlock";
 import { DEFAULT_WORKLOAD, formatPrice } from "../landing/Pricing";
-import { DISPLAY, LEAD, PublicPage, SECTION, WIDE } from "../landing/sections";
+import {
+  DISPLAY,
+  LEAD,
+  MUTED_BAND,
+  PublicPage,
+  SECTION,
+  WIDE,
+} from "../landing/sections";
 import { AuthButton } from "../SignIn";
-import { buttonClass, LeadCopy, Logo } from "../ui";
+import { LeadCopy, Logo } from "../ui";
 import {
   BillLogo,
   CostCalculator,
@@ -42,10 +72,11 @@ import {
   quote,
 } from "./CostCalculator";
 
-const DOTTED = "border-dotted border-field-border/50";
+const DOTTED = "border-border";
 const count = new Intl.NumberFormat("en-US");
 const WORKFLOW = ".github/workflows/visual.yml";
-const CARD_SHADOW = "shadow-[0_8px_32px_#11151a18,0_1px_4px_#11151a0a]";
+const CARD_SHADOW =
+  "shadow-[0_32px_64px_-32px] shadow-black/24 dark:shadow-black/64";
 
 const SWITCH_SNIPPETS: Record<
   Competitor["slug"],
@@ -155,19 +186,29 @@ export function CompetitorLogo({
 
 function Lockup({ competitor }: { competitor: Competitor }) {
   return (
-    <p className="flex items-center gap-3 text-sm text-muted">
-      <span className="text-text">
-        <Logo size={32} />
+    <div className="flex items-center gap-3 text-muted-foreground text-sm">
+      <span className="flex items-center -space-x-1.5">
+        <span className="rounded-[9px] bg-background text-foreground ring-2 ring-background">
+          <Logo size={32} />
+        </span>
+        <span className="rounded-[9px] ring-2 ring-background">
+          <CompetitorLogo competitor={competitor} size={32} />
+        </span>
       </span>
-      <span className="mono text-xs">vs</span>
-      <CompetitorLogo competitor={competitor} size={32} />
-      <span className="ml-1">
-        <Link to="/compare" className="hover:text-text">
-          Compare
-        </Link>{" "}
-        / {competitor.name}
-      </span>
-    </p>
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink render={<Link to="/compare" />}>
+              Compare
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>vs {competitor.name}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    </div>
   );
 }
 
@@ -178,11 +219,11 @@ function BillCard({ competitor }: { competitor: Competitor }) {
   const { snapshots, bills } = quote(DEFAULT_SUITE, [competitor.priced]);
   return (
     <div
-      className={`w-[480px] overflow-hidden rounded-lg bg-surface ring-1 ring-border max-lg:w-full ${CARD_SHADOW}`}
+      className={`w-[480px] max-w-full overflow-hidden rounded-2xl border bg-card max-lg:w-full ${CARD_SHADOW}`}
     >
       <div className="border-b border-border px-5 py-4">
         <p className="text-sm font-semibold">A month of visual tests</p>
-        <p className="text-xs text-muted">
+        <p className="text-xs text-muted-foreground">
           {DEFAULT_SUITE.screens} stories, {DEFAULT_SUITE.viewports} viewports,{" "}
           {DEFAULT_SUITE.builds} builds, {snapshots.toLocaleString("en-US")}{" "}
           screenshots
@@ -194,10 +235,12 @@ function BillCard({ competitor }: { competitor: Competitor }) {
             <BillLogo bill={bill} size={28} />
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-medium">{bill.name}</span>
-              <span className="block text-xs text-muted">{bill.plan}</span>
+              <span className="block text-xs text-muted-foreground">
+                {bill.plan}
+              </span>
             </span>
             <span
-              className={`tabular-nums ${index === 0 ? "text-[36px] leading-none font-semibold tracking-[-0.04em] text-approved" : "text-2xl font-medium text-muted"}`}
+              className={`tabular-nums ${index === 0 ? "text-[36px] leading-none font-semibold tracking-[-0.04em] text-approved" : "text-2xl font-medium text-muted-foreground"}`}
             >
               ${Math.round(bill.cost ?? 0).toLocaleString("en-US")}
             </span>
@@ -206,7 +249,7 @@ function BillCard({ competitor }: { competitor: Competitor }) {
       </ul>
       <a
         href="#cost"
-        className="flex items-center gap-2 border-t border-border bg-bg px-5 py-3 text-xs text-muted hover:text-text"
+        className="flex items-center gap-2 border-t border-border bg-background px-5 py-3 text-xs text-muted-foreground hover:text-foreground"
       >
         Price it for your suite
         <ArrowDownIcon size={12} />
@@ -227,19 +270,19 @@ function StatusCard({
   }
   return (
     <div
-      className={`w-[480px] overflow-hidden rounded-lg bg-surface ring-1 ring-border max-lg:w-full ${CARD_SHADOW}`}
+      className={`w-[480px] max-w-full overflow-hidden rounded-2xl border bg-card max-lg:w-full ${CARD_SHADOW}`}
     >
       <div className="flex items-center gap-3 border-b border-border px-5 py-4">
         <CompetitorLogo competitor={competitor} size={28} />
         <span className="flex-1 text-sm font-semibold">{competitor.name}</span>
-        <span className="rounded-full bg-rejected-bg px-2 py-0.5 text-xs font-medium text-rejected">
-          Shutting down
-        </span>
+        <Badge variant="error">Shutting down</Badge>
       </div>
       <dl className="divide-y divide-border">
         {competitor.status.map((item) => (
           <div key={item.label} className="flex gap-4 px-5 py-4 text-sm">
-            <dt className="w-28 shrink-0 text-muted">{item.label}</dt>
+            <dt className="w-28 shrink-0 text-muted-foreground">
+              {item.label}
+            </dt>
             <dd className="font-medium">
               {item.value}
               <SourceMarks items={[item.source]} sources={sources} />
@@ -268,7 +311,7 @@ function HeroTitle({ competitor }: { competitor: Competitor }) {
         </span>
         a year less than {competitor.name}.
       </h1>
-      <p className="mt-4 text-sm text-muted">
+      <p className="mt-4 text-sm text-muted-foreground">
         For {DEFAULT_SUITE.screens} stories at {DEFAULT_SUITE.viewports}{" "}
         viewports and {DEFAULT_SUITE.builds} builds a month,{" "}
         {snapshots.toLocaleString("en-US")} screenshots.
@@ -286,20 +329,20 @@ function CompareHero({
 }) {
   return (
     <section
-      className={`${WIDE} grid grid-cols-[minmax(0,1fr)_auto] items-center gap-12 pt-24 pb-16 max-lg:grid-cols-1 max-sm:pt-12`}
+      className={`${WIDE} grid items-center gap-10 pt-10 pb-16 sm:pt-14 lg:grid-cols-12 lg:gap-10`}
     >
-      <div>
+      <div className="lg:col-span-7">
         <Lockup competitor={competitor} />
         <HeroTitle competitor={competitor} />
         <p className={`${LEAD} mt-6 max-w-[640px]`}>{competitor.lead}</p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <AuthButton label="Start free with GitHub" />
-          <a href="#switch" className={buttonClass("secondary")}>
+          <Button variant="outline" render={<a href="#switch" />}>
             See the switch
-            <ArrowDownIcon size={14} className="text-muted" />
-          </a>
+            <ArrowDownIcon size={14} className="text-muted-foreground" />
+          </Button>
         </div>
-        <p className="mt-4 text-xs text-muted">
+        <p className="mt-4 text-xs text-muted-foreground">
           Facts about {competitor.name} checked on {CHECKED}, with{" "}
           <a href="#sources" className="text-link">
             {sources.length} sources
@@ -307,8 +350,10 @@ function CompareHero({
           .
         </p>
       </div>
-      <BillCard competitor={competitor} />
-      <StatusCard competitor={competitor} sources={sources} />
+      <div className="lg:col-span-5 lg:justify-self-end">
+        <BillCard competitor={competitor} />
+        <StatusCard competitor={competitor} sources={sources} />
+      </div>
     </section>
   );
 }
@@ -319,52 +364,6 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: "build", label: "One build" },
   { value: "month", label: "One month" },
 ];
-
-function RailNode({ children }: { children: ReactNode }) {
-  return (
-    <span className="relative flex justify-center max-md:row-span-2 max-md:row-start-1 md:col-start-2 md:row-start-1">
-      <span
-        aria-hidden
-        className="absolute -inset-y-1.5 left-1/2 w-px -translate-x-1/2 bg-border"
-      />
-      <span className="mono relative mt-4 flex size-7 items-center justify-center rounded-full bg-surface text-xs text-muted tabular-nums ring-1 ring-border">
-        {children}
-      </span>
-    </span>
-  );
-}
-
-function StepCell({
-  ours,
-  competitor,
-  children,
-}: {
-  ours: boolean;
-  competitor: Competitor;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      className={`flex min-h-16 flex-wrap items-start gap-x-3 gap-y-1 rounded-lg p-4 text-sm max-md:col-start-2 ${
-        ours
-          ? "bg-surface ring-1 ring-border md:col-start-3 md:row-start-1"
-          : "bg-surface-2 md:col-start-1 md:row-start-1"
-      }`}
-    >
-      <span className="mt-0.5 shrink-0 md:hidden">
-        {ours ? (
-          <Logo size={16} />
-        ) : (
-          <CompetitorLogo competitor={competitor} size={16} />
-        )}
-      </span>
-      {children}
-    </div>
-  );
-}
-
-const RAIL_ROW =
-  "grid grid-cols-[minmax(0,1fr)_56px_minmax(0,1fr)] py-1.5 max-md:grid-cols-[28px_minmax(0,1fr)] max-md:gap-x-3 max-md:gap-y-2";
 
 function FlowSection({ competitor }: { competitor: Competitor }) {
   const [period, setPeriod] = useState<Period>("build");
@@ -381,119 +380,151 @@ function FlowSection({ competitor }: { competitor: Competitor }) {
   ];
   return (
     <section className={SECTION}>
-      <div className="flex flex-wrap items-end justify-between gap-6">
-        <LeadCopy title="One build, step by step." className="max-w-[720px]">
-          {DEFAULT_SUITE.screens} stories at {DEFAULT_SUITE.viewports}{" "}
-          viewports, run through {competitor.name} and through stateofpixel.
-        </LeadCopy>
-        <Segmented
-          label="Count for"
-          event="Compare period"
-          options={PERIODS}
-          value={period}
-          onChange={setPeriod}
-        />
-      </div>
-      <div className="mt-12">
-        <div className={`${RAIL_ROW} pb-3 text-sm font-semibold max-md:hidden`}>
-          <span className="flex items-center gap-2">
-            <CompetitorLogo competitor={competitor} size={20} />
-            {competitor.name}
-          </span>
-          <span className="col-start-3 flex items-center gap-2">
-            <Logo size={20} />
-            stateofpixel
-          </span>
-        </div>
-        <ol>
-          {competitor.theirFlow.map((step, index) => (
-            <li key={step} className={RAIL_ROW}>
-              <RailNode>{index + 1}</RailNode>
-              <StepCell ours={false} competitor={competitor}>
-                <span>{step}</span>
-              </StepCell>
-              <StepCell ours competitor={competitor}>
-                <span className="min-w-0 flex-1">{OUR_FLOW[index]}</span>
-                {metrics[index] !== undefined && (
-                  <span
-                    key={period}
-                    className="mono ml-auto animate-fade pt-px text-xs max-md:ml-0 max-md:basis-full max-md:pl-7 whitespace-nowrap text-muted tabular-nums"
-                  >
-                    {metrics[index]}
-                  </span>
-                )}
-              </StepCell>
-            </li>
-          ))}
-        </ol>
-        <div className={RAIL_ROW}>
-          <RailNode>
-            <EqualsIcon size={12} weight="bold" />
-          </RailNode>
-          <Total
-            ours={false}
-            label={competitor.theirBill}
-            value={count.format(screenshots * builds)}
-            unit="counted"
-            note={
-              period === "month" && theirs?.cost != null
-                ? `${formatPrice(theirs.cost)} a month on ${theirs.plan}`
-                : `Each screenshot in each build`
-            }
+      <LeadCopy title="One build, step by step." className="max-w-[720px]">
+        {DEFAULT_SUITE.screens} stories at {DEFAULT_SUITE.viewports} viewports,
+        run through {competitor.name} and through stateofpixel.
+      </LeadCopy>
+      <CardFrame className="mt-12">
+        <CardFrameHeader className="py-3">
+          <CardFrameTitle>
+            {period === "build"
+              ? "One build"
+              : `One month, ${count.format(builds)} builds`}
+          </CardFrameTitle>
+          <CardFrameAction>
+            <Segmented
+              label="Count for"
+              event="Compare period"
+              options={PERIODS}
+              value={period}
+              onChange={setPeriod}
+            />
+          </CardFrameAction>
+        </CardFrameHeader>
+        <Card className="divide-y overflow-hidden">
+          <Lane
+            name={competitor.name}
+            logo={<CompetitorLogo competitor={competitor} size={28} />}
+            steps={competitor.theirFlow.map((step) => ({ text: step }))}
+            total={{
+              ours: false,
+              label: competitor.theirBill,
+              value: count.format(screenshots * builds),
+              note:
+                period === "month" && theirs?.cost != null
+                  ? `${formatPrice(theirs.cost)} a month on ${theirs.plan}`
+                  : "Each screenshot in each build",
+            }}
           />
-          <Total
-            ours
-            label="Billed per GB stored"
-            value="0"
-            unit="counted"
-            note={
-              period === "month" && ours?.cost != null
-                ? `${formatPrice(ours.cost)} a month on ${ours.plan}`
-                : `${count.format(changed)} changed screenshots and their diffs stored`
-            }
+          <Lane
+            name="stateofpixel"
+            logo={<Logo size={28} />}
+            steps={OUR_FLOW.map((step, index) => ({
+              text: step,
+              metric: metrics[index],
+            }))}
+            total={{
+              ours: true,
+              label: "Billed per GB stored",
+              value: "0",
+              note:
+                period === "month" && ours?.cost != null
+                  ? `${formatPrice(ours.cost)} a month on ${ours.plan}`
+                  : `${count.format(changed)} changed screenshots and their diffs stored`,
+            }}
           />
-        </div>
-      </div>
+        </Card>
+      </CardFrame>
     </section>
   );
 }
 
-function Total({
-  ours,
-  label,
-  value,
-  unit,
-  note,
+function Lane({
+  name,
+  logo,
+  steps,
+  total,
 }: {
-  ours: boolean;
-  label: string;
-  value: string;
-  unit: string;
-  note: string;
+  name: string;
+  logo: ReactNode;
+  steps: { text: string; metric?: string }[];
+  total: { ours: boolean; label: string; value: string; note: string };
 }) {
   return (
     <div
-      className={`flex flex-col gap-1 rounded-lg p-5 max-md:col-start-2 ${
-        ours
-          ? "bg-surface ring-1 ring-border md:col-start-3 md:row-start-1"
-          : "bg-surface-2 md:col-start-1 md:row-start-1"
-      }`}
+      className={cn(
+        "grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-8",
+        !total.ours && "bg-muted/40",
+      )}
     >
-      <span
-        className={`w-fit rounded-full px-2.5 py-0.5 text-xs font-medium ${ours ? "bg-approved-bg text-approved" : "bg-changed-bg text-changed"}`}
+      <div className="min-w-0">
+        <p className="flex items-center gap-2.5 font-medium text-sm">
+          <span className="text-foreground">{logo}</span>
+          {name}
+        </p>
+        <ol className="mt-5 grid gap-4 md:grid-cols-4 md:gap-3">
+          {steps.map((step, index) => (
+            <li
+              key={step.text}
+              className="relative flex gap-3 md:flex-col md:gap-3"
+            >
+              <span className="flex items-center md:w-full">
+                <span className="mono relative z-1 flex size-7 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground text-xs tabular-nums">
+                  {index + 1}
+                </span>
+                {index < steps.length - 1 && (
+                  <span
+                    aria-hidden
+                    className="ml-2 h-px flex-1 bg-border max-md:hidden"
+                  />
+                )}
+              </span>
+              <span className="flex min-w-0 flex-col gap-1.5">
+                <span className="text-sm">{step.text}</span>
+                {step.metric !== undefined && (
+                  <span
+                    key={step.metric}
+                    className="mono w-fit animate-fade rounded-xs bg-muted px-1.5 py-0.5 text-muted-foreground text-xs tabular-nums"
+                  >
+                    {step.metric}
+                  </span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div
+        className={cn(
+          "flex flex-col gap-1 rounded-xl border p-4 lg:self-stretch",
+          total.ours ? "bg-approved-bg/60" : "bg-card",
+        )}
       >
-        {label}
-      </span>
-      <span className="mt-3 flex items-baseline gap-2">
-        <span
-          key={value}
-          className={`animate-fade text-[32px] leading-none font-semibold tracking-[-0.04em] tabular-nums ${ours ? "text-approved" : ""}`}
+        <Badge
+          variant="secondary"
+          className={cn(
+            "w-fit",
+            total.ours
+              ? "bg-approved-bg text-approved"
+              : "bg-changed-bg text-changed",
+          )}
         >
-          {value}
+          {total.label}
+        </Badge>
+        <span className="mt-auto flex items-baseline gap-2 pt-3">
+          <span
+            key={total.value}
+            className={cn(
+              "animate-fade font-heading font-semibold text-4xl leading-none tracking-[-0.02em] tabular-nums",
+              total.ours && "text-approved",
+            )}
+          >
+            {total.value}
+          </span>
+          <span className="text-muted-foreground text-sm">counted</span>
         </span>
-        <span className="text-sm text-muted">{unit}</span>
-      </span>
-      <span className="text-sm text-muted">{note}</span>
+        <span className="text-muted-foreground text-sm">{total.note}</span>
+      </div>
     </div>
   );
 }
@@ -512,33 +543,36 @@ function Segmented<Value extends string>({
   onChange: (value: Value) => void;
 }) {
   return (
-    <fieldset
+    <SegmentedControl
       aria-label={label}
-      className="flex w-fit max-w-full flex-wrap gap-1 rounded-control bg-surface-2 p-0.5"
+      className="max-w-full flex-wrap"
+      render={
+        <RadioGroupPrimitive
+          value={value}
+          onValueChange={(next) => onChange(next as Value)}
+        />
+      }
     >
       {options.map((option) => (
-        <button
+        <SegmentedControlItem
           key={option.value}
-          type="button"
-          aria-pressed={value === option.value}
-          onClick={() => onChange(option.value)}
-          data-umami-event={event}
-          data-umami-event-value={option.value}
-          className={`flex h-7 items-center gap-1.5 rounded-sm px-3 text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
-            value === option.value
-              ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
-              : "text-muted hover:text-text"
-          }`}
+          render={
+            <RadioPrimitive.Root
+              value={option.value}
+              data-umami-event={event}
+              data-umami-event-value={option.value}
+            />
+          }
         >
           {option.label}
           {option.count !== undefined && (
-            <span className="mono text-subtle tabular-nums">
+            <span className="mono text-muted-foreground tabular-nums">
               {option.count}
             </span>
           )}
-        </button>
+        </SegmentedControlItem>
       ))}
-    </fieldset>
+    </SegmentedControl>
   );
 }
 
@@ -553,25 +587,30 @@ function perBuild() {
 
 function Differences({ competitor }: { competitor: Competitor }) {
   return (
-    <section className={SECTION}>
-      <LeadCopy title="What changes when you switch." className="max-w-[720px]">
-        The same pull request, reviewed with less in the way.
-      </LeadCopy>
-      <div className="mt-12 grid grid-cols-3 gap-3 max-lg:grid-cols-1">
-        {competitor.differences.map(([title, text], index) => (
-          <div
-            key={title}
-            className="flex flex-col rounded-lg bg-surface p-6 ring-1 ring-border"
-          >
-            <span className="mono text-xs text-muted tabular-nums">
-              0{index + 1}
-            </span>
-            <span className="mt-8 text-xl font-semibold tracking-[-0.025em] text-balance">
-              {title}
-            </span>
-            <span className="mt-3 text-sm text-muted">{text}</span>
-          </div>
-        ))}
+    <section className={MUTED_BAND}>
+      <div className={SECTION}>
+        <LeadCopy
+          title="What changes when you switch."
+          className="max-w-[720px]"
+        >
+          The same pull request, reviewed with less in the way.
+        </LeadCopy>
+        <div className="mt-12 grid grid-cols-3 gap-3 max-lg:grid-cols-1">
+          {competitor.differences.map(([title, text], index) => (
+            <div
+              key={title}
+              className="flex flex-col rounded-2xl border bg-card p-6 shadow-xs/5"
+            >
+              <span className="mono text-xs text-muted-foreground tabular-nums">
+                0{index + 1}
+              </span>
+              <span className="mt-8 text-balance font-heading font-semibold text-xl tracking-[-0.01em]">
+                {title}
+              </span>
+              <span className="mt-3 text-sm text-muted-foreground">{text}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -590,29 +629,33 @@ function ProductShot() {
         <div>
           <LeadCopy title="What your reviewers get." className="max-w-[420px]">
             Each changed screenshot next to its baseline, with the changed
-            pixels in green.
+            pixels in magenta.
           </LeadCopy>
           <ul className={`mt-8 border-t ${DOTTED} text-sm`}>
             {REVIEW_POINTS.map(([title, text]) => (
               <li key={title} className={`border-b ${DOTTED} py-3`}>
                 <span className="font-medium">{title}.</span>
-                <span className="text-muted"> {text}</span>
+                <span className="text-muted-foreground"> {text}</span>
               </li>
             ))}
           </ul>
-          <a href="/#demo" className={`${buttonClass("secondary")} mt-8`}>
+          <Button
+            variant="outline"
+            className="mt-8"
+            render={<a href="/#demo" />}
+          >
             Try the review page
-            <ArrowRightIcon size={14} className="text-muted" />
-          </a>
+            <ArrowRightIcon size={14} className="text-muted-foreground" />
+          </Button>
         </div>
-        <div className="checker rounded-xl p-8 ring-1 ring-border max-md:p-3">
+        <div className="checker rounded-2xl border p-8 max-md:p-3">
           <img
             src="/readme/review-page.png"
-            alt="The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in green"
+            alt="The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in magenta"
             width={1440}
             height={760}
             loading="lazy"
-            className={`w-full rounded-lg ring-1 ring-border ${CARD_SHADOW}`}
+            className={`w-full rounded-lg border ${CARD_SHADOW}`}
           />
         </div>
       </div>
@@ -681,11 +724,11 @@ function GlanceTable({
       >
         <div
           aria-hidden
-          className="col-start-2 row-span-full row-start-1 rounded-lg bg-surface ring-1 ring-border max-md:hidden"
+          className="col-start-2 row-span-full row-start-1 rounded-2xl border bg-card shadow-xs/5 max-md:hidden"
         />
         <div
           aria-hidden
-          className="col-start-3 row-span-full row-start-1 rounded-lg bg-surface-2 max-md:hidden"
+          className="col-start-3 row-span-full row-start-1 rounded-2xl bg-muted/72 max-md:hidden"
         />
         <ColumnHead column="md:col-start-2">
           <Logo size={24} />
@@ -704,13 +747,13 @@ function GlanceTable({
               <Fragment key={`${view}-${key}`}>
                 <span
                   style={row}
-                  className={`${hidden} relative animate-fade py-5 pr-4 md:col-start-1 md:row-start-(--row) font-medium max-md:pt-8 max-md:pb-3 max-md:text-xs max-md:text-muted md:border-t ${DOTTED}`}
+                  className={`${hidden} relative animate-fade py-5 pr-4 md:col-start-1 md:row-start-(--row) font-medium max-md:pt-8 max-md:pb-3 max-md:text-xs max-md:text-muted-foreground md:border-t ${DOTTED}`}
                 >
                   {LABELS[key]}
                 </span>
                 <span
                   style={row}
-                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 font-medium md:col-start-2 md:row-start-(--row) max-md:rounded-t-lg max-md:bg-surface max-md:px-4 max-md:py-3 max-md:ring-1 max-md:ring-border md:border-t ${DOTTED} md:mx-px`}
+                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 font-medium md:col-start-2 md:row-start-(--row) max-md:rounded-t-xl max-md:border max-md:bg-card max-md:px-4 max-md:py-3 md:border-t ${DOTTED} md:mx-px`}
                 >
                   <span className="mt-0.5 shrink-0 md:hidden">
                     <Logo size={16} />
@@ -719,14 +762,14 @@ function GlanceTable({
                 </span>
                 <span
                   style={row}
-                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 md:col-start-3 md:row-start-(--row) max-md:rounded-b-lg max-md:bg-surface-2 max-md:px-4 max-md:py-3 md:border-t ${DOTTED}`}
+                  className={`${hidden} relative flex animate-fade gap-3 px-5 py-5 md:col-start-3 md:row-start-(--row) max-md:rounded-b-xl max-md:bg-muted/72 max-md:px-4 max-md:py-3 md:border-t ${DOTTED}`}
                 >
                   <span className="mt-0.5 shrink-0 md:hidden">
                     <CompetitorLogo competitor={competitor} size={16} />
                   </span>
                   <span>
                     {cell === undefined ? (
-                      <span className="text-muted">
+                      <span className="text-muted-foreground">
                         Not found in their docs.
                       </span>
                     ) : (
@@ -743,15 +786,15 @@ function GlanceTable({
         )}
       </div>
       {view !== "all" && (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          className="mt-6 -ml-3"
           onClick={() => setView("all")}
           data-umami-event="Compare show all"
-          className={`${buttonClass("ghost")} mt-6 -ml-3`}
         >
           Show all {ROW_KEYS.length} rows
           <CaretDownIcon size={14} />
-        </button>
+        </Button>
       )}
     </section>
   );
@@ -766,7 +809,7 @@ function ColumnHead({
 }) {
   return (
     <span
-      className={`relative row-start-1 flex items-center gap-3 px-5 pt-5 pb-4 text-base font-semibold max-md:hidden ${column}`}
+      className={`relative row-start-1 flex items-center gap-3 px-5 pt-5 pb-4 text-sm font-semibold max-md:hidden ${column}`}
     >
       {children}
     </span>
@@ -785,11 +828,16 @@ function Ahead({ competitor }: { competitor: Competitor }) {
       </LeadCopy>
       <div className="mt-12 grid grid-cols-2 gap-3 max-md:grid-cols-1">
         {competitor.ahead.map(([title, text]) => (
-          <div key={title} className="flex gap-4 rounded-lg bg-surface-2 p-6">
+          <div
+            key={title}
+            className="flex gap-4 rounded-2xl border bg-card p-6 shadow-xs/5"
+          >
             <CompetitorLogo competitor={competitor} size={24} />
             <span>
-              <span className="block text-base font-semibold">{title}</span>
-              <span className="mt-1 block text-sm text-muted">{text}</span>
+              <span className="block text-sm font-semibold">{title}</span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                {text}
+              </span>
             </span>
           </div>
         ))}
@@ -817,25 +865,29 @@ function Switch({ competitor }: { competitor: Competitor }) {
       <ol className="mt-12 grid grid-cols-3 gap-8 max-md:grid-cols-1 max-md:gap-4">
         {competitor.switchSteps.map(([title, text], index) => (
           <li key={title} className={`flex gap-4 border-t ${DOTTED} pt-5`}>
-            <span className="mono text-muted tabular-nums">{index + 1}</span>
+            <span className="mono text-muted-foreground tabular-nums">
+              {index + 1}
+            </span>
             <span>
-              <span className="block text-base font-medium">{title}</span>
-              <span className="mt-1 block text-sm text-muted">{text}</span>
+              <span className="block text-sm font-medium">{title}</span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                {text}
+              </span>
             </span>
           </li>
         ))}
       </ol>
       <div className="mt-10 grid grid-cols-2 gap-4 max-lg:grid-cols-1">
         <div className="flex min-w-0 flex-col gap-3">
-          <p className="flex items-center gap-2 text-xs font-medium text-muted">
+          <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <CompetitorLogo competitor={competitor} size={16} />
             Before
           </p>
           <CodeBlock fileName={WORKFLOW} {...snippets.before} />
         </div>
         <div className="flex min-w-0 flex-col gap-3">
-          <p className="flex items-center gap-2 text-xs font-medium text-muted">
-            <span className="text-text">
+          <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <span className="text-foreground">
               <Logo size={16} />
             </span>
             After
@@ -855,25 +907,31 @@ function Switch({ competitor }: { competitor: Competitor }) {
 
 function Faq({ competitor }: { competitor: Competitor }) {
   return (
-    <section
-      className={`${SECTION} grid grid-cols-[1fr_2fr] gap-12 max-lg:grid-cols-1`}
-    >
-      <LeadCopy title="Questions." className="max-w-[360px]">
-        What to know before you move from {competitor.name}.
-      </LeadCopy>
-      <div className={`border-t ${DOTTED}`}>
-        {competitor.faq.map(([question, answer]) => (
-          <details key={question} className={`group border-b ${DOTTED}`}>
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-base font-medium [&::-webkit-details-marker]:hidden">
-              {question}
-              <CaretDownIcon
-                size={14}
-                className="shrink-0 text-muted transition-transform duration-180 group-open:rotate-180"
-              />
-            </summary>
-            <p className="max-w-[65ch] pb-5 text-sm text-muted">{answer}</p>
-          </details>
-        ))}
+    <section className={MUTED_BAND}>
+      <div
+        className={`${SECTION} grid grid-cols-[1fr_2fr] gap-12 max-lg:grid-cols-1`}
+      >
+        <LeadCopy title="Questions." className="max-w-[360px]">
+          What to know before you move from {competitor.name}.
+        </LeadCopy>
+        <Accordion multiple className={`border-t ${DOTTED}`}>
+          {competitor.faq.map(([question, answer]) => (
+            <AccordionItem
+              key={question}
+              value={question}
+              className="last:border-b"
+            >
+              <AccordionTrigger>{question}</AccordionTrigger>
+              <AccordionPanel
+                keepMounted
+                hiddenUntilFound
+                className="max-w-[65ch] pb-5"
+              >
+                {answer}
+              </AccordionPanel>
+            </AccordionItem>
+          ))}
+        </Accordion>
       </div>
     </section>
   );
@@ -883,7 +941,7 @@ function SourceList({ sources }: { sources: Source[] }) {
   return (
     <section id="sources" className={`${WIDE} scroll-mt-16 pb-24 max-sm:pb-12`}>
       <p className="text-sm font-semibold">Sources</p>
-      <p className="mt-1 text-xs text-muted">
+      <p className="mt-1 text-xs text-muted-foreground">
         Read on {CHECKED}. Prices are list prices before tax. The stateofpixel
         column comes from{" "}
         <Link to="/docs" className="text-link">
@@ -898,7 +956,7 @@ function SourceList({ sources }: { sources: Source[] }) {
             id={`source-${index + 1}`}
             className={`flex scroll-mt-20 gap-3 border-b ${DOTTED} py-2`}
           >
-            <span className="mono w-5 shrink-0 text-muted tabular-nums">
+            <span className="mono w-5 shrink-0 text-muted-foreground tabular-nums">
               {index + 1}
             </span>
             <a href={source.url} className="min-w-0 truncate text-link">
@@ -916,7 +974,7 @@ export function FinalBand({ current }: { current?: Competitor }) {
     (competitor) => competitor.slug !== current?.slug,
   );
   return (
-    <section className="border-t border-border bg-bg">
+    <section className={MUTED_BAND}>
       <div
         className={`${SECTION} grid grid-cols-2 items-end gap-12 max-lg:grid-cols-1`}
       >
@@ -924,18 +982,22 @@ export function FinalBand({ current }: { current?: Competitor }) {
           <h2 className={DISPLAY}>
             Every pixel, reviewed.
             <br />
-            <span className="text-muted">Nothing ships by surprise.</span>
+            <span className="text-muted-foreground">
+              Nothing ships by surprise.
+            </span>
           </h2>
           <div className="mt-10 flex flex-wrap items-center gap-3">
             <AuthButton label="Start free with GitHub" />
-            <Link to="/docs" className={buttonClass("ghost")}>
+            <Button variant="ghost" render={<Link to="/docs" />}>
               Read the quickstart
-            </Link>
+            </Button>
           </div>
         </div>
         {current !== undefined && (
           <nav aria-label="Other comparisons">
-            <p className="text-xs font-medium text-muted">Other comparisons</p>
+            <p className="text-xs font-medium text-muted-foreground">
+              Other comparisons
+            </p>
             <ul className={`mt-3 border-t ${DOTTED}`}>
               {others.map((competitor) => (
                 <li key={competitor.slug}>
@@ -945,12 +1007,12 @@ export function FinalBand({ current }: { current?: Competitor }) {
                     className={`group flex items-center gap-3 border-b ${DOTTED} py-3`}
                   >
                     <CompetitorLogo competitor={competitor} size={24} />
-                    <span className="flex-1 text-base font-medium">
+                    <span className="flex-1 text-sm font-medium">
                       vs {competitor.name}
                     </span>
                     <ArrowRightIcon
                       size={14}
-                      className="text-muted transition-transform duration-100 group-hover:translate-x-0.5"
+                      className="text-muted-foreground transition-transform duration-100 group-hover:translate-x-0.5"
                     />
                   </Link>
                 </li>

@@ -1,4 +1,14 @@
-import { and, asc, desc, eq, ilike, isNull, type SQL, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  isNotNull,
+  isNull,
+  type SQL,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import type { Doc } from "./dataModel.ts";
 import { first } from "./db/index.ts";
@@ -11,6 +21,7 @@ import {
   connections,
   plan,
   projects as projectsTable,
+  reviews,
   type storageUsage,
   users,
 } from "./schema.ts";
@@ -21,6 +32,31 @@ import {
   type QueryCtx,
   query,
 } from "./server.ts";
+
+const MAX_REVIEWERS = 4;
+
+export async function buildReviewers(ctx: QueryCtx, buildId: string) {
+  return ctx.db
+    .selectDistinct({ login: connections.login, image: users.image })
+    .from(reviews)
+    .innerJoin(users, eq(users._id, reviews.userId))
+    .innerJoin(
+      connections,
+      and(
+        eq(connections.userId, users._id),
+        eq(connections.provider, "github"),
+      ),
+    )
+    .where(
+      and(
+        eq(reviews.buildId, buildId),
+        eq(reviews.source, "user"),
+        isNotNull(reviews.userId),
+      ),
+    )
+    .orderBy(asc(connections.login))
+    .limit(MAX_REVIEWERS);
+}
 
 async function toProjectRow(ctx: QueryCtx, project: Doc<"projects">) {
   const build = first(
@@ -46,6 +82,7 @@ async function toProjectRow(ctx: QueryCtx, project: Doc<"projects">) {
             counts: build.counts,
             storageBlocked: build.storageBlocked,
             createdAt: build._creationTime,
+            reviewers: await buildReviewers(ctx, build._id),
           },
   };
 }

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AccountLayout } from "../../components/AccountLayout";
 import { AccountSummary } from "../../components/AccountSummary";
-import { AppHeader } from "../../components/AppHeader";
+import { AppShell } from "../../components/AppShell";
 import { ListToolbar, SearchField } from "../../components/ListControls";
 import { ProjectTable } from "../../components/ProjectTable";
 import { RequireAuth } from "../../components/RequireAuth";
@@ -25,10 +25,11 @@ function AccountPage() {
   const { owner } = Route.useParams();
   return (
     <RequireAuth redirectTo={`/${owner}`}>
-      <AppHeader owner={owner} />
-      <AccountLayout owner={owner} tab="projects">
-        <AccountProjects owner={owner} />
-      </AccountLayout>
+      <AppShell owner={owner}>
+        <AccountLayout owner={owner} tab="projects">
+          <AccountProjects owner={owner} />
+        </AccountLayout>
+      </AppShell>
     </RequireAuth>
   );
 }

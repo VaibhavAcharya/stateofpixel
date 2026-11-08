@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AccountLayout } from "../../../components/AccountLayout";
-import { AppHeader } from "../../../components/AppHeader";
+import { AppShell } from "../../../components/AppShell";
 import { RequireAuth } from "../../../components/RequireAuth";
 import { USAGE_DAYS, UsageView } from "../../../components/Usage";
 import { Skeleton } from "../../../components/ui";
@@ -20,10 +20,11 @@ function UsagePage() {
   const { owner } = Route.useParams();
   return (
     <RequireAuth redirectTo={`/${owner}/settings/usage`}>
-      <AppHeader owner={owner} />
-      <AccountLayout owner={owner} tab="usage">
-        <Usage owner={owner} />
-      </AccountLayout>
+      <AppShell owner={owner} crumb="Usage">
+        <AccountLayout owner={owner} tab="usage">
+          <Usage owner={owner} />
+        </AccountLayout>
+      </AppShell>
     </RequireAuth>
   );
 }

@@ -10,6 +10,15 @@ import {
   type StorageUsage,
 } from "@stateofpixel/backend/storage";
 import type { ReactNode } from "react";
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  Button,
+  MenuGroup,
+  MenuGroupLabel,
+  MenuItem,
+} from "uiofcraft";
 import type { Subscription } from "../lib/accountAlert";
 import { api, useQuery } from "../lib/backend";
 import { formatDate } from "../lib/format";
@@ -25,14 +34,10 @@ import {
   monthlyPrice,
   TIERS,
 } from "./landing/Pricing";
-import {
-  Menu,
-  MenuLabel,
-  MenuSeparator,
-  menuItemClass,
-  useCloseMenu,
-} from "./Menu";
-import { buttonClass, Tooltip } from "./ui";
+import { Menu, MenuSeparator } from "./Menu";
+import { Tooltip } from "./ui";
+
+const LOCKED_BUTTON_CLASS = "cursor-not-allowed opacity-64";
 
 export const PLAN_NAMES = {
   free: "Free",
@@ -47,14 +52,10 @@ export type CheckoutResult = { subscriptionId: string; status: string };
 
 type Notice = { tone: "success" | "info" | "error"; text: string };
 
-const NOTICE_STYLES = {
-  success: {
-    box: "bg-approved-bg",
-    icon: "text-approved",
-    Icon: CheckCircleIcon,
-  },
-  info: { box: "bg-pending-bg", icon: "text-pending", Icon: InfoIcon },
-  error: { box: "bg-failed-bg", icon: "text-failed", Icon: WarningIcon },
+const NOTICE_ICONS = {
+  success: CheckCircleIcon,
+  info: InfoIcon,
+  error: WarningIcon,
 } as const;
 
 const PAID_STATUSES = new Set(["active", "succeeded"]);
@@ -172,17 +173,19 @@ export function PlanBox({
           }
         />
       )}
-      <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface px-4 py-3 ring-1 ring-border">
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 shadow-xs/5">
         <div className="text-sm">
           <span className="font-medium">{planName} plan</span>
-          <span className="text-muted tabular-nums">
+          <span className="text-muted-foreground tabular-nums">
             {" "}
             · {formatGigabytes(storage.storageBytes)}
             {storage.plan === "unlimited"
               ? " used"
               : ` of ${formatGigabytes(storage.storageLimitBytes)} used`}
           </span>
-          {period !== null && <span className="text-muted"> · {period}</span>}
+          {period !== null && (
+            <span className="text-muted-foreground"> · {period}</span>
+          )}
           {billing.error !== null && (
             <p className="mt-1 text-failed">{billing.error}</p>
           )}
@@ -191,19 +194,22 @@ export function PlanBox({
           <div className="flex gap-2">
             {billingCustomer &&
               (lockedReason === undefined ? (
-                <button
-                  type="button"
-                  className={buttonClass()}
+                <Button
+                  variant="outline"
                   disabled={billing.pending}
                   onClick={() => void billing.manage(login)}
                 >
                   Manage billing
-                </button>
+                </Button>
               ) : (
                 <Tooltip label={lockedReason} align="end">
-                  <button type="button" aria-disabled className={buttonClass()}>
+                  <Button
+                    variant="outline"
+                    aria-disabled
+                    className={LOCKED_BUTTON_CLASS}
+                  >
                     Manage billing
-                  </button>
+                  </Button>
                 </Tooltip>
               ))}
             {subscription === null && (
@@ -234,7 +240,7 @@ export function PlanBox({
         )}
       </section>
       {available && billingCustomer && (
-        <p className="px-1 text-xs text-muted">
+        <p className="px-1 text-xs text-muted-foreground">
           Manage billing opens the Dodo Payments portal, where you update the
           card, download invoices and cancel.
         </p>
@@ -274,13 +280,15 @@ function ChangeConfirm({
   const target = `${PLAN_NAMES[change.plan]} plan, billed ${change.interval}`;
   const { preview } = change;
   return (
-    <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface px-4 py-3 text-sm ring-1 ring-border">
+    <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 text-sm shadow-xs/5">
       {preview === null ? (
-        <p className="text-muted">Checking the price of the {target}.</p>
+        <p className="text-muted-foreground">
+          Checking the price of the {target}.
+        </p>
       ) : (
         <p className="max-w-prose">
           <span className="font-medium">Move to the {target}?</span>{" "}
-          <span className="text-muted">
+          <span className="text-muted-foreground">
             {preview.amount === 0
               ? "You pay nothing now."
               : `You pay ${formatAmount(preview.amount, preview.currency)} now.`}{" "}
@@ -291,17 +299,12 @@ function ChangeConfirm({
         </p>
       )}
       <div className="flex gap-2">
-        <button type="button" className={buttonClass()} onClick={onCancel}>
+        <Button variant="outline" onClick={onCancel}>
           Cancel
-        </button>
-        <button
-          type="button"
-          className={buttonClass("primary")}
-          disabled={preview === null || pending}
-          onClick={onConfirm}
-        >
+        </Button>
+        <Button disabled={preview === null || pending} onClick={onConfirm}>
           {pending ? "Changing plan" : "Change plan"}
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -314,25 +317,26 @@ function PlanNotice({
   notice: Notice;
   onDismiss?: () => void;
 }) {
-  const { box, icon, Icon } = NOTICE_STYLES[notice.tone];
+  const Icon = NOTICE_ICONS[notice.tone];
   return (
-    <p
-      role="status"
-      className={`flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-sm ${box}`}
-    >
-      <Icon size={16} className={`shrink-0 ${icon}`} />
-      <span className="flex-1">{notice.text}</span>
+    <Alert role="status" variant={notice.tone}>
+      <Icon size={16} />
+      <AlertDescription className="text-foreground">
+        {notice.text}
+      </AlertDescription>
       {onDismiss !== undefined && (
-        <button
-          type="button"
-          aria-label="Dismiss"
-          className="rounded-sm p-1 text-muted hover:text-text"
-          onClick={onDismiss}
-        >
-          <XIcon size={12} />
-        </button>
+        <AlertAction>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Dismiss"
+            onClick={onDismiss}
+          >
+            <XIcon size={12} />
+          </Button>
+        </AlertAction>
       )}
-    </p>
+    </Alert>
   );
 }
 
@@ -352,10 +356,10 @@ export function UpgradeMenu({
   if (disabledReason !== undefined) {
     return (
       <Tooltip label={disabledReason} align="end">
-        <button type="button" aria-disabled className={buttonClass("primary")}>
+        <Button aria-disabled className={LOCKED_BUTTON_CLASS}>
           {label}
           <CaretDownIcon size={12} />
-        </button>
+        </Button>
       </Tooltip>
     );
   }
@@ -363,7 +367,7 @@ export function UpgradeMenu({
     <Menu
       label={label}
       align="end"
-      triggerClassName={buttonClass("primary")}
+      triggerRender={<Button />}
       trigger={
         <>
           {pending ? "Opening checkout" : label}
@@ -372,9 +376,11 @@ export function UpgradeMenu({
       }
     >
       {(["monthly", "yearly"] as const).map((interval, index) => (
-        <div key={interval}>
+        <MenuGroup key={interval}>
           {index > 0 && <MenuSeparator />}
-          <MenuLabel>{interval === "monthly" ? "Monthly" : "Yearly"}</MenuLabel>
+          <MenuGroupLabel>
+            {interval === "monthly" ? "Monthly" : "Yearly"}
+          </MenuGroupLabel>
           {TIERS.map((tier) =>
             tier.plan === "free" ? null : (
               <UpgradeItem
@@ -387,7 +393,7 @@ export function UpgradeMenu({
                 onChoose={onChoose}
               >
                 {tier.gigabytes} GB
-                <span className="text-muted tabular-nums">
+                <span className="text-muted-foreground tabular-nums">
                   {current?.plan === tier.plan && current.interval === interval
                     ? "Current"
                     : `${formatPrice(monthlyPrice(tier, interval))} /mo`}
@@ -395,7 +401,7 @@ export function UpgradeMenu({
               </UpgradeItem>
             ),
           )}
-        </div>
+        </MenuGroup>
       ))}
     </Menu>
   );
@@ -414,21 +420,16 @@ function UpgradeItem({
   onChoose: (plan: PaidPlan, interval: Billing) => void;
   children: ReactNode;
 }) {
-  const close = useCloseMenu();
   return (
-    <button
-      type="button"
-      className={`${menuItemClass} justify-between disabled:opacity-50 disabled:hover:bg-transparent`}
+    <MenuItem
+      className="justify-between"
       disabled={isCurrent}
       data-umami-event="Checkout"
       data-umami-event-plan={plan}
       data-umami-event-period={interval}
-      onClick={() => {
-        close();
-        onChoose(plan, interval);
-      }}
+      onClick={() => onChoose(plan, interval)}
     >
       {children}
-    </button>
+    </MenuItem>
   );
 }

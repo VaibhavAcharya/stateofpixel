@@ -1,17 +1,17 @@
-import {
-  ArrowUpRightIcon,
-  GearIcon,
-  ImagesIcon,
-  StackIcon,
-} from "@phosphor-icons/react/ssr";
-import { Link } from "@tanstack/react-router";
+import { ArrowUpRightIcon } from "@phosphor-icons/react/ssr";
+import { Button } from "uiofcraft";
 import { api, useQuery } from "../lib/backend";
 import { AccountBanner } from "./AccountBanner";
 import { PageHeader } from "./Page";
-import { Tab, Tabs } from "./Tabs";
-import { buttonClass } from "./ui";
+import { ProjectMark } from "./ui";
 
 type ProjectTab = "builds" | "baselines" | "settings";
+
+const PROJECT_PAGES: Record<ProjectTab, string> = {
+  builds: "Builds",
+  baselines: "Baselines",
+  settings: "Settings",
+};
 
 export function ProjectHeader({
   owner,
@@ -23,29 +23,21 @@ export function ProjectHeader({
   tab: ProjectTab;
 }) {
   const access = useQuery(api.projects.access, { owner, name: repo });
-  const settingsLocked =
-    access !== undefined &&
-    access !== null &&
-    access.permission !== null &&
-    !access.canWrite;
 
   return (
     <>
       <PageHeader
-        title={repo}
-        above={
-          <Link to="/$owner" params={{ owner }} className="hover:text-text">
-            {owner}
-          </Link>
-        }
+        leading={<ProjectMark name={`${owner}/${repo}`} size={40} />}
+        above={repo}
+        title={PROJECT_PAGES[tab]}
         actions={
-          <a
-            href={`https://github.com/${owner}/${repo}`}
-            className={buttonClass()}
+          <Button
+            variant="outline"
+            render={<a href={`https://github.com/${owner}/${repo}`} />}
           >
             Repository
-            <ArrowUpRightIcon size={14} className="text-muted" />
-          </a>
+            <ArrowUpRightIcon />
+          </Button>
         }
       />
       {access?.account && (
@@ -55,34 +47,6 @@ export function ProjectHeader({
           repo={{ name: repo, canAdmin: access.canAdmin }}
         />
       )}
-      <Tabs>
-        <Tab
-          to="/$owner/$repo"
-          params={{ owner, repo }}
-          icon={StackIcon}
-          label="Builds"
-          active={tab === "builds"}
-        />
-        <Tab
-          to="/$owner/$repo/baselines"
-          params={{ owner, repo }}
-          icon={ImagesIcon}
-          label="Baselines"
-          active={tab === "baselines"}
-        />
-        <Tab
-          to="/$owner/$repo/settings"
-          params={{ owner, repo }}
-          icon={GearIcon}
-          label="Settings"
-          active={tab === "settings"}
-          disabledReason={
-            settingsLocked
-              ? "Only people with write access to this repository on GitHub can change its settings."
-              : undefined
-          }
-        />
-      </Tabs>
     </>
   );
 }

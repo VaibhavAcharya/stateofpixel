@@ -1,6 +1,6 @@
 import { CheckIcon, CopyIcon } from "@phosphor-icons/react/ssr";
 import { useEffect, useState } from "react";
-import { buttonClass } from "./ui";
+import { Button } from "uiofcraft";
 
 export type Snippet = {
   code: string;
@@ -31,13 +31,13 @@ export function CodeBlock({
   }, [copied]);
 
   return (
-    <figure className="overflow-hidden rounded-md bg-surface-2 shadow-[inset_0_0_0_1px_var(--color-border)]">
-      <figcaption className="flex h-10 items-center justify-between border-b border-border pr-1.5 pl-4 text-xs text-muted">
+    <figure className="min-w-0 overflow-hidden rounded-xl border bg-card shadow-xs/5">
+      <figcaption className="flex h-10 items-center justify-between border-b bg-muted/72 pr-1.5 pl-4 text-muted-foreground text-xs">
         <span className="mono">{fileName}</span>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-sm"
           aria-label={copied ? "Copied" : "Copy code"}
-          className={buttonClass("ghost", "icon-sm")}
           data-umami-event="Copy code"
           data-umami-event-file={fileName}
           onClick={() => {
@@ -46,10 +46,10 @@ export function CodeBlock({
               .then(() => setCopied(true));
           }}
         >
-          {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
-        </button>
+          {copied ? <CheckIcon /> : <CopyIcon />}
+        </Button>
       </figcaption>
-      <pre className="overflow-x-auto p-4 font-mono text-xs leading-[1.8]">
+      <pre className="overflow-x-auto p-4 font-mono text-[0.8125rem] leading-[1.7]">
         <code>
           {lines === undefined
             ? code

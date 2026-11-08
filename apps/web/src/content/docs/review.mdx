@@ -8,7 +8,7 @@ export const meta = {
 
 ## The builds list
 
-The project page lists its builds, newest first. Click the Build column header to put the oldest first. Filter picks which states show. By default it hides builds with no changes and expired builds, so the list shows what needs attention. Default and All at the top of the menu reset it.
+The project page lists its builds, newest first, with how far each review got and who reviewed it. Click the Build column header to put the oldest first. Filter picks which states show. By default it hides builds with no changes and expired builds, so the list shows what needs attention. Default and All at the top of the menu reset it.
 
 A build of a pull request that was merged shows "PR merged", and one that was closed without merging shows "PR closed", in the list and on the build page. Reopening the pull request removes the label.
 
@@ -18,9 +18,9 @@ Click a branch or a pull request number in a row to show only its builds. Each f
 
 The page refreshes every 5 seconds while it is open, so new shards and other reviewers' approvals show up without a reload.
 
-The sidebar groups snapshots into Changed, Added, Removed, Failed and Unchanged. The first changed snapshot opens when the page loads, and each snapshot has its own link you can share. Drag the edge of the sidebar to resize it, and double-click the edge to reset it.
+The snapshot list on the left groups snapshots into Changed, Added, Removed, Failed and Unchanged. The first changed snapshot opens when the page loads, and each snapshot has its own link you can share. Drag the edge of the list to resize it, and double-click the edge to reset it.
 
-Type in the filter at the top of the sidebar, or press <kbd>/</kbd>, to show only snapshots whose name contains the text. When a build has snapshots from more than one browser, a Browser menu under the filter shows the snapshots of one browser. The browser comes from the `browser` field in the snapshot metadata, which `snapshot` from [Playwright](/docs/playwright) writes for you. See [Metadata](/docs/any-screenshots#metadata) to send it from other tools. <kbd>j</kbd> and <kbd>k</kbd> move through the snapshots that match.
+Type in the filter at the top of the snapshot list, or press <kbd>/</kbd>, to show only snapshots whose name contains the text. When a build has snapshots from more than one browser, a Browser menu under the filter shows the snapshots of one browser. The browser comes from the `browser` field in the snapshot metadata, which `snapshot` from [Playwright](/docs/playwright) writes for you. See [Metadata](/docs/any-screenshots#metadata) to send it from other tools. <kbd>j</kbd> and <kbd>k</kbd> move through the snapshots that match.
 
 Snapshots that differ only in the brackets at the end of the name, like `Checkout/Empty [chromium 1280]` and `Checkout/Empty [firefox 375]`, are listed under one row with their name and count. Click the count, or press <kbd>h</kbd> and <kbd>l</kbd>, to fold the row up and open it again. A folded row opens the snapshot with the largest change, and <kbd>j</kbd> and <kbd>k</kbd> move past it in one step. When a build has more than one browser, rows that changed in only some of them come first, under Some browsers, with the browsers they changed in.
 
@@ -61,7 +61,7 @@ Under the image, the snapshot shows what else is known about it:
 - **Review**: who approved or rejected it and when, with a comment if one was left, or the build an approval carried over from.
 - **Looks flaky**: shown when the snapshot changed back and forth on the default branch, or another build of the same commit has a different image. See [Find flaky snapshots](/docs/stable-screenshots#find-flaky-snapshots).
 - **Mark unstable**: shown on a changed snapshot. It adds the story to the project's unstable snapshots and approves its pending changes. A snapshot already on the list says "Marked unstable" instead. See [Mark snapshots unstable](/docs/stable-screenshots#mark-snapshots-unstable).
-- **History**: the recent builds on the default branch where the image changed. History opens the snapshot on the Baselines tab. See [Baselines](/docs/baselines).
+- **History**: the recent builds on the default branch where the image changed. History opens the snapshot on the Baselines page. See [Baselines](/docs/baselines).
 - **Details**: the metadata your test sent, like browser, viewport and test file.
 
 ## Who can review

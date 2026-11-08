@@ -641,6 +641,28 @@ async function buildState(t: TestBackend, buildId: Id<"builds">) {
   });
 }
 
+it("lists who reviewed the latest build on the project row", async () => {
+  const { user, grant, buildId, snapshotId } = await setup();
+  await grant("write");
+  const latestBuild = async () =>
+    (
+      await user.query(api.accounts.projects, {
+        login: "acme",
+        paginationOpts: firstPage,
+      })
+    ).page[0]?.latestBuild;
+
+  expect(await latestBuild()).toMatchObject({ reviewers: [] });
+  await user.mutation(api.reviews.apply, {
+    buildId,
+    snapshotIds: [snapshotId],
+    action: "approve",
+  });
+  expect(await latestBuild()).toMatchObject({
+    reviewers: [{ login: "octocat", image: null }],
+  });
+});
+
 it("approves, rejects and undoes a snapshot and updates the build", async () => {
   const { t, user, grant, buildId, snapshotId } = await setup();
   await grant("write");

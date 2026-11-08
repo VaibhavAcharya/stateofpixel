@@ -12,26 +12,26 @@ When GitHub stops accepting the connection, for example after you revoke the app
 
 ## Accounts
 
-After you sign in, Accounts lists every account you can see, with its storage out of the plan limit, number of projects and last build. Click one to open its Overview. The Accounts link at the top of every page brings you back here. An account shows "App not installed" when the GitHub App is not installed on it anymore. With no accounts yet, the page has the button to install the app.
+After you sign in, Accounts lists every account you can see, with its plan, the people who use it, its storage out of the plan limit, number of projects and last build. Click one to open its Overview. The Accounts link at the start of the breadcrumb on every page brings you back here. An account shows "App not installed" when the GitHub App is not installed on it anymore. With no accounts yet, the page has the button to install the app.
 
 ## The account page
 
-The account page has four tabs:
+The sidebar on the left has the account switcher at the top, then four pages for the account and its projects. Projects whose latest build waits for review show how many snapshots are left. Press <kbd>ctrl</kbd> <kbd>b</kbd> (<kbd>cmd</kbd> <kbd>b</kbd> on macOS) or the button at the top left to fold the sidebar into icons. On the build page it starts folded. Press <kbd>cmd</kbd> <kbd>k</kbd> (<kbd>ctrl</kbd> <kbd>k</kbd> on Windows and Linux) or Jump to at the top right to open a project, an account page, the docs or a theme by typing its name.
 
-- **Overview**: the plan, storage and number of members, then every repository in the installation with its latest build. Search by name, and sort by project or by last update. Press <kbd>j</kbd> and <kbd>k</kbd> to move between rows in the project and build lists, and Enter to open one.
+- **Overview**: the plan, storage and members, then every repository in the installation with its latest build, how far its review got and who reviewed it. Search by name, and sort by project or by last update. Press <kbd>j</kbd> and <kbd>k</kbd> to move between rows in the project and build lists, and Enter to open one.
 - **Members**: who has connected GitHub and has access to the account.
-- **Usage**: storage per project. See [The Usage tab](/docs/limits#the-usage-tab).
+- **Usage**: storage per project. See [The Usage page](/docs/limits#the-usage-page).
 - **Billing**: the plan and its buttons. See [Billing](/docs/billing).
 
 ## Members
 
-The Members tab lists everyone who has connected GitHub to stateofpixel and has access to the account on GitHub, with their role and when they were last active. Someone shows up once they open Accounts or any project of the account. Someone who never connected GitHub is not listed.
+The Members page lists everyone who has connected GitHub to stateofpixel and has access to the account on GitHub, with their role and when they were last active. Someone shows up once they open Accounts or any project of the account. Someone who never connected GitHub is not listed.
 
 Access comes from GitHub, so add or remove people there. In an organization, owners on GitHub are Owner and everyone else is Member. On a personal account, the account's user is Owner and everyone else is Collaborator. Owners change the plan and delete archived projects. Repository permissions decide who can review builds and change project settings. See [Who can review](/docs/review#who-can-review).
 
 ## Project settings
 
-People with write access to the repository on GitHub open the project's Settings tab and change the diff settings. Admins also see and change the other settings. Everyone else sees the tab disabled.
+People with write access to the repository on GitHub open Settings under the project in the sidebar and change the diff settings. Admins also see and change the other settings. Everyone else sees the tab disabled.
 
 - **General**: the default branch, which mirrors GitHub, and the auto-approve branches. See [Baselines](/docs/baselines#the-default-branch).
 - **Diff**: the threshold, whether anti-aliased pixels count, how many changed pixels to ignore and the unstable snapshots. See [Tune the threshold](/docs/stable-screenshots#tune-the-threshold) and [Mark snapshots unstable](/docs/stable-screenshots#mark-snapshots-unstable).
@@ -55,8 +55,8 @@ An archived project:
 - does not show in the project list, and its pages say "Project not found."
 - refuses uploads from CI, and gets no check on new commits
 - keeps its builds, baselines and tokens, and its images still count toward storage. Retention still deletes old builds of pull requests and branches.
-- still shows on the Usage tab while it holds images, marked "Archived". Owners can delete it there.
+- still shows on the Usage page while it holds images, marked "Archived". Owners can delete it there.
 
 Uninstalling does not cancel a paid plan. Cancel it under Billing first. See [Cancel](/docs/billing#cancel).
 
-Add the repository again, or install the app again, and the project comes back with its builds, baselines and settings. To delete an archived project, an owner presses Delete next to it on the Usage tab and types its name. Deleting works the same as [Delete a project](#delete-a-project). For an archived project that no longer shows on the Usage tab, write to us. See the [privacy policy](/privacy).
+Add the repository again, or install the app again, and the project comes back with its builds, baselines and settings. To delete an archived project, an owner presses Delete next to it on the Usage page and types its name. Deleting works the same as [Delete a project](#delete-a-project). For an archived project that no longer shows on the Usage page, write to us. See the [privacy policy](/privacy).

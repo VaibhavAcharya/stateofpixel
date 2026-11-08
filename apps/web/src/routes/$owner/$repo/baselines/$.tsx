@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { AppHeader } from "../../../../components/AppHeader";
+import { Checkbox, Label } from "uiofcraft";
+import { AppShell } from "../../../../components/AppShell";
 import { Page } from "../../../../components/Page";
 import { ProjectHeader } from "../../../../components/ProjectHeader";
 import { RequireAuth } from "../../../../components/RequireAuth";
@@ -41,11 +42,16 @@ function HistoryRoute() {
   const snapshotName = _splat ?? "";
   return (
     <RequireAuth redirectTo={`/${owner}/${repo}/baselines/${snapshotName}`}>
-      <AppHeader owner={owner} repo={repo} />
-      <Page>
-        <ProjectHeader owner={owner} repo={repo} tab="baselines" />
-        <HistoryAccess owner={owner} repo={repo} snapshotName={snapshotName} />
-      </Page>
+      <AppShell owner={owner} repo={repo} crumb="Baselines">
+        <Page>
+          <ProjectHeader owner={owner} repo={repo} tab="baselines" />
+          <HistoryAccess
+            owner={owner}
+            repo={repo}
+            snapshotName={snapshotName}
+          />
+        </Page>
+      </AppShell>
     </RequireAuth>
   );
 }
@@ -118,10 +124,12 @@ function History({
   return (
     <div className="grid grid-cols-[320px_1fr] gap-6 max-lg:grid-cols-1">
       <div className="flex flex-col gap-3">
-        <h2 className="text-base font-medium" title={snapshotName}>
+        <h2 className="text-sm font-medium" title={snapshotName}>
           <SnapshotName name={snapshotName} />
         </h2>
-        <p className="text-xs text-muted">Pick two builds to compare them.</p>
+        <p className="text-xs text-muted-foreground">
+          Pick two builds to compare them.
+        </p>
         <ol className="border-t border-border">
           {history.map((entry) => (
             <HistoryEntry
@@ -137,7 +145,7 @@ function History({
       </div>
       <div className="flex h-[70vh] min-h-[480px] flex-col overflow-hidden rounded-md shadow-[inset_0_0_0_1px_var(--color-border)]">
         {newer === undefined ? (
-          <p className="m-auto text-sm text-muted">Pick a build.</p>
+          <p className="m-auto text-sm text-muted-foreground">Pick a build.</p>
         ) : (
           <Viewer
             snapshot={{
@@ -177,15 +185,14 @@ function HistoryEntry({
 }) {
   return (
     <li
-      className={`flex gap-3 border-b border-border py-3 ${selected ? "bg-hover" : ""}`}
+      className={`flex gap-3 border-b border-border py-3 ${selected ? "bg-accent" : ""}`}
     >
-      <label className="flex min-w-0 flex-1 cursor-pointer gap-3 px-2">
-        <input
-          type="checkbox"
+      <Label className="flex min-w-0 flex-1 cursor-pointer items-stretch gap-3 px-2 font-normal">
+        <Checkbox
           checked={selected}
-          onChange={onToggle}
+          onCheckedChange={onToggle}
           aria-label={`Compare build #${entry.buildNumber}`}
-          className="mt-0.5 size-4 shrink-0 accent-[var(--color-accent)]"
+          className="mt-0.5"
         />
         <span className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
           <span className="flex items-center gap-2">
@@ -197,16 +204,16 @@ function HistoryEntry({
               #{entry.buildNumber}
             </Link>
             <DiffStatusPill status={entry.diffStatus} />
-            <span className="ml-auto text-xs text-muted">
+            <span className="ml-auto text-xs text-muted-foreground">
               <RelativeTime timestamp={entry.createdAt} />
             </span>
           </span>
-          <span className="flex min-w-0 items-baseline gap-2 text-xs text-muted">
+          <span className="flex min-w-0 items-baseline gap-2 text-xs text-muted-foreground">
             <span className="mono shrink-0">{shortSha(entry.commitSha)}</span>
             <span className="truncate">{entry.commitMessage}</span>
           </span>
           {entry.mergedPrNumber !== null && (
-            <span className="text-xs text-muted">
+            <span className="text-xs text-muted-foreground">
               PR #{entry.mergedPrNumber}
               {entry.approvedBy !== null &&
                 `, approved by @${entry.approvedBy}`}
@@ -218,10 +225,10 @@ function HistoryEntry({
             image={entry.image}
             alt=""
             loading="lazy"
-            className="h-12 w-16 shrink-0 rounded-xs bg-surface-2 object-contain object-top"
+            className="h-12 w-16 shrink-0 rounded-xs bg-muted object-contain object-top"
           />
         )}
-      </label>
+      </Label>
     </li>
   );
 }

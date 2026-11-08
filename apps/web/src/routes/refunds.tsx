@@ -25,10 +25,10 @@ function Refunds() {
       <h2>Cancel anytime</h2>
       <p>
         You can cancel a paid plan at any time under Manage billing, on the
-        account's Billing tab. If you cancel at the next billing date, your plan
-        does not renew. It stays active until the end of the period you paid
-        for, then your account moves to the free plan. If you cancel now, your
-        account moves to the free plan right away.
+        account's Billing page. If you cancel at the next billing date, your
+        plan does not renew. It stays active until the end of the period you
+        paid for, then your account moves to the free plan. If you cancel now,
+        your account moves to the free plan right away.
       </p>
 
       <h2>No refunds</h2>

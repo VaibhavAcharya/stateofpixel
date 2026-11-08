@@ -1,7 +1,18 @@
-import { GitBranchIcon, GitPullRequestIcon } from "@phosphor-icons/react/ssr";
+import {
+  CheckIcon,
+  GitBranchIcon,
+  GitPullRequestIcon,
+} from "@phosphor-icons/react/ssr";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useCallback, useMemo } from "react";
-import { AppHeader } from "../../../components/AppHeader";
+import {
+  Button,
+  Card,
+  CardFrame,
+  CardFrameHeader,
+  CardFrameTitle,
+} from "uiofcraft";
+import { AppShell } from "../../../components/AppShell";
 import { CodeBlock } from "../../../components/CodeBlock";
 import { columnHelper, DataTable } from "../../../components/DataTable";
 import {
@@ -13,16 +24,16 @@ import { Page } from "../../../components/Page";
 import { ProjectHeader } from "../../../components/ProjectHeader";
 import { RequireAuth } from "../../../components/RequireAuth";
 import {
+  AvatarStack,
   BuildStatePill,
-  buttonClass,
-  LeadCopy,
   listRowLinkClass,
   ProjectNotFound,
-  PrStatePill,
+  PrStateIcon,
   RelativeTime,
+  ReviewBar,
   SkeletonRows,
   Spinner,
-  SupersededPill,
+  SupersededMark,
 } from "../../../components/ui";
 import {
   api,
@@ -110,11 +121,12 @@ function ProjectPage() {
   const { owner, repo } = Route.useParams();
   return (
     <RequireAuth redirectTo={`/${owner}/${repo}`}>
-      <AppHeader owner={owner} repo={repo} />
-      <Page>
-        <ProjectHeader owner={owner} repo={repo} tab="builds" />
-        <ProjectBuilds owner={owner} repo={repo} />
-      </Page>
+      <AppShell owner={owner} repo={repo} crumb="Builds">
+        <Page>
+          <ProjectHeader owner={owner} repo={repo} tab="builds" />
+          <ProjectBuilds owner={owner} repo={repo} />
+        </Page>
+      </AppShell>
     </RequireAuth>
   );
 }
@@ -171,10 +183,13 @@ function useBuildColumns({
               to="/$owner/$repo/builds/$number"
               params={{ owner, repo, number: String(row.original.number) }}
               data-list-row
-              className={listRowLinkClass}
+              className={`inline-flex items-center gap-1.5 ${listRowLinkClass}`}
             >
-              <span className="text-muted">#</span>
-              {row.original.number}
+              <span>
+                <span className="text-muted-foreground">#</span>
+                {row.original.number}
+              </span>
+              {row.original.superseded && <SupersededMark />}
             </Link>
           ),
         }),
@@ -183,16 +198,20 @@ function useBuildColumns({
           header: "Status",
           meta: { className: "w-48" },
           cell: ({ row }) => (
-            <span className="flex flex-wrap items-center gap-1.5 py-1.5">
-              <BuildStatePill
-                status={row.original.status}
-                conclusion={row.original.conclusion}
-                counts={row.original.counts}
-                shards={row.original.shards}
-                storageBlocked={row.original.storageBlocked}
-              />
-              {row.original.superseded && <SupersededPill />}
-              <PrStatePill state={row.original.prState} />
+            <span className="flex flex-col gap-1.5 py-2">
+              <span className="flex flex-wrap items-center gap-1.5">
+                <BuildStatePill
+                  status={row.original.status}
+                  conclusion={row.original.conclusion}
+                  counts={row.original.counts}
+                  shards={row.original.shards}
+                  storageBlocked={row.original.storageBlocked}
+                />
+              </span>
+              {row.original.status === "finalized" &&
+                !row.original.storageBlocked && (
+                  <ReviewBar counts={row.original.counts} />
+                )}
             </span>
           ),
         }),
@@ -220,7 +239,7 @@ function useBuildColumns({
               <span className="truncate">
                 {row.original.commitMessage || "No commit message"}
               </span>
-              <span className="mono shrink-0 text-muted">
+              <span className="mono shrink-0 text-muted-foreground">
                 {shortSha(row.original.commitSha)}
               </span>
             </span>
@@ -231,7 +250,10 @@ function useBuildColumns({
               helper.display({
                 id: "suite",
                 header: "Suite",
-                meta: { className: "w-32 truncate text-muted max-lg:hidden" },
+                meta: {
+                  className:
+                    "w-32 truncate text-muted-foreground max-lg:hidden",
+                },
                 cell: ({ row }) => row.original.buildName,
               }),
             ]
@@ -239,7 +261,7 @@ function useBuildColumns({
         helper.display({
           id: "pr",
           header: "PR",
-          meta: { className: "w-20 max-md:hidden" },
+          meta: { className: "w-24 max-md:hidden" },
           cell: ({ row }) => {
             const pr = row.original.prNumber;
             return (
@@ -248,16 +270,29 @@ function useBuildColumns({
                   title={`Show builds for pull request #${pr}`}
                   onClick={() => onFilter({ pr })}
                 >
-                  <span className="tabular-nums">#{pr}</span>
+                  <span className="inline-flex items-center gap-1.5 tabular-nums">
+                    <PrStateIcon state={row.original.prState} />#{pr}
+                  </span>
                 </FilterButton>
               )
             );
           },
         }),
         helper.display({
+          id: "reviewers",
+          header: "Reviewed by",
+          meta: { className: "w-32 max-lg:hidden" },
+          cell: ({ row }) =>
+            row.original.reviewers.length === 0 ? (
+              <span className="text-muted-foreground">-</span>
+            ) : (
+              <AvatarStack people={row.original.reviewers} />
+            ),
+        }),
+        helper.display({
           id: "created",
           header: "Created",
-          meta: { className: "w-32 text-right text-muted" },
+          meta: { className: "w-32 text-right text-muted-foreground" },
           cell: ({ row }) => (
             <RelativeTime timestamp={row.original.createdAt} />
           ),
@@ -327,13 +362,12 @@ function BuildsTable({
           />
         )}
         {filtered && (
-          <button
-            type="button"
-            className={buttonClass("ghost")}
+          <Button
+            variant="ghost"
             onClick={() => void navigate({ search: { order: search.order } })}
           >
             Clear filters
-          </button>
+          </Button>
         )}
       </ListToolbar>
       <div className="max-sm:hidden">
@@ -344,6 +378,11 @@ function BuildsTable({
           sorting={[{ id: "number", desc: search.order !== "asc" }]}
           onSortingChange={([next]) =>
             update({ order: next?.desc === false ? "asc" : undefined })
+          }
+          getRowClassName={(build) =>
+            build.superseded
+              ? "text-muted-foreground *:data-[slot=table-cell]:opacity-72"
+              : undefined
           }
         />
       </div>
@@ -358,23 +397,19 @@ function BuildsTable({
         ))}
       </ul>
       {results.length === 0 && (
-        <p className="py-6 text-sm text-muted">
+        <p className="py-6 text-sm text-muted-foreground">
           No builds match these filters.
         </p>
       )}
       {status === "CanLoadMore" && (
         <div className="mt-6 flex justify-center">
-          <button
-            type="button"
-            className={buttonClass()}
-            onClick={() => loadMore(PAGE_SIZE)}
-          >
+          <Button variant="outline" onClick={() => loadMore(PAGE_SIZE)}>
             Load more
-          </button>
+          </Button>
         </div>
       )}
       {status === "LoadingMore" && (
-        <div className="mt-6 flex justify-center text-muted">
+        <div className="mt-6 flex justify-center text-muted-foreground">
           <Spinner size={16} />
         </div>
       )}
@@ -418,10 +453,13 @@ function MobileBuildRow({
         to="/$owner/$repo/builds/$number"
         params={{ owner, repo, number: String(build.number) }}
         data-list-row
-        className="flex flex-col gap-1.5 py-3 active:bg-hover"
+        className="flex flex-col gap-1.5 py-3 active:bg-accent"
       >
         <span className="flex items-center gap-2">
-          <span className="font-medium tabular-nums">#{build.number}</span>
+          <span className="inline-flex items-center gap-1.5 font-medium tabular-nums">
+            #{build.number}
+            {build.superseded && <SupersededMark />}
+          </span>
           <BuildStatePill
             status={build.status}
             conclusion={build.conclusion}
@@ -429,14 +467,17 @@ function MobileBuildRow({
             shards={build.shards}
             storageBlocked={build.storageBlocked}
           />
-          {build.superseded && <SupersededPill />}
-          <PrStatePill state={build.prState} />
-          <span className="ml-auto text-xs text-muted">
+          {build.prNumber !== null && (
+            <span className="inline-flex items-center gap-1 text-muted-foreground text-xs tabular-nums">
+              <PrStateIcon state={build.prState} />#{build.prNumber}
+            </span>
+          )}
+          <span className="ml-auto text-xs text-muted-foreground">
             <RelativeTime timestamp={build.createdAt} />
           </span>
         </span>
-        <span className="flex min-w-0 items-baseline gap-2 text-muted">
-          <span className="mono shrink-0 text-text">{build.branch}</span>
+        <span className="flex min-w-0 items-baseline gap-2 text-muted-foreground">
+          <span className="mono shrink-0 text-foreground">{build.branch}</span>
           <span className="truncate">{build.commitMessage}</span>
         </span>
       </Link>
@@ -446,28 +487,76 @@ function MobileBuildRow({
 
 function SetupCard({ owner, repo }: { owner: string; repo: string }) {
   return (
-    <section className="flex max-w-[720px] flex-col gap-6 rounded-md border border-dotted border-field-border/60 bg-surface p-6 max-sm:p-4">
-      <LeadCopy title="No builds yet.">
-        Add the upload step to your GitHub Actions workflow and push a commit.
-        On other CI, create a project token in{" "}
-        <Link
-          to="/$owner/$repo/settings"
-          params={{ owner, repo }}
-          className="text-link"
-        >
-          settings
-        </Link>
-        . The{" "}
-        <Link to="/docs" className="text-link">
-          Quickstart
-        </Link>{" "}
-        has the full setup.
-      </LeadCopy>
-      <CodeBlock fileName=".github/workflows/visual.yml" {...workflow} />
-      <p className="flex items-center gap-2 text-sm text-muted">
-        <Spinner size={14} />
-        Waiting for the first build. This page updates by itself.
-      </p>
-    </section>
+    <CardFrame className="max-w-[880px]">
+      <CardFrameHeader className="py-3">
+        <CardFrameTitle>No builds yet.</CardFrameTitle>
+      </CardFrameHeader>
+      <Card className="overflow-hidden">
+        <ol className="divide-y">
+          <SetupStep done title="Install the GitHub App">
+            {repo} is a project, so the app is installed on it.
+          </SetupStep>
+          <SetupStep title="Add the upload step">
+            Add it to your GitHub Actions workflow. On other CI, create a
+            project token in{" "}
+            <Link
+              to="/$owner/$repo/settings"
+              params={{ owner, repo }}
+              className="text-link"
+            >
+              settings
+            </Link>
+            . The{" "}
+            <Link to="/docs" className="text-link">
+              Quickstart
+            </Link>{" "}
+            has the full setup.
+            <div className="mt-4">
+              <CodeBlock
+                fileName=".github/workflows/visual.yml"
+                {...workflow}
+              />
+            </div>
+          </SetupStep>
+          <SetupStep waiting title="Push a commit">
+            Waiting for the first build. This page updates by itself.
+          </SetupStep>
+        </ol>
+      </Card>
+    </CardFrame>
+  );
+}
+
+function SetupStep({
+  title,
+  done = false,
+  waiting = false,
+  children,
+}: {
+  title: string;
+  done?: boolean;
+  waiting?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <li className="flex gap-4 p-5 sm:p-6">
+      <span
+        className={`flex size-7 shrink-0 items-center justify-center rounded-full border ${
+          done ? "border-approved/40 bg-approved-bg text-approved" : "bg-card"
+        }`}
+      >
+        {done ? (
+          <CheckIcon size={14} weight="bold" aria-label="Done" />
+        ) : waiting ? (
+          <Spinner size={14} className="text-muted-foreground" />
+        ) : (
+          <span className="size-1.5 rounded-full bg-muted-foreground" />
+        )}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-sm">{title}</p>
+        <div className="mt-1 text-muted-foreground text-sm">{children}</div>
+      </div>
+    </li>
   );
 }

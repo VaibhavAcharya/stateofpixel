@@ -1,14 +1,14 @@
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AppHeader } from "../../../components/AppHeader";
+import { Button, Checkbox, Input, Label, Textarea } from "uiofcraft";
+import { AppShell } from "../../../components/AppShell";
 import { CodeBlock } from "../../../components/CodeBlock";
 import { Page } from "../../../components/Page";
 import { ProjectHeader } from "../../../components/ProjectHeader";
 import { RequireAuth } from "../../../components/RequireAuth";
 import { Field, Section, useSaveStatus } from "../../../components/Settings";
 import {
-  buttonClass,
   EmptyState,
   ProjectNotFound,
   RelativeTime,
@@ -21,9 +21,6 @@ import { useProjectAccess } from "../../../lib/useProjectAccess";
 export const Route = createFileRoute("/$owner/$repo/settings")({
   component: SettingsRoute,
 });
-
-const INPUT_CLASS =
-  "h-8 w-full rounded-md bg-surface px-2.5 text-sm shadow-[inset_0_0_0_1px_var(--color-field-border)] transition-shadow duration-250 ease-standard outline-none placeholder:text-subtle focus:shadow-field-focus aria-invalid:shadow-[inset_0_0_0_1px_var(--color-rejected)]";
 
 const ERRORS: Record<string, string> = {
   invalid_branches: "Use at most 20 patterns of up to 200 characters.",
@@ -47,11 +44,12 @@ function SettingsRoute() {
   const { owner, repo } = Route.useParams();
   return (
     <RequireAuth redirectTo={`/${owner}/${repo}/settings`}>
-      <AppHeader owner={owner} repo={repo} />
-      <Page>
-        <ProjectHeader owner={owner} repo={repo} tab="settings" />
-        <SettingsAccess owner={owner} repo={repo} />
-      </Page>
+      <AppShell owner={owner} repo={repo} crumb="Settings">
+        <Page>
+          <ProjectHeader owner={owner} repo={repo} tab="settings" />
+          <SettingsAccess owner={owner} repo={repo} />
+        </Page>
+      </AppShell>
     </RequireAuth>
   );
 }
@@ -102,7 +100,7 @@ function SettingsForm({
     update({ projectId, ...changes });
 
   return (
-    <div className="flex max-w-[640px] flex-col">
+    <div className="flex max-w-[960px] flex-col">
       <Section title="General">
         <Field label="Default branch" hint="Mirrors GitHub.">
           {() => (
@@ -171,7 +169,7 @@ function SettingsForm({
           <Section title="Tokens">
             <Tokens projectId={projectId} />
           </Section>
-          <Section title="Danger">
+          <Section title="Danger" danger>
             <DeleteProject owner={owner} repo={repo} projectId={projectId} />
           </Section>
         </>
@@ -199,7 +197,7 @@ function TextSetting({
   return (
     <Field label={label} hint={hint} status={note}>
       {(id) => (
-        <input
+        <Input
           id={id}
           value={draft}
           inputMode={inputMode}
@@ -215,7 +213,7 @@ function TextSetting({
               event.currentTarget.blur();
             }
           }}
-          className={`${INPUT_CLASS} ${inputMode ? "mono w-32" : ""}`}
+          className={inputMode ? "mono w-32" : undefined}
         />
       )}
     </Field>
@@ -239,7 +237,7 @@ function ListSetting({
   return (
     <Field label={label} hint={hint} status={note}>
       {(id) => (
-        <textarea
+        <Textarea
           id={id}
           value={draft}
           rows={4}
@@ -250,7 +248,7 @@ function ListSetting({
               void run(onSave(draft.trim()));
             }
           }}
-          className={`${INPUT_CLASS} mono h-auto py-1.5`}
+          className="mono"
         />
       )}
     </Field>
@@ -268,16 +266,14 @@ function CheckboxSetting({
 }) {
   const { run, note } = useSaveStatus(errorMessage);
   return (
-    <label className="flex items-center gap-2 text-sm">
-      <input
-        type="checkbox"
+    <Label className="font-normal">
+      <Checkbox
         checked={checked}
-        onChange={(event) => void run(onSave(event.target.checked))}
-        className="size-4 accent-[var(--color-accent)]"
+        onCheckedChange={(next) => void run(onSave(next))}
       />
       {label}
       {note}
-    </label>
+    </Label>
   );
 }
 
@@ -295,7 +291,7 @@ function Tokens({ projectId }: { projectId: Id<"projects"> }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted">
+      <p className="text-sm text-muted-foreground">
         GitHub Actions signs in with OIDC and needs no token. On other CI, set
         STATEOFPIXEL_TOKEN to a project token.
       </p>
@@ -323,14 +319,13 @@ function Tokens({ projectId }: { projectId: Id<"projects"> }) {
         }}
       >
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <input
+          <Input
             value={name}
             maxLength={100}
             aria-label="Token name"
             aria-invalid={error !== null}
             placeholder="Token name, like buildkite"
             onChange={(event) => setName(event.target.value)}
-            className={INPUT_CLASS}
           />
           {error && (
             <p role="alert" className="text-xs text-rejected">
@@ -338,13 +333,13 @@ function Tokens({ projectId }: { projectId: Id<"projects"> }) {
             </p>
           )}
         </div>
-        <button
+        <Button
           type="submit"
-          className={buttonClass()}
+          variant="outline"
           disabled={creating || name.trim() === ""}
         >
           Create token
-        </button>
+        </Button>
       </form>
       {tokens && tokens.length > 0 && (
         <ul className="border-t border-border">
@@ -356,7 +351,7 @@ function Tokens({ projectId }: { projectId: Id<"projects"> }) {
               <span className="min-w-0 flex-1 truncate font-medium">
                 {token.name}
               </span>
-              <span className="text-xs text-muted">
+              <span className="text-xs text-muted-foreground">
                 {token.lastUsedAt === null ? (
                   "Never used"
                 ) : (
@@ -365,13 +360,13 @@ function Tokens({ projectId }: { projectId: Id<"projects"> }) {
                   </>
                 )}
               </span>
-              <button
-                type="button"
-                className={buttonClass("danger", "sm")}
+              <Button
+                variant="destructive-outline"
+                size="sm"
                 onClick={() => void revoke({ tokenId: token.id })}
               >
                 Revoke
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
@@ -404,19 +399,19 @@ function DeleteProject({
           .catch((reason: unknown) => setError(errorMessage(reason)));
       }}
     >
-      <p className="text-sm text-muted">
+      <p className="text-sm text-muted-foreground">
         Deletes every build, review and token of this project right away. If the
         repository is still in the GitHub App installation, it shows up again as
         an empty project after the next sync.
       </p>
       <Field label={`Type ${repo} to confirm`}>
         {(id) => (
-          <input
+          <Input
             id={id}
             value={confirmName}
             aria-invalid={error !== null}
             onChange={(event) => setConfirmName(event.target.value)}
-            className={`${INPUT_CLASS} mono`}
+            className="mono"
           />
         )}
       </Field>
@@ -426,13 +421,13 @@ function DeleteProject({
         </p>
       )}
       <div>
-        <button
+        <Button
           type="submit"
-          className={buttonClass("danger")}
+          variant="destructive-outline"
           disabled={confirmName !== repo}
         >
           Delete project
-        </button>
+        </Button>
       </div>
     </form>
   );

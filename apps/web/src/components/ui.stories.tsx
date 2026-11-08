@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactNode } from "react";
+import { Button } from "uiofcraft";
 import { avatar } from "../lib/storyFixtures";
 import {
   Avatar,
   BuildStatePill,
-  buttonClass,
   DIFF_ICONS,
   DiffStatusPill,
   EmptyState,
@@ -32,7 +32,9 @@ type Story = StoryObj<typeof meta>;
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="w-28 shrink-0 text-xs text-muted">{label}</span>
+      <span className="w-28 shrink-0 text-xs text-muted-foreground">
+        {label}
+      </span>
       {children}
     </div>
   );
@@ -146,25 +148,34 @@ export const Pills: Story = {
 
 export const PillsDark: Story = { ...Pills, parameters: { theme: "dark" } };
 
-const VARIANTS = ["primary", "secondary", "ghost", "danger"] as const;
+const VARIANTS = [
+  "default",
+  "outline",
+  "ghost",
+  "destructive-outline",
+] as const;
 
 export const Buttons: Story = {
   render: () => (
     <div className="flex flex-col gap-3">
       {VARIANTS.map((variant) => (
         <Row key={variant} label={variant}>
-          <button type="button" className={buttonClass(variant)}>
-            {variant === "danger" ? "Reject" : "Save"}
-          </button>
-          <button type="button" className={buttonClass(variant, "sm")}>
+          <Button variant={variant}>
+            {variant === "destructive-outline" ? "Reject" : "Save"}
+          </Button>
+          <Button variant={variant} size="sm">
             Small
-          </button>
-          <button type="button" className={buttonClass(variant)} disabled>
+          </Button>
+          <Button variant={variant} disabled>
             Disabled
-          </button>
-          <button type="button" className={buttonClass(variant)} aria-disabled>
+          </Button>
+          <Button
+            variant={variant}
+            aria-disabled
+            className="cursor-not-allowed opacity-64"
+          >
             Locked
-          </button>
+          </Button>
         </Row>
       ))}
       <Row label="Keys">
@@ -181,9 +192,9 @@ export const TooltipOpen: Story = {
   render: () => (
     <div className="min-h-32">
       <Tooltip label="Only owners of acme on GitHub can change the plan and billing.">
-        <button type="button" aria-disabled className={buttonClass("primary")}>
+        <Button aria-disabled className="cursor-not-allowed opacity-64">
           Upgrade
-        </button>
+        </Button>
       </Tooltip>
     </div>
   ),

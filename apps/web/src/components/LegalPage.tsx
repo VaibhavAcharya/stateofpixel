@@ -25,8 +25,10 @@ export function LegalPage({
         <h1 className="text-[clamp(32px,4vw,48px)] leading-[1.1] font-semibold tracking-[-0.045em]">
           {title}
         </h1>
-        <p className="mt-4 text-sm text-muted">Last updated {updated}</p>
-        <div className="mt-10 text-base [&_a]:text-link [&_a]:hover:underline [&_h2]:mt-10 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:tracking-[-0.01em] [&_li]:mt-1.5 [&_p]:mt-3 [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:pl-5">
+        <p className="mt-4 text-sm text-muted-foreground">
+          Last updated {updated}
+        </p>
+        <div className="mt-10 text-sm [&_a]:text-link [&_a]:hover:underline [&_h2]:mt-10 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:tracking-[-0.01em] [&_li]:mt-1.5 [&_p]:mt-3 [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:pl-5">
           {children}
         </div>
       </article>

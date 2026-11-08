@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AccountLayout } from "../../../components/AccountLayout";
-import { AppHeader } from "../../../components/AppHeader";
+import { AppShell } from "../../../components/AppShell";
 import { PlanBox } from "../../../components/PlanBox";
 import { RequireAuth } from "../../../components/RequireAuth";
 import { Skeleton } from "../../../components/ui";
@@ -26,10 +26,11 @@ function BillingPage() {
   const { owner } = Route.useParams();
   return (
     <RequireAuth redirectTo={`/${owner}/settings/billing`}>
-      <AppHeader owner={owner} />
-      <AccountLayout owner={owner} tab="billing">
-        <Billing owner={owner} />
-      </AccountLayout>
+      <AppShell owner={owner} crumb="Billing">
+        <AccountLayout owner={owner} tab="billing">
+          <Billing owner={owner} />
+        </AccountLayout>
+      </AppShell>
     </RequireAuth>
   );
 }

@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { AppHeader } from "../../../../components/AppHeader";
+import { Button } from "uiofcraft";
+import { AppShell } from "../../../../components/AppShell";
 import {
   ListToolbar,
   SearchField,
@@ -10,7 +11,6 @@ import { Page } from "../../../../components/Page";
 import { ProjectHeader } from "../../../../components/ProjectHeader";
 import { RequireAuth } from "../../../../components/RequireAuth";
 import {
-  buttonClass,
   EmptyState,
   ProjectNotFound,
   Skeleton,
@@ -49,11 +49,12 @@ function BaselinesRoute() {
   const { owner, repo } = Route.useParams();
   return (
     <RequireAuth redirectTo={`/${owner}/${repo}/baselines`}>
-      <AppHeader owner={owner} repo={repo} />
-      <Page>
-        <ProjectHeader owner={owner} repo={repo} tab="baselines" />
-        <BaselinesAccess owner={owner} repo={repo} />
-      </Page>
+      <AppShell owner={owner} repo={repo} crumb="Baselines">
+        <Page>
+          <ProjectHeader owner={owner} repo={repo} tab="baselines" />
+          <BaselinesAccess owner={owner} repo={repo} />
+        </Page>
+      </AppShell>
     </RequireAuth>
   );
 }
@@ -136,7 +137,10 @@ function Baselines({
       <div className="flex flex-col gap-8">
         {shown.map((suite) =>
           suite.build === null ? (
-            <p key={suite.buildName} className="py-6 text-sm text-muted">
+            <p
+              key={suite.buildName}
+              className="py-6 text-sm text-muted-foreground"
+            >
               No baseline yet for{" "}
               <span className="mono">{suite.buildName}</span> on{" "}
               <span className="mono">{defaultBranch}</span>.
@@ -183,12 +187,12 @@ function SuiteBaselines({
     <section>
       <div className="mb-3 flex items-baseline gap-3">
         {showName && <h2 className="text-sm font-medium">{buildName}</h2>}
-        <p className="text-xs text-muted">
+        <p className="text-xs text-muted-foreground">
           From build{" "}
           <Link
             to="/$owner/$repo/builds/$number"
             params={{ owner, repo, number: String(build.number) }}
-            className="text-text tabular-nums hover:text-link"
+            className="text-foreground tabular-nums hover:text-link"
           >
             #{build.number}
           </Link>{" "}
@@ -206,7 +210,9 @@ function SuiteBaselines({
           )}
         </Grid>
       ) : results.length === 0 ? (
-        <p className="py-6 text-sm text-muted">No snapshots match.</p>
+        <p className="py-6 text-sm text-muted-foreground">
+          No snapshots match.
+        </p>
       ) : (
         <Grid>
           {results.map((snapshot) => (
@@ -219,7 +225,7 @@ function SuiteBaselines({
                 className="group flex flex-col gap-2"
               >
                 <span
-                  className="block w-full overflow-hidden rounded-sm bg-surface-2 group-hover:outline group-hover:outline-1 group-hover:outline-field-border"
+                  className="block w-full overflow-hidden rounded-sm bg-muted group-hover:outline group-hover:outline-1 group-hover:outline-input"
                   style={{
                     aspectRatio:
                       snapshot.image === null
@@ -247,17 +253,13 @@ function SuiteBaselines({
       )}
       {status === "CanLoadMore" && (
         <div className="mt-6 flex justify-center">
-          <button
-            type="button"
-            className={buttonClass()}
-            onClick={() => loadMore(PAGE_SIZE)}
-          >
+          <Button variant="outline" onClick={() => loadMore(PAGE_SIZE)}>
             Load more
-          </button>
+          </Button>
         </div>
       )}
       {status === "LoadingMore" && (
-        <div className="mt-6 flex justify-center text-muted">
+        <div className="mt-6 flex justify-center text-muted-foreground">
           <Spinner size={16} />
         </div>
       )}

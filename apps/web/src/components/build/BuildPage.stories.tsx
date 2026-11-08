@@ -179,7 +179,10 @@ export const BrowserFiltered: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Browser" }));
     await userEvent.click(
-      canvas.getByRole("menuitemradio", { name: "firefox" }),
+      await within(canvasElement.ownerDocument.body).findByRole(
+        "menuitemradio",
+        { name: "firefox" },
+      ),
     );
   },
 };

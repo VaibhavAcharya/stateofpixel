@@ -13,6 +13,12 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  Button,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "uiofcraft";
 import { track as trackEvent } from "../../lib/analytics";
 import { ZOOM_STEP } from "../../lib/canvasView";
 import { errorCode } from "../../lib/errorCode";
@@ -25,14 +31,7 @@ import {
 } from "../../lib/useSidebarWidth";
 import { SelectMenu } from "../ListControls";
 import { Toasts, useToasts } from "../Toast";
-import {
-  buttonClass,
-  type DiffStatus,
-  LeadCopy,
-  Skeleton,
-  Spinner,
-  Tooltip,
-} from "../ui";
+import { type DiffStatus, LeadCopy, Skeleton, Spinner, Tooltip } from "../ui";
 import { DIFF_COLORS, MODES, useViewerSettings } from "../Viewer";
 import { Banners, BuildHeader, buildVerdict } from "./BuildHeader";
 import { type ReviewAction, useBuildData } from "./buildData";
@@ -145,6 +144,7 @@ export function BuildPage({
   const [listOpen, setListOpen] = useState(false);
   const [commenting, setCommenting] = useState(false);
   const filterInput = useRef<HTMLInputElement>(null);
+  const snapshotList = useRef<HTMLElement>(null);
   const settings = useViewerSettings();
   const { toasts, show, dismiss } = useToasts();
   const data = useBuildData();
@@ -404,7 +404,7 @@ export function BuildPage({
         event.ctrlKey ||
         event.altKey ||
         target?.closest(
-          "input:not([type=range]), textarea, select, [contenteditable], dialog",
+          "input:not([type=range]), textarea, select, [contenteditable], dialog, [role=dialog]",
         ) ||
         shortcutsOpen ||
         commenting
@@ -552,7 +552,7 @@ export function BuildPage({
               ? undefined
               : ({ "--sidebar-width": `${sidebar.width}px` } as CSSProperties)
           }
-          className={`relative flex shrink-0 flex-col border-r border-border bg-surface max-lg:absolute max-lg:inset-y-0 max-lg:left-0 max-lg:z-30 max-lg:w-[min(320px,calc(100vw-48px))] max-lg:shadow-menu ${
+          className={`relative flex shrink-0 flex-col border-r border-border bg-sidebar max-lg:absolute max-lg:inset-y-0 max-lg:left-0 max-lg:z-30 max-lg:w-[min(320px,calc(100vw-48px))] max-lg:shadow-menu ${
             sidebar.width === null
               ? "w-[300px] max-xl:w-[260px]"
               : "lg:w-(--sidebar-width)"
@@ -564,14 +564,15 @@ export function BuildPage({
               value={filter}
               onChange={setFilter}
             />
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="mr-2   lg:hidden"
               aria-label="Close snapshot list"
-              className={`mr-2 ${buttonClass("ghost", "icon")} lg:hidden`}
               onClick={() => setListOpen(false)}
             >
               <XIcon size={16} />
-            </button>
+            </Button>
           </div>
           {build.browsers.length > 1 && (
             <div className="shrink-0 px-2 pb-2">
@@ -590,9 +591,11 @@ export function BuildPage({
             </div>
           )}
           <nav
+            ref={snapshotList}
             aria-label="Snapshots"
-            className="min-h-0 flex-1 overflow-y-auto px-2 pb-3"
+            className="relative min-h-0 flex-1 overflow-y-auto px-2 pb-3"
           >
+            <SelectionIndicator list={snapshotList} />
             {GROUPS.filter((group) => groupCount(group) > 0).map((group) => {
               const query = groups[group.status];
               return (
@@ -626,7 +629,7 @@ export function BuildPage({
               );
             })}
             {!hasSnapshots && (
-              <p className="px-2 py-3 text-sm text-muted">
+              <p className="px-2 py-3 text-sm text-muted-foreground">
                 {build.status === "pending"
                   ? "No snapshots yet."
                   : "No snapshots."}
@@ -651,11 +654,11 @@ export function BuildPage({
             className={`pointer-events-none absolute top-1/2 -right-0.5 z-10 h-4 w-[3px] -translate-y-1/2 rounded-full transition-colors duration-100 max-lg:hidden ${
               sidebar.resizing
                 ? "bg-link"
-                : "bg-field-border/60 peer-hover:bg-link peer-focus-visible:bg-link"
+                : "bg-input/60 peer-hover:bg-link peer-focus-visible:bg-link"
             }`}
           />
         </aside>
-        <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface">
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-card">
           {snapshotId === undefined ? (
             <NoSelection
               build={build}
@@ -727,7 +730,7 @@ function NoSelection({
 }) {
   if (build.status === "pending") {
     return (
-      <div className="flex flex-1 items-center justify-center bg-canvas text-sm text-muted">
+      <div className="flex flex-1 items-center justify-center bg-canvas text-sm text-muted-foreground">
         <span className="flex items-center gap-2">
           <Spinner size={14} />
           Waiting for screenshots
@@ -742,38 +745,34 @@ function NoSelection({
     return (
       <div className="flex flex-1 flex-col items-start gap-6 overflow-y-auto p-8 max-sm:p-4">
         {unstableCount > 0 ? (
-          <LeadCopy title="Nothing to review.">
+          <LeadCopy title="Nothing to review." size="app">
             {unstableCount === 1
               ? "The only change is in a snapshot marked unstable, so it is approved automatically."
               : `All ${formatCount(unstableCount)} changes are in snapshots marked unstable, so they are approved automatically.`}
           </LeadCopy>
         ) : build.counts.unchanged === 0 ? (
-          <LeadCopy title="No snapshots.">
+          <LeadCopy title="No snapshots." size="app">
             {build.status === "expired"
               ? "The upload never finished, so there is nothing to compare."
               : "This build finished without any screenshots."}
           </LeadCopy>
         ) : (
-          <LeadCopy title="Nothing to review.">
+          <LeadCopy title="Nothing to review." size="app">
             {build.counts.unchanged === 1
               ? "The snapshot matches the baseline."
               : `All ${formatCount(build.counts.unchanged)} snapshots match the baseline.`}
           </LeadCopy>
         )}
-        <button
-          type="button"
-          className={`${buttonClass()} lg:hidden`}
-          onClick={onOpenList}
-        >
+        <Button variant="outline" className="lg:hidden" onClick={onOpenList}>
           <SidebarSimpleIcon size={16} />
           Browse snapshots
-        </button>
+        </Button>
       </div>
     );
   }
   return (
     <div className="min-h-0 flex-1 bg-canvas p-4">
-      <Skeleton className="aspect-[16/10] max-h-full w-full bg-surface" />
+      <Skeleton className="aspect-[16/10] max-h-full w-full bg-card" />
     </div>
   );
 }
@@ -789,20 +788,75 @@ function SnapshotNavigation({
 }) {
   return (
     <div className="flex items-center gap-1">
-      <button
-        type="button"
-        className={`${buttonClass("secondary", "sm")} lg:hidden`}
+      <Button
+        variant="outline"
+        size="sm"
+        className="lg:hidden"
         onClick={onOpenList}
       >
         <SidebarSimpleIcon size={14} />
         <span className="tabular-nums">
           {position > 0 ? `${position} of ${total}` : total}
         </span>
-      </button>
-      <span className="px-1 text-xs text-muted tabular-nums max-lg:hidden">
+      </Button>
+      <span className="px-1 text-xs text-muted-foreground tabular-nums max-lg:hidden">
         {position > 0 ? `${position} of ${total}` : ""}
       </span>
     </div>
+  );
+}
+
+function SelectionIndicator({ list }: { list: RefObject<HTMLElement | null> }) {
+  const [bar, setBar] = useState<{ top: number; height: number } | null>(null);
+  useEffect(() => {
+    const element = list.current;
+    if (!element) {
+      return;
+    }
+    const measure = () => {
+      const row = element.querySelector<HTMLElement>("[aria-current]");
+      if (!row) {
+        setBar(null);
+        return;
+      }
+      const top =
+        row.getBoundingClientRect().top -
+        element.getBoundingClientRect().top +
+        element.scrollTop;
+      setBar((current) =>
+        current?.top === top && current.height === row.offsetHeight
+          ? current
+          : { top, height: row.offsetHeight },
+      );
+    };
+    measure();
+    const observer = new MutationObserver(measure);
+    observer.observe(element, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["aria-current"],
+    });
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(element);
+    return () => {
+      observer.disconnect();
+      resizeObserver.disconnect();
+    };
+  }, [list]);
+  if (bar === null) {
+    return null;
+  }
+  return (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute left-2 z-10 w-0.5 rounded-full bg-primary transition-[transform,height] duration-200 ease-in-out motion-reduce:transition-none"
+      style={{
+        height: bar.height - 12,
+        transform: `translateY(${bar.top + 6}px)`,
+        top: 0,
+      }}
+    />
   );
 }
 
@@ -817,13 +871,9 @@ function FilterInput({
 }) {
   return (
     <div className="min-w-0 flex-1 p-2">
-      <Tooltip label="Filter, press /" wrapperClassName="flex">
-        <label className="relative flex w-full items-center">
-          <MagnifyingGlassIcon
-            size={14}
-            className="pointer-events-none absolute left-2.5 text-subtle"
-          />
-          <input
+      <Tooltip label="Filter, press /" wrapperClassName="flex w-full">
+        <InputGroup>
+          <InputGroupInput
             ref={inputRef}
             type="search"
             value={value}
@@ -835,19 +885,24 @@ function FilterInput({
             }}
             placeholder="Filter snapshots"
             aria-label="Filter snapshots"
-            className="h-8 w-full rounded-md bg-surface pr-8 pl-8 text-sm shadow-[inset_0_0_0_1px_var(--color-border)] transition-shadow duration-250 ease-standard outline-none placeholder:text-subtle hover:shadow-[inset_0_0_0_1px_var(--color-field-border)] focus:shadow-field-focus [&::-webkit-search-cancel-button]:hidden"
+            className="[&_input::-webkit-search-cancel-button]:hidden"
           />
+          <InputGroupAddon>
+            <MagnifyingGlassIcon />
+          </InputGroupAddon>
           {value !== "" && (
-            <button
-              type="button"
-              aria-label="Clear filter"
-              className={`absolute right-1 ${buttonClass("ghost", "icon-sm")}`}
-              onClick={() => onChange("")}
-            >
-              <XIcon size={12} />
-            </button>
+            <InputGroupAddon align="inline-end">
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label="Clear filter"
+                onClick={() => onChange("")}
+              >
+                <XIcon />
+              </Button>
+            </InputGroupAddon>
           )}
-        </label>
+        </InputGroup>
       </Tooltip>
     </div>
   );

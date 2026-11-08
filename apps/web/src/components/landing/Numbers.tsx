@@ -8,8 +8,9 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { toStatus } from "@stateofpixel/backend/checkStatus";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "uiofcraft";
 import { useReducedMotion } from "../../lib/useReducedMotion";
-import { buttonClass, LeadCopy, TONE_TEXT } from "../ui";
+import { LeadCopy, TONE_TEXT } from "../ui";
 import { SECTION } from "./sections";
 
 const OUR_UPLOADS: [number, number][] = [
@@ -157,10 +158,12 @@ function CiStep({
 }) {
   return (
     <div
-      className={`flex h-14 flex-col justify-center rounded-md border border-dashed border-field-border/60 bg-surface px-3 transition-opacity duration-250 ${on ? "opacity-100" : "opacity-0"}`}
+      className={`flex h-14 flex-col justify-center rounded-md border border-dashed border-input/60 bg-card px-3 transition-opacity duration-250 ${on ? "opacity-100" : "opacity-0"}`}
     >
       <span className="mono truncate text-xs">{label}</span>
-      <span className="mt-0.5 truncate text-xs text-muted">{text}</span>
+      <span className="mt-0.5 truncate text-xs text-muted-foreground">
+        {text}
+      </span>
     </div>
   );
 }
@@ -177,8 +180,8 @@ function Lane({
   return (
     <div className="grid grid-cols-[176px_minmax(0,1fr)] gap-x-8 gap-y-4 max-lg:grid-cols-1">
       <div>
-        <h3 className="text-lg font-semibold tracking-[-0.01em]">{title}</h3>
-        <p className="mt-1 text-xs text-muted">{text}</p>
+        <h3 className="text-base font-semibold tracking-[-0.01em]">{title}</h3>
+        <p className="mt-1 text-xs text-muted-foreground">{text}</p>
       </div>
       <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,5fr)] gap-x-3 gap-y-6 max-md:grid-cols-1">
         {children}
@@ -222,7 +225,7 @@ function Run({ active }: { active: boolean }) {
                   transitionDuration: `${UPLOAD_MS}ms`,
                   transitionDelay: `${TESTS_MS}ms`,
                 }}
-                className={`flex h-full items-center overflow-hidden rounded-md bg-accent px-3 text-accent-fg transition-[clip-path] ease-linear motion-reduce:transition-none ${on ? "[clip-path:inset(0_0_0_0)]" : "[clip-path:inset(0_100%_0_0)]"}`}
+                className={`flex h-full items-center overflow-hidden rounded-md bg-primary px-3 text-primary-foreground transition-[clip-path] ease-linear motion-reduce:transition-none ${on ? "[clip-path:inset(0_0_0_0)]" : "[clip-path:inset(0_100%_0_0)]"}`}
               >
                 <span className="mono truncate text-xs">
                   npx stateofpixel upload
@@ -235,7 +238,7 @@ function Run({ active }: { active: boolean }) {
               <span
                 key={tick}
                 style={{ left: `${(tick / AXIS) * 100}%` }}
-                className={`absolute top-0 flex flex-col text-2xs whitespace-nowrap text-subtle tabular-nums ${index === 0 ? "items-start" : index === TICKS.length - 1 ? "-translate-x-full items-end" : "-translate-x-1/2 items-center"}`}
+                className={`absolute top-0 flex flex-col text-2xs whitespace-nowrap text-muted-foreground tabular-nums ${index === 0 ? "items-start" : index === TICKS.length - 1 ? "-translate-x-full items-end" : "-translate-x-1/2 items-center"}`}
               >
                 <span className="h-1.5 w-px bg-border" />
                 {tick} s
@@ -248,7 +251,7 @@ function Run({ active }: { active: boolean }) {
             <span className="text-[40px] leading-none font-semibold tracking-[-0.045em] tabular-nums">
               {seconds.toFixed(1)} s
             </span>
-            <span className="text-xs text-muted">
+            <span className="text-xs text-muted-foreground">
               median upload on our own CI, from hashing to the check
             </span>
           </p>
@@ -259,20 +262,25 @@ function Run({ active }: { active: boolean }) {
                 <li
                   key={title}
                   style={item.style}
-                  className={`rounded-md bg-surface p-3 ring-1 ring-border ${item.className}`}
+                  className={`rounded-lg bg-card p-3 border shadow-xs/5 ${item.className}`}
                 >
                   <span className="flex items-center gap-2 text-sm font-medium">
-                    <Icon size={16} className="shrink-0 text-muted" />
+                    <Icon
+                      size={16}
+                      className="shrink-0 text-muted-foreground"
+                    />
                     {title}
                   </span>
-                  <span className="mt-1 block text-xs text-muted">{text}</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {text}
+                  </span>
                 </li>
               );
             })}
           </ol>
           <div
             style={reveal(done + 300).style}
-            className={`flex items-center gap-3 rounded-md bg-surface px-4 py-3 text-sm ring-1 ring-border ${reveal(done + 300).className}`}
+            className={`flex items-center gap-3 rounded-lg bg-card px-4 py-3 text-sm border shadow-xs/5 ${reveal(done + 300).className}`}
           >
             <CircleIcon
               size={18}
@@ -281,9 +289,14 @@ function Run({ active }: { active: boolean }) {
             />
             <span className="min-w-0 flex-1">
               <span className="font-medium">stateofpixel</span>
-              <span className="text-muted"> {CHECK.description}</span>
+              <span className="text-muted-foreground">
+                {" "}
+                {CHECK.description}
+              </span>
             </span>
-            <span className="text-xs text-muted max-sm:hidden">Pending</span>
+            <span className="text-xs text-muted-foreground max-sm:hidden">
+              Pending
+            </span>
           </div>
         </div>
       </Lane>
@@ -298,7 +311,7 @@ function Run({ active }: { active: boolean }) {
               <li
                 key={step}
                 style={{ transitionDelay: on ? `${index * 80}ms` : "0ms" }}
-                className={`flex h-14 items-center rounded-md border border-dashed border-field-border/60 px-3 text-sm leading-tight text-muted transition-opacity duration-250 max-sm:h-10 ${on ? "opacity-100" : "opacity-0"}`}
+                className={`flex h-14 items-center rounded-md border border-dashed border-input/60 px-3 text-sm leading-tight text-muted-foreground transition-opacity duration-250 max-sm:h-10 ${on ? "opacity-100" : "opacity-0"}`}
               >
                 {step}
               </li>
@@ -319,19 +332,22 @@ export function SpeedSection() {
         The upload is one step in your CI, right after your tests. It hashes,
         sends what is new, compares and reports the check.
       </LeadCopy>
-      <div ref={ref} className="mt-12 rounded-xl bg-surface-2 p-8 max-sm:p-4">
+      <div
+        ref={ref}
+        className="mt-12 rounded-2xl border bg-muted/72 p-8 max-sm:p-4"
+      >
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm font-medium">One pull request, one CI run</p>
-          <button
-            type="button"
-            className={buttonClass("ghost", "sm")}
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setRun((current) => current + 1)}
             data-umami-event="Timeline replay"
             disabled={!seen}
           >
             <ArrowCounterClockwiseIcon size={12} />
             Replay
-          </button>
+          </Button>
         </div>
         <Run key={run} active={seen} />
       </div>

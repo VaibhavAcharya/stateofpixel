@@ -1,5 +1,6 @@
 import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
+import { Badge } from "uiofcraft";
 import {
   CHECKED,
   COMPETITORS,
@@ -7,12 +8,12 @@ import {
   type Priced,
 } from "../../content/compare";
 import { formatPrice } from "../landing/Pricing";
-import { DISPLAY, LEAD, PublicPage, WIDE } from "../landing/sections";
+import { LEAD, PublicPage, WIDE } from "../landing/sections";
 import { Logo } from "../ui";
 import { CompetitorLogo, FinalBand } from "./ComparePage";
 import { CostCalculator, DEFAULT_SUITE, quote } from "./CostCalculator";
 
-const DOTTED = "border-dotted border-field-border/50";
+const DOTTED = "border-border";
 
 const PRICED = COMPETITORS.flatMap((competitor) =>
   competitor.priced === null ? [] : [competitor.priced],
@@ -31,7 +32,7 @@ function Facts({ competitor }: { competitor: Competitor }) {
           key={label}
           className={`grid grid-cols-[140px_1fr] gap-4 border-b ${DOTTED} py-3 max-sm:grid-cols-1 max-sm:gap-1`}
         >
-          <dt className="text-muted">{label}</dt>
+          <dt className="text-muted-foreground">{label}</dt>
           <dd>{value}</dd>
         </div>
       ))}
@@ -43,7 +44,7 @@ function CardBill({ priced }: { priced: Priced }) {
   const { snapshots, bills } = quote(DEFAULT_SUITE, [priced]);
   const [ours, theirs] = bills;
   return (
-    <p className="text-sm text-muted">
+    <p className="text-sm text-muted-foreground">
       <span className="font-semibold text-approved tabular-nums">
         {formatPrice(ours?.cost ?? 0)}
       </span>{" "}
@@ -61,26 +62,26 @@ function CompetitorCard({ competitor }: { competitor: Competitor }) {
     <Link
       to="/compare/$slug"
       params={{ slug: competitor.slug }}
-      className="group flex flex-col rounded-xl bg-surface p-8 ring-1 ring-border transition-shadow duration-150 hover:shadow-[0_8px_32px_#11151a14] max-sm:p-5"
+      className="group flex flex-col rounded-2xl border bg-card p-8 shadow-xs/5 transition-[box-shadow,border-color] duration-150 hover:border-input hover:shadow-lg/5 max-sm:p-5"
     >
       <span className="flex items-center gap-3">
         <CompetitorLogo competitor={competitor} size={40} />
         {competitor.status !== undefined && (
-          <span className="ml-auto rounded-full bg-rejected-bg px-2 py-0.5 text-xs font-medium text-rejected">
+          <Badge variant="error" className="ml-auto">
             Shutting down
-          </span>
+          </Badge>
         )}
       </span>
-      <span className="mt-8 text-[28px] leading-tight font-semibold tracking-[-0.035em]">
+      <span className="mt-8 font-heading font-semibold text-[28px] leading-tight tracking-[-0.01em]">
         {competitor.name}
       </span>
-      <span className="mt-2 text-base text-muted text-balance">
+      <span className="mt-2 text-sm text-muted-foreground text-balance">
         {competitor.hook}
       </span>
       <Facts competitor={competitor} />
       <span className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-6">
         {competitor.priced === null ? (
-          <span className="text-sm text-muted">
+          <span className="text-sm text-muted-foreground">
             Move your Storybook in one step.
           </span>
         ) : (
@@ -101,30 +102,36 @@ function CompetitorCard({ competitor }: { competitor: Competitor }) {
 export function CompareIndex() {
   return (
     <PublicPage>
-      <section className={`${WIDE} pt-24 pb-16 max-sm:pt-12`}>
-        <p className="flex items-center gap-2 text-text">
-          <Logo size={32} />
-          <span className="mono px-1 text-xs text-muted">vs</span>
-          {COMPETITORS.map((competitor) => (
-            <CompetitorLogo
-              key={competitor.slug}
-              competitor={competitor}
-              size={32}
-            />
-          ))}
-        </p>
-        <h1 className={`${DISPLAY} mt-8 max-w-[18ch]`}>
+      <section
+        className={`${WIDE} flex flex-col gap-6 pt-10 pb-16 sm:pt-14 lg:grid lg:grid-cols-12 lg:items-end lg:gap-10`}
+      >
+        <h1 className="text-balance font-heading font-semibold text-[clamp(2.5rem,5.5vw,4.5rem)] leading-none tracking-[-0.02em] lg:col-span-7">
           How stateofpixel compares.
         </h1>
-        <p className={`${LEAD} mt-6 max-w-[720px]`}>
-          Chromatic, Percy, Applitools and Happo render in their own browsers.
-          Argos and Lost Pixel use your CI, like we do, and BackstopJS runs
-          wherever you run it. The paid plans bill per screenshot. We bill for
-          storage.
-        </p>
-        <p className="mt-4 text-xs text-muted">
-          Every fact about them links to its source, checked on {CHECKED}.
-        </p>
+        <div className="flex flex-col items-start gap-5 lg:col-span-5 lg:pb-1.5">
+          <p className="flex items-center text-foreground">
+            <span className="mr-2 flex items-center">
+              <Logo size={32} />
+            </span>
+            <span className="mono pr-3 text-muted-foreground text-xs">vs</span>
+            <span className="flex flex-wrap gap-1.5">
+              {COMPETITORS.map((competitor) => (
+                <span key={competitor.slug}>
+                  <CompetitorLogo competitor={competitor} size={32} />
+                </span>
+              ))}
+            </span>
+          </p>
+          <p className={LEAD}>
+            Chromatic, Percy, Applitools and Happo render in their own browsers.
+            Argos and Lost Pixel use your CI, like we do, and BackstopJS runs
+            wherever you run it. The paid plans bill per screenshot. We bill for
+            storage.
+          </p>
+          <p className="text-muted-foreground text-xs">
+            Every fact about them links to its source, checked on {CHECKED}.
+          </p>
+        </div>
       </section>
       <section className={`${WIDE} pb-24 max-sm:pb-12`}>
         <div className="grid grid-cols-2 gap-4 max-lg:grid-cols-1">

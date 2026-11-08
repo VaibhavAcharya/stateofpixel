@@ -1,16 +1,29 @@
 import { type ReactNode, useEffect, useId, useState } from "react";
+import {
+  Card,
+  cn,
+  FieldDescription,
+  FieldLabel,
+  Field as UiField,
+} from "uiofcraft";
 
 export function Section({
   title,
+  danger = false,
   children,
 }: {
   title: string;
+  danger?: boolean;
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-6 border-t border-dotted border-border py-12 first:border-t-0 first:pt-0">
-      <h2 className="text-base font-semibold">{title}</h2>
-      {children}
+    <section className="grid gap-4 border-t py-8 first:border-t-0 first:pt-0 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-10">
+      <h2 className="font-heading font-semibold text-base">{title}</h2>
+      <Card
+        className={cn("gap-6 p-5 sm:p-6", danger && "border-destructive/32")}
+      >
+        {children}
+      </Card>
     </section>
   );
 }
@@ -28,16 +41,14 @@ export function Field({
 }) {
   const id = useId();
   return (
-    <div className="flex flex-col gap-1.5">
+    <UiField className="items-stretch gap-1.5">
       <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={id} className="text-sm font-medium">
-          {label}
-        </label>
+        <FieldLabel htmlFor={id}>{label}</FieldLabel>
         {status}
       </div>
       {children(id)}
-      {hint && <p className="text-xs text-muted">{hint}</p>}
-    </div>
+      {hint && <FieldDescription>{hint}</FieldDescription>}
+    </UiField>
   );
 }
 
@@ -60,7 +71,7 @@ export function useSaveStatus(errorMessage: (error: unknown) => string) {
     );
   const note =
     status === null ? null : status.state === "saved" ? (
-      <span className="text-xs text-muted">Saved</span>
+      <span className="text-xs text-muted-foreground">Saved</span>
     ) : (
       <span role="alert" className="text-xs text-rejected">
         {status.message}

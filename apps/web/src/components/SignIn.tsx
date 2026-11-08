@@ -1,9 +1,20 @@
-import { GithubLogoIcon, GoogleLogoIcon } from "@phosphor-icons/react/ssr";
+import {
+  GithubLogoIcon,
+  GoogleLogoIcon,
+  SquaresFourIcon,
+} from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { Alert, AlertDescription, Button, cn } from "uiofcraft";
 import { useAuth, useAuthActions, useGoogleSignIn } from "../lib/auth";
 import { api, callBackend } from "../lib/backend";
-import { buttonClass, Logo, Spinner } from "./ui";
+import { Logo, Spinner } from "./ui";
+
+const BUTTON_VARIANTS = {
+  primary: "default",
+  secondary: "outline",
+  ghost: "ghost",
+} as const;
 
 const PROVIDERS = {
   github: { name: "GitHub", icon: GithubLogoIcon },
@@ -44,11 +55,11 @@ export function SignInButton({
   const { name, icon: Icon } = PROVIDERS[provider];
 
   return (
-    <button
-      type="button"
+    <Button
+      variant={BUTTON_VARIANTS[variant]}
       aria-busy={pending}
       disabled={pending}
-      className={`${buttonClass(variant)} disabled:opacity-100 ${className}`}
+      className={cn("disabled:opacity-100", className)}
       data-umami-event="Sign in"
       data-umami-event-label={label}
       onClick={() => {
@@ -62,7 +73,7 @@ export function SignInButton({
         variant !== "ghost" && <Icon size={16} weight="fill" />
       )}
       {pending ? `Opening ${name}` : label}
-    </button>
+    </Button>
   );
 }
 
@@ -76,41 +87,80 @@ export function AuthButton({
   const { isLoading, isAuthenticated } = useAuth();
   if (isLoading) {
     return (
-      <span
+      <Button
+        render={<span />}
         aria-busy
-        className={`${buttonClass("primary")} pointer-events-none ${className}`}
+        className={cn("pointer-events-none", className)}
       >
         <GithubLogoIcon size={16} weight="fill" />
         {label}
-      </span>
+      </Button>
     );
   }
   if (isAuthenticated) {
     return (
-      <Link
-        to="/install"
-        className={`${buttonClass("primary")} ${className}`}
+      <Button
+        render={<Link to="/install" />}
+        className={className}
         data-umami-event="Open dashboard"
       >
+        <SquaresFourIcon />
         Open dashboard
-      </Link>
+      </Button>
     );
   }
   return <SignInButton label={label} className={className} />;
 }
 
+function AuthLayout({ children }: { children: ReactNode }) {
+  return (
+    <main className="grid min-h-dvh bg-background lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+      <div className="flex flex-col px-6 py-6 sm:px-10">
+        <Link
+          to="/"
+          aria-label="stateofpixel home"
+          className="flex w-fit items-center gap-2 font-heading font-semibold text-lg tracking-[-0.01em]"
+        >
+          <Logo size={24} />
+          stateofpixel
+        </Link>
+        <div className="flex flex-1 items-center justify-center py-16">
+          <div className="w-full max-w-[360px]">{children}</div>
+        </div>
+      </div>
+      <aside className="relative hidden flex-col justify-center gap-10 overflow-hidden border-l bg-sidebar p-12 lg:flex xl:p-16">
+        <div className="max-w-[520px]">
+          <p className="text-balance font-heading font-semibold text-3xl tracking-[-0.01em]">
+            Catch UI regressions before they merge.
+          </p>
+          <p className="mt-3 text-pretty text-lg text-muted-foreground">
+            Every pull request gets a visual check. Your CI takes the
+            screenshots, a person approves each change.
+          </p>
+        </div>
+        <div className="checker -mr-24 rounded-2xl border p-4 shadow-[0_32px_64px_-32px] shadow-black/24 xl:-mr-40 dark:shadow-black/64">
+          <img
+            src="/readme/review-page.png"
+            alt="The stateofpixel review page, with the baseline and the new screenshot side by side and the changed pixels in magenta"
+            width={1440}
+            height={760}
+            className="w-full rounded-lg border"
+          />
+        </div>
+      </aside>
+    </main>
+  );
+}
+
 export function SignInScreen({ redirectTo }: { redirectTo: string }) {
   const google = useGoogleSignIn();
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center px-4 pb-24">
-      <div className="flex w-full max-w-[360px] flex-col items-center text-center">
-        <Link to="/" aria-label="stateofpixel home">
-          <Logo size={32} />
-        </Link>
-        <h1 className="mt-6 text-xl font-semibold tracking-[-0.025em]">
+    <AuthLayout>
+      <div className="flex flex-col">
+        <h1 className="font-heading font-semibold text-2xl tracking-[-0.01em]">
           Sign in to stateofpixel
         </h1>
-        <p className="mt-2 text-sm text-muted">
+        <p className="mt-2 text-muted-foreground text-sm">
           Access follows your GitHub permissions on each repository.
         </p>
         <div className="mt-8 flex w-full flex-col">
@@ -126,13 +176,13 @@ export function SignInScreen({ redirectTo }: { redirectTo: string }) {
           )}
         </div>
       </div>
-    </main>
+    </AuthLayout>
   );
 }
 
 export function SigningIn() {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 pb-24 text-sm text-muted">
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 pb-24 text-sm text-muted-foreground">
       <Logo size={32} />
       <span className="flex items-center gap-2">
         <Spinner size={14} />
@@ -166,23 +216,19 @@ export function ConnectGithubScreen({ redirectTo }: { redirectTo: string }) {
   const [error, setError] = useConnectError();
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center px-4 pb-24">
-      <div className="flex w-full max-w-[360px] flex-col items-center text-center">
-        <Link to="/" aria-label="stateofpixel home">
-          <Logo size={32} />
-        </Link>
-        <h1 className="mt-6 text-xl font-semibold tracking-[-0.025em]">
+    <AuthLayout>
+      <div className="flex flex-col">
+        <h1 className="font-heading font-semibold text-2xl tracking-[-0.01em]">
           Connect GitHub
         </h1>
-        <p className="mt-2 text-sm text-muted">
+        <p className="mt-2 text-sm text-muted-foreground">
           stateofpixel reads your repositories and permissions through GitHub.
         </p>
         <div className="mt-8 flex w-full flex-col">
-          <button
-            type="button"
+          <Button
             aria-busy={pending}
             disabled={pending}
-            className={`${buttonClass("primary")} disabled:opacity-100`}
+            className="disabled:opacity-100"
             data-umami-event="Connect GitHub"
             onClick={() => {
               setPending(true);
@@ -203,14 +249,16 @@ export function ConnectGithubScreen({ redirectTo }: { redirectTo: string }) {
               <GithubLogoIcon size={16} weight="fill" />
             )}
             {pending ? "Opening GitHub" : "Connect GitHub"}
-          </button>
+          </Button>
         </div>
         {error !== null && (
-          <p className="mt-4 w-full rounded-md bg-failed-bg px-3 py-2 text-sm">
-            {error}
-          </p>
+          <Alert variant="error" className="mt-4 text-left">
+            <AlertDescription className="text-foreground">
+              {error}
+            </AlertDescription>
+          </Alert>
         )}
       </div>
-    </main>
+    </AuthLayout>
   );
 }

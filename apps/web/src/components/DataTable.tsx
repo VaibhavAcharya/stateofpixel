@@ -9,7 +9,15 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table";
-import { listRowClass } from "./ui";
+import {
+  cn,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "uiofcraft";
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -30,6 +38,7 @@ export function DataTable<Row extends RowData>({
   sorting,
   onSortingChange,
   rowClassName = "h-11",
+  getRowClassName,
 }: {
   columns: ReadonlyArray<ColumnDef<Features, Row, unknown>>;
   data: Row[];
@@ -37,6 +46,7 @@ export function DataTable<Row extends RowData>({
   sorting: SortingState;
   onSortingChange?: (sorting: SortingState) => void;
   rowClassName?: string;
+  getRowClassName?: (row: Row) => string | undefined;
 }) {
   const table = useTable({
     features,
@@ -52,18 +62,14 @@ export function DataTable<Row extends RowData>({
   });
 
   return (
-    <table className="w-full table-fixed text-sm">
-      <thead>
+    <Table className="table-fixed">
+      <TableHeader>
         {table.getHeaderGroups().map((group) => (
-          <tr
-            key={group.id}
-            className="h-8 border-b border-border bg-surface-2 text-left text-2xs font-medium text-muted"
-          >
+          <TableRow key={group.id} className="hover:bg-transparent">
             {group.headers.map((header) => {
               const sorted = header.column.getIsSorted();
-              const className = header.column.columnDef.meta?.className ?? "";
               return (
-                <th
+                <TableHead
                   key={header.id}
                   aria-sort={
                     sorted === "asc"
@@ -72,14 +78,18 @@ export function DataTable<Row extends RowData>({
                         ? "descending"
                         : undefined
                   }
-                  className={`px-3 font-medium ${className}`}
+                  className={cn(
+                    "px-3",
+                    header.column.columnDef.meta?.className,
+                  )}
                 >
                   {header.column.getCanSort() ? (
                     <button
                       type="button"
-                      className={`-mx-1 inline-flex h-6 items-center gap-1 rounded-xs px-1 hover:text-text ${
-                        sorted ? "text-text" : ""
-                      }`}
+                      className={cn(
+                        "-mx-1 inline-flex h-6 items-center gap-1 rounded-sm px-1 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                        sorted && "text-foreground",
+                      )}
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       <table.FlexRender header={header} />
@@ -93,26 +103,36 @@ export function DataTable<Row extends RowData>({
                   ) : (
                     <table.FlexRender header={header} />
                   )}
-                </th>
+                </TableHead>
               );
             })}
-          </tr>
+          </TableRow>
         ))}
-      </thead>
-      <tbody>
+      </TableHeader>
+      <TableBody>
         {table.getRowModel().rows.map((row) => (
-          <tr key={row.id} className={`${listRowClass} ${rowClassName}`}>
+          <TableRow
+            key={row.id}
+            className={cn(
+              "has-[[data-list-row]:focus-visible]:bg-accent",
+              rowClassName,
+              getRowClassName?.(row.original),
+            )}
+          >
             {row.getAllCells().map((cell) => (
-              <td
+              <TableCell
                 key={cell.id}
-                className={`px-3 ${cell.column.columnDef.meta?.className ?? ""}`}
+                className={cn(
+                  "px-3 py-0 leading-normal",
+                  cell.column.columnDef.meta?.className,
+                )}
               >
                 <table.FlexRender cell={cell} />
-              </td>
+              </TableCell>
             ))}
-          </tr>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }

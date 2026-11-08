@@ -18,6 +18,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { Button, Switch, ToggleGroup, ToggleGroupItem } from "uiofcraft";
 import {
   type CanvasView,
   clampView,
@@ -30,7 +31,6 @@ import {
 } from "../lib/canvasView";
 import { formatCount, formatPercent } from "../lib/format";
 import {
-  buttonClass,
   type DiffStatus,
   DiffStatusPill,
   type Icon,
@@ -161,14 +161,14 @@ export function Viewer({
       <DiffColorFilters />
       <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-2">
         <Title
-          className="min-w-0 text-base font-medium max-sm:w-full"
+          className="min-w-0 text-sm font-medium max-sm:w-full"
           title={snapshot.name}
         >
           <SnapshotName name={snapshot.name} />
         </Title>
         <DiffStatusPill status={snapshot.diffStatus} />
         {snapshot.diffRatio !== null && (
-          <span className="text-xs whitespace-nowrap text-muted tabular-nums">
+          <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
             {formatPercent(snapshot.diffRatio)}
             {snapshot.diffPixels !== null &&
               ` / ${formatCount(snapshot.diffPixels)} px`}
@@ -181,7 +181,7 @@ export function Viewer({
       </div>
       <div className="flex min-h-11 shrink-0 flex-wrap items-center gap-2 border-b border-border px-4 py-1.5">
         {single ? (
-          <span className="text-xs text-muted">
+          <span className="text-xs text-muted-foreground">
             {image === null
               ? "Only the baseline image, nothing to compare"
               : "Only the new image, nothing to compare"}
@@ -258,50 +258,53 @@ function ZoomControls({
   settings: ViewerSettings;
   scale: number;
 }) {
-  const button = `${buttonClass("ghost", "sm")} h-5 w-full rounded-[5px] px-0`;
-  const tooltip = "top-1/2! right-full! left-auto! mt-0! mr-2 -translate-y-1/2";
+  const button = "h-5 w-full rounded-[5px] px-0";
   return (
-    <div className="absolute right-2 bottom-2 z-10 flex w-9 flex-col rounded-md bg-surface p-0.5 opacity-0 shadow-menu ring-1 ring-border transition-opacity duration-150 group-hover/stage:opacity-100 focus-within:opacity-100 motion-reduce:transition-none pointer-coarse:opacity-100">
-      <Tooltip label="Zoom in, press +" className={tooltip}>
-        <button
-          type="button"
+    <div className="absolute right-2 bottom-2 z-10 flex w-9 flex-col rounded-lg border bg-popover p-0.5 opacity-0 shadow-lg/5 transition-opacity duration-150 group-hover/stage:opacity-100 focus-within:opacity-100 motion-reduce:transition-none pointer-coarse:opacity-100">
+      <Tooltip label="Zoom in, press +" side="left" align="center">
+        <Button
+          variant="ghost"
+          size="sm"
           aria-label="Zoom in"
           className={button}
           onClick={() => settings.zoom({ by: ZOOM_STEP })}
         >
           <PlusIcon size={10} weight="bold" />
-        </button>
+        </Button>
       </Tooltip>
-      <Tooltip label="Real pixels, press 0" className={tooltip}>
-        <button
-          type="button"
+      <Tooltip label="Real pixels, press 0" side="left" align="center">
+        <Button
+          variant="ghost"
+          size="sm"
           aria-label={`Zoom ${Math.round(scale * 100)}%, show at 100%`}
           className={`${button} text-[9px] tabular-nums`}
           onClick={() => settings.zoom({ to: 1 })}
         >
           {Math.round(scale * 100)}%
-        </button>
+        </Button>
       </Tooltip>
-      <Tooltip label="Zoom out, press -" className={tooltip}>
-        <button
-          type="button"
+      <Tooltip label="Zoom out, press -" side="left" align="center">
+        <Button
+          variant="ghost"
+          size="sm"
           aria-label="Zoom out"
           className={button}
           onClick={() => settings.zoom({ by: 1 / ZOOM_STEP })}
         >
           <MinusIcon size={10} weight="bold" />
-        </button>
+        </Button>
       </Tooltip>
       <span aria-hidden className="mx-1 my-0.5 h-px bg-border" />
-      <Tooltip label="Fit, press f" className={tooltip}>
-        <button
-          type="button"
+      <Tooltip label="Fit, press f" side="left" align="center">
+        <Button
+          variant="ghost"
+          size="sm"
           className={`${button} text-[9px]`}
           disabled={settings.view === null}
           onClick={() => settings.setView(null)}
         >
           Fit
-        </button>
+        </Button>
       </Tooltip>
     </div>
   );
@@ -323,7 +326,7 @@ function Dimensions({
     image !== null &&
     (baseline.width !== image.width || baseline.height !== image.height);
   return (
-    <span className="shrink-0 text-xs text-muted tabular-nums max-sm:hidden">
+    <span className="shrink-0 text-xs text-muted-foreground tabular-nums max-sm:hidden">
       {differs ? (
         <>
           {format(baseline)} to{" "}
@@ -371,6 +374,7 @@ function ModeSwitch({
   settings: ViewerSettings;
   snapshot: ViewerSnapshot;
 }) {
+  const id = useId();
   const option = modeSwitch(settings, snapshot);
   if (option === null) {
     return null;
@@ -379,24 +383,24 @@ function ModeSwitch({
     <>
       <span className="mx-1.5 h-4 w-px bg-border max-sm:hidden" />
       <KeyTooltip label={option.label} keyName={option.key}>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={option.on}
-          onClick={option.toggle}
-          className={`flex h-7 items-center gap-2 rounded-sm px-2 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
-            option.on ? "text-text" : "text-muted hover:text-text"
+        <label
+          htmlFor={id}
+          className={`flex h-7 cursor-pointer items-center gap-2 rounded-sm px-2 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
+            option.on
+              ? "text-foreground"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <span
-            className={`relative h-4 w-7 shrink-0 rounded-full transition-colors duration-100 ${option.on ? "bg-accent" : "bg-field-border/60"}`}
-          >
-            <span
-              className={`absolute top-0.5 size-3 rounded-full bg-surface transition-[left] duration-100 ${option.on ? "left-3.5" : "left-0.5"}`}
-            />
-          </span>
+          <Switch
+            id={id}
+            nativeButton
+            render={<button type="button" />}
+            checked={option.on}
+            onCheckedChange={option.toggle}
+            className="[--thumb-size:--spacing(3.5)] sm:[--thumb-size:--spacing(3.5)]"
+          />
           {option.label}
-        </button>
+        </label>
       </KeyTooltip>
     </>
   );
@@ -485,7 +489,7 @@ function DiffColorStack({
             <label
               key={option.value}
               title={open ? option.label : undefined}
-              className="absolute top-1/2 right-2 size-3 cursor-pointer rounded-full transition-transform duration-150 ease-out-strong after:absolute after:-inset-1 motion-reduce:transition-none pointer-coarse:after:-inset-3 has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-focus"
+              className="absolute top-1/2 right-2 size-3 cursor-pointer rounded-full transition-transform duration-150 ease-out-strong after:absolute after:-inset-1 motion-reduce:transition-none pointer-coarse:after:-inset-3 has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-ring"
               style={{
                 transform: `translate(calc(-1 * ${offset(index)}), -50%)`,
                 zIndex: active
@@ -493,8 +497,8 @@ function DiffColorStack({
                   : DIFF_COLORS.length - 1 - behind.indexOf(index),
                 backgroundColor: option.color,
                 boxShadow: active
-                  ? "0 0 0 2px var(--color-surface-2), 0 0 0 3.5px var(--color-text)"
-                  : "0 0 0 1.5px var(--color-surface-2)",
+                  ? "0 0 0 2px var(--color-muted), 0 0 0 3.5px var(--color-foreground)"
+                  : "0 0 0 1.5px var(--color-muted)",
               }}
             >
               <input
@@ -864,7 +868,7 @@ function Pane({
             transform: `translate(${Math.round(view.x)}px, ${Math.round(view.y)}px)`,
           }}
         >
-          <figcaption className="absolute inset-x-0 bottom-full mb-1.5 flex justify-between gap-4 text-xs whitespace-nowrap text-muted">
+          <figcaption className="absolute inset-x-0 bottom-full mb-1.5 flex justify-between gap-4 text-xs whitespace-nowrap text-muted-foreground">
             {caption}
           </figcaption>
           {children}
@@ -874,7 +878,7 @@ function Pane({
   );
 }
 
-const FRAME_PLACEHOLDER = "skeleton bg-surface";
+const FRAME_PLACEHOLDER = "skeleton bg-card";
 
 function imageStyle(image: Image, scale: number) {
   return {
@@ -903,7 +907,9 @@ function Frame({
 }) {
   const base = image ?? overlay;
   if (base == null) {
-    return <p className="text-sm text-muted">Image not available.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">Image not available.</p>
+    );
   }
   return (
     <div
@@ -986,7 +992,7 @@ function Slider({
         className="pointer-events-none absolute inset-y-0 w-0.5 -translate-x-1/2 bg-link"
         style={{ left: `${position}%` }}
       >
-        <span className="absolute top-1/2 left-1/2 flex h-6 w-6 -translate-1/2 items-center justify-center rounded-full bg-surface text-muted shadow-menu ring-1 ring-border">
+        <span className="absolute top-1/2 left-1/2 flex h-6 w-6 -translate-1/2 items-center justify-center rounded-full border bg-popover text-muted-foreground shadow-lg/5">
           <CaretLeftIcon size={8} weight="bold" />
           <CaretRightIcon size={8} weight="bold" />
         </span>
@@ -1033,9 +1039,18 @@ function Segmented<Value extends string>({
   onChange: (value: Value) => void;
 }) {
   return (
-    <fieldset aria-label={label} className="flex min-w-0 flex-wrap gap-0.5">
+    <ToggleGroup
+      aria-label={label}
+      value={[value]}
+      onValueChange={(next) => {
+        const picked = options.find((option) => option.value === next[0]);
+        if (picked !== undefined) {
+          onChange(picked.value);
+        }
+      }}
+      className="min-w-0 flex-wrap"
+    >
       {options.map((option) => {
-        const active = option.value === value;
         const OptionIcon = option.icon;
         return (
           <KeyTooltip
@@ -1043,13 +1058,9 @@ function Segmented<Value extends string>({
             label={option.label}
             keyName={option.key}
           >
-            <button
-              type="button"
-              aria-pressed={active}
-              className={`flex h-7 items-center gap-1.5 rounded-sm px-2 text-sm font-medium whitespace-nowrap transition-colors duration-100 ${
-                active ? "bg-hover text-text" : "text-muted hover:text-text"
-              }`}
-              onClick={() => onChange(option.value)}
+            <ToggleGroupItem
+              value={option.value}
+              className="h-7 gap-1.5 rounded-sm px-2 text-sm text-muted-foreground transition-colors duration-100 hover:bg-transparent hover:text-foreground data-pressed:bg-accent data-pressed:text-foreground"
             >
               {OptionIcon && <OptionIcon size={16} />}
               {option.shortLabel !== undefined ? (
@@ -1060,10 +1071,10 @@ function Segmented<Value extends string>({
               ) : (
                 option.label
               )}
-            </button>
+            </ToggleGroupItem>
           </KeyTooltip>
         );
       })}
-    </fieldset>
+    </ToggleGroup>
   );
 }

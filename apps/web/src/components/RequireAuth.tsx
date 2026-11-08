@@ -19,7 +19,7 @@ function useReturningFromSignIn() {
 
 function HeaderSkeleton() {
   return (
-    <div className="flex h-12 items-center gap-3 border-b border-border bg-surface px-4">
+    <div className="flex h-12 items-center gap-3 border-b border-border bg-sidebar px-4">
       <Skeleton className="size-5 rounded-xs" />
       <Skeleton className="h-3 w-28 rounded-xs" />
       <Skeleton className="ml-auto size-6 rounded-full" />

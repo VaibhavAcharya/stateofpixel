@@ -1,9 +1,10 @@
 import { ImageSquareIcon, UploadSimpleIcon } from "@phosphor-icons/react/ssr";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { type DragEvent, useEffect, useState } from "react";
+import { Button } from "uiofcraft";
 import { PublicPage, SECTION } from "../components/landing/sections";
 import { AuthButton } from "../components/SignIn";
-import { buttonClass, LeadCopy, Spinner } from "../components/ui";
+import { LeadCopy, Spinner } from "../components/ui";
 import { useViewerSettings, Viewer } from "../components/Viewer";
 import {
   diffImages,
@@ -41,7 +42,7 @@ function webApplicationJsonLd() {
   });
 }
 
-const DOTTED = "border-dotted border-field-border/50";
+const DOTTED = "border-border";
 
 const NOTES: [string, string][] = [
   [
@@ -142,28 +143,27 @@ function ImageDiffPage() {
           />
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             onClick={pickSamples}
             data-umami-event="Image diff samples"
-            className={buttonClass("ghost")}
           >
             <ImageSquareIcon size={16} />
             Try two sample screenshots
-          </button>
+          </Button>
           {error && (
             <p role="alert" className="text-sm text-failed">
               {error}
             </p>
           )}
         </div>
-        <div className="mt-6 flex h-[75vh] min-h-[480px] flex-col overflow-hidden rounded-lg bg-surface ring-1 ring-border">
+        <div className="mt-6 flex h-[75vh] min-h-[480px] flex-col overflow-hidden rounded-xl bg-card border shadow-xs/5">
           {base === null || next === null ? (
-            <p className="m-auto px-4 text-center text-sm text-muted">
+            <p className="m-auto px-4 text-center text-sm text-muted-foreground">
               Pick a baseline and a new image to compare them.
             </p>
           ) : diff === null ? (
-            <p className="m-auto flex items-center gap-2 text-sm text-muted">
+            <p className="m-auto flex items-center gap-2 text-sm text-muted-foreground">
               <Spinner size={16} />
               Comparing
             </p>
@@ -201,13 +201,15 @@ function ImageDiffPage() {
               <span className="text-xl font-semibold tracking-[-0.025em]">
                 {title}
               </span>
-              <span className="text-sm text-muted md:pt-1.5">{text}</span>
+              <span className="text-sm text-muted-foreground md:pt-1.5">
+                {text}
+              </span>
             </li>
           ))}
         </ul>
       </section>
 
-      <section className="border-t border-border bg-bg">
+      <section className="border-t border-border bg-background">
         <div className={SECTION}>
           <LeadCopy
             title="Do this on every pull request."
@@ -219,9 +221,9 @@ function ImageDiffPage() {
           </LeadCopy>
           <div className="mt-10 flex flex-wrap items-center gap-3">
             <AuthButton label="Start free with GitHub" />
-            <Link to="/" className={buttonClass("ghost")}>
+            <Button variant="ghost" render={<Link to="/" />}>
               See how it works
-            </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -262,8 +264,8 @@ function DropSlot({
       }}
       onDragLeave={() => setOver(false)}
       onDrop={onDrop}
-      className={`flex min-h-24 cursor-pointer items-center gap-4 rounded-md border px-5 py-4 transition-colors duration-100 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus ${
-        over ? "border-link bg-hover" : `${DOTTED} bg-surface hover:bg-hover`
+      className={`flex min-h-24 cursor-pointer items-center gap-4 rounded-md border px-5 py-4 transition-colors duration-100 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring ${
+        over ? "border-link bg-accent" : `${DOTTED} bg-card hover:bg-accent`
       }`}
     >
       <input
@@ -278,17 +280,17 @@ function DropSlot({
           event.target.value = "";
         }}
       />
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-muted">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
         <UploadSimpleIcon size={16} />
       </span>
       <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-base font-medium">{label}</span>
+        <span className="text-sm font-medium">{label}</span>
         {image === null ? (
-          <span className="text-sm text-muted">
+          <span className="text-sm text-muted-foreground">
             Drop an image here, or click to pick one
           </span>
         ) : (
-          <span className="flex min-w-0 gap-2 text-sm text-muted">
+          <span className="flex min-w-0 gap-2 text-sm text-muted-foreground">
             <span className="truncate">{image.name}</span>
             <span className="shrink-0 tabular-nums">
               {image.width}x{image.height}

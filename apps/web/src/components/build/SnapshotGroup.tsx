@@ -64,14 +64,17 @@ export function SnapshotGroup({
       <button
         type="button"
         aria-expanded={open}
-        className="group flex h-7 w-full items-center gap-1.5 rounded-sm px-2 text-xs font-medium text-muted hover:text-text"
+        className="group flex h-7 w-full items-center gap-1.5 rounded-sm px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
         onClick={onToggle}
       >
         <StatusIcon size={12} weight="bold" className={TONE_TEXT[status]} />
         {label}
         <span className="ml-auto flex items-center gap-1.5 font-normal tabular-nums">
           {formatCount(count)}
-          <Caret size={12} className="text-subtle group-hover:text-muted" />
+          <Caret
+            size={12}
+            className="text-muted-foreground group-hover:text-muted-foreground"
+          />
         </span>
       </button>
       {open && (
@@ -81,7 +84,7 @@ export function SnapshotGroup({
               entries.some((entry) => entry.some) && (
                 <li
                   key={some ? "some" : "all"}
-                  className="flex h-6 items-end px-2 pb-1 text-2xs font-medium text-subtle"
+                  className="flex h-6 items-end px-2 pb-1 text-2xs font-medium text-muted-foreground"
                 >
                   {some ? "Some browsers" : "All browsers"}
                 </li>
@@ -149,10 +152,8 @@ function reviewTone(row: SnapshotRow) {
 }
 
 function rowClass(selected: boolean) {
-  return `relative flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-sm transition-colors duration-100 hover:bg-hover ${
-    selected
-      ? "bg-hover before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-link"
-      : ""
+  return `relative flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-sm transition-colors duration-100 hover:bg-accent ${
+    selected ? "bg-accent" : ""
   }`;
 }
 
@@ -261,7 +262,7 @@ function SnapshotRowLink({
           className={`shrink-0 ${reviewTone(row)}`}
         />
         {variant && suffix !== null ? (
-          <span className="mono flex-1 truncate text-muted tabular-nums">
+          <span className="mono flex-1 truncate text-muted-foreground tabular-nums">
             {suffix}
           </span>
         ) : (
@@ -269,7 +270,7 @@ function SnapshotRowLink({
         )}
         {only !== null && <OnlyLabel browsers={only} />}
         {row.diffRatio !== null && (
-          <span className="shrink-0 text-xs text-muted tabular-nums">
+          <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
             {formatPercent(row.diffRatio)}
           </span>
         )}
@@ -329,7 +330,7 @@ function StoryRows({
           <SnapshotName name={story.name} className="min-w-0 flex-1" />
           {only !== null && <OnlyLabel browsers={only} />}
           {largest !== null && (
-            <span className="shrink-0 text-xs text-muted tabular-nums">
+            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
               {formatPercent(largest)}
             </span>
           )}
@@ -339,7 +340,7 @@ function StoryRows({
           type="button"
           aria-expanded={open}
           aria-label={`${open ? "Hide" : "Show"} the ${formatCount(story.rows.length)} snapshots of ${story.name}`}
-          className="absolute inset-y-1 right-1 flex w-10 items-center justify-end gap-1 rounded-xs pr-1.5 text-xs text-subtle tabular-nums hover:bg-surface hover:text-text"
+          className="absolute inset-y-1 right-1 flex w-10 items-center justify-end gap-1 rounded-xs pr-1.5 text-xs text-muted-foreground tabular-nums hover:bg-card hover:text-foreground"
           onClick={onToggle}
         >
           {formatCount(story.rows.length)}

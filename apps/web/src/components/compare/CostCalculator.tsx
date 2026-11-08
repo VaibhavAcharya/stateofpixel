@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useId, useState } from "react";
+import { Slider } from "uiofcraft";
 import { CHECKED, type Priced } from "../../content/compare";
 import { track } from "../../lib/analytics";
 import {
@@ -18,7 +19,6 @@ import {
   monthlyPrice,
 } from "../landing/Pricing";
 import { SECTION, WIDE } from "../landing/sections";
-import { RangeSlider } from "../RangeSlider";
 import { LeadCopy, Logo } from "../ui";
 
 const count = new Intl.NumberFormat("en-US");
@@ -148,6 +148,7 @@ export function CostCalculator({
   flushTop?: boolean;
 }) {
   const [suite, setSuite] = useState(DEFAULT_SUITE);
+  const id = useId();
   const { snapshots, bills } = quote(suite, competitors);
   const max = Math.max(...bills.map((bill) => bill.cost ?? 0), 1);
   const [ours, ...theirs] = bills;
@@ -164,44 +165,40 @@ export function CostCalculator({
         month, except stateofpixel.
       </LeadCopy>
       <div className="mt-12 grid grid-cols-[minmax(0,380px)_1fr] gap-4 max-lg:grid-cols-1">
-        <div className="flex flex-col gap-6 rounded-lg bg-surface-2 p-6">
+        <div className="flex flex-col gap-6 rounded-xl bg-muted/72 p-6">
           {SLIDERS.map((slider) => (
-            <label key={slider.key} className="flex flex-col gap-2 text-sm">
+            <div key={slider.key} className="flex flex-col gap-2 text-sm">
               <span className="flex items-baseline justify-between">
-                <span className="text-muted">{slider.label}</span>
+                <span
+                  id={`${id}-${slider.key}`}
+                  className="text-muted-foreground"
+                >
+                  {slider.label}
+                </span>
                 <span className="mono font-medium tabular-nums">
                   {count.format(suite[slider.key])}
                 </span>
               </span>
-              <RangeSlider
+              <Slider
                 min={slider.min}
                 max={slider.max}
                 step={slider.step}
                 value={suite[slider.key]}
-                onPointerUp={() =>
+                aria-labelledby={`${id}-${slider.key}`}
+                onValueCommitted={(value) =>
                   track("Suite slider", {
                     slider: slider.key,
-                    value: suite[slider.key],
+                    value: value as number,
                   })
                 }
-                onKeyUp={() =>
-                  track("Suite slider", {
-                    slider: slider.key,
-                    value: suite[slider.key],
-                  })
+                onValueChange={(value) =>
+                  setSuite({ ...suite, [slider.key]: value as number })
                 }
-                onChange={(event) =>
-                  setSuite({
-                    ...suite,
-                    [slider.key]: Number(event.target.value),
-                  })
-                }
-                className="w-full"
               />
-            </label>
+            </div>
           ))}
-          <p className="mt-auto border-t border-dotted border-field-border/50 pt-4 text-sm">
-            <span className="block text-xs text-muted">
+          <p className="mt-auto border-t border-border pt-4 text-sm">
+            <span className="block text-xs text-muted-foreground">
               Screenshots a month
             </span>
             <span className="text-[32px] leading-tight font-semibold tracking-[-0.04em] tabular-nums">
@@ -209,7 +206,7 @@ export function CostCalculator({
             </span>
           </p>
         </div>
-        <div className="flex flex-col gap-6 rounded-lg bg-surface p-6 ring-1 ring-border">
+        <div className="flex flex-col gap-6 rounded-xl bg-card p-6 border shadow-xs/5">
           {bills.map((bill, index) => (
             <div key={bill.name} className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
@@ -220,21 +217,23 @@ export function CostCalculator({
                   >
                     {bill.name}
                   </span>
-                  <span className="block text-xs text-muted">{bill.plan}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {bill.plan}
+                  </span>
                 </span>
                 <span
-                  className={`tabular-nums ${index === 0 ? "text-[32px] leading-none font-semibold tracking-[-0.04em]" : "text-xl font-medium text-muted"}`}
+                  className={`tabular-nums ${index === 0 ? "text-[32px] leading-none font-semibold tracking-[-0.04em]" : "text-xl font-medium text-muted-foreground"}`}
                 >
                   {bill.cost === null ? "Contact us" : formatPrice(bill.cost)}
-                  <span className="text-xs font-normal tracking-normal text-muted">
+                  <span className="text-xs font-normal tracking-normal text-muted-foreground">
                     {" "}
                     /mo
                   </span>
                 </span>
               </div>
-              <div className="h-2 rounded-full bg-surface-2">
+              <div className="h-2 rounded-full bg-muted">
                 <div
-                  className={`h-full rounded-full ${index === 0 ? "bg-approved" : "bg-field-border"}`}
+                  className={`h-full rounded-full ${index === 0 ? "bg-approved" : "bg-input"}`}
                   style={{
                     width: `${Math.max(((bill.cost ?? 0) / max) * 100, 1)}%`,
                   }}
@@ -242,7 +241,7 @@ export function CostCalculator({
               </div>
             </div>
           ))}
-          <p className="mt-auto border-t border-dotted border-field-border/50 pt-4 text-sm text-muted">
+          <p className="mt-auto border-t border-border pt-4 text-sm text-muted-foreground">
             {saved > 0 ? (
               <>
                 <span className="font-semibold text-approved tabular-nums">
@@ -259,7 +258,7 @@ export function CostCalculator({
           </p>
         </div>
       </div>
-      <p className="mt-6 max-w-[90ch] text-xs text-muted">
+      <p className="mt-6 max-w-[90ch] text-xs text-muted-foreground">
         Screenshots are stories x viewports x browsers x builds. For
         stateofpixel, {DEFAULT_WORKLOAD.changed}% of screenshots change per
         build at {DEFAULT_WORKLOAD.kilobytes} KB each, and pull request images

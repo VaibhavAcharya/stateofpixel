@@ -71,7 +71,7 @@ const THEME_SCRIPT = `(() => {
     let theme = "system";
     try { theme = localStorage.getItem("theme") || "system"; } catch {}
     const dark = theme === "dark" || (theme === "system" && media.matches);
-    document.documentElement.dataset.theme = dark ? "dark" : "light";
+    document.documentElement.classList.toggle("dark", dark);
   };
   apply();
   media.addEventListener("change", apply);

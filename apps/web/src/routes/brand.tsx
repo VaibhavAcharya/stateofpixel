@@ -12,8 +12,8 @@ export const Route = createFileRoute("/brand")({
   component: Brand,
 });
 
-const SECTION = "mx-auto max-w-[1448px] px-6 py-24 max-sm:px-4 max-sm:py-12";
-const DOTTED = "border-dotted border-field-border/50";
+const SECTION = "mx-auto w-full max-w-[1416px] px-4 py-16 sm:px-6 sm:py-24";
+const DOTTED = "border-border";
 
 const ASSETS = [
   { file: "stateofpixel-mark", label: "Mark", dark: false },
@@ -54,9 +54,9 @@ const COLORS = [
 
 const TYPE = [
   {
-    name: "IBM Plex Sans",
-    use: "Interface, headings and the wordmark, in SemiBold",
-    url: "https://github.com/IBM/plex",
+    name: "DM Sans",
+    use: "Interface and headings",
+    url: "https://github.com/googlefonts/dm-fonts",
     className: "font-sans",
   },
   {
@@ -94,13 +94,15 @@ function Brand() {
               <span className="text-xl font-semibold tracking-[-0.025em]">
                 {title}
               </span>
-              <span className="text-sm text-muted md:pt-1.5">{text}</span>
+              <span className="text-sm text-muted-foreground md:pt-1.5">
+                {text}
+              </span>
             </li>
           ))}
         </ul>
       </section>
 
-      <section className="border-y border-border bg-bg">
+      <section className="border-y border-border bg-background">
         <div className={SECTION}>
           <LeadCopy title="Colors." className="max-w-[720px]">
             The logo uses ink and paper only. Color in the product is kept for
@@ -110,7 +112,7 @@ function Brand() {
             {COLORS.map((color) => (
               <li
                 key={color.hex}
-                className="overflow-hidden rounded-lg bg-surface ring-1 ring-border"
+                className="overflow-hidden rounded-xl bg-card border shadow-xs/5"
               >
                 <div
                   className="h-24 shadow-[inset_0_-1px_0_var(--color-border)]"
@@ -118,8 +120,12 @@ function Brand() {
                 />
                 <div className="p-4">
                   <p className="text-sm font-medium">{color.name}</p>
-                  <p className="mono mt-1 text-xs text-muted">{color.hex}</p>
-                  <p className="mt-2 text-xs text-muted">{color.use}</p>
+                  <p className="mono mt-1 text-xs text-muted-foreground">
+                    {color.hex}
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {color.use}
+                  </p>
                 </div>
               </li>
             ))}
@@ -142,7 +148,7 @@ function Brand() {
               >
                 {family.name}
               </span>
-              <span className="text-sm text-muted">
+              <span className="text-sm text-muted-foreground">
                 {family.use}.{" "}
                 <a href={family.url} className="text-link hover:underline">
                   Source
@@ -176,7 +182,7 @@ function AssetCard({
           className={file.includes("wordmark") ? "h-10" : "h-16"}
         />
       </div>
-      <div className="flex h-12 items-center gap-2 border-t border-border bg-surface px-4">
+      <div className="flex h-12 items-center gap-2 border-t border-border bg-card px-4">
         <span className="text-sm font-medium">{label}</span>
         <span className="ml-auto flex gap-1">
           {["svg", "png"].map((format) => (
@@ -186,7 +192,7 @@ function AssetCard({
               download
               data-umami-event="Brand download"
               data-umami-event-file={`${file}.${format}`}
-              className="inline-flex h-7 items-center gap-1.5 rounded-sm px-2 text-xs text-muted uppercase hover:bg-hover hover:text-text"
+              className="inline-flex h-7 items-center gap-1.5 rounded-sm px-2 text-xs text-muted-foreground uppercase hover:bg-accent hover:text-foreground"
             >
               <DownloadSimpleIcon size={12} />
               {format}

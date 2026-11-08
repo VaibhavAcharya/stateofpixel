@@ -6,6 +6,20 @@ import {
 } from "@stateofpixel/backend/limits";
 import { PLAN_STORAGE_LIMIT_BYTES } from "@stateofpixel/backend/storage";
 import { useState } from "react";
+import {
+  Badge,
+  Card,
+  CardFrame,
+  CardFrameAction,
+  CardFrameFooter,
+  CardFrameHeader,
+  CardFrameTitle,
+  cn,
+  RadioGroupPrimitive,
+  RadioPrimitive,
+  SegmentedControl,
+  SegmentedControlItem,
+} from "uiofcraft";
 import { api, useQuery } from "../../lib/backend";
 import { ARGOS, CHROMATIC, cheapestPlan } from "../../lib/competitorPricing";
 import { SUPPORT_EMAIL } from "../../lib/supportEmail";
@@ -13,7 +27,7 @@ import type { PaidPlan } from "../../lib/useBilling";
 import { AuthButton } from "../SignIn";
 import { LeadCopy } from "../ui";
 
-const SECTION = "mx-auto max-w-[1448px] px-6 py-24 max-sm:px-4 max-sm:py-12";
+const SECTION = "mx-auto w-full max-w-[1416px] px-4 py-16 sm:px-6 sm:py-24";
 
 const RETENTION_DAYS = DEFAULT_RETENTION_DAYS;
 const YEARLY_DISCOUNT = 0.1;
@@ -102,13 +116,11 @@ export function formatPrice(value: number) {
     : exactMoney.format(value);
 }
 
-const FREE_FEATURES = [
+const INCLUDED = [
   "No charge for snapshots, builds or projects",
   "Everyone with write access can review",
   `Pull request images kept ${RETENTION_DAYS} days, adjustable from ${MIN_RETENTION_DAYS} to ${MAX_RETENTION_DAYS}`,
 ];
-
-const PAID_FEATURES = ["Everything in Free"];
 
 function BillingSwitch({
   billing,
@@ -118,9 +130,15 @@ function BillingSwitch({
   onChange: (billing: Billing) => void;
 }) {
   return (
-    <fieldset
+    <SegmentedControl
       aria-label="Billing period"
-      className="flex gap-1 self-start rounded-control bg-surface-2 p-0.5"
+      className="self-start"
+      render={
+        <RadioGroupPrimitive
+          value={billing}
+          onValueChange={(value) => onChange(value as Billing)}
+        />
+      }
     >
       {(
         [
@@ -128,27 +146,24 @@ function BillingSwitch({
           ["yearly", `Yearly, save ${YEARLY_DISCOUNT * 100}%`],
         ] as const
       ).map(([value, label]) => (
-        <button
+        <SegmentedControlItem
           key={value}
-          type="button"
-          aria-pressed={billing === value}
-          data-umami-event="Billing period"
-          data-umami-event-period={value}
-          onClick={() => onChange(value)}
-          className={`h-7 rounded-sm px-3 text-xs font-medium transition-colors duration-100 ${
-            billing === value
-              ? "bg-surface text-text shadow-[inset_0_0_0_1px_var(--color-border)]"
-              : "text-muted hover:text-text"
-          }`}
+          render={
+            <RadioPrimitive.Root
+              value={value}
+              data-umami-event="Billing period"
+              data-umami-event-period={value}
+            />
+          }
         >
           {label}
-        </button>
+        </SegmentedControlItem>
       ))}
-    </fieldset>
+    </SegmentedControl>
   );
 }
 
-function TierCard({
+function TierColumn({
   tier,
   billing,
   available,
@@ -161,50 +176,46 @@ function TierCard({
   const price = monthlyPrice(tier, billing);
   return (
     <div
-      className={`flex flex-col rounded-lg bg-surface p-6 ${free ? "pixel-texture col-span-2 max-lg:col-span-3 max-sm:col-span-1" : ""} ring-1 ring-border`}
+      className={cn(
+        "flex min-w-0 flex-col p-6",
+        free && "pixel-texture bg-muted/40",
+      )}
     >
-      <p className="text-base font-semibold">
+      <p className="flex items-center gap-2 font-medium text-sm">
         {free ? "Free" : `${tier.gigabytes} GB`}
         {!free && !available && (
-          <span className="ml-2 text-xs font-medium opacity-70">
+          <Badge variant="outline" className="text-muted-foreground">
             Coming soon
-          </span>
+          </Badge>
         )}
       </p>
-      <p className="mt-4 text-[40px] leading-none font-semibold tracking-[-0.04em] tabular-nums">
+      <p className="mt-6 font-heading font-semibold text-5xl tracking-[-0.02em] tabular-nums">
         {formatPrice(price)}
-        <span className="text-sm font-normal tracking-normal opacity-70">
+        <span className="font-normal font-sans text-base text-muted-foreground tracking-normal">
           {" "}
           /mo
         </span>
       </p>
-      <p className="mt-2 h-4 text-xs opacity-70">
+      <p className="mt-2 text-muted-foreground text-xs">
         {free
           ? "No card needed. Enough for most teams."
           : billing === "yearly"
             ? `${money.format(price * 12)} billed yearly`
             : "Billed monthly"}
       </p>
-      <ul className="mt-6 flex flex-col gap-2 text-sm">
-        {[
-          `${tier.gigabytes} GB of stored screenshots`,
-          ...(free ? FREE_FEATURES : PAID_FEATURES),
-        ].map((item) => (
-          <li key={item} className="flex items-center gap-2">
-            <CheckIcon
-              size={14}
-              weight="bold"
-              className="shrink-0 opacity-70"
-            />
-            {item}
-          </li>
-        ))}
-      </ul>
-      {free && (
-        <div className="mt-auto pt-6">
+      <p className="mt-6 flex items-center gap-2 text-sm">
+        <CheckIcon size={14} weight="bold" className="shrink-0 text-approved" />
+        {tier.gigabytes} GB of stored screenshots
+      </p>
+      <div className="mt-auto pt-8">
+        {free ? (
           <AuthButton label="Start free with GitHub" />
-        </div>
-      )}
+        ) : (
+          <p className="text-muted-foreground text-xs">
+            Upgrade from the account's Billing page.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -219,33 +230,52 @@ export function PricingPlans() {
         className="max-w-[760px]"
       >
         No plan charges for snapshots, seats or builds. {FREE_GIGABYTES} GB is
-        free, which covers most teams. The Usage tab shows what each project
+        free, which covers most teams. The Usage page shows what each project
         stores.
       </LeadCopy>
-      <div className="mt-12 flex flex-col gap-4">
-        <BillingSwitch billing={billing} onChange={setBilling} />
-        <div className="grid grid-cols-5 gap-3 max-lg:grid-cols-3 max-sm:grid-cols-1">
-          {TIERS.map((tier) => (
-            <TierCard
-              key={tier.gigabytes}
-              tier={tier}
-              billing={billing}
-              available={available !== false}
-            />
+      <CardFrame className="mt-12">
+        <CardFrameHeader className="py-3">
+          <CardFrameTitle>Plans</CardFrameTitle>
+          <CardFrameAction>
+            <BillingSwitch billing={billing} onChange={setBilling} />
+          </CardFrameAction>
+        </CardFrameHeader>
+        <Card className="overflow-hidden">
+          <div className="grid divide-y sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x max-lg:sm:[&>*:nth-child(-n+2)]:border-b max-lg:sm:[&>*:nth-child(odd)]:border-r">
+            {TIERS.map((tier) => (
+              <TierColumn
+                key={tier.gigabytes}
+                tier={tier}
+                billing={billing}
+                available={available !== false}
+              />
+            ))}
+          </div>
+        </Card>
+        <CardFrameFooter className="flex flex-wrap gap-x-8 gap-y-2 py-4">
+          <span className="font-medium text-sm">Every plan</span>
+          {INCLUDED.map((item) => (
+            <span
+              key={item}
+              className="flex items-center gap-2 text-muted-foreground text-sm"
+            >
+              <CheckIcon size={14} weight="bold" className="shrink-0" />
+              {item}
+            </span>
           ))}
-        </div>
-        <p className="text-sm text-muted">
-          Need more than {LARGEST_GIGABYTES} GB?{" "}
-          <a
-            href={`mailto:${SUPPORT_EMAIL}`}
-            className="text-link"
-            data-umami-event="Email"
-          >
-            Write to {SUPPORT_EMAIL}
-          </a>
-          .{available === false && " Paid plans are coming soon."}
-        </p>
-      </div>
+        </CardFrameFooter>
+      </CardFrame>
+      <p className="mt-4 text-muted-foreground text-sm">
+        Need more than {LARGEST_GIGABYTES} GB?{" "}
+        <a
+          href={`mailto:${SUPPORT_EMAIL}`}
+          className="text-link"
+          data-umami-event="Email"
+        >
+          Write to {SUPPORT_EMAIL}
+        </a>
+        .{available === false && " Paid plans are coming soon."}
+      </p>
     </section>
   );
 }

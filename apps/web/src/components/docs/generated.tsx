@@ -5,7 +5,7 @@ import {
   type CommandSpec,
   ENVIRONMENT,
 } from "../../../../../packages/cli/src/reference";
-import { SHORTCUT_GROUPS } from "../ShortcutsDialog";
+import { APP_SHORTCUTS, SHORTCUT_GROUPS } from "../ShortcutsDialog";
 import { Kbd } from "../ui";
 import { Code, Table } from "./DocsLayout";
 import { facts } from "./facts";
@@ -171,7 +171,7 @@ export function CliOptions({
           <span className="flex flex-col items-start gap-1">
             <Code>{flags}</Code>
             {env !== undefined && (
-              <span className="mono text-xs text-muted">{env}</span>
+              <span className="mono text-xs text-muted-foreground">{env}</span>
             )}
           </span>
         );
@@ -207,7 +207,7 @@ export function ShortcutsTable() {
   return (
     <Table
       head={["Action", "Keys"]}
-      rows={SHORTCUT_GROUPS.flatMap((group) =>
+      rows={[...SHORTCUT_GROUPS, APP_SHORTCUTS].flatMap((group) =>
         group.items.map(([action, keys]): [string, React.ReactNode] => [
           action,
           <span key="keys" className="inline-flex gap-1">

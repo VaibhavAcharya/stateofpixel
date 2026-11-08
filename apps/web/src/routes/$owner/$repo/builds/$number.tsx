@@ -2,7 +2,8 @@ import { KeyboardIcon } from "@phosphor-icons/react/ssr";
 import type { Id } from "@stateofpixel/backend/dataModel";
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { lazy, Suspense, useState } from "react";
-import { AppHeader } from "../../../../components/AppHeader";
+import { Button } from "uiofcraft";
+import { AppShell } from "../../../../components/AppShell";
 import {
   BuildDeleted,
   BuildNotFound,
@@ -14,7 +15,7 @@ import {
 } from "../../../../components/build/BuildPage";
 import { RequireAuth } from "../../../../components/RequireAuth";
 import { ShortcutsDialog } from "../../../../components/ShortcutsDialog";
-import { buttonClass, Skeleton } from "../../../../components/ui";
+import { Skeleton } from "../../../../components/ui";
 import { api, useQuery } from "../../../../lib/backend";
 import { isLab } from "../../../../lib/lab";
 import { prefetchBuild } from "../../../../lib/prefetch";
@@ -39,22 +40,23 @@ function BuildRoute() {
     <ShortcutsContext.Provider
       value={{ open: shortcutsOpen, setOpen: setShortcutsOpen }}
     >
-      <div className="flex h-dvh flex-col">
-        <AppHeader
-          owner={owner}
-          repo={repo}
-          actions={
-            <button
-              type="button"
-              aria-label="Keyboard shortcuts"
-              title="Keyboard shortcuts (?)"
-              className={buttonClass("ghost", "icon")}
-              onClick={() => setShortcutsOpen(true)}
-            >
-              <KeyboardIcon size={18} />
-            </button>
-          }
-        />
+      <AppShell
+        owner={owner}
+        repo={repo}
+        crumb={`#${number}`}
+        fullHeight
+        actions={
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Keyboard shortcuts"
+            title="Keyboard shortcuts (?)"
+            onClick={() => setShortcutsOpen(true)}
+          >
+            <KeyboardIcon size={18} />
+          </Button>
+        }
+      >
         {lab ? (
           <Suspense fallback={<BuildSkeleton />}>
             <LabBuild number={Number(number)}>
@@ -66,8 +68,9 @@ function BuildRoute() {
         ) : (
           <BuildAccess owner={owner} repo={repo} number={Number(number)} />
         )}
-      </div>
+      </AppShell>
       <ShortcutsDialog
+        app
         open={shortcutsOpen}
         onClose={() => setShortcutsOpen(false)}
       />
@@ -149,12 +152,12 @@ function BuildAccess({
 function BuildSkeleton() {
   return (
     <>
-      <div className="flex h-[76px] shrink-0 flex-col justify-center gap-2.5 border-b border-border bg-surface px-4">
+      <div className="flex h-[76px] shrink-0 flex-col justify-center gap-2.5 border-b border-border bg-card px-4">
         <Skeleton className="h-4 w-80 rounded-xs" />
         <Skeleton className="h-3 w-120 max-w-full rounded-xs" />
       </div>
       <div className="flex min-h-0 flex-1">
-        <div className="flex w-[300px] shrink-0 flex-col gap-1 border-r border-border bg-surface p-2 max-lg:hidden">
+        <div className="flex w-[300px] shrink-0 flex-col gap-1 border-r border-border bg-sidebar p-2 max-lg:hidden">
           <Skeleton className="mb-2 h-8" />
           {Array.from({ length: 8 }, (_, index) => `row-${index}`).map(
             (key) => (
@@ -163,7 +166,7 @@ function BuildSkeleton() {
           )}
         </div>
         <div className="flex-1 bg-canvas p-4">
-          <Skeleton className="aspect-[16/10] max-h-full w-full bg-surface" />
+          <Skeleton className="aspect-[16/10] max-h-full w-full bg-card" />
         </div>
       </div>
     </>
