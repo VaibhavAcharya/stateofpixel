@@ -36,6 +36,11 @@ function project(name: string, fields: Record<string, unknown>) {
       counts,
       storageBlocked: false,
       createdAt: STORY_NOW - 30 * HOUR_MS,
+      reviewers: [
+        { login: "octocat", image: avatar("octocat") },
+        { login: "hubot", image: avatar("hubot") },
+        { login: "monalisa", image: avatar("monalisa") },
+      ],
       ...fields,
     },
   };
@@ -84,8 +89,20 @@ const backend = {
     role: "owner",
   },
   "members.list": [
-    { login: "octocat", name: null, image: null, role: "owner", lastSeenAt: 0 },
-    { login: "hubot", name: null, image: null, role: "member", lastSeenAt: 0 },
+    {
+      login: "octocat",
+      name: "Mona Octocat",
+      image: avatar("octocat"),
+      role: "owner",
+      lastSeenAt: STORY_NOW,
+    },
+    {
+      login: "hubot",
+      name: null,
+      image: avatar("hubot"),
+      role: "member",
+      lastSeenAt: STORY_NOW - 3 * HOUR_MS,
+    },
   ],
   "accounts.projects": {
     pages: [{ page: projects, isDone: true, continueCursor: "4" }],

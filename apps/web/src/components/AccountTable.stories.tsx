@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { DAY_MS, STORY_NOW, storage } from "../lib/storyFixtures";
+import { avatar, DAY_MS, STORY_NOW, storage } from "../lib/storyFixtures";
 import { AccountTable } from "./AccountTable";
 
 const meta = {
@@ -15,6 +15,13 @@ const meta = {
         storage: storage("100gb", 42.5),
         projects: 12,
         lastBuildAt: STORY_NOW - 2 * 60 * 60 * 1000,
+        members: {
+          count: 9,
+          faces: ["octocat", "hubot", "monalisa", "defunkt"].map((login) => ({
+            login,
+            image: avatar(login),
+          })),
+        },
       },
       {
         login: "octocat",
@@ -24,6 +31,10 @@ const meta = {
         storage: storage("free", 1.2),
         projects: 3,
         lastBuildAt: STORY_NOW - 9 * DAY_MS,
+        members: {
+          count: 1,
+          faces: [{ login: "octocat", image: avatar("octocat") }],
+        },
       },
       {
         login: "old-org",
@@ -33,6 +44,7 @@ const meta = {
         storage: storage("free", 0),
         projects: 0,
         lastBuildAt: null,
+        members: { count: 0, faces: [] },
       },
     ],
   },

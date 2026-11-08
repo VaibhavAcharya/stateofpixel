@@ -1,12 +1,18 @@
-import { ArrowUpRightIcon } from "@phosphor-icons/react/ssr";
+import { ArrowUpRightIcon, CrownSimpleIcon } from "@phosphor-icons/react/ssr";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button } from "uiofcraft";
+import { Badge, Button } from "uiofcraft";
 import { AccountLayout } from "../../../components/AccountLayout";
 import { AppShell } from "../../../components/AppShell";
 import { columnHelper, DataTable } from "../../../components/DataTable";
 import { RequireAuth } from "../../../components/RequireAuth";
-import { Avatar, RelativeTime, SkeletonRows } from "../../../components/ui";
+import {
+  Avatar,
+  AvatarStack,
+  RelativeTime,
+  SkeletonRows,
+} from "../../../components/ui";
 import { api, type FunctionReturnType, useQuery } from "../../../lib/backend";
+import { formatCount } from "../../../lib/format";
 import { prefetchAccount } from "../../../lib/prefetch";
 
 export const Route = createFileRoute("/$owner/settings/members")({
@@ -29,16 +35,16 @@ function memberColumns(accountType: "user" | "org") {
     helper.accessor("login", {
       header: "Member",
       cell: ({ row }) => (
-        <span className="flex min-w-0 items-center gap-2.5">
-          <Avatar src={row.original.image} size={24} />
-          <span className="truncate font-medium">
-            {row.original.name ?? row.original.login}
-          </span>
-          {row.original.name !== null && (
-            <span className="truncate text-muted-foreground max-sm:hidden">
+        <span className="flex min-w-0 items-center gap-3">
+          <Avatar src={row.original.image} size={32} />
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate font-medium">
+              {row.original.name ?? row.original.login}
+            </span>
+            <span className="truncate text-muted-foreground text-xs">
               @{row.original.login}
             </span>
-          )}
+          </span>
         </span>
       ),
     }),
@@ -46,8 +52,19 @@ function memberColumns(accountType: "user" | "org") {
       header: "Role",
       meta: { className: "w-32" },
       cell: ({ row }) =>
-        row.original.role !== null &&
-        ROLE_LABELS[accountType][row.original.role],
+        row.original.role !== null && (
+          <Badge
+            variant={row.original.role === "owner" ? "secondary" : "outline"}
+            className={
+              row.original.role === "owner"
+                ? undefined
+                : "text-muted-foreground"
+            }
+          >
+            {row.original.role === "owner" && <CrownSimpleIcon />}
+            {ROLE_LABELS[accountType][row.original.role]}
+          </Badge>
+        ),
     }),
     helper.accessor("lastSeenAt", {
       header: "Last active",
@@ -75,6 +92,8 @@ function MembersPage() {
 function Members({ owner }: { owner: string }) {
   const home = useQuery(api.accounts.home, { login: owner });
   const members = useQuery(api.members.list, { login: owner });
+  const owners =
+    members?.filter((member) => member.role === "owner").length ?? 0;
 
   return (
     <>
@@ -98,12 +117,25 @@ function Members({ owner }: { owner: string }) {
       {home === undefined || members === undefined || members === null ? (
         <SkeletonRows rows={3} />
       ) : (
-        <DataTable
-          columns={memberColumns(home?.type ?? "org")}
-          data={members}
-          getRowId={(member) => member.login}
-          sorting={[]}
-        />
+        <>
+          <div className="mb-4 flex items-center gap-3 text-muted-foreground text-sm">
+            <AvatarStack people={members.slice(0, 6)} total={members.length} />
+            <span>
+              {members.length === 1
+                ? "1 member"
+                : `${formatCount(members.length)} members`}
+              {", "}
+              {owners === 1 ? "1 owner" : `${formatCount(owners)} owners`}
+            </span>
+          </div>
+          <DataTable
+            columns={memberColumns(home?.type ?? "org")}
+            data={members}
+            getRowId={(member) => member.login}
+            sorting={[]}
+            rowClassName="h-16"
+          />
+        </>
       )}
     </>
   );

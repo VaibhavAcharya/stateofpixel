@@ -1,9 +1,16 @@
+import { STORAGE_WARNING_SHARE } from "@stateofpixel/backend/limits";
 import { formatGigabytes } from "@stateofpixel/backend/storage";
 import { Link } from "@tanstack/react-router";
 import type { api, FunctionReturnType } from "../lib/backend";
 import { columnHelper, DataTable } from "./DataTable";
 import { PLAN_NAMES } from "./PlanBox";
-import { Avatar, accountAvatar, listRowLinkClass, RelativeTime } from "./ui";
+import {
+  Avatar,
+  AvatarStack,
+  accountAvatar,
+  listRowLinkClass,
+  RelativeTime,
+} from "./ui";
 
 export type Account = FunctionReturnType<typeof api.me.accounts>[number];
 
@@ -17,19 +24,27 @@ const columns = helper.columns([
         to="/$owner"
         params={{ owner: row.original.login }}
         data-list-row
-        className={`flex min-w-0 items-center gap-2.5 ${listRowLinkClass}`}
+        className={`flex min-w-0 items-center gap-3 ${listRowLinkClass}`}
       >
-        <Avatar src={accountAvatar(row.original.login)} size={24} square />
-        <span className="truncate font-medium">{row.original.login}</span>
-        <span className="shrink-0 text-xs text-muted-foreground max-sm:hidden">
-          {row.original.installed
-            ? row.original.type === "org"
-              ? "Organization"
-              : "Personal account"
-            : "App not installed"}
+        <Avatar src={accountAvatar(row.original.login)} size={32} square />
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate font-medium">{row.original.login}</span>
+          <span className="truncate text-muted-foreground text-xs">
+            {row.original.installed
+              ? `${row.original.type === "org" ? "Organization" : "Personal account"}, ${PLAN_NAMES[row.original.plan]} plan`
+              : "App not installed"}
+          </span>
         </span>
       </Link>
     ),
+  }),
+  helper.accessor("members", {
+    header: "Members",
+    meta: { className: "w-36 max-md:hidden" },
+    cell: ({ getValue }) => {
+      const { count, faces } = getValue();
+      return <AvatarStack people={faces} total={count} />;
+    },
   }),
   helper.accessor("storage", {
     header: "Storage",
@@ -38,9 +53,32 @@ const columns = helper.columns([
     },
     cell: ({ row }) => {
       const { plan, storage } = row.original;
-      return plan === "unlimited"
-        ? `${formatGigabytes(storage.storageBytes)}, ${PLAN_NAMES[plan]}`
-        : `${formatGigabytes(storage.storageBytes)} of ${formatGigabytes(storage.storageLimitBytes)}`;
+      if (plan === "unlimited") {
+        return `${formatGigabytes(storage.storageBytes)}, ${PLAN_NAMES[plan]}`;
+      }
+      const used = Math.min(
+        1,
+        storage.storageBytes / storage.storageLimitBytes,
+      );
+      return (
+        <span className="flex flex-col gap-1.5">
+          <span>
+            <span className="text-foreground">
+              {formatGigabytes(storage.storageBytes)}
+            </span>{" "}
+            of {formatGigabytes(storage.storageLimitBytes)}
+          </span>
+          <span
+            aria-hidden
+            className="h-1 w-full max-w-36 overflow-hidden rounded-full bg-muted"
+          >
+            <span
+              className={`block h-full rounded-full ${used >= STORAGE_WARNING_SHARE ? "bg-changed" : "bg-foreground/48"}`}
+              style={{ width: `${used * 100}%` }}
+            />
+          </span>
+        </span>
+      );
     },
   }),
   helper.accessor("projects", {
@@ -68,7 +106,7 @@ export function AccountTable({ accounts }: { accounts: Account[] }) {
       data={accounts}
       getRowId={(account) => account.login}
       sorting={[]}
-      rowClassName="h-12"
+      rowClassName="h-16"
     />
   );
 }
