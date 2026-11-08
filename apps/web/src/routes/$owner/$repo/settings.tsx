@@ -2,7 +2,7 @@ import type { Id } from "@stateofpixel/backend/dataModel";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Button, Checkbox, Input, Label, Textarea } from "uiofcraft";
-import { AppHeader } from "../../../components/AppHeader";
+import { AppShell } from "../../../components/AppShell";
 import { CodeBlock } from "../../../components/CodeBlock";
 import { Page } from "../../../components/Page";
 import { ProjectHeader } from "../../../components/ProjectHeader";
@@ -44,11 +44,12 @@ function SettingsRoute() {
   const { owner, repo } = Route.useParams();
   return (
     <RequireAuth redirectTo={`/${owner}/${repo}/settings`}>
-      <AppHeader owner={owner} repo={repo} />
-      <Page>
-        <ProjectHeader owner={owner} repo={repo} tab="settings" />
-        <SettingsAccess owner={owner} repo={repo} />
-      </Page>
+      <AppShell owner={owner} repo={repo} crumb="Settings">
+        <Page>
+          <ProjectHeader owner={owner} repo={repo} tab="settings" />
+          <SettingsAccess owner={owner} repo={repo} />
+        </Page>
+      </AppShell>
     </RequireAuth>
   );
 }
@@ -99,7 +100,7 @@ function SettingsForm({
     update({ projectId, ...changes });
 
   return (
-    <div className="flex max-w-[640px] flex-col">
+    <div className="flex max-w-[960px] flex-col">
       <Section title="General">
         <Field label="Default branch" hint="Mirrors GitHub.">
           {() => (
@@ -168,7 +169,7 @@ function SettingsForm({
           <Section title="Tokens">
             <Tokens projectId={projectId} />
           </Section>
-          <Section title="Danger">
+          <Section title="Danger" danger>
             <DeleteProject owner={owner} repo={repo} projectId={projectId} />
           </Section>
         </>

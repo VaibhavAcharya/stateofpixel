@@ -1,17 +1,29 @@
 import { type ReactNode, useEffect, useId, useState } from "react";
-import { FieldDescription, FieldLabel, Field as UiField } from "uiofcraft";
+import {
+  Card,
+  cn,
+  FieldDescription,
+  FieldLabel,
+  Field as UiField,
+} from "uiofcraft";
 
 export function Section({
   title,
+  danger = false,
   children,
 }: {
   title: string;
+  danger?: boolean;
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-6 border-t border-dotted border-border py-12 first:border-t-0 first:pt-0">
-      <h2 className="text-sm font-semibold">{title}</h2>
-      {children}
+    <section className="grid gap-4 border-t py-8 first:border-t-0 first:pt-0 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-10">
+      <h2 className="font-heading font-semibold text-base">{title}</h2>
+      <Card
+        className={cn("gap-6 p-5 sm:p-6", danger && "border-destructive/32")}
+      >
+        {children}
+      </Card>
     </section>
   );
 }
