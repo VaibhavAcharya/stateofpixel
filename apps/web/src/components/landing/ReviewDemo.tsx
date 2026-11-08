@@ -2,6 +2,7 @@ import {
   ArrowCounterClockwiseIcon,
   CheckCircleIcon,
   CircleIcon,
+  PlayIcon,
   XCircleIcon,
 } from "@phosphor-icons/react/ssr";
 import { toStatus } from "@stateofpixel/backend/checkStatus";
@@ -71,10 +72,29 @@ function demoTrack(event: string, data?: Parameters<typeof track>[1]) {
 
 export function ReviewDemo() {
   const [run, setRun] = useState(0);
-  return <DemoRun key={run} onReset={() => setRun((value) => value + 1)} />;
+  const [started, setStarted] = useState(false);
+  return (
+    <DemoRun
+      key={run}
+      started={started}
+      onStart={() => {
+        setStarted(true);
+        demoTrack("Start");
+      }}
+      onReset={() => setRun((value) => value + 1)}
+    />
+  );
 }
 
-function DemoRun({ onReset }: { onReset: () => void }) {
+function DemoRun({
+  started,
+  onStart,
+  onReset,
+}: {
+  started: boolean;
+  onStart: () => void;
+  onReset: () => void;
+}) {
   const { build, data } = useFixtureBuild(DEMO_FIXTURE);
   const [snapshotId, setSnapshotId] = useState("signin");
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -109,18 +129,21 @@ function DemoRun({ onReset }: { onReset: () => void }) {
         >
           <section
             aria-label="Interactive review demo"
-            className="relative flex h-[720px] flex-col overflow-hidden rounded-xl bg-card text-left shadow-[0_8px_32px_#11151a18,0_1px_4px_#11151a0a] border shadow-xs/5"
+            className="relative flex h-[720px] flex-col overflow-hidden rounded-xl border bg-card text-left shadow-xs/5"
           >
-            <BuildPage
-              build={build}
-              canWrite
-              owner="acme"
-              repo="web"
-              links={false}
-              headings={false}
-              keyboard={active}
-              track={demoTrack}
-            />
+            <div inert={!started} className="flex min-h-0 flex-1 flex-col">
+              <BuildPage
+                build={build}
+                canWrite
+                owner="acme"
+                repo="web"
+                links={false}
+                headings={false}
+                keyboard={started && active}
+                track={demoTrack}
+              />
+            </div>
+            {!started && <StartOverlay onStart={onStart} />}
           </section>
         </ShortcutsContext.Provider>
       </BuildDataContext.Provider>
@@ -128,6 +151,31 @@ function DemoRun({ onReset }: { onReset: () => void }) {
         <ShortcutsDialog open onClose={() => setShortcutsOpen(false)} />
       )}
       <CheckRun build={build} onReset={onReset} />
+    </div>
+  );
+}
+
+function StartOverlay({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/40 p-4 backdrop-blur-[1.5px]">
+      <button
+        type="button"
+        onClick={onStart}
+        className="group flex flex-col items-center gap-4 rounded-2xl border bg-popover px-8 py-6 text-center shadow-lg/5 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
+      >
+        <span className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xs transition-transform group-hover:scale-105">
+          <PlayIcon size={22} weight="fill" className="translate-x-px" />
+        </span>
+        <span className="flex flex-col gap-1">
+          <span className="font-heading font-semibold text-lg">
+            Try the review page
+          </span>
+          <span className="max-w-64 text-muted-foreground text-sm">
+            Five changes are waiting. Approve or reject them, with the mouse or
+            j, k, a and r.
+          </span>
+        </span>
+      </button>
     </div>
   );
 }
