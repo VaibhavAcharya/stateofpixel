@@ -153,9 +153,7 @@ function reviewTone(row: SnapshotRow) {
 
 function rowClass(selected: boolean) {
   return `relative flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-sm transition-colors duration-100 hover:bg-accent ${
-    selected
-      ? "bg-accent before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-link"
-      : ""
+    selected ? "bg-accent" : ""
   }`;
 }
 

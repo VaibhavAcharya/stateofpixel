@@ -144,6 +144,7 @@ export function BuildPage({
   const [listOpen, setListOpen] = useState(false);
   const [commenting, setCommenting] = useState(false);
   const filterInput = useRef<HTMLInputElement>(null);
+  const snapshotList = useRef<HTMLElement>(null);
   const settings = useViewerSettings();
   const { toasts, show, dismiss } = useToasts();
   const data = useBuildData();
@@ -590,9 +591,11 @@ export function BuildPage({
             </div>
           )}
           <nav
+            ref={snapshotList}
             aria-label="Snapshots"
-            className="min-h-0 flex-1 overflow-y-auto px-2 pb-3"
+            className="relative min-h-0 flex-1 overflow-y-auto px-2 pb-3"
           >
+            <SelectionIndicator list={snapshotList} />
             {GROUPS.filter((group) => groupCount(group) > 0).map((group) => {
               const query = groups[group.status];
               return (
@@ -800,6 +803,55 @@ function SnapshotNavigation({
         {position > 0 ? `${position} of ${total}` : ""}
       </span>
     </div>
+  );
+}
+
+function SelectionIndicator({ list }: { list: RefObject<HTMLElement | null> }) {
+  const [bar, setBar] = useState<{ top: number; height: number } | null>(null);
+  useEffect(() => {
+    const element = list.current;
+    if (!element) {
+      return;
+    }
+    const measure = () => {
+      const row = element.querySelector<HTMLElement>("[aria-current]");
+      if (!row) {
+        setBar(null);
+        return;
+      }
+      const top =
+        row.getBoundingClientRect().top -
+        element.getBoundingClientRect().top +
+        element.scrollTop;
+      setBar((current) =>
+        current?.top === top && current.height === row.offsetHeight
+          ? current
+          : { top, height: row.offsetHeight },
+      );
+    };
+    measure();
+    const observer = new MutationObserver(measure);
+    observer.observe(element, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["aria-current"],
+    });
+    return () => observer.disconnect();
+  }, [list]);
+  if (bar === null) {
+    return null;
+  }
+  return (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute left-2 z-10 w-0.5 rounded-full bg-primary transition-[transform,height] duration-200 ease-in-out motion-reduce:transition-none"
+      style={{
+        height: bar.height - 12,
+        transform: `translateY(${bar.top + 6}px)`,
+        top: 0,
+      }}
+    />
   );
 }
 
