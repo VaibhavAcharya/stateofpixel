@@ -2,7 +2,7 @@ import { GitBranchIcon, GitPullRequestIcon } from "@phosphor-icons/react/ssr";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { Button } from "uiofcraft";
-import { AppHeader } from "../../../components/AppHeader";
+import { AppShell } from "../../../components/AppShell";
 import { CodeBlock } from "../../../components/CodeBlock";
 import { columnHelper, DataTable } from "../../../components/DataTable";
 import {
@@ -110,11 +110,12 @@ function ProjectPage() {
   const { owner, repo } = Route.useParams();
   return (
     <RequireAuth redirectTo={`/${owner}/${repo}`}>
-      <AppHeader owner={owner} repo={repo} />
-      <Page>
-        <ProjectHeader owner={owner} repo={repo} tab="builds" />
-        <ProjectBuilds owner={owner} repo={repo} />
-      </Page>
+      <AppShell owner={owner} repo={repo}>
+        <Page>
+          <ProjectHeader owner={owner} repo={repo} tab="builds" />
+          <ProjectBuilds owner={owner} repo={repo} />
+        </Page>
+      </AppShell>
     </RequireAuth>
   );
 }

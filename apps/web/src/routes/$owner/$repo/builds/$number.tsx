@@ -3,7 +3,7 @@ import type { Id } from "@stateofpixel/backend/dataModel";
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { lazy, Suspense, useState } from "react";
 import { Button } from "uiofcraft";
-import { AppHeader } from "../../../../components/AppHeader";
+import { AppShell } from "../../../../components/AppShell";
 import {
   BuildDeleted,
   BuildNotFound,
@@ -40,22 +40,23 @@ function BuildRoute() {
     <ShortcutsContext.Provider
       value={{ open: shortcutsOpen, setOpen: setShortcutsOpen }}
     >
-      <div className="flex h-dvh flex-col">
-        <AppHeader
-          owner={owner}
-          repo={repo}
-          actions={
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Keyboard shortcuts"
-              title="Keyboard shortcuts (?)"
-              onClick={() => setShortcutsOpen(true)}
-            >
-              <KeyboardIcon size={18} />
-            </Button>
-          }
-        />
+      <AppShell
+        owner={owner}
+        repo={repo}
+        crumb={`#${number}`}
+        fullHeight
+        actions={
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Keyboard shortcuts"
+            title="Keyboard shortcuts (?)"
+            onClick={() => setShortcutsOpen(true)}
+          >
+            <KeyboardIcon size={18} />
+          </Button>
+        }
+      >
         {lab ? (
           <Suspense fallback={<BuildSkeleton />}>
             <LabBuild number={Number(number)}>
@@ -67,7 +68,7 @@ function BuildRoute() {
         ) : (
           <BuildAccess owner={owner} repo={repo} number={Number(number)} />
         )}
-      </div>
+      </AppShell>
       <ShortcutsDialog
         open={shortcutsOpen}
         onClose={() => setShortcutsOpen(false)}

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Button } from "uiofcraft";
-import { AppHeader } from "../../../../components/AppHeader";
+import { AppShell } from "../../../../components/AppShell";
 import {
   ListToolbar,
   SearchField,
@@ -49,11 +49,12 @@ function BaselinesRoute() {
   const { owner, repo } = Route.useParams();
   return (
     <RequireAuth redirectTo={`/${owner}/${repo}/baselines`}>
-      <AppHeader owner={owner} repo={repo} />
-      <Page>
-        <ProjectHeader owner={owner} repo={repo} tab="baselines" />
-        <BaselinesAccess owner={owner} repo={repo} />
-      </Page>
+      <AppShell owner={owner} repo={repo} crumb="Baselines">
+        <Page>
+          <ProjectHeader owner={owner} repo={repo} tab="baselines" />
+          <BaselinesAccess owner={owner} repo={repo} />
+        </Page>
+      </AppShell>
     </RequireAuth>
   );
 }

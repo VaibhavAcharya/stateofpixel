@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, AlertAction, AlertDescription, Button } from "uiofcraft";
 import { AccountTable } from "../components/AccountTable";
-import { AppHeader } from "../components/AppHeader";
+import { AppShell } from "../components/AppShell";
 import { Page, PageHeader } from "../components/Page";
 import { RequireAuth } from "../components/RequireAuth";
 import { EmptyState, SkeletonRows, Spinner } from "../components/ui";
@@ -19,8 +19,9 @@ export const Route = createFileRoute("/install")({
 function Install() {
   return (
     <RequireAuth redirectTo="/install">
-      <AppHeader />
-      <Accounts />
+      <AppShell>
+        <Accounts />
+      </AppShell>
     </RequireAuth>
   );
 }

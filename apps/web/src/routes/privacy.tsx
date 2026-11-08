@@ -169,7 +169,7 @@ function Privacy() {
         </li>
         <li>
           Uninstalling the GitHub App archives your projects. Their data stays
-          until an account owner deletes it on the Usage tab, or you ask us to.
+          until an account owner deletes it on the Usage page, or you ask us to.
         </li>
         <li>GitHub webhook delivery records are deleted after 7 days.</li>
       </ul>

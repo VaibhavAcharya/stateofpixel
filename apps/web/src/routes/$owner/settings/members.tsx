@@ -2,7 +2,7 @@ import { ArrowUpRightIcon } from "@phosphor-icons/react/ssr";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "uiofcraft";
 import { AccountLayout } from "../../../components/AccountLayout";
-import { AppHeader } from "../../../components/AppHeader";
+import { AppShell } from "../../../components/AppShell";
 import { columnHelper, DataTable } from "../../../components/DataTable";
 import { RequireAuth } from "../../../components/RequireAuth";
 import { Avatar, RelativeTime, SkeletonRows } from "../../../components/ui";
@@ -63,10 +63,11 @@ function MembersPage() {
   const { owner } = Route.useParams();
   return (
     <RequireAuth redirectTo={`/${owner}/settings/members`}>
-      <AppHeader owner={owner} />
-      <AccountLayout owner={owner} tab="members">
-        <Members owner={owner} />
-      </AccountLayout>
+      <AppShell owner={owner} crumb="Members">
+        <AccountLayout owner={owner} tab="members">
+          <Members owner={owner} />
+        </AccountLayout>
+      </AppShell>
     </RequireAuth>
   );
 }

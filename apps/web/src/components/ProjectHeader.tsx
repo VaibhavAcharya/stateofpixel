@@ -4,7 +4,6 @@ import {
   ImagesIcon,
   StackIcon,
 } from "@phosphor-icons/react/ssr";
-import { Link } from "@tanstack/react-router";
 import { Button } from "uiofcraft";
 import { api, useQuery } from "../lib/backend";
 import { AccountBanner } from "./AccountBanner";
@@ -33,15 +32,6 @@ export function ProjectHeader({
     <>
       <PageHeader
         title={repo}
-        above={
-          <Link
-            to="/$owner"
-            params={{ owner }}
-            className="hover:text-foreground"
-          >
-            {owner}
-          </Link>
-        }
         actions={
           <Button
             variant="outline"

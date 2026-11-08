@@ -228,7 +228,7 @@ export function PricingPlans() {
         className="max-w-[760px]"
       >
         No plan charges for snapshots, seats or builds. {FREE_GIGABYTES} GB is
-        free, which covers most teams. The Usage tab shows what each project
+        free, which covers most teams. The Usage page shows what each project
         stores.
       </LeadCopy>
       <div className="mt-12 flex flex-col gap-4">

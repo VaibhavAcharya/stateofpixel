@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Checkbox, Label } from "uiofcraft";
-import { AppHeader } from "../../../../components/AppHeader";
+import { AppShell } from "../../../../components/AppShell";
 import { Page } from "../../../../components/Page";
 import { ProjectHeader } from "../../../../components/ProjectHeader";
 import { RequireAuth } from "../../../../components/RequireAuth";
@@ -42,11 +42,16 @@ function HistoryRoute() {
   const snapshotName = _splat ?? "";
   return (
     <RequireAuth redirectTo={`/${owner}/${repo}/baselines/${snapshotName}`}>
-      <AppHeader owner={owner} repo={repo} />
-      <Page>
-        <ProjectHeader owner={owner} repo={repo} tab="baselines" />
-        <HistoryAccess owner={owner} repo={repo} snapshotName={snapshotName} />
-      </Page>
+      <AppShell owner={owner} repo={repo} crumb="Baselines">
+        <Page>
+          <ProjectHeader owner={owner} repo={repo} tab="baselines" />
+          <HistoryAccess
+            owner={owner}
+            repo={repo}
+            snapshotName={snapshotName}
+          />
+        </Page>
+      </AppShell>
     </RequireAuth>
   );
 }
