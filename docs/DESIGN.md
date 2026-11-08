@@ -137,7 +137,7 @@ Use the uiofcraft component for every control it has (Button, Input, InputGroup,
 
 Icons: Phosphor Icons from `@phosphor-icons/react/ssr`, the same set uiofcraft uses, regular weight. Inside uiofcraft controls they are sized by the component; elsewhere 16px in rows and 12px inside pills. Color follows the text they sit next to.
 
-Buttons. uiofcraft `Button`. Primary actions use `default`, secondary ones `outline`, toolbar and nav buttons `ghost`, and Reject and Delete project `destructive-outline`. Toolbars use `size="sm"` and icon buttons `icon` or `icon-sm`. Links that look like buttons pass `render={<Link />}` or `render={<a />}`. `buttonClass()` in `ui.tsx` returns the same classes for the few triggers that cannot render a `Button`. A control the user is not allowed to use sets `aria-disabled` instead of `disabled`, so it stays focusable, shows a not-allowed cursor and carries a tooltip that says who can use it. Keyboard keys live in tooltips ("Approve, press a"), never as chips inside a control; kbd chips only appear in the shortcuts dialog, the docs and the landing copy.
+Buttons. uiofcraft `Button`. Primary actions use `default`, secondary ones `outline`, toolbar and nav buttons `ghost`, and Reject and Delete project `destructive-outline`. Toolbars use `size="sm"` and icon buttons `icon` or `icon-sm`. Links that look like buttons pass `render={<Link />}` or `render={<a />}`. A control the user is not allowed to use sets `aria-disabled` instead of `disabled`, so it stays focusable, shows a not-allowed cursor and carries a tooltip that says who can use it. Keyboard keys live in tooltips ("Approve, press a"), never as chips inside a control; kbd chips only appear in the shortcuts dialog, the docs and the landing copy.
 
 Inputs. uiofcraft `Input`, `Textarea` and `InputGroup`, with `Field` for label and description in settings. Settings fields save on blur and show "Saved" in `text-xs muted-foreground` to the right for 2 seconds. The sidebar filter is an `InputGroup` with a search icon and a clear button, and its `/` key lives in a tooltip.
 
@@ -240,6 +240,27 @@ Compare (`/compare/{competitor}`): the public header and footer. Hero on the 12 
 Open Graph images: every public page and docs page gets a 1200x630 PNG at `/og/<path>.png`, rendered by `apps/web/scripts/ogImage.ts` with satori and resvg, at build time by `scripts/og-images.ts` and on request in dev, from the title and description in `src/lib/pageMeta.ts` and the docs meta. The card is `background` with the wordmark and the page path in Lilex `muted` at the top, the title at 72px weight 600 with -0.045em tracking and the description at 30px `muted` at the bottom, and the pricing pixel texture on the right at 50% opacity, unsmoothed. Both use `textWrap: balance`. The landing card shows the title only. Compare cards replace the path with "vs" and the competitor logo, and use the page headline as the title. `visual/og.visual.ts` captures every card on the desktop project, so the `web` build reviews them.
 
 Sign-in (any signed-in page while signed out): centered 360px column, 32px logo, `text-xl` title, one `text-sm muted-foreground` line, and a full-width primary "Continue with GitHub" button, with a secondary "Continue with Google" button under it when Identity has Google enabled. While auth loads, the page shows a skeleton of the 48px app header only. Connect GitHub (signed in, no GitHub connection yet): the same column with a "Connect GitHub" title, one `text-sm muted-foreground` line and a full-width primary "Connect GitHub" button; an error shows under it on `failed-bg`.
+
+## What stays custom
+
+Everything else comes from uiofcraft. These parts are ours, either because uiofcraft has no matching component or because the matching one would change how the app behaves. Before you replace one, check the reason here.
+
+| Part | File | Why it is custom |
+|---|---|---|
+| Toasts | `components/Toast.tsx` | uiofcraft toasts fix their offset per provider (16 or 32px, the build page needs 64px), cap the width at 360px (ours is 420px), get `role="dialog"` from Base UI instead of `status` and `alert`, and have no dismiss button. |
+| Build verdict switch | `components/build/BuildHeader.tsx` | A three part track with a sliding thumb, a progress bar, Undo in the middle and build actions with keys. No component covers it. |
+| Diff color picker | `components/Viewer.tsx` | Native radios that fan out on hover, focus or tap. |
+| Viewer stage, slider handle and flip | `components/Viewer.tsx` | Pan and zoom canvas that shows images at true pixels. |
+| Snapshot list | `components/build/SnapshotGroup.tsx`, `BuildPage.tsx` | A `listbox` with `aria-activedescendant`, `j` and `k`, story rows and group headers. |
+| Snapshot list resize handle | `components/build/BuildPage.tsx` | Drag, arrow keys, Home, End and double-click reset. |
+| Table sort headers and filter buttons | `components/DataTable.tsx`, `routes/$owner/$repo/index.tsx` | uiofcraft `Table` has no sorting. The branch and PR cells are inline buttons that set a filter. |
+| Menu wrapper | `components/Menu.tsx` | A thin wrapper around uiofcraft `Menu` that keeps the open state and `useCloseMenu` for the landing mobile links. |
+| Cookie consent prompt | `components/AdsConsentBanner.tsx` | A fixed card with two choices. |
+| Cookie choice link | `routes/privacy.tsx` | A button that reads as an inline link in the policy text. |
+| Landing demo start card | `components/landing/ReviewDemo.tsx` | Covers the demo until it is started. |
+| Landing illustrations | `components/landing/Numbers.tsx`, `Pipelines.tsx`, `Trust.tsx` | The CI race, the pipeline mocks and the upload flow are drawings, not controls. |
+| Code blocks | `components/CodeBlock.tsx` | uiofcraft has no code block. |
+| Small app pieces | `components/ui.tsx` | Status pills (a `Badge` with status colors), `Tooltip` (a wrapper with a `label`), `AvatarStack`, `ReviewBar`, `ProjectMark`, `SnapshotName`, `SnapshotImage`, `LeadCopy`, `EmptyState` (left aligned, where uiofcraft `Empty` is centered) and `SkeletonRows`. The `skeleton`, `checker`, `mono`, `syntax` and `pixel-texture` utilities stay in `styles.css`. |
 
 ## Accessibility
 
