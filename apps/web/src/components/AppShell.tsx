@@ -53,6 +53,7 @@ import { api, usePaginatedQuery, useQuery } from "../lib/backend";
 import { formatCount } from "../lib/format";
 import { isLab } from "../lib/lab";
 import { type Theme, useTheme } from "../lib/theme";
+import { CommandMenu } from "./CommandMenu";
 import {
   Menu,
   MenuGroup,
@@ -105,11 +106,10 @@ export function AppShell({
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-1 h-4" />
           <AppBreadcrumb owner={owner} repo={repo} crumb={crumb} />
-          {actions && (
-            <div className="ml-auto flex shrink-0 items-center gap-1">
-              {actions}
-            </div>
-          )}
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <CommandMenu owner={owner} repo={repo} />
+            {actions}
+          </div>
         </header>
         {fullHeight ? (
           <div className="flex min-h-0 flex-1 flex-col">{children}</div>

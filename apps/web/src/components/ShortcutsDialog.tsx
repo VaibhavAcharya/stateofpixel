@@ -18,6 +18,8 @@ export const SHORTCUT_GROUPS: { title: string; items: [string, string[]][] }[] =
         ["Focus filter", ["/"]],
         ["Close the snapshot list", ["esc"]],
         ["Show shortcuts", ["?"]],
+        ["Jump to a project, account or page", ["cmd", "k"]],
+        ["Fold the app sidebar", ["cmd", "b"]],
       ],
     },
     {
