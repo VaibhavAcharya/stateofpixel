@@ -4,12 +4,12 @@ import {
   ImagesIcon,
   StackIcon,
 } from "@phosphor-icons/react/ssr";
-import { Button } from "uiofcraft";
+import { Link } from "@tanstack/react-router";
+import { Button, Tabs, TabsList, TabsTab } from "uiofcraft";
 import { api, useQuery } from "../lib/backend";
 import { AccountBanner } from "./AccountBanner";
 import { PageHeader } from "./Page";
-import { Tab, Tabs } from "./Tabs";
-import { ProjectMark } from "./ui";
+import { ProjectMark, Tooltip } from "./ui";
 
 type ProjectTab = "builds" | "baselines" | "settings";
 
@@ -51,33 +51,50 @@ export function ProjectHeader({
           repo={{ name: repo, canAdmin: access.canAdmin }}
         />
       )}
-      <Tabs>
-        <Tab
-          to="/$owner/$repo"
-          params={{ owner, repo }}
-          icon={StackIcon}
-          label="Builds"
-          active={tab === "builds"}
-        />
-        <Tab
-          to="/$owner/$repo/baselines"
-          params={{ owner, repo }}
-          icon={ImagesIcon}
-          label="Baselines"
-          active={tab === "baselines"}
-        />
-        <Tab
-          to="/$owner/$repo/settings"
-          params={{ owner, repo }}
-          icon={GearIcon}
-          label="Settings"
-          active={tab === "settings"}
-          disabledReason={
-            settingsLocked
-              ? "Only people with write access to this repository on GitHub can change its settings."
-              : undefined
-          }
-        />
+      <Tabs value={tab} className="mb-6">
+        <TabsList
+          variant="underline"
+          aria-label="Project"
+          className="w-full justify-start border-b"
+        >
+          <TabsTab
+            value="builds"
+            nativeButton={false}
+            render={<Link to="/$owner/$repo" params={{ owner, repo }} />}
+          >
+            <StackIcon />
+            Builds
+          </TabsTab>
+          <TabsTab
+            value="baselines"
+            nativeButton={false}
+            render={
+              <Link to="/$owner/$repo/baselines" params={{ owner, repo }} />
+            }
+          >
+            <ImagesIcon />
+            Baselines
+          </TabsTab>
+          {settingsLocked ? (
+            <Tooltip label="Only people with write access to this repository on GitHub can change its settings.">
+              <TabsTab value="settings" disabled>
+                <GearIcon />
+                Settings
+              </TabsTab>
+            </Tooltip>
+          ) : (
+            <TabsTab
+              value="settings"
+              nativeButton={false}
+              render={
+                <Link to="/$owner/$repo/settings" params={{ owner, repo }} />
+              }
+            >
+              <GearIcon />
+              Settings
+            </TabsTab>
+          )}
+        </TabsList>
       </Tabs>
     </>
   );
