@@ -172,7 +172,7 @@ function NavGroups() {
               <li key={page.slug}>
                 <DocsPageLink
                   slug={page.slug}
-                  className="flex h-8 items-center rounded-md px-2 text-sm text-muted-foreground transition-colors duration-100 hover:bg-accent hover:text-foreground data-[status=active]:bg-accent data-[status=active]:font-medium data-[status=active]:text-foreground"
+                  className="flex min-h-8 items-center rounded-md px-2 py-1.5 text-sm leading-5 text-muted-foreground transition-colors duration-100 hover:bg-accent hover:text-foreground data-[status=active]:bg-accent data-[status=active]:font-medium data-[status=active]:text-foreground"
                 >
                   {page.label}
                 </DocsPageLink>
