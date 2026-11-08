@@ -20,6 +20,7 @@ import {
   CommandCollection,
   CommandDialog,
   CommandDialogPopup,
+  CommandDialogTrigger,
   CommandEmpty,
   CommandFooter,
   CommandGroup,
@@ -75,11 +76,14 @@ export function CommandMenu({
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-52 justify-start text-muted-foreground max-md:hidden"
-        onClick={() => setOpen(true)}
+      <CommandDialogTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-52 justify-start text-muted-foreground max-md:hidden"
+          />
+        }
       >
         <MagnifyingGlassIcon />
         Jump to
@@ -87,16 +91,19 @@ export function CommandMenu({
           <Kbd>⌘</Kbd>
           <Kbd>K</Kbd>
         </KbdGroup>
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label="Jump to"
-        className="md:hidden"
-        onClick={() => setOpen(true)}
+      </CommandDialogTrigger>
+      <CommandDialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Jump to"
+            className="md:hidden"
+          />
+        }
       >
         <MagnifyingGlassIcon />
-      </Button>
+      </CommandDialogTrigger>
       <CommandDialogPopup>
         {(open || opened) && (
           <CommandMenuContent
