@@ -1,4 +1,4 @@
-import { LockSimpleIcon } from "@phosphor-icons/react/ssr";
+import { FolderSimpleIcon, LockSimpleIcon } from "@phosphor-icons/react/ssr";
 import { Link } from "@tanstack/react-router";
 import { Button } from "uiofcraft";
 import {
@@ -13,9 +13,11 @@ import {
 } from "../lib/projectSearch";
 import { columnHelper, DataTable, type SortingState } from "./DataTable";
 import {
+  AvatarStack,
   BuildStatePill,
   listRowLinkClass,
   RelativeTime,
+  ReviewBar,
   SkeletonRows,
   Spinner,
 } from "./ui";
@@ -30,38 +32,56 @@ const helper = columnHelper<ProjectRow>();
 const columns = helper.columns([
   helper.accessor("name", {
     header: "Project",
-    cell: ({ row }) => (
-      <Link
-        to="/$owner/$repo"
-        params={{ owner: row.original.owner, repo: row.original.name }}
-        data-list-row
-        className={`flex min-w-0 items-center gap-2 font-medium ${listRowLinkClass}`}
-      >
-        <span className="truncate">{row.original.name}</span>
-        {row.original.private && (
-          <LockSimpleIcon
-            size={12}
-            aria-label="Private"
-            className="shrink-0 text-muted-foreground"
-          />
-        )}
-      </Link>
-    ),
+    cell: ({ row }) => {
+      const build = row.original.latestBuild;
+      return (
+        <Link
+          to="/$owner/$repo"
+          params={{ owner: row.original.owner, repo: row.original.name }}
+          data-list-row
+          className={`flex min-w-0 items-center gap-3 ${listRowLinkClass}`}
+        >
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/72 text-muted-foreground">
+            <FolderSimpleIcon size={16} />
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="flex min-w-0 items-center gap-1.5 font-medium">
+              <span className="truncate">{row.original.name}</span>
+              {row.original.private && (
+                <LockSimpleIcon
+                  size={12}
+                  aria-label="Private"
+                  className="shrink-0 text-muted-foreground"
+                />
+              )}
+            </span>
+            <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs">
+              {build === null ? (
+                "No builds yet"
+              ) : (
+                <>
+                  <span className="tabular-nums">#{build.number}</span>
+                  <span aria-hidden>·</span>
+                  <span className="mono truncate">{build.branch}</span>
+                </>
+              )}
+            </span>
+          </span>
+        </Link>
+      );
+    },
   }),
   helper.display({
     id: "build",
     header: "Latest build",
-    meta: { className: "w-48 max-sm:w-36" },
+    meta: { className: "w-52 max-sm:w-36" },
     cell: ({ row }) => {
       const build = row.original.latestBuild;
       if (build === null) {
-        return <span className="text-muted-foreground">No builds yet</span>;
+        return null;
       }
       return (
-        <span className="flex items-center gap-2">
-          <span className="text-muted-foreground tabular-nums">
-            #{build.number}
-          </span>
+        <span className="flex flex-col items-start gap-1.5">
           <BuildStatePill
             status={build.status}
             conclusion={build.conclusion}
@@ -69,18 +89,25 @@ const columns = helper.columns([
             shards={{ done: 0, total: null }}
             storageBlocked={build.storageBlocked}
           />
+          {build.status === "finalized" && !build.storageBlocked && (
+            <ReviewBar counts={build.counts} />
+          )}
         </span>
       );
     },
   }),
   helper.display({
-    id: "branch",
-    header: "Branch",
-    meta: { className: "w-56 truncate max-md:hidden" },
-    cell: ({ row }) =>
-      row.original.latestBuild && (
-        <span className="mono">{row.original.latestBuild.branch}</span>
-      ),
+    id: "reviewers",
+    header: "Reviewed by",
+    meta: { className: "w-36 max-md:hidden" },
+    cell: ({ row }) => {
+      const reviewers = row.original.latestBuild?.reviewers ?? [];
+      return reviewers.length === 0 ? (
+        <span className="text-muted-foreground">-</span>
+      ) : (
+        <AvatarStack people={reviewers} />
+      );
+    },
   }),
   helper.accessor((project) => project.latestBuild?.createdAt, {
     id: "updated",
@@ -148,7 +175,7 @@ export function ProjectTable({
               }
             : undefined
         }
-        rowClassName="h-12"
+        rowClassName="h-16"
       />
       {status === "CanLoadMore" && (
         <div className="mt-4 flex justify-center">

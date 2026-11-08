@@ -14,12 +14,14 @@ import { Page } from "../../../components/Page";
 import { ProjectHeader } from "../../../components/ProjectHeader";
 import { RequireAuth } from "../../../components/RequireAuth";
 import {
+  AvatarStack,
   BuildStatePill,
   LeadCopy,
   listRowLinkClass,
   ProjectNotFound,
   PrStatePill,
   RelativeTime,
+  ReviewBar,
   SkeletonRows,
   Spinner,
   SupersededPill,
@@ -184,16 +186,22 @@ function useBuildColumns({
           header: "Status",
           meta: { className: "w-48" },
           cell: ({ row }) => (
-            <span className="flex flex-wrap items-center gap-1.5 py-1.5">
-              <BuildStatePill
-                status={row.original.status}
-                conclusion={row.original.conclusion}
-                counts={row.original.counts}
-                shards={row.original.shards}
-                storageBlocked={row.original.storageBlocked}
-              />
-              {row.original.superseded && <SupersededPill />}
-              <PrStatePill state={row.original.prState} />
+            <span className="flex flex-col gap-1.5 py-2">
+              <span className="flex flex-wrap items-center gap-1.5">
+                <BuildStatePill
+                  status={row.original.status}
+                  conclusion={row.original.conclusion}
+                  counts={row.original.counts}
+                  shards={row.original.shards}
+                  storageBlocked={row.original.storageBlocked}
+                />
+                {row.original.superseded && <SupersededPill />}
+                <PrStatePill state={row.original.prState} />
+              </span>
+              {row.original.status === "finalized" &&
+                !row.original.storageBlocked && (
+                  <ReviewBar counts={row.original.counts} />
+                )}
             </span>
           ),
         }),
@@ -257,6 +265,17 @@ function useBuildColumns({
               )
             );
           },
+        }),
+        helper.display({
+          id: "reviewers",
+          header: "Reviewed by",
+          meta: { className: "w-32 max-lg:hidden" },
+          cell: ({ row }) =>
+            row.original.reviewers.length === 0 ? (
+              <span className="text-muted-foreground">-</span>
+            ) : (
+              <AvatarStack people={row.original.reviewers} />
+            ),
         }),
         helper.display({
           id: "created",

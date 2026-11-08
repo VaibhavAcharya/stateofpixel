@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
+import { buildReviewers } from "./accounts.ts";
 import { internal } from "./api.ts";
 import { confirmUploadedImages, findImages, getUrl } from "./blobs.ts";
 import { touchCheck } from "./checks.ts";
@@ -1297,7 +1298,14 @@ export const list = query({
         .limit(limit)
         .offset(offset),
     );
-    return { ...page, page: page.page.map(toBuildSummary) };
+    const rows = [];
+    for (const build of page.page) {
+      rows.push({
+        ...toBuildSummary(build),
+        reviewers: await buildReviewers(ctx, build._id),
+      });
+    }
+    return { ...page, page: rows };
   },
 });
 

@@ -461,6 +461,75 @@ export function Avatar({
   );
 }
 
+export function AvatarStack({
+  people,
+  total = people.length,
+  size = 22,
+}: {
+  people: { login: string; image: string | null }[];
+  total?: number;
+  size?: number;
+}) {
+  if (people.length === 0) {
+    return null;
+  }
+  const more = total - people.length;
+  return (
+    <span className="flex items-center">
+      <span className="flex -space-x-1.5">
+        {people.map((person) => (
+          <span
+            key={person.login}
+            title={`@${person.login}`}
+            className="rounded-full ring-2 ring-card"
+          >
+            <Avatar src={person.image} size={size} />
+          </span>
+        ))}
+      </span>
+      {more > 0 && (
+        <span className="ml-1.5 text-muted-foreground text-xs tabular-nums">
+          +{formatCount(more)}
+        </span>
+      )}
+      <span className="sr-only">
+        {people.map((person) => `@${person.login}`).join(", ")}
+        {more > 0 && ` and ${more} more`}
+      </span>
+    </span>
+  );
+}
+
+export function ReviewBar({
+  counts,
+}: {
+  counts: { pending: number; approved: number; rejected: number };
+}) {
+  const total = counts.pending + counts.approved + counts.rejected;
+  if (total === 0) {
+    return null;
+  }
+  return (
+    <span
+      aria-hidden
+      className="flex h-1 w-full max-w-28 overflow-hidden rounded-full bg-muted"
+    >
+      <span
+        className="bg-approved"
+        style={{ width: `${(counts.approved / total) * 100}%` }}
+      />
+      <span
+        className="bg-rejected"
+        style={{ width: `${(counts.rejected / total) * 100}%` }}
+      />
+      <span
+        className="bg-pending/40"
+        style={{ width: `${(counts.pending / total) * 100}%` }}
+      />
+    </span>
+  );
+}
+
 const VIEWPORT_SUFFIX = /^(.*?)\s*\[([^\]]+)\]$/;
 
 function splitSnapshotName(name: string) {

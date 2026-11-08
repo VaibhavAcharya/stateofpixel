@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn, userEvent, within } from "storybook/test";
-import { STORY_NOW } from "../lib/storyFixtures";
+import { avatar, STORY_NOW } from "../lib/storyFixtures";
 import { ProjectTable } from "./ProjectTable";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -29,6 +29,10 @@ function build(
     counts,
     storageBlocked: false,
     createdAt: STORY_NOW - hoursAgo * HOUR_MS,
+    reviewers: [
+      { login: "octocat", image: avatar("octocat") },
+      { login: "hubot", image: avatar("hubot") },
+    ],
     ...fields,
   };
 }

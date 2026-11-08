@@ -276,6 +276,7 @@ it("links a signed-in user to their installations", async () => {
       },
       projects: 2,
       lastBuildAt: null,
+      members: { count: 1, faces: [{ login: "octocat", image: null }] },
     },
   ]);
   const projects = await user.query(api.accounts.projects, {
