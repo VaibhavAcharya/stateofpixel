@@ -87,7 +87,7 @@ it("captures each enabled Chromatic mode with its width and globals", () => {
         "current 720px": { viewport: 720, brand: "current" },
         "hues 720px": { viewport: 720, brand: "hues" },
         "hues 1120px": { disable: true },
-        mobile: { viewport: "small", dark: true },
+        mobile: { viewport: "small", dark: true, a11y: { manual: true } },
         default: { brand: "hues" },
       },
     },

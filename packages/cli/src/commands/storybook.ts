@@ -417,7 +417,7 @@ function mergeGlobals(
     }),
   );
   for (const [key, value] of Object.entries(modeGlobals)) {
-    if (key === "disable") {
+    if (key === "disable" || key === "a11y") {
       continue;
     }
     if (typeof value === "boolean") {

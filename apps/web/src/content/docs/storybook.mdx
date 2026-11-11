@@ -73,7 +73,7 @@ With `--chromatic`, the CLI loads the built Storybook, reads each story's `param
 
 - Stories with `disableSnapshot: true` or `disable: true` are skipped.
 - Each mode in `modes` is one screenshot named after the mode, like `Button/Primary [chromium dark 1280px]`. Modes with `disable: true` are skipped.
-- A mode's `viewport` sets the width, in pixels or as the name of a viewport in `parameters.viewport` whose width is in pixels. Without `viewport`, the mode uses the first width in `--viewports`. The mode's other keys are passed as globals and override `--globals`.
+- A mode's `viewport` sets the width, in pixels or as the name of a viewport in `parameters.viewport` whose width is in pixels. Without `viewport`, the mode uses the first width in `--viewports`. The mode's other keys, except `a11y`, are passed as globals and override `--globals`.
 - Stories without modes use `viewports` from `parameters.chromatic`, or `--viewports`.
 - `delay` replaces `--delay` for that story.
 
