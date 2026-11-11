@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.14.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.13.0...v1.14.0) (2026-11-11)
+
+
+### Features
+
+* move the web app to uiofcraft and redesign it ([#117](https://github.com/VaibhavAcharya/stateofpixel/issues/117)) ([6ca40f6](https://github.com/VaibhavAcharya/stateofpixel/commit/6ca40f65a456bbf52e65192f3a0a8757eabb468b))
+
+
+### Bug Fixes
+
+* **cli:** ignore a11y in Chromatic modes ([b7fbd6f](https://github.com/VaibhavAcharya/stateofpixel/commit/b7fbd6f0f12c515401ff28e9e345dc31ce39a5c4))
+
 ## [1.13.0](https://github.com/VaibhavAcharya/stateofpixel/compare/v1.12.0...v1.13.0) (2026-11-04)
 
 
