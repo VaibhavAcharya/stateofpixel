@@ -54,7 +54,7 @@
     "satori": "^0.33.5",
     "shiki": "^4.4.3",
     "stateofpixel": "workspace:*",
-    "storybook": "^10.6.0",
+    "storybook": "^10.6.2",
     "unified": "^11.0.5",
     "vite": "^8.3.0"
   }
